@@ -4,6 +4,9 @@ import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
 
 type Listener = (payload?: any) => void
+type TestLogger = {
+  info: ReturnType<typeof vi.fn>
+}
 
 function createFakeContext(options: { console?: boolean } = {}) {
   const listeners: Record<string, Listener[]> = {}
@@ -118,6 +121,26 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: true,
     })
+  })
+
+  it('writes debug snapshots to Koishi logs when debug is enabled', () => {
+    const { ctx, listeners } = createFakeContext()
+    const logger: TestLogger = {
+      info: vi.fn(),
+    }
+    const ctxWithLogger = {
+      ...ctx,
+      logger: vi.fn(() => logger),
+    } as ChatCapsuleContext & { logger: (name: string) => TestLogger }
+
+    plugin.apply(ctxWithLogger, { debug: true })
+    listeners.message[0](createSession())
+
+    expect(ctxWithLogger.logger).toHaveBeenCalledWith('chat-capsule')
+    expect(logger.info).toHaveBeenCalledWith(
+      'message %s',
+      expect.stringContaining('"received":1'),
+    )
   })
 
   it('broadcasts normalized state when a message is received', () => {

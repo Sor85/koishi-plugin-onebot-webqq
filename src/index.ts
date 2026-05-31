@@ -35,9 +35,14 @@ interface ConsoleService {
   broadcast(type: string, body: unknown): unknown
 }
 
+interface DebugLogger {
+  info(format: string, ...param: unknown[]): unknown
+}
+
 // 描述插件运行所需的最小 Koishi 上下文能力。
 export interface ChatCapsuleContext {
   console?: ConsoleService
+  logger?(name: string): DebugLogger
   on(event: 'message', listener: (session: Session) => void): unknown
   before(event: 'send', listener: () => void): unknown
   inject(services: { console: { required: true } }, callback: (inner: ChatCapsuleContext & { console: ConsoleService }) => void): unknown
@@ -66,6 +71,8 @@ function readUserName(session: Session) {
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
   const debug = !!config.debug
+  const logger = debug ? ctx.logger?.('chat-capsule') : undefined
+  const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
 
   ctx.on('message', (session) => {
@@ -81,11 +88,13 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       },
       timestamp: session.timestamp,
     })
+    logSnapshot('message')
     broadcast()
   })
 
   ctx.before('send', () => {
     recordOutgoingMessage(state)
+    logSnapshot('send')
     broadcast()
   })
 
@@ -98,9 +107,12 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     ] : {
       dev: resolve(__dirname, '../client/index.ts'),
       prod: resolve(__dirname, '../dist'),
-    }, () => ({
-      capsule: state.snapshot(),
-      debug,
-    }))
+    }, () => {
+      logSnapshot('entry')
+      return {
+        capsule: state.snapshot(),
+        debug,
+      }
+    })
   })
 }

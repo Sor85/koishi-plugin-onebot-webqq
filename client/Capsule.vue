@@ -20,14 +20,13 @@
         </div>
       </div>
     </div>
-    <pre v-if="debug" class="chat-capsule-debug">{{ debugText }}</pre>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { Universal, withProxy } from '@koishijs/client'
-import { capsule, debug } from './state'
+import { capsule } from './state'
 
 const metaTitle = computed(() => {
   if (!capsule.value) return '暂无会话'
@@ -46,9 +45,4 @@ const statusClass = computed(() => {
   }
 })
 
-const debugText = computed(() => JSON.stringify({
-  mounted: true,
-  hasCapsule: !!capsule.value,
-  capsule: capsule.value || null,
-}, null, 2))
 </script>

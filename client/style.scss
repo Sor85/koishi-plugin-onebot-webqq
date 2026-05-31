@@ -101,25 +101,3 @@
     bottom: 52px;
   }
 }
-
-.chat-capsule-debug {
-  position: fixed;
-  left: 80px;
-  top: 16px;
-  z-index: 10001;
-  width: min(520px, calc(100vw - 48px));
-  max-height: 40vh;
-  margin: 0;
-  padding: 12px;
-  overflow: auto;
-  white-space: pre-wrap;
-  color: #ffffff;
-  background: #111827;
-  border: 2px solid #409eff;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.45;
-  pointer-events: auto;
-}
