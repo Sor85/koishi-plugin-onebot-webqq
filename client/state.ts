@@ -11,8 +11,9 @@ export interface CapsuleData {
   conversation: {
     channelId: string
     channelName: string
-    userId: string
-    userName: string
+    userId?: string
+    userName?: string
+    activityText?: string
     timestamp: number
   }
   counters: {

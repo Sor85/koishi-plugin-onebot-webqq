@@ -3,12 +3,12 @@ import * as plugin from '../src'
 import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
 
-type Listener = (payload?: any) => void
+type Listener = (...payload: any[]) => void
 type TestLogger = {
   info: ReturnType<typeof vi.fn>
 }
 
-function createFakeContext(options: { console?: boolean } = {}) {
+function createFakeContext(options: { console?: boolean; character?: Record<string, unknown> } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
   const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined) => {})
@@ -30,8 +30,10 @@ function createFakeContext(options: { console?: boolean } = {}) {
         addEntry,
         broadcast,
       },
-      inject(_services, callback) {
-        callback(ctx)
+      ...(options.character ? { chatluna_character: options.character } : {}),
+      inject(services, callback) {
+        if ('console' in services) callback(ctx)
+        if ('chatluna_character' in services && options.character) callback(ctx)
       },
     }
     return { ctx, listeners, addEntry, broadcast }
@@ -39,7 +41,10 @@ function createFakeContext(options: { console?: boolean } = {}) {
 
   const ctx: ChatCapsuleContext = {
     ...base,
-    inject() {},
+    ...(options.character ? { chatluna_character: options.character } : {}),
+    inject(services, callback) {
+      if ('chatluna_character' in services && options.character) callback(ctx)
+    },
   }
 
   return { ctx, listeners, addEntry, broadcast }
@@ -83,7 +88,7 @@ describe('chat capsule plugin wiring', () => {
   it('exports plugin name and optional console injection', () => {
     expect(plugin.name).toBe('chat-capsule')
     expect(plugin.inject).toEqual({
-      optional: ['console'],
+      optional: ['console', 'chatluna', 'chatluna_character'],
     })
   })
 
@@ -160,8 +165,6 @@ describe('chat capsule plugin wiring', () => {
       conversation: {
         channelId: '20000',
         channelName: 'Guild Name',
-        userId: '30000',
-        userName: 'Event Alice',
         timestamp: 1710000000000,
       },
       counters: {
@@ -191,8 +194,6 @@ describe('chat capsule plugin wiring', () => {
       conversation: {
         channelId: '20000',
         channelName: 'Guild Name',
-        userId: '30000',
-        userName: 'Event Alice',
         timestamp: 1710000000000,
       },
       counters: {
@@ -223,15 +224,80 @@ describe('chat capsule plugin wiring', () => {
 
     expect(broadcast.mock.calls[0][1]?.conversation).toMatchObject({
       channelName: 'Session Channel',
-      userName: 'Session Alice',
     })
     expect(broadcast.mock.calls[1][1]?.conversation).toMatchObject({
       channelId: 'channel-id',
       channelName: 'channel-id',
-      userId: 'user-id',
-      userName: 'user-id',
       timestamp: 1710000000001,
     })
+  })
+
+  it('uses ChatLuna chat events to show and clear generation status', () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession())
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
+      channelName: 'Guild Name',
+      userName: 'Alice',
+      activityText: 'LLM生成中',
+    })
+
+    listeners['chatluna/after-chat'][0]('conversation-1')
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toEqual({
+      channelId: '20000',
+      channelName: 'Guild Name',
+      timestamp: 1710000000000,
+    })
+  })
+
+  it('uses character response locks and collect events to show active status', async () => {
+    const character = {
+      acquireResponseLock: vi.fn(async () => true),
+      releaseResponseLock: vi.fn(async () => undefined),
+    }
+    const originalAcquireResponseLock = character.acquireResponseLock
+    const originalReleaseResponseLock = character.releaseResponseLock
+    const { ctx, listeners, broadcast } = createFakeContext({ character })
+    const session = createSession()
+
+    plugin.apply(ctx)
+    await character.acquireResponseLock(session as any, {
+      id: '30000',
+      name: 'Alice',
+      content: 'hello',
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
+      userName: 'Alice',
+      activityText: '正在与 Alice 对话',
+    })
+
+    listeners['chatluna_character/message_collect'][0](session, [{
+      id: '30000',
+      name: 'Alice',
+      content: 'hello',
+    }], 'trigger')
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
+      userName: 'Alice',
+      activityText: 'LLM生成中',
+    })
+
+    await character.releaseResponseLock(session as any)
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toEqual({
+      channelId: '20000',
+      channelName: 'Guild Name',
+      timestamp: 1710000000000,
+    })
+
+    listeners.dispose[0]()
+
+    expect(character.acquireResponseLock).toBe(originalAcquireResponseLock)
+    expect(character.releaseResponseLock).toBe(originalReleaseResponseLock)
   })
 
   it('keeps message and send listeners safe when console is unavailable', () => {

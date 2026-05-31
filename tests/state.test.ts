@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clearConversationActivity,
   createCapsuleState,
+  recordConversationActivity,
   recordIncomingMessage,
   recordOutgoingMessage,
 } from '../src/state'
@@ -12,7 +14,7 @@ describe('chat capsule state', () => {
     expect(state.snapshot()).toBeUndefined()
   })
 
-  it('records the latest incoming message as the active conversation', () => {
+  it('records incoming message context without exposing an idle user', () => {
     const state = createCapsuleState()
 
     recordIncomingMessage(state, {
@@ -45,8 +47,6 @@ describe('chat capsule state', () => {
       conversation: {
         channelId: '20000',
         channelName: 'General',
-        userId: '30000',
-        userName: 'Alice',
         timestamp: 1710000000000,
       },
       counters: {
@@ -77,7 +77,7 @@ describe('chat capsule state', () => {
     expect(state.snapshot()?.bot.name).toBe('discord:bot-1')
     expect(state.snapshot()?.bot.avatar).toBeUndefined()
     expect(state.snapshot()?.conversation.channelName).toBe('channel-1')
-    expect(state.snapshot()?.conversation.userName).toBe('user-1')
+    expect(state.snapshot()?.conversation.userName).toBeUndefined()
   })
 
   it('tracks sent and received counters from plugin startup', () => {
@@ -116,7 +116,6 @@ describe('chat capsule state', () => {
 
     expect(state.snapshot()?.conversation).toMatchObject({
       channelId: '20001',
-      userId: '30001',
       timestamp: 1710000000003,
     })
     expect(state.snapshot()?.counters).toEqual({
@@ -148,5 +147,58 @@ describe('chat capsule state', () => {
 
     expect(state.snapshot()?.conversation.channelName).toBe('20000')
     expect(state.snapshot()?.counters.received).toBe(1)
+  })
+
+  it('records and clears the active conversation status', () => {
+    const state = createCapsuleState()
+
+    recordIncomingMessage(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+        name: 'General',
+      },
+      user: {
+        id: '30000',
+        name: 'Alice',
+      },
+      timestamp: 1710000000005,
+    })
+
+    recordConversationActivity(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+        name: 'General',
+      },
+      user: {
+        id: '30000',
+        name: 'Alice',
+      },
+      timestamp: 1710000000006,
+    }, '正在与 Alice 对话')
+
+    expect(state.snapshot()?.conversation).toMatchObject({
+      channelId: '20000',
+      channelName: 'General',
+      userId: '30000',
+      userName: 'Alice',
+      activityText: '正在与 Alice 对话',
+      timestamp: 1710000000006,
+    })
+
+    clearConversationActivity(state)
+
+    expect(state.snapshot()?.conversation).toEqual({
+      channelId: '20000',
+      channelName: 'General',
+      timestamp: 1710000000006,
+    })
   })
 })

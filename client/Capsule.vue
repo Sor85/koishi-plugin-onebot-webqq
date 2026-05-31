@@ -11,8 +11,8 @@
           {{ capsule?.bot.name || '空闲' }}
         </div>
         <div class="chat-capsule__meta" :title="metaTitle">
-          <span>{{ capsule?.conversation.channelName || '暂无群聊' }}</span>
-          <span>{{ capsule?.conversation.userName || '暂无用户' }}</span>
+          <span v-if="capsule?.conversation.channelName">{{ capsule.conversation.channelName }}</span>
+          <span v-if="capsule?.conversation.activityText">{{ capsule.conversation.activityText }}</span>
         </div>
         <div class="chat-capsule__counts">
           <span>收 {{ capsule?.counters.received || 0 }}</span>
@@ -29,8 +29,11 @@ import { Universal, withProxy } from '@koishijs/client'
 import { capsule } from './state'
 
 const metaTitle = computed(() => {
-  if (!capsule.value) return '暂无会话'
-  return `${capsule.value.conversation.channelName} / ${capsule.value.conversation.userName}`
+  if (!capsule.value) return ''
+  return [
+    capsule.value.conversation.channelName,
+    capsule.value.conversation.activityText,
+  ].filter(Boolean).join(' / ')
 })
 
 const statusClass = computed(() => {

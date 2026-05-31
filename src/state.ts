@@ -30,8 +30,9 @@ export interface CapsuleSnapshot {
   conversation: {
     channelId: string
     channelName: string
-    userId: string
-    userName: string
+    userId?: string
+    userName?: string
+    activityText?: string
     timestamp: number
   }
   counters: {
@@ -90,11 +91,8 @@ export function createCapsuleState(): CapsuleState {
   return capsule
 }
 
-// 记录收到的消息，并将其设为当前会话。
-export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessageInput) {
-  const state = getState(capsule)
-  state.counters.received += 1
-  state.current = {
+function createSnapshot(input: CapsuleMessageInput, counters: MutableCapsuleState['counters']): CapsuleSnapshot {
+  return {
     bot: {
       platform: input.bot.platform,
       selfId: input.bot.selfId,
@@ -105,12 +103,60 @@ export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessa
     conversation: {
       channelId: input.channel.id,
       channelName: input.channel.name || input.channel.id,
-      userId: input.user.id,
-      userName: input.user.name || input.user.id,
       timestamp: input.timestamp,
     },
     counters: {
-      ...state.counters,
+      ...counters,
+    },
+  }
+}
+
+// 记录收到的消息上下文；空闲态不暴露最后发言用户。
+export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessageInput) {
+  const state = getState(capsule)
+  state.counters.received += 1
+  const currentActivity = state.current?.conversation.activityText
+    ? {
+        userId: state.current.conversation.userId,
+        userName: state.current.conversation.userName,
+        activityText: state.current.conversation.activityText,
+      }
+    : {}
+  const snapshot = createSnapshot(input, state.counters)
+  state.current = {
+    ...snapshot,
+    conversation: {
+      ...snapshot.conversation,
+      ...currentActivity,
+    },
+  }
+}
+
+// 记录 ChatLuna 或伪装插件的当前对话状态。
+export function recordConversationActivity(capsule: CapsuleState, input: CapsuleMessageInput, activityText: string) {
+  const state = getState(capsule)
+  const snapshot = createSnapshot(input, state.counters)
+  state.current = {
+    ...snapshot,
+    conversation: {
+      ...snapshot.conversation,
+      userId: input.user.id,
+      userName: input.user.name || input.user.id,
+      activityText,
+    },
+  }
+}
+
+// 清除当前对话状态，保留最近的 bot、群聊和计数上下文。
+export function clearConversationActivity(capsule: CapsuleState) {
+  const state = getState(capsule)
+  if (!state.current) return
+  state.current = {
+    ...state.current,
+    conversation: {
+      channelId: state.current.conversation.channelId,
+      channelName: state.current.conversation.channelName,
+      timestamp: state.current.conversation.timestamp,
     },
   }
 }
