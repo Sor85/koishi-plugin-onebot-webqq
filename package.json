@@ -1,0 +1,82 @@
+{
+  "name": "koishi-plugin-chat-capsule",
+  "description": "在 Koishi 控制台右下角显示当前聊天胶囊",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "require": "./lib/index.js",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "dist",
+    "client"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/Sor85/koishi-plugin-chat-capsule",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sor85/koishi-plugin-chat-capsule.git"
+  },
+  "scripts": {
+    "clean": "shx rm -rf lib dist",
+    "build": "yarn build:server && yarn build:client",
+    "build:types": "tsc -p tsconfig.json",
+    "build:server": "yarn build:types && tsup src/index.ts --format cjs --sourcemap --out-dir lib --clean false",
+    "build:client": "vite build --config vite.config.mts",
+    "test": "vitest run tests",
+    "prepublishOnly": "yarn clean && yarn build"
+  },
+  "keywords": [
+    "bot",
+    "chatbot",
+    "koishi",
+    "plugin",
+    "console"
+  ],
+  "koishi": {
+    "public": [
+      "dist"
+    ],
+    "description": {
+      "zh": "在 Koishi 控制台右下角显示当前聊天胶囊"
+    },
+    "service": {
+      "optional": [
+        "console"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@koishijs/plugin-console": "^5.30.0",
+    "koishi": "^4.18.9"
+  },
+  "peerDependenciesMeta": {
+    "@koishijs/plugin-console": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@koishijs/console": "^5.30.0"
+  },
+  "devDependencies": {
+    "@koishijs/client": "^5.30.0",
+    "@types/node": "^22.10.1",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "koishi": "^4.18.9",
+    "sass": "^1.77.0",
+    "shx": "^0.4.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.8",
+    "vue": "^3.5.12"
+  },
+  "packageManager": "yarn@4.15.0"
+}
