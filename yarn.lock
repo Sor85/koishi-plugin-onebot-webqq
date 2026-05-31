@@ -4017,6 +4017,7 @@ __metadata:
     "@vitejs/plugin-vue": "npm:^5.1.4"
     koishi: "npm:^4.18.9"
     sass: "npm:^1.77.0"
+    schemastery: "npm:^3.18.0"
     shx: "npm:^0.4.0"
     tsup: "npm:^8.0.0"
     typescript: "npm:^5.7.2"
@@ -4936,7 +4937,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"schemastery@npm:^3.14.6, schemastery@npm:^3.17.1, schemastery@npm:^3.17.2":
+"schemastery@npm:^3.14.6, schemastery@npm:^3.17.1, schemastery@npm:^3.17.2, schemastery@npm:^3.18.0":
   version: 3.18.0
   resolution: "schemastery@npm:3.18.0"
   dependencies:

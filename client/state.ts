@@ -22,3 +22,4 @@ export interface CapsuleData {
 }
 
 export const capsule = ref<CapsuleData>()
+export const debug = ref(false)

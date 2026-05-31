@@ -1,4 +1,5 @@
-import { Session } from 'koishi'
+import type { Session } from 'koishi'
+import Schema from 'schemastery'
 import { resolve } from 'path'
 import type { Entry } from '@koishijs/console'
 import {
@@ -14,6 +15,14 @@ export const name = 'chat-capsule'
 export const inject = {
   optional: ['console'],
 }
+
+export interface Config {
+  debug?: boolean
+}
+
+export const Config: Schema<Config> = Schema.object({
+  debug: Schema.boolean().default(false).description('显示前端调试信息'),
+})
 
 declare module '@koishijs/console' {
   interface Events {
@@ -54,8 +63,9 @@ function readUserName(session: Session) {
 }
 
 // 注册聊天胶囊的状态监听和控制台前端入口。
-export function apply(ctx: ChatCapsuleContext) {
+export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
+  const debug = !!config.debug
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
 
   ctx.on('message', (session) => {
@@ -90,6 +100,7 @@ export function apply(ctx: ChatCapsuleContext) {
       prod: resolve(__dirname, '../dist'),
     }, () => ({
       capsule: state.snapshot(),
+      debug,
     }))
   })
 }

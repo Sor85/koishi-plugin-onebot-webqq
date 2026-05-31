@@ -63,7 +63,8 @@
     }
   },
   "dependencies": {
-    "@koishijs/console": "^5.30.0"
+    "@koishijs/console": "^5.30.0",
+    "schemastery": "^3.18.0"
   },
   "devDependencies": {
     "@koishijs/client": "^5.30.0",

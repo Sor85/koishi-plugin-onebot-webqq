@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { apply, ChatCapsuleContext, inject, name } from '../src'
+import * as plugin from '../src'
+import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
 
 type Listener = (payload?: any) => void
@@ -77,16 +78,20 @@ function createSession(overrides: Record<string, unknown> = {}) {
 
 describe('chat capsule plugin wiring', () => {
   it('exports plugin name and optional console injection', () => {
-    expect(name).toBe('chat-capsule')
-    expect(inject).toEqual({
+    expect(plugin.name).toBe('chat-capsule')
+    expect(plugin.inject).toEqual({
       optional: ['console'],
     })
+  })
+
+  it('exports a Config schema for backend options', () => {
+    expect(plugin.Config).toBeDefined()
   })
 
   it('registers a console entry with empty capsule data', () => {
     const { ctx, addEntry } = createFakeContext()
 
-    apply(ctx)
+    plugin.apply(ctx)
 
     expect(addEntry).toHaveBeenCalledTimes(1)
     expect(addEntry.mock.calls[0][0]).toEqual({
@@ -97,13 +102,28 @@ describe('chat capsule plugin wiring', () => {
     expect(data).toBeDefined()
     expect(data?.()).toEqual({
       capsule: undefined,
+      debug: false,
+    })
+  })
+
+  it('passes enabled debug config to console entry data', () => {
+    const { ctx, addEntry } = createFakeContext()
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { debug?: boolean }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, { debug: true })
+
+    const data = addEntry.mock.calls[0][1]
+    expect(data?.()).toEqual({
+      capsule: undefined,
+      debug: true,
     })
   })
 
   it('broadcasts normalized state when a message is received', () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 
-    apply(ctx)
+    plugin.apply(ctx)
     listeners.message[0](createSession())
 
     expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', {
@@ -131,7 +151,7 @@ describe('chat capsule plugin wiring', () => {
   it('increments sent counter from before send and broadcasts the latest snapshot', () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 
-    apply(ctx)
+    plugin.apply(ctx)
     listeners.message[0](createSession())
     broadcast.mockClear()
 
@@ -162,7 +182,7 @@ describe('chat capsule plugin wiring', () => {
   it('falls back to session names and ids when event names are missing', () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 
-    apply(ctx)
+    plugin.apply(ctx)
     listeners.message[0](createSession({
       event: {
         channel: {
@@ -194,7 +214,7 @@ describe('chat capsule plugin wiring', () => {
   it('keeps message and send listeners safe when console is unavailable', () => {
     const { ctx, listeners } = createFakeContext({ console: false })
 
-    apply(ctx)
+    plugin.apply(ctx)
 
     expect(() => listeners.message[0](createSession())).not.toThrow()
     expect(() => listeners['before:send'][0]()).not.toThrow()

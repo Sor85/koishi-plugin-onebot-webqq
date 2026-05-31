@@ -1,19 +1,25 @@
+.chat-capsule-host {
+  position: relative;
+  z-index: 10000;
+}
+
 .chat-capsule {
   position: fixed;
   right: 24px;
-  bottom: 24px;
-  z-index: 80;
+  bottom: 56px;
+  z-index: 10000;
   display: inline-flex;
   align-items: center;
-  width: min(320px, calc(100vw - 32px));
+  width: 320px;
+  max-width: calc(100vw - 32px);
   min-height: 64px;
   padding: 10px 14px 10px 10px;
   box-sizing: border-box;
-  color: var(--k-color-text);
-  background: color-mix(in srgb, var(--k-side-bg) 92%, transparent);
-  border: 1px solid var(--k-color-divider);
+  color: var(--k-text-dark, var(--fg1, #1f2328));
+  background: #ffffff;
+  border: 1px solid var(--k-color-divider, #e0e4e8);
   border-radius: 999px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(12px);
   pointer-events: none;
 }
@@ -28,8 +34,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--k-color-primary);
-  background: color-mix(in srgb, var(--k-color-primary) 18%, transparent);
+  color: var(--k-color-primary, #409eff);
+  background: var(--k-color-primary-fade, rgba(64, 158, 255, 0.12));
   overflow: hidden;
 
   img {
@@ -49,16 +55,16 @@
   bottom: 1px;
   width: 10px;
   height: 10px;
-  border: 2px solid var(--k-side-bg);
+  border: 2px solid var(--k-side-bg, var(--bg1, #f9f9fa));
   border-radius: 50%;
-  background: var(--k-color-danger);
+  background: var(--k-color-danger, #f56c6c);
 
   &.is-online {
-    background: var(--k-color-success);
+    background: var(--k-color-success, #67c23a);
   }
 
   &.is-pending {
-    background: var(--k-color-warning);
+    background: var(--k-color-warning, #e49400);
   }
 }
 
@@ -86,12 +92,34 @@
   gap: 10px;
   font-size: 12px;
   line-height: 18px;
-  color: var(--k-color-text-light);
+  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.7)));
 }
 
 @media screen and (max-width: 768px) {
   .chat-capsule {
     right: 16px;
-    bottom: 16px;
+    bottom: 52px;
   }
+}
+
+.chat-capsule-debug {
+  position: fixed;
+  left: 80px;
+  top: 16px;
+  z-index: 10001;
+  width: min(520px, calc(100vw - 48px));
+  max-height: 40vh;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #ffffff;
+  background: #111827;
+  border: 2px solid #409eff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  pointer-events: auto;
 }
