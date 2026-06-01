@@ -47,6 +47,7 @@ export interface WebQQMessage {
   time: number
   senderId: string
   senderName: string
+  senderAvatar: string
   direction: 'incoming' | 'outgoing'
   summary: string
   elements: {

@@ -101,15 +101,18 @@
             :key="message.id || message.sequence"
             :class="['chat-capsule-webqq__message', `is-${message.direction}`]"
           >
-            <div class="chat-capsule-webqq__message-name">{{ message.senderName }}</div>
-            <div class="chat-capsule-webqq__bubble">
-              <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
-                <span v-if="element.type === 'text'">{{ element.text }}</span>
-                <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片">
-                <span v-else>{{ element.text || message.summary }}</span>
-              </template>
+            <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
+            <div class="chat-capsule-webqq__message-content">
+              <div class="chat-capsule-webqq__message-name">{{ message.senderName }}</div>
+              <div class="chat-capsule-webqq__bubble">
+                <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
+                  <span v-if="element.type === 'text'">{{ element.text }}</span>
+                  <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片">
+                  <span v-else>{{ element.text || message.summary }}</span>
+                </template>
+              </div>
+              <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
             </div>
-            <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
           </div>
         </template>
       </div>

@@ -578,10 +578,14 @@
 
 .chat-capsule-webqq__message {
   max-width: 74%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin-bottom: 16px;
 
   &.is-outgoing {
     margin-left: auto;
+    flex-direction: row-reverse;
     text-align: right;
 
     .chat-capsule-webqq__bubble {
@@ -590,6 +594,18 @@
       box-shadow: 0 8px 18px rgba(236, 72, 153, 0.24);
     }
   }
+}
+
+.chat-capsule-webqq__message-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-capsule-webqq__message-content {
+  min-width: 0;
 }
 
 .chat-capsule-webqq__message-name,

@@ -33,6 +33,7 @@ export interface WebQQMessage {
   time: number
   senderId: string
   senderName: string
+  senderAvatar: string
   direction: 'incoming' | 'outgoing'
   summary: string
   elements: WebQQMessageElement[]
@@ -221,6 +222,7 @@ function normalizeMessage(raw: unknown, bot: OneBotBot): WebQQMessage {
     time: toTimestampMs(item.time),
     senderId,
     senderName: getStringField(sender, ['nickname', 'card', 'name']) || senderId,
+    senderAvatar: senderId ? getUserAvatar(senderId) : '',
     direction: senderId && senderId === bot.selfId ? 'outgoing' : 'incoming',
     summary: summarizeElements(elements),
     elements,

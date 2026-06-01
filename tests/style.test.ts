@@ -45,4 +45,10 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__chat')).toContain('min-height: 0')
     expect(ruleBody('.chat-capsule-webqq__messages')).toContain('overflow-y: auto')
   })
+
+  it('sizes WebQQ message avatars beside bubbles', () => {
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
+  })
 })

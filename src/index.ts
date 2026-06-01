@@ -176,6 +176,10 @@ function summarizeWebQQElements(elements: WebQQMessageElement[]) {
   return summary || '[消息]'
 }
 
+function getWebQQUserAvatar(userId: string) {
+  return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640` : ''
+}
+
 function readWebQQPeer(session: Session) {
   const isGroup = !!(session.guildId || session.event.guild)
   const peerId = isGroup
@@ -210,6 +214,7 @@ function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direc
       time: session.timestamp,
       senderId,
       senderName,
+      senderAvatar: getWebQQUserAvatar(senderId),
       direction,
       summary: summarizeWebQQElements(elements),
       elements,

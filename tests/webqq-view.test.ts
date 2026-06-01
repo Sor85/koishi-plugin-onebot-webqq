@@ -36,6 +36,12 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
   })
 
+  it('renders sender avatars for WebQQ messages', () => {
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-avatar"')
+    expect(webqqView).toContain(':src="withProxy(message.senderAvatar)"')
+    expect(webqqView).toContain(':alt="message.senderName"')
+  })
+
   it('tracks new WebQQ messages only while the message pane is at the bottom', () => {
     expect(webqqView).toContain('ref="messagePane"')
     expect(webqqView).toContain('@scroll="updateMessageTracking"')

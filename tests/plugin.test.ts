@@ -246,6 +246,7 @@ describe('chat capsule plugin wiring', () => {
       message: expect.objectContaining({
         id: 'new-1',
         senderId: '30000',
+        senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
         direction: 'incoming',
         summary: 'new message',
       }),
