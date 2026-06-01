@@ -21,4 +21,16 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('textarea')
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
   })
+
+  it('keeps tabs at the top without the WebQQ profile block', () => {
+    expect(webqqView).not.toContain('chat-capsule-webqq__profile')
+    expect(webqqView).not.toContain('chat-capsule-webqq__profile-avatar')
+
+    const sidebarIndex = webqqView.indexOf('class="chat-capsule-webqq__sidebar"')
+    const tabsIndex = webqqView.indexOf('class="chat-capsule-webqq__tabs-row"')
+    const listIndex = webqqView.indexOf('class="chat-capsule-webqq__list"')
+
+    expect(tabsIndex).toBeGreaterThan(sidebarIndex)
+    expect(tabsIndex).toBeLessThan(listIndex)
+  })
 })

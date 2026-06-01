@@ -239,53 +239,17 @@
   backdrop-filter: blur(24px);
 }
 
-.chat-capsule-webqq__profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.58);
-}
-
-.chat-capsule-webqq__profile-avatar {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  color: #ffffff;
-  background: linear-gradient(135deg, #ec4899 0%, #f87171 100%);
-  font-size: 16px;
-  font-weight: 700;
-  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.32);
-}
-
-.chat-capsule-webqq__profile-text {
-  min-width: 0;
-}
-
-.chat-capsule-webqq__profile-name {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 20px;
-}
-
-.chat-capsule-webqq__profile-meta {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.7)));
-}
-
 .chat-capsule-webqq__tabs-row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 10px 10px 0;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.58);
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(24px);
 }
 
 .chat-capsule-webqq__tabs {

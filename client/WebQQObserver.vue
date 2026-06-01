@@ -1,13 +1,6 @@
 <template>
   <div class="chat-capsule-webqq" role="dialog" aria-label="WebQQ 观察窗">
     <aside class="chat-capsule-webqq__sidebar">
-      <div class="chat-capsule-webqq__profile">
-        <div class="chat-capsule-webqq__profile-avatar">Q</div>
-        <div class="chat-capsule-webqq__profile-text">
-          <div class="chat-capsule-webqq__profile-name">WebQQ</div>
-          <div class="chat-capsule-webqq__profile-meta">只读观察</div>
-        </div>
-      </div>
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
           <button :class="{ 'is-active': activeTab === 'recent' }" type="button" @click="activeTab = 'recent'">
