@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-capsule-host">
+  <div v-if="!isLoggerRoute" class="chat-capsule-host">
     <div class="chat-capsule" aria-live="polite">
       <div class="chat-capsule__avatar">
         <img v-if="capsule?.bot.avatar" :src="withProxy(capsule.bot.avatar)" :alt="capsule.bot.name">
@@ -42,9 +42,10 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { Universal, withProxy } from '@koishijs/client'
+import { Universal, router, withProxy } from '@koishijs/client'
 import { capsule } from './state'
 
+const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
 const isThinking = computed(() => activityText.value === '正在思考')
 const titleStatusText = computed(() => isThinking.value ? activityText.value : '')

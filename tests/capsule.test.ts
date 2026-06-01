@@ -4,6 +4,12 @@ import { describe, expect, it } from 'vitest'
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
 
 describe('chat capsule view', () => {
+  it('hides the capsule on the logger page', () => {
+    expect(capsuleView).toContain("import { Universal, router, withProxy } from '@koishijs/client'")
+    expect(capsuleView).toContain("const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')")
+    expect(capsuleView).toContain('v-if="!isLoggerRoute"')
+  })
+
   it('splits thinking status and current user into separate lines', () => {
     expect(capsuleView).toContain("const titleStatusText = computed(() => isThinking.value ? activityText.value : '')")
     expect(capsuleView).toContain("const userActivityText = computed(() => userName.value ? `正在与 ${userName.value} 对话` : '')")
