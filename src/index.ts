@@ -76,8 +76,12 @@ function readChannelName(session: Session) {
   return session.event.guild?.name || session.event.channel?.name
 }
 
+function readMemberName(session: Session) {
+  return session.event.member?.name || session.event.member?.nick
+}
+
 function readUserName(session: Session) {
-  return session.event.user?.name || session.username
+  return readMemberName(session) || session.event.user?.name || session.username
 }
 
 function createMessageInput(session: Session, message?: ChatLunaMessage) {
@@ -103,7 +107,9 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
   const recordGenerating = (session: Session, message?: ChatLunaMessage) => {
-    recordConversationActivity(state, createMessageInput(session, message), '正在思考')
+    const input = createMessageInput(session, message)
+    input.user.name = readMemberName(session) || input.user.name
+    recordConversationActivity(state, input, '正在思考')
     logSnapshot('generating')
     broadcast()
   }
@@ -170,6 +176,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       const acquired = await acquireResponseLock.call(service, session, message)
       if (acquired) {
         const input = createMessageInput(session, message)
+        input.user.name = readMemberName(session) || input.user.name
         recordConversationActivity(state, input, `正在与 ${input.user.name || input.user.id} 对话`)
         logSnapshot('character-lock')
         broadcast()

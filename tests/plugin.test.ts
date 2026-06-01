@@ -261,7 +261,22 @@ describe('chat capsule plugin wiring', () => {
     const originalAcquireResponseLock = character.acquireResponseLock
     const originalReleaseResponseLock = character.releaseResponseLock
     const { ctx, listeners, broadcast } = createFakeContext({ character })
-    const session = createSession()
+    const session = createSession({
+      event: {
+        guild: {
+          name: 'Guild Name',
+        },
+        channel: {
+          name: 'Channel Name',
+        },
+        member: {
+          name: 'Group Card Alice',
+        },
+        user: {
+          name: 'Event Alice',
+        },
+      },
+    })
 
     plugin.apply(ctx)
     await character.acquireResponseLock(session as any, {
@@ -271,8 +286,8 @@ describe('chat capsule plugin wiring', () => {
     })
 
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
-      userName: 'Alice',
-      activityText: '正在与 Alice 对话',
+      userName: 'Group Card Alice',
+      activityText: '正在与 Group Card Alice 对话',
     })
 
     listeners['chatluna_character/message_collect'][0](session, [{
@@ -282,7 +297,7 @@ describe('chat capsule plugin wiring', () => {
     }], 'trigger')
 
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
-      userName: 'Alice',
+      userName: 'Group Card Alice',
       activityText: '正在思考',
     })
 
