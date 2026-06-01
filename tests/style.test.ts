@@ -40,4 +40,9 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__usage-icon')).toContain('width: 13px')
     expect(ruleBody('.chat-capsule__usage-icon')).toContain('stroke: currentColor')
   })
+
+  it('allows the WebQQ chat message pane to scroll inside the fixed panel', () => {
+    expect(ruleBody('.chat-capsule-webqq__chat')).toContain('min-height: 0')
+    expect(ruleBody('.chat-capsule-webqq__messages')).toContain('overflow-y: auto')
+  })
 })

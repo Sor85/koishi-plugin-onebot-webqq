@@ -11,7 +11,15 @@ import {
   recordModelUsage,
   recordOutgoingMessage,
 } from './state'
-import { createOneBotWebQQService, WebQQContacts, WebQQMessage, WebQQMessageQuery, WebQQProtocol } from './onebot'
+import {
+  createOneBotWebQQService,
+  WebQQContacts,
+  WebQQLiveMessage,
+  WebQQMessage,
+  WebQQMessageElement,
+  WebQQMessageQuery,
+  WebQQProtocol,
+} from './onebot'
 
 export const name = 'chat-capsule'
 
@@ -40,6 +48,7 @@ export const Config: Schema<Config> = Schema.object({
 declare module '@koishijs/console' {
   interface Events {
     'chat-capsule/update'(data: CapsuleSnapshot | undefined): void
+    'chat-capsule/webqq/message'(data: WebQQLiveMessage): void
     'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
     'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
   }
@@ -82,7 +91,7 @@ export interface ChatCapsuleContext {
   bots?: unknown[]
   logger?(name: string): DebugLogger
   on(event: string, listener: (...args: any[]) => void): unknown
-  before(event: 'send', listener: () => void): unknown
+  before(event: 'send', listener: (session?: Session) => void): unknown
   inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
 }
 
@@ -124,6 +133,103 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
+}
+
+function readElementText(value: unknown) {
+  return value == null ? '' : String(value)
+}
+
+function normalizeLiveElement(raw: unknown): WebQQMessageElement | undefined {
+  if (typeof raw === 'string') return { type: 'text', text: raw }
+  if (!isRecord(raw)) return undefined
+  const type = readElementText(raw.type)
+  const attrs = isRecord(raw.attrs) ? raw.attrs : {}
+  if (type === 'text') return { type: 'text', text: readElementText(attrs.content) }
+  if (type === 'img' || type === 'image') {
+    return { type: 'image', url: readElementText(attrs.src || attrs.url || attrs.file) }
+  }
+  if (type === 'face') return { type: 'face', text: `[表情 ${readElementText(attrs.id)}]` }
+  if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
+  if (type === 'audio' || type === 'record') return { type: 'record', text: '[语音]' }
+  if (type === 'video') return { type: 'video', text: '[视频]' }
+  return { type: 'unknown', text: '[消息]' }
+}
+
+function normalizeLiveElements(session: Session): WebQQMessageElement[] {
+  const elements = (session.elements ?? session.event.message?.elements ?? [])
+    .map(normalizeLiveElement)
+    .filter((element): element is WebQQMessageElement => !!element)
+  if (elements.length) return elements
+  const content = session.content?.trim()
+  return content ? [{ type: 'text', text: content }] : [{ type: 'unknown', text: '[消息]' }]
+}
+
+function summarizeWebQQElements(elements: WebQQMessageElement[]) {
+  const summary = elements.map((element) => {
+    if (element.type === 'text') return element.text
+    if (element.type === 'image') return '[图片]'
+    if (element.type === 'face') return element.text || '[表情]'
+    return element.text || '[消息]'
+  }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
+  return summary || '[消息]'
+}
+
+function readWebQQPeer(session: Session) {
+  const isGroup = !!(session.guildId || session.event.guild)
+  const peerId = isGroup
+    ? session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+    : session.userId || session.event.user?.id || session.channelId || session.event.channel?.id
+  if (!peerId) return
+  return {
+    type: isGroup ? 'group' as const : 'friend' as const,
+    peerId,
+  }
+}
+
+function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction']): WebQQLiveMessage | undefined {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const peer = readWebQQPeer(session)
+  if (!peer) return
+  if (!(session.elements ?? session.event.message?.elements)?.length && !session.content?.trim()) return
+  const bot = readBotProfile(session)
+  const elements = normalizeLiveElements(session)
+  const senderId = direction === 'outgoing'
+    ? bot.selfId
+    : session.userId || session.event.user?.id || 'unknown'
+  const senderName = direction === 'outgoing'
+    ? bot.name || '机器人'
+    : readUserName(session) || senderId
+  const id = session.messageId || session.event.message?.id || `${direction}:${peer.type}:${peer.peerId}:${session.timestamp}`
+  return {
+    ...peer,
+    message: {
+      id,
+      sequence: session.messageId || session.event.message?.id || String(session.timestamp),
+      time: session.timestamp,
+      senderId,
+      senderName,
+      direction,
+      summary: summarizeWebQQElements(elements),
+      elements,
+    },
+  }
+}
+
+function getMessageKey(message: WebQQMessage) {
+  return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
+}
+
+function mergeWebQQMessages(history: WebQQMessage[], live: WebQQMessage[] = [], limit?: number) {
+  const messages = new Map<string, WebQQMessage>()
+  for (const message of [...history, ...live]) {
+    messages.set(getMessageKey(message), message)
+  }
+  const merged = [...messages.values()].sort((a, b) => a.time - b.time)
+  return limit ? merged.slice(-limit) : merged
+}
+
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
@@ -135,6 +241,17 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
+  const liveMessages = new Map<string, WebQQMessage[]>()
+  const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
+  const recordWebQQLiveMessage = (session: Session | undefined, direction: WebQQMessage['direction']) => {
+    if (!session) return
+    const payload = createWebQQLiveMessage(session, direction)
+    if (!payload) return
+    const key = getLiveMessageKey(payload)
+    const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
+    liveMessages.set(key, messages)
+    ctx.console?.broadcast('chat-capsule/webqq/message', payload)
+  }
   const recordGenerating = (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const input = createMessageInput(session, message)
     input.user.name = readMemberName(session) || input.user.name
@@ -152,6 +269,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     recordIncomingMessage(state, createMessageInput(session))
     logSnapshot('message')
     broadcast()
+    recordWebQQLiveMessage(session, 'incoming')
   })
 
   ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
@@ -166,8 +284,9 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     clearActivity('after-chat-error')
   })
 
-  ctx.before('send', () => {
+  ctx.before('send', (session) => {
     recordOutgoingMessage(state)
+    recordWebQQLiveMessage(session, 'outgoing')
     logSnapshot('send')
     broadcast()
   })
@@ -202,11 +321,13 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       }
     })
     console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts())
-    console.addListener('chat-capsule/webqq/messages', (query: WebQQMessageQuery) => {
-      return webqq.loadMessages({
+    console.addListener('chat-capsule/webqq/messages', async (query: WebQQMessageQuery) => {
+      const nextQuery = {
         ...query,
         limit: query.limit ?? config.historyLimit,
-      })
+      }
+      const history = await webqq.loadMessages(nextQuery)
+      return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)
     })
   })
 

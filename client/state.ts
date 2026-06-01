@@ -56,6 +56,12 @@ export interface WebQQMessage {
   }[]
 }
 
+export interface WebQQLiveMessage {
+  type: 'friend' | 'group'
+  peerId: string
+  message: WebQQMessage
+}
+
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]

@@ -122,8 +122,8 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
-import { send, withProxy } from '@koishijs/client'
-import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQMessage } from './state'
+import { receive, send, withProxy } from '@koishijs/client'
+import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
 
 type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string }
@@ -175,6 +175,16 @@ const recentItems = computed<RecentItem[]>(() => {
 const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
 const currentSubtitle = computed(() => currentChat.value?.subtitle || '好友 / 群聊')
+
+function getMessageKey(message: WebQQMessage) {
+  return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
+}
+
+function appendMessage(message: WebQQMessage) {
+  const nextMessages = new Map(messages.value.map((item) => [getMessageKey(item), item]))
+  nextMessages.set(getMessageKey(message), message)
+  messages.value = [...nextMessages.values()].sort((a, b) => a.time - b.time)
+}
 
 async function loadContacts() {
   loading.value = true
@@ -240,6 +250,14 @@ function formatTime(timestamp: number) {
     minute: '2-digit',
   })
 }
+
+receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
+  if (
+    currentChat.value?.type !== payload.type ||
+    currentChat.value.peerId !== payload.peerId
+  ) return
+  appendMessage(payload.message)
+})
 
 onMounted(loadContacts)
 </script>

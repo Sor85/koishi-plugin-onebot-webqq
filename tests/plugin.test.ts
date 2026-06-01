@@ -168,6 +168,78 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('merges live OneBot messages into WebQQ message history', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 'old-1',
+            message_seq: 10,
+            time: 1710000000,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: 'old message',
+          }],
+        })),
+      },
+    }
+    const { ctx, listeners, addListener, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    listeners.message[0](createSession({
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'new message' } }],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'new-1',
+        senderId: '30000',
+        direction: 'incoming',
+        summary: 'new message',
+      }),
+    })
+
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'old-1',
+        summary: 'old message',
+      }),
+      expect.objectContaining({
+        id: 'new-1',
+        summary: 'new message',
+      }),
+    ])
+  })
+
   it('passes enabled debug config to console entry data', () => {
     const { ctx, addEntry } = createFakeContext()
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { debug?: boolean }) => void

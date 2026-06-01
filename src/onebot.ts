@@ -38,6 +38,12 @@ export interface WebQQMessage {
   elements: WebQQMessageElement[]
 }
 
+export interface WebQQLiveMessage {
+  type: WebQQChatType
+  peerId: string
+  message: WebQQMessage
+}
+
 // WebQQ 只读面板一次加载的联系人数据。
 export interface WebQQContacts {
   friends: WebQQFriend[]
