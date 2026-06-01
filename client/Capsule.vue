@@ -6,7 +6,7 @@
         type="button"
         aria-label="打开 WebQQ 观察窗"
         :aria-expanded="webqqOpen"
-        @click="webqqOpen = !webqqOpen"
+        @click="toggleWebQQ"
       >
         <span class="chat-capsule__avatar">
           <img v-if="capsule?.bot.avatar" :src="withProxy(capsule.bot.avatar)" :alt="capsule.bot.name">
@@ -45,7 +45,7 @@
         </span>
       </span>
     </div>
-    <WebQQObserver v-if="webqqOpen" />
+    <WebQQObserver v-if="webqqMounted" v-show="webqqOpen" />
   </div>
 </template>
 
@@ -56,6 +56,7 @@ import { capsule } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
 const webqqOpen = ref(false)
+const webqqMounted = ref(false)
 const capsuleHost = ref<HTMLElement>()
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
@@ -102,6 +103,11 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
   const target = event.target
   if (target instanceof Node && capsuleHost.value?.contains(target)) return
   webqqOpen.value = false
+}
+
+function toggleWebQQ() {
+  webqqOpen.value = !webqqOpen.value
+  if (webqqOpen.value) webqqMounted.value = true
 }
 
 onMounted(() => {

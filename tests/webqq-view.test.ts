@@ -8,8 +8,14 @@ describe('webqq observer view', () => {
   it('opens a read-only WebQQ panel from the capsule avatar', () => {
     expect(capsuleView).toContain('import WebQQObserver from')
     expect(capsuleView).toContain('const webqqOpen = ref(false)')
-    expect(capsuleView).toContain('@click="webqqOpen = !webqqOpen"')
-    expect(capsuleView).toContain('<WebQQObserver v-if="webqqOpen" />')
+    expect(capsuleView).toContain('@click="toggleWebQQ"')
+    expect(capsuleView).toContain('<WebQQObserver v-if="webqqMounted" v-show="webqqOpen" />')
+  })
+
+  it('keeps WebQQ mounted after first open to preserve its last state', () => {
+    expect(capsuleView).toContain('const webqqMounted = ref(false)')
+    expect(capsuleView).toContain('function toggleWebQQ()')
+    expect(capsuleView).toContain('if (webqqOpen.value) webqqMounted.value = true')
   })
 
   it('closes WebQQ when clicking outside the capsule host', () => {
