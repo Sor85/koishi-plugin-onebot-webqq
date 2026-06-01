@@ -12,6 +12,13 @@ describe('webqq observer view', () => {
     expect(capsuleView).toContain('<WebQQObserver v-if="webqqOpen" />')
   })
 
+  it('closes WebQQ when clicking outside the capsule host', () => {
+    expect(capsuleView).toContain('ref="capsuleHost"')
+    expect(capsuleView).toContain('function closeWebQQOnOutsideClick')
+    expect(capsuleView).toContain("document.addEventListener('pointerdown', closeWebQQOnOutsideClick)")
+    expect(capsuleView).toContain("document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)")
+  })
+
   it('renders contacts, groups, message history, and no send input', () => {
     expect(webqqView).toContain("send('chat-capsule/webqq/contacts')")
     expect(webqqView).toContain("send('chat-capsule/webqq/messages'")

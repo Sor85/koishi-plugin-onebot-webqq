@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!isLoggerRoute" class="chat-capsule-host">
+  <div v-if="!isLoggerRoute" ref="capsuleHost" class="chat-capsule-host">
     <div class="chat-capsule" aria-live="polite">
       <button
         class="chat-capsule__avatar-button"
@@ -50,12 +50,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Universal, router, withProxy } from '@koishijs/client'
 import { capsule } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
 const webqqOpen = ref(false)
+const capsuleHost = ref<HTMLElement>()
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
 const isThinking = computed(() => activityText.value === '正在思考')
@@ -94,6 +95,21 @@ const statusClass = computed(() => {
     default:
       return 'is-offline'
   }
+})
+
+function closeWebQQOnOutsideClick(event: PointerEvent) {
+  if (!webqqOpen.value) return
+  const target = event.target
+  if (target instanceof Node && capsuleHost.value?.contains(target)) return
+  webqqOpen.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', closeWebQQOnOutsideClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)
 })
 
 </script>
