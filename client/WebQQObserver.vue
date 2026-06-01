@@ -90,7 +90,7 @@
         </div>
         <button type="button" @click="loadContacts">刷新</button>
       </header>
-      <div class="chat-capsule-webqq__messages">
+      <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
         <div v-if="loading" class="chat-capsule-webqq__placeholder">加载中</div>
         <div v-else-if="errorText" class="chat-capsule-webqq__placeholder is-error">{{ errorText }}</div>
         <div v-else-if="!currentChat" class="chat-capsule-webqq__placeholder">选择一个会话</div>
@@ -121,7 +121,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
 
@@ -136,6 +136,8 @@ const searchQuery = ref('')
 const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
 const messages = ref<WebQQMessage[]>([])
+const messagePane = ref<HTMLElement>()
+const trackingMessages = ref(true)
 const loading = ref(false)
 const errorText = ref('')
 
@@ -184,6 +186,24 @@ function appendMessage(message: WebQQMessage) {
   const nextMessages = new Map(messages.value.map((item) => [getMessageKey(item), item]))
   nextMessages.set(getMessageKey(message), message)
   messages.value = [...nextMessages.values()].sort((a, b) => a.time - b.time)
+  if (trackingMessages.value) scrollMessagesToBottom()
+}
+
+function isMessagePaneAtBottom() {
+  const pane = messagePane.value
+  if (!pane) return true
+  return pane.scrollHeight - pane.scrollTop - pane.clientHeight <= 8
+}
+
+function updateMessageTracking() {
+  trackingMessages.value = isMessagePaneAtBottom()
+}
+
+async function scrollMessagesToBottom() {
+  await nextTick()
+  const pane = messagePane.value
+  if (!pane) return
+  pane.scrollTop = pane.scrollHeight
 }
 
 async function loadContacts() {
@@ -200,6 +220,7 @@ async function loadContacts() {
 
 async function loadMessages() {
   if (!currentChat.value) return
+  trackingMessages.value = true
   loading.value = true
   errorText.value = ''
   try {
@@ -207,6 +228,7 @@ async function loadMessages() {
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
     }) as WebQQMessage[] || []
+    if (trackingMessages.value) scrollMessagesToBottom()
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
   } finally {

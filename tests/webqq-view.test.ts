@@ -23,6 +23,15 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
   })
 
+  it('tracks new WebQQ messages only while the message pane is at the bottom', () => {
+    expect(webqqView).toContain('ref="messagePane"')
+    expect(webqqView).toContain('@scroll="updateMessageTracking"')
+    expect(webqqView).toContain('const trackingMessages = ref(true)')
+    expect(webqqView).toContain('function updateMessageTracking()')
+    expect(webqqView).toContain('function scrollMessagesToBottom()')
+    expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
+  })
+
   it('keeps tabs at the top without the WebQQ profile block', () => {
     expect(webqqView).not.toContain('chat-capsule-webqq__profile')
     expect(webqqView).not.toContain('chat-capsule-webqq__profile-avatar')
