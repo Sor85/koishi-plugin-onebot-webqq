@@ -14,6 +14,11 @@ export interface CapsuleData {
     userId?: string
     userName?: string
     activityText?: string
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+    }
+    thinkingDurationMs?: number
     timestamp: number
   }
   counters: {

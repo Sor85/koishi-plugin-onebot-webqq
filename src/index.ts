@@ -8,6 +8,7 @@ import {
   createCapsuleState,
   recordConversationActivity,
   recordIncomingMessage,
+  recordModelUsage,
   recordOutgoingMessage,
 } from './state'
 
@@ -49,6 +50,16 @@ interface ChatLunaMessage {
 interface ChatLunaCharacterService {
   acquireResponseLock(session: Session, message: ChatLunaMessage): Promise<boolean>
   releaseResponseLock(session: Session): Promise<void>
+}
+
+interface ChatLunaModelUsage {
+  context?: {
+    conversationId?: string
+  }
+  usageMetadata?: {
+    input_tokens?: number
+    output_tokens?: number
+  }
 }
 
 // 描述插件运行所需的最小 Koishi 上下文能力。
@@ -106,10 +117,10 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
-  const recordGenerating = (session: Session, message?: ChatLunaMessage) => {
+  const recordGenerating = (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const input = createMessageInput(session, message)
     input.user.name = readMemberName(session) || input.user.name
-    recordConversationActivity(state, input, '正在思考')
+    recordConversationActivity(state, input, '正在思考', { conversationId })
     logSnapshot('generating')
     broadcast()
   }
@@ -125,8 +136,8 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     broadcast()
   })
 
-  ctx.on('chatluna/before-chat', (_conversationId, message, _variables, _chatInterface, session) => {
-    recordGenerating(session, message)
+  ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
+    recordGenerating(session, message, conversationId)
   })
 
   ctx.on('chatluna/after-chat', () => {
@@ -140,6 +151,17 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   ctx.before('send', () => {
     recordOutgoingMessage(state)
     logSnapshot('send')
+    broadcast()
+  })
+
+  ctx.on('chatluna/model-usage', (usage: ChatLunaModelUsage) => {
+    const changed = recordModelUsage(state, {
+      conversationId: usage.context?.conversationId,
+      inputTokens: usage.usageMetadata?.input_tokens,
+      outputTokens: usage.usageMetadata?.output_tokens,
+    })
+    if (!changed) return
+    logSnapshot('model-usage')
     broadcast()
   })
 

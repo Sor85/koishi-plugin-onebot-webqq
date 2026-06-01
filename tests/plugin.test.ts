@@ -246,10 +246,47 @@ describe('chat capsule plugin wiring', () => {
 
     listeners['chatluna/after-chat'][0]('conversation-1')
 
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toEqual({
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
       channelId: '20000',
       channelName: 'Guild Name',
       timestamp: 1710000000000,
+      thinkingDurationMs: expect.any(Number),
+    })
+  })
+
+  it('updates usage from matching ChatLuna model usage events', () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession())
+
+    listeners['chatluna/model-usage'][0]({
+      context: {
+        conversationId: 'conversation-2',
+      },
+      usageMetadata: {
+        input_tokens: 99,
+        output_tokens: 100,
+        total_tokens: 199,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toBeUndefined()
+
+    listeners['chatluna/model-usage'][0]({
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 12,
+        output_tokens: 34,
+        total_tokens: 46,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toEqual({
+      inputTokens: 12,
+      outputTokens: 34,
     })
   })
 
@@ -303,10 +340,11 @@ describe('chat capsule plugin wiring', () => {
 
     await character.releaseResponseLock(session as any)
 
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toEqual({
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
       channelId: '20000',
       channelName: 'Guild Name',
       timestamp: 1710000000000,
+      thinkingDurationMs: expect.any(Number),
     })
 
     listeners.dispose[0]()

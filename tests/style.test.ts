@@ -29,4 +29,15 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__title')).toContain('font-size: 13px')
     expect(ruleBody('.chat-capsule__title')).toContain('line-height: 18px')
   })
+
+  it('stacks usage rows vertically beside the activity text', () => {
+    expect(ruleBody('.chat-capsule')).toContain('width: 286px')
+    expect(ruleBody('.chat-capsule__usage')).toContain('flex-direction: column')
+    expect(ruleBody('.chat-capsule__usage')).toContain('align-self: stretch')
+    expect(ruleBody('.chat-capsule__usage')).toContain('justify-content: space-around')
+    expect(ruleBody('.chat-capsule__usage-row')).toContain('align-items: center')
+    expect(ruleBody('.chat-capsule__usage-row')).toContain('justify-content: flex-start')
+    expect(ruleBody('.chat-capsule__usage-icon')).toContain('width: 13px')
+    expect(ruleBody('.chat-capsule__usage-icon')).toContain('stroke: currentColor')
+  })
 })

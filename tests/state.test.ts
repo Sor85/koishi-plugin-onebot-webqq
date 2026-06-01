@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clearConversationActivity,
   createCapsuleState,
+  recordModelUsage,
   recordConversationActivity,
   recordIncomingMessage,
   recordOutgoingMessage,
@@ -200,5 +201,73 @@ describe('chat capsule state', () => {
       channelName: 'General',
       timestamp: 1710000000006,
     })
+  })
+
+  it('records usage for the active conversation only', () => {
+    const state = createCapsuleState()
+
+    recordConversationActivity(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+        name: 'General',
+      },
+      user: {
+        id: '30000',
+        name: 'Alice',
+      },
+      timestamp: 1710000000007,
+    }, '正在思考', {
+      conversationId: 'conversation-1',
+    })
+
+    expect(recordModelUsage(state, {
+      conversationId: 'conversation-2',
+      inputTokens: 99,
+      outputTokens: 100,
+    })).toBe(false)
+    expect(state.snapshot()?.conversation.usage).toBeUndefined()
+
+    expect(recordModelUsage(state, {
+      conversationId: 'conversation-1',
+      inputTokens: 12,
+      outputTokens: 34,
+    })).toBe(true)
+    expect(state.snapshot()?.conversation.usage).toEqual({
+      inputTokens: 12,
+      outputTokens: 34,
+    })
+  })
+
+  it('stores thinking duration when activity is cleared', () => {
+    const state = createCapsuleState()
+
+    recordConversationActivity(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+      },
+      user: {
+        id: '30000',
+      },
+      timestamp: 1710000000000,
+    }, '正在思考', {
+      now: 1710000000000,
+    })
+
+    clearConversationActivity(state, 1710000002400)
+
+    expect(state.snapshot()?.conversation).toMatchObject({
+      channelId: '20000',
+      channelName: '20000',
+      thinkingDurationMs: 2400,
+    })
+    expect(state.snapshot()?.conversation.activityText).toBeUndefined()
   })
 })

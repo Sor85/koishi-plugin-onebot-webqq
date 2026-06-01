@@ -19,6 +19,17 @@ export interface CapsuleMessageInput {
   timestamp: number
 }
 
+export interface CapsuleActivityOptions {
+  conversationId?: string
+  now?: number
+}
+
+export interface CapsuleModelUsageInput {
+  conversationId?: string
+  inputTokens?: number
+  outputTokens?: number
+}
+
 export interface CapsuleSnapshot {
   bot: {
     platform: string
@@ -33,12 +44,19 @@ export interface CapsuleSnapshot {
     userId?: string
     userName?: string
     activityText?: string
+    conversationId?: string
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+    }
+    thinkingDurationMs?: number
     timestamp: number
   }
   counters: {
     received: number
     sent: number
   }
+  thinkingStartedAt?: number
 }
 
 const capsuleStateBrand: unique symbol = Symbol('chat-capsule-state')
@@ -54,6 +72,7 @@ interface MutableCapsuleState {
     received: number
     sent: number
   }
+  thinkingStartedAt?: number
 }
 
 const states = new WeakMap<CapsuleState, MutableCapsuleState>()
@@ -61,7 +80,12 @@ const states = new WeakMap<CapsuleState, MutableCapsuleState>()
 function cloneSnapshot(snapshot: CapsuleSnapshot): CapsuleSnapshot {
   return {
     bot: { ...snapshot.bot },
-    conversation: { ...snapshot.conversation },
+    conversation: {
+      ...snapshot.conversation,
+      ...(snapshot.conversation.usage ? {
+        usage: { ...snapshot.conversation.usage },
+      } : {}),
+    },
     counters: { ...snapshot.counters },
   }
 }
@@ -126,6 +150,15 @@ export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessa
         userId: state.current.conversation.userId,
         userName: state.current.conversation.userName,
         activityText: state.current.conversation.activityText,
+        ...(state.current.conversation.conversationId ? {
+          conversationId: state.current.conversation.conversationId,
+        } : {}),
+        ...(state.current.conversation.usage ? {
+          usage: state.current.conversation.usage,
+        } : {}),
+        ...(state.current.conversation.thinkingDurationMs != null ? {
+          thinkingDurationMs: state.current.conversation.thinkingDurationMs,
+        } : {}),
       }
     : {}
   const snapshot = createSnapshot(input, state.counters)
@@ -139,8 +172,14 @@ export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessa
 }
 
 // 记录 ChatLuna 或伪装插件的当前对话状态。
-export function recordConversationActivity(capsule: CapsuleState, input: CapsuleMessageInput, activityText: string) {
+export function recordConversationActivity(
+  capsule: CapsuleState,
+  input: CapsuleMessageInput,
+  activityText: string,
+  options: CapsuleActivityOptions = {},
+) {
   const state = getState(capsule)
+  state.thinkingStartedAt = activityText === '正在思考' ? options.now ?? Date.now() : undefined
   const snapshot = createSnapshot(input, state.counters)
   state.current = {
     ...snapshot,
@@ -149,20 +188,60 @@ export function recordConversationActivity(capsule: CapsuleState, input: Capsule
       userId: input.user.id,
       userName: input.user.name || input.user.id,
       activityText,
+      ...(options.conversationId ? {
+        conversationId: options.conversationId,
+      } : {}),
     },
   }
 }
 
-// 清除当前对话状态，保留最近的 bot、群聊和计数上下文。
-export function clearConversationActivity(capsule: CapsuleState) {
+// 记录当前 ChatLuna 模型调用的 token 用量。
+export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsageInput) {
   const state = getState(capsule)
-  if (!state.current) return
+  const conversation = state.current?.conversation
+  if (!state.current || !conversation) return false
+  if (
+    input.conversationId &&
+    conversation.conversationId &&
+    input.conversationId !== conversation.conversationId
+  ) {
+    return false
+  }
+  if (input.inputTokens == null && input.outputTokens == null) return false
   state.current = {
     ...state.current,
     conversation: {
-      channelId: state.current.conversation.channelId,
-      channelName: state.current.conversation.channelName,
-      timestamp: state.current.conversation.timestamp,
+      ...conversation,
+      usage: {
+        inputTokens: input.inputTokens ?? conversation.usage?.inputTokens ?? 0,
+        outputTokens: input.outputTokens ?? conversation.usage?.outputTokens ?? 0,
+      },
+    },
+  }
+  return true
+}
+
+// 清除当前对话状态，保留最近的 bot、群聊和计数上下文。
+export function clearConversationActivity(capsule: CapsuleState, now = Date.now()) {
+  const state = getState(capsule)
+  if (!state.current) return
+  const conversation = state.current.conversation
+  const thinkingDurationMs = state.thinkingStartedAt == null
+    ? conversation.thinkingDurationMs
+    : Math.max(0, now - state.thinkingStartedAt)
+  state.thinkingStartedAt = undefined
+  state.current = {
+    ...state.current,
+    conversation: {
+      channelId: conversation.channelId,
+      channelName: conversation.channelName,
+      timestamp: conversation.timestamp,
+      ...(conversation.usage ? {
+        usage: conversation.usage,
+      } : {}),
+      ...(thinkingDurationMs != null ? {
+        thinkingDurationMs,
+      } : {}),
     },
   }
 }
