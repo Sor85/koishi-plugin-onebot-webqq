@@ -36,11 +36,11 @@
   flex-shrink: 0;
   color: var(--k-color-primary, #409eff);
   background: var(--k-color-primary-fade, rgba(64, 158, 255, 0.12));
-  overflow: hidden;
 
   img {
     width: 100%;
     height: 100%;
+    border-radius: inherit;
     object-fit: cover;
   }
 
