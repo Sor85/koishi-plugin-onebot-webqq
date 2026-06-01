@@ -42,7 +42,7 @@ export const Config: Schema<Config> = Schema.object({
     Schema.const('napcat').description('NapCat'),
     Schema.const('llbot').description('LLBot'),
   ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
-  historyLimit: Schema.natural().min(1).max(100).default(30).description('每次加载聊天历史的消息数量'),
+  historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
 })
 
 declare module '@koishijs/console' {
@@ -233,6 +233,7 @@ function mergeWebQQMessages(history: WebQQMessage[], live: WebQQMessage[] = [], 
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
+  const historyLimit = config.historyLimit ?? 100
   const webqq = createOneBotWebQQService(ctx, {
     selfId: config.onebotSelfId,
     protocol: config.onebotProtocol,
@@ -324,7 +325,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     console.addListener('chat-capsule/webqq/messages', async (query: WebQQMessageQuery) => {
       const nextQuery = {
         ...query,
-        limit: query.limit ?? config.historyLimit,
+        limit: query.limit ?? historyLimit,
       }
       const history = await webqq.loadMessages(nextQuery)
       return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)

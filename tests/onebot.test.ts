@@ -174,4 +174,25 @@ describe('onebot webqq adapter', () => {
       reverseOrder: false,
     })
   })
+
+  it('passes the oldest loaded message sequence when loading earlier history', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await service.loadMessages({ type: 'group', peerId: '20000', limit: 20, beforeSequence: '42' })
+
+    expect(bot.internal.get_group_msg_history).toHaveBeenCalledWith({
+      group_id: 20000,
+      message_seq: 42,
+      count: 20,
+    })
+  })
 })

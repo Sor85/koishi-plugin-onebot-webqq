@@ -138,6 +138,8 @@ const currentChat = ref<ChatSelection>()
 const messages = ref<WebQQMessage[]>([])
 const messagePane = ref<HTMLElement>()
 const trackingMessages = ref(true)
+const historyLoading = ref(false)
+const historyExhausted = ref(false)
 const loading = ref(false)
 const errorText = ref('')
 
@@ -183,10 +185,16 @@ function getMessageKey(message: WebQQMessage) {
 }
 
 function appendMessage(message: WebQQMessage) {
-  const nextMessages = new Map(messages.value.map((item) => [getMessageKey(item), item]))
-  nextMessages.set(getMessageKey(message), message)
-  messages.value = [...nextMessages.values()].sort((a, b) => a.time - b.time)
+  messages.value = mergeMessages(messages.value, [message])
   if (trackingMessages.value) scrollMessagesToBottom()
+}
+
+function mergeMessages(currentMessages: WebQQMessage[], nextMessages: WebQQMessage[]) {
+  const merged = new Map(currentMessages.map((item) => [getMessageKey(item), item]))
+  for (const message of nextMessages) {
+    merged.set(getMessageKey(message), message)
+  }
+  return [...merged.values()].sort((a, b) => a.time - b.time)
 }
 
 function isMessagePaneAtBottom() {
@@ -197,6 +205,7 @@ function isMessagePaneAtBottom() {
 
 function updateMessageTracking() {
   trackingMessages.value = isMessagePaneAtBottom()
+  if (shouldLoadOlderMessages()) loadOlderMessages()
 }
 
 async function scrollMessagesToBottom() {
@@ -221,6 +230,7 @@ async function loadContacts() {
 async function loadMessages() {
   if (!currentChat.value) return
   trackingMessages.value = true
+  historyExhausted.value = false
   loading.value = true
   errorText.value = ''
   try {
@@ -233,6 +243,39 @@ async function loadMessages() {
     errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
   } finally {
     loading.value = false
+  }
+}
+
+function shouldLoadOlderMessages() {
+  const pane = messagePane.value
+  return !!currentChat.value &&
+    !!pane &&
+    pane.scrollTop <= 8 &&
+    messages.value.length > 0 &&
+    !historyLoading.value &&
+    !historyExhausted.value
+}
+
+async function loadOlderMessages() {
+  if (!currentChat.value || historyLoading.value || historyExhausted.value) return
+  const pane = messagePane.value
+  const previousScrollHeight = pane?.scrollHeight ?? 0
+  const previousCount = messages.value.length
+  historyLoading.value = true
+  try {
+    const olderMessages = await send('chat-capsule/webqq/messages', {
+      type: currentChat.value.type,
+      peerId: currentChat.value.peerId,
+      beforeSequence: messages.value[0]?.sequence,
+    }) as WebQQMessage[] || []
+    messages.value = mergeMessages(olderMessages, messages.value)
+    historyExhausted.value = messages.value.length === previousCount
+    await nextTick()
+    if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '加载更早聊天历史失败'
+  } finally {
+    historyLoading.value = false
   }
 }
 

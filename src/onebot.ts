@@ -54,6 +54,7 @@ export interface WebQQMessageQuery {
   type: WebQQChatType
   peerId: string
   limit?: number
+  beforeSequence?: string
 }
 
 export interface OneBotWebQQOptions {
@@ -247,7 +248,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       const bot = getBot()
       const action = query.type === 'group' ? 'get_group_msg_history' : 'get_friend_msg_history'
       const baseParams = {
-        message_seq: 0,
+        message_seq: query.beforeSequence ? toOneBotId(query.beforeSequence) : 0,
         count: query.limit ?? 30,
         ...(protocol === 'llbot' ? { reverseOrder: false } : {}),
       }

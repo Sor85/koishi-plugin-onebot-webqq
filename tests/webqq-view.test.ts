@@ -32,6 +32,14 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
   })
 
+  it('loads earlier WebQQ messages when scrolling to the top', () => {
+    expect(webqqView).toContain('const historyLoading = ref(false)')
+    expect(webqqView).toContain('const historyExhausted = ref(false)')
+    expect(webqqView).toContain('function shouldLoadOlderMessages()')
+    expect(webqqView).toContain('async function loadOlderMessages()')
+    expect(webqqView).toContain('beforeSequence: messages.value[0]?.sequence')
+  })
+
   it('keeps tabs at the top without the WebQQ profile block', () => {
     expect(webqqView).not.toContain('chat-capsule-webqq__profile')
     expect(webqqView).not.toContain('chat-capsule-webqq__profile-avatar')

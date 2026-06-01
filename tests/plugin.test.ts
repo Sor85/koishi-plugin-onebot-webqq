@@ -168,6 +168,30 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('uses 100 messages as the default WebQQ history limit', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+    }
+    const { ctx, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000' })).resolves.toEqual([])
+
+    expect(bot.internal.get_group_msg_history).toHaveBeenCalledWith({
+      group_id: 20000,
+      message_seq: 0,
+      count: 100,
+    })
+  })
+
   it('merges live OneBot messages into WebQQ message history', async () => {
     const bot = {
       platform: 'onebot',
