@@ -27,5 +27,39 @@ export interface CapsuleData {
   }
 }
 
+export interface WebQQFriend {
+  userId: string
+  name: string
+  nickname: string
+  avatar: string
+}
+
+export interface WebQQGroup {
+  groupId: string
+  name: string
+  memberCount: number
+  avatar: string
+}
+
+export interface WebQQMessage {
+  id: string
+  sequence: string
+  time: number
+  senderId: string
+  senderName: string
+  direction: 'incoming' | 'outgoing'
+  summary: string
+  elements: {
+    type: 'text' | 'image' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+    text?: string
+    url?: string
+  }[]
+}
+
+export interface WebQQContacts {
+  friends: WebQQFriend[]
+  groups: WebQQGroup[]
+}
+
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)

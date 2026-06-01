@@ -11,6 +11,7 @@ import {
   recordModelUsage,
   recordOutgoingMessage,
 } from './state'
+import { createOneBotWebQQService, WebQQContacts, WebQQMessage, WebQQMessageQuery } from './onebot'
 
 export const name = 'chat-capsule'
 
@@ -21,20 +22,27 @@ export const inject = {
 
 export interface Config {
   debug?: boolean
+  onebotSelfId?: string
+  historyLimit?: number
 }
 
 export const Config: Schema<Config> = Schema.object({
   debug: Schema.boolean().default(false).description('显示前端调试信息'),
+  onebotSelfId: Schema.string().description('用于读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人'),
+  historyLimit: Schema.natural().min(1).max(100).default(30).description('每次加载聊天历史的消息数量'),
 })
 
 declare module '@koishijs/console' {
   interface Events {
     'chat-capsule/update'(data: CapsuleSnapshot | undefined): void
+    'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
+    'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
   }
 }
 
 interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown
+  addListener(event: string, callback: (...args: any[]) => unknown): unknown
   broadcast(type: string, body: unknown): unknown
 }
 
@@ -66,6 +74,7 @@ interface ChatLunaModelUsage {
 export interface ChatCapsuleContext {
   console?: ConsoleService
   chatluna_character?: ChatLunaCharacterService
+  bots?: unknown[]
   logger?(name: string): DebugLogger
   on(event: string, listener: (...args: any[]) => void): unknown
   before(event: 'send', listener: () => void): unknown
@@ -113,6 +122,7 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
+  const webqq = createOneBotWebQQService(ctx, { selfId: config.onebotSelfId })
   const debug = !!config.debug
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
@@ -182,6 +192,13 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         capsule: state.snapshot(),
         debug,
       }
+    })
+    console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts())
+    console.addListener('chat-capsule/webqq/messages', (query: WebQQMessageQuery) => {
+      return webqq.loadMessages({
+        ...query,
+        limit: query.limit ?? config.historyLimit,
+      })
     })
   })
 

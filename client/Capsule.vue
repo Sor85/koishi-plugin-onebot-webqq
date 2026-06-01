@@ -1,11 +1,19 @@
 <template>
   <div v-if="!isLoggerRoute" class="chat-capsule-host">
     <div class="chat-capsule" aria-live="polite">
-      <div class="chat-capsule__avatar">
-        <img v-if="capsule?.bot.avatar" :src="withProxy(capsule.bot.avatar)" :alt="capsule.bot.name">
-        <k-icon v-else name="robot" />
-        <span :class="['chat-capsule__status', statusClass]"></span>
-      </div>
+      <button
+        class="chat-capsule__avatar-button"
+        type="button"
+        aria-label="打开 WebQQ 观察窗"
+        :aria-expanded="webqqOpen"
+        @click="webqqOpen = !webqqOpen"
+      >
+        <span class="chat-capsule__avatar">
+          <img v-if="capsule?.bot.avatar" :src="withProxy(capsule.bot.avatar)" :alt="capsule.bot.name">
+          <k-icon v-else name="robot" />
+          <span :class="['chat-capsule__status', statusClass]"></span>
+        </span>
+      </button>
       <div class="chat-capsule__body">
         <div class="chat-capsule__title-line">
           <div class="chat-capsule__title" :title="capsule?.bot.name || '空闲'">
@@ -37,14 +45,17 @@
         </span>
       </span>
     </div>
+    <WebQQObserver v-if="webqqOpen" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Universal, router, withProxy } from '@koishijs/client'
 import { capsule } from './state'
+import WebQQObserver from './WebQQObserver.vue'
 
+const webqqOpen = ref(false)
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
 const isThinking = computed(() => activityText.value === '正在思考')

@@ -8,10 +8,11 @@ type TestLogger = {
   info: ReturnType<typeof vi.fn>
 }
 
-function createFakeContext(options: { console?: boolean; character?: Record<string, unknown> } = {}) {
+function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[] } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
   const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined) => {})
+  const addListener = vi.fn((_event: string, _listener: (...args: unknown[]) => unknown) => {})
   const hasConsole = options.console ?? true
 
   const base: Pick<ChatCapsuleContext, 'on' | 'before'> = {
@@ -24,11 +25,13 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
   }
 
   if (hasConsole) {
-    const ctx: ChatCapsuleContext & { console: NonNullable<ChatCapsuleContext['console']> } = {
+    const ctx: ChatCapsuleContext & { console: NonNullable<ChatCapsuleContext['console']>; bots?: unknown[] } = {
       ...base,
+      ...(options.bots ? { bots: options.bots } : {}),
       console: {
         addEntry,
         broadcast,
+        addListener,
       },
       ...(options.character ? { chatluna_character: options.character } : {}),
       inject(services, callback) {
@@ -36,18 +39,19 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
         if ('chatluna_character' in services && options.character) callback(ctx)
       },
     }
-    return { ctx, listeners, addEntry, broadcast }
+    return { ctx, listeners, addEntry, broadcast, addListener }
   }
 
-  const ctx: ChatCapsuleContext = {
+  const ctx: ChatCapsuleContext & { bots?: unknown[] } = {
     ...base,
+    ...(options.bots ? { bots: options.bots } : {}),
     ...(options.character ? { chatluna_character: options.character } : {}),
     inject(services, callback) {
       if ('chatluna_character' in services && options.character) callback(ctx)
     },
   }
 
-  return { ctx, listeners, addEntry, broadcast }
+  return { ctx, listeners, addEntry, broadcast, addListener }
 }
 
 function createSession(overrides: Record<string, unknown> = {}) {
@@ -112,6 +116,31 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: false,
     })
+  })
+
+  it('registers read-only WebQQ console listeners backed by OneBot actions', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+    }
+    const { ctx, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function))
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function))
+    expect(addListener).not.toHaveBeenCalledWith('chat-capsule/webqq/send', expect.any(Function))
+
+    const loadContacts = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/contacts')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+
+    await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
   })
 
   it('passes enabled debug config to console entry data', () => {
