@@ -56,7 +56,7 @@ describe('chat capsule state', () => {
     })
   })
 
-  it('falls back to ids and platform self id when names are missing', () => {
+  it('does not expose bot self id when bot name is missing', () => {
     const state = createCapsuleState()
 
     recordIncomingMessage(state, {
@@ -74,7 +74,7 @@ describe('chat capsule state', () => {
       timestamp: 1710000000001,
     })
 
-    expect(state.snapshot()?.bot.name).toBe('discord:bot-1')
+    expect(state.snapshot()?.bot.name).toBe('机器人')
     expect(state.snapshot()?.bot.avatar).toBeUndefined()
     expect(state.snapshot()?.conversation.channelName).toBe('channel-1')
     expect(state.snapshot()?.conversation.userName).toBeUndefined()

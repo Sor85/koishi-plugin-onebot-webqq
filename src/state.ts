@@ -72,6 +72,12 @@ function getState(capsule: CapsuleState) {
   return state
 }
 
+function getBotName(input: CapsuleBotInput) {
+  const name = input.name?.trim()
+  if (name && name !== input.selfId) return name
+  return '机器人'
+}
+
 // 创建聊天胶囊的内存状态容器。
 export function createCapsuleState(): CapsuleState {
   const state: MutableCapsuleState = {
@@ -97,7 +103,7 @@ function createSnapshot(input: CapsuleMessageInput, counters: MutableCapsuleStat
       platform: input.bot.platform,
       selfId: input.bot.selfId,
       status: input.bot.status,
-      name: input.bot.name || `${input.bot.platform}:${input.bot.selfId}`,
+      name: getBotName(input.bot),
       avatar: input.bot.avatar,
     },
     conversation: {

@@ -14,10 +14,6 @@
           <span v-if="capsule?.conversation.channelName">{{ capsule.conversation.channelName }}</span>
           <span v-if="capsule?.conversation.activityText">{{ capsule.conversation.activityText }}</span>
         </div>
-        <div class="chat-capsule__counts">
-          <span>收 {{ capsule?.counters.received || 0 }}</span>
-          <span>发 {{ capsule?.counters.sent || 0 }}</span>
-        </div>
       </div>
     </div>
   </div>
