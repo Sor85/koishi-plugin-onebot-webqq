@@ -21,4 +21,12 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__avatar')).not.toContain('overflow: hidden')
     expect(ruleBody('.chat-capsule__avatar').match(/img\s*{[\s\S]*border-radius:\s*inherit/)).toBeTruthy()
   })
+
+  it('keeps the bot name smaller and anchored near the top', () => {
+    expect(ruleBody('.chat-capsule__body')).toContain('align-self: stretch')
+    expect(ruleBody('.chat-capsule__body')).toContain('justify-content: flex-start')
+    expect(ruleBody('.chat-capsule__body')).toContain('padding-top: 4px')
+    expect(ruleBody('.chat-capsule__title')).toContain('font-size: 13px')
+    expect(ruleBody('.chat-capsule__title')).toContain('line-height: 18px')
+  })
 })

@@ -11,7 +11,7 @@
           {{ capsule?.bot.name || '空闲' }}
         </div>
         <div class="chat-capsule__meta" :title="metaTitle">
-          <span v-if="activityText" :class="['chat-capsule__activity', { 'is-thinking': isThinking }]">{{ activityText }}</span>
+          <span v-if="displayActivityText" :class="['chat-capsule__activity', { 'is-thinking': isThinking }]">{{ displayActivityText }}</span>
         </div>
       </div>
     </div>
@@ -24,10 +24,11 @@ import { Universal, withProxy } from '@koishijs/client'
 import { capsule } from './state'
 
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
+const displayActivityText = computed(() => activityText.value || '空闲中')
 const isThinking = computed(() => activityText.value === '正在思考')
 
 const metaTitle = computed(() => {
-  return activityText.value
+  return displayActivityText.value
 })
 
 const statusClass = computed(() => {

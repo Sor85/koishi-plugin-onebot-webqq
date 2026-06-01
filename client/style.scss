@@ -71,9 +71,12 @@
 .chat-capsule__body {
   min-width: 0;
   flex: 1;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+  box-sizing: border-box;
 }
 
 .chat-capsule__title,
@@ -84,8 +87,9 @@
 }
 
 .chat-capsule__title {
+  font-size: 13px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 18px;
 }
 
 .chat-capsule__meta {
