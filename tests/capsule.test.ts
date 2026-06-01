@@ -5,9 +5,16 @@ const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.
 
 describe('chat capsule view', () => {
   it('hides the capsule on the logger page', () => {
-    expect(capsuleView).toContain("import { Universal, router, withProxy } from '@koishijs/client'")
+    expect(capsuleView).toContain("import { Universal, router, store, withProxy } from '@koishijs/client'")
     expect(capsuleView).toContain("const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')")
-    expect(capsuleView).toContain('v-if="!isLoggerRoute"')
+    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)')
+    expect(capsuleView).toContain('v-if="shouldShowCapsule"')
+  })
+
+  it('hides the capsule before the Koishi console user is logged in', () => {
+    expect(capsuleView).toContain('const isLoggedIn = computed(() => !!store.permissions)')
+    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)')
+    expect(capsuleView).toContain('v-if="shouldShowCapsule"')
   })
 
   it('splits thinking status and current user into separate lines', () => {
