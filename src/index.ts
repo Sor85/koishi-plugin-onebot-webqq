@@ -103,7 +103,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
   const recordGenerating = (session: Session, message?: ChatLunaMessage) => {
-    recordConversationActivity(state, createMessageInput(session, message), 'LLM生成中')
+    recordConversationActivity(state, createMessageInput(session, message), '正在思考')
     logSnapshot('generating')
     broadcast()
   }

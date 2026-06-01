@@ -241,7 +241,7 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
       channelName: 'Guild Name',
       userName: 'Alice',
-      activityText: 'LLM生成中',
+      activityText: '正在思考',
     })
 
     listeners['chatluna/after-chat'][0]('conversation-1')
@@ -283,7 +283,7 @@ describe('chat capsule plugin wiring', () => {
 
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
       userName: 'Alice',
-      activityText: 'LLM生成中',
+      activityText: '正在思考',
     })
 
     await character.releaseResponseLock(session as any)

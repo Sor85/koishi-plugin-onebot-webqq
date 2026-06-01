@@ -11,8 +11,7 @@
           {{ capsule?.bot.name || '空闲' }}
         </div>
         <div class="chat-capsule__meta" :title="metaTitle">
-          <span v-if="capsule?.conversation.channelName">{{ capsule.conversation.channelName }}</span>
-          <span v-if="capsule?.conversation.activityText">{{ capsule.conversation.activityText }}</span>
+          <span v-if="activityText" :class="['chat-capsule__activity', { 'is-thinking': isThinking }]">{{ activityText }}</span>
         </div>
       </div>
     </div>
@@ -24,12 +23,11 @@ import { computed } from 'vue'
 import { Universal, withProxy } from '@koishijs/client'
 import { capsule } from './state'
 
+const activityText = computed(() => capsule.value?.conversation.activityText || '')
+const isThinking = computed(() => activityText.value === '正在思考')
+
 const metaTitle = computed(() => {
-  if (!capsule.value) return ''
-  return [
-    capsule.value.conversation.channelName,
-    capsule.value.conversation.activityText,
-  ].filter(Boolean).join(' / ')
+  return activityText.value
 })
 
 const statusClass = computed(() => {
