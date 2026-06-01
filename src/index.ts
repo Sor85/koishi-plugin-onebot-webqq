@@ -11,7 +11,7 @@ import {
   recordModelUsage,
   recordOutgoingMessage,
 } from './state'
-import { createOneBotWebQQService, WebQQContacts, WebQQMessage, WebQQMessageQuery } from './onebot'
+import { createOneBotWebQQService, WebQQContacts, WebQQMessage, WebQQMessageQuery, WebQQProtocol } from './onebot'
 
 export const name = 'chat-capsule'
 
@@ -23,12 +23,17 @@ export const inject = {
 export interface Config {
   debug?: boolean
   onebotSelfId?: string
+  onebotProtocol?: WebQQProtocol
   historyLimit?: number
 }
 
 export const Config: Schema<Config> = Schema.object({
   debug: Schema.boolean().default(false).description('显示前端调试信息'),
   onebotSelfId: Schema.string().description('用于读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人'),
+  onebotProtocol: Schema.union([
+    Schema.const('napcat').description('NapCat'),
+    Schema.const('llbot').description('LLBot'),
+  ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
   historyLimit: Schema.natural().min(1).max(100).default(30).description('每次加载聊天历史的消息数量'),
 })
 
@@ -122,7 +127,10 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
-  const webqq = createOneBotWebQQService(ctx, { selfId: config.onebotSelfId })
+  const webqq = createOneBotWebQQService(ctx, {
+    selfId: config.onebotSelfId,
+    protocol: config.onebotProtocol,
+  })
   const debug = !!config.debug
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))

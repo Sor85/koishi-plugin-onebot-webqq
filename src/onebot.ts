@@ -1,5 +1,8 @@
 export type WebQQChatType = 'friend' | 'group'
 
+// WebQQ 只读面板支持的 OneBot 实现协议。
+export type WebQQProtocol = 'napcat' | 'llbot'
+
 // WebQQ 只读面板使用的好友数据。
 export interface WebQQFriend {
   userId: string
@@ -49,6 +52,7 @@ export interface WebQQMessageQuery {
 
 export interface OneBotWebQQOptions {
   selfId?: string
+  protocol?: WebQQProtocol
 }
 
 interface OneBotContext {
@@ -206,6 +210,7 @@ function normalizeMessage(raw: unknown, bot: OneBotBot): WebQQMessage {
 // 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   const getBot = () => selectBot(ctx, options)
+  const protocol = options.protocol ?? 'napcat'
   return {
     async loadContacts(): Promise<WebQQContacts> {
       const bot = getBot()
@@ -222,9 +227,14 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     async loadMessages(query: WebQQMessageQuery): Promise<WebQQMessage[]> {
       const bot = getBot()
       const action = query.type === 'group' ? 'get_group_msg_history' : 'get_friend_msg_history'
+      const baseParams = {
+        message_seq: 0,
+        count: query.limit ?? 30,
+        ...(protocol === 'llbot' ? { reverseOrder: false } : {}),
+      }
       const params = query.type === 'group'
-        ? { group_id: toOneBotId(query.peerId), count: query.limit ?? 30 }
-        : { user_id: toOneBotId(query.peerId), count: query.limit ?? 30 }
+        ? { group_id: toOneBotId(query.peerId), ...baseParams }
+        : { user_id: toOneBotId(query.peerId), ...baseParams }
       const result = await callAction(bot, action, params)
       return toArrayResult(result, 'messages').map((message) => normalizeMessage(message, bot))
     },

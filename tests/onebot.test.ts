@@ -99,12 +99,44 @@ describe('onebot webqq adapter', () => {
 
     expect(bot.internal.get_group_msg_history).toHaveBeenCalledWith({
       group_id: 20000,
+      message_seq: 0,
       count: 20,
     })
     expect(bot.internal.get_friend_msg_history).toHaveBeenCalledWith({
       user_id: 30000,
+      message_seq: 0,
       count: 20,
     })
     expect(bot.internal.send_msg).not.toHaveBeenCalled()
+  })
+
+  it('adds LLBot history ordering parameter only for the LLBot protocol', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_friend_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] }, { protocol: 'llbot' })
+
+    await service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })
+    await service.loadMessages({ type: 'friend', peerId: '30000', limit: 10 })
+
+    expect(bot.internal.get_group_msg_history).toHaveBeenCalledWith({
+      group_id: 20000,
+      message_seq: 0,
+      count: 20,
+      reverseOrder: false,
+    })
+    expect(bot.internal.get_friend_msg_history).toHaveBeenCalledWith({
+      user_id: 30000,
+      message_seq: 0,
+      count: 10,
+      reverseOrder: false,
+    })
   })
 })
