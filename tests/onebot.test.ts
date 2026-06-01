@@ -2,6 +2,41 @@ import { describe, expect, it, vi } from 'vitest'
 import { createOneBotWebQQService } from '../src/onebot'
 
 describe('onebot webqq adapter', () => {
+  it('loads friends and groups through the OneBot request API', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_friend_list') return [{
+        user_id: 30000,
+        nickname: 'Alice',
+      }]
+      if (action === 'get_group_list') return [{
+        group_id: 20000,
+        group_name: 'General',
+      }]
+      return []
+    })
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        _request: request,
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadContacts()).resolves.toMatchObject({
+      friends: [{
+        userId: '30000',
+        name: 'Alice',
+      }],
+      groups: [{
+        groupId: '20000',
+        name: 'General',
+      }],
+    })
+    expect(request).toHaveBeenCalledWith('get_friend_list', {})
+    expect(request).toHaveBeenCalledWith('get_group_list', {})
+  })
+
   it('loads friends and groups from the selected OneBot bot', async () => {
     const bot = {
       platform: 'onebot',

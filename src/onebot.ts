@@ -62,7 +62,11 @@ interface OneBotContext {
 interface OneBotBot {
   platform?: string
   selfId?: string
-  internal: Record<string, unknown>
+  internal: OneBotInternal
+}
+
+interface OneBotInternal extends Record<string, unknown> {
+  _request?: (action: string, params: Record<string, unknown>) => Promise<unknown>
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -113,19 +117,28 @@ function getOneBotBots(ctx: OneBotContext) {
   })
 }
 
+function supportsOneBotAction(bot: OneBotBot) {
+  return typeof bot.internal._request === 'function' ||
+    typeof bot.internal.get_friend_list === 'function' ||
+    typeof bot.internal.get_group_list === 'function'
+}
+
 function selectBot(ctx: OneBotContext, options: OneBotWebQQOptions) {
   const bots = getOneBotBots(ctx)
   const selected = options.selfId
     ? bots.find((bot) => bot.selfId === options.selfId)
-    : bots.find((bot) => typeof bot.internal.get_friend_list === 'function' || typeof bot.internal.get_group_list === 'function')
+    : bots.find(supportsOneBotAction)
   if (!selected) throw new Error(options.selfId ? `未找到 selfId 为 ${options.selfId} 的 OneBot 机器人` : '未找到可用的 OneBot 机器人')
   return selected
 }
 
 async function callAction(bot: OneBotBot, action: string, params?: Record<string, unknown>) {
+  if (typeof bot.internal._request === 'function') {
+    return bot.internal._request(action, params ?? {})
+  }
   const method = bot.internal[action]
   if (typeof method !== 'function') throw new Error(`当前 OneBot 实现不支持 ${action}`)
-  return method(params)
+  return method.call(bot.internal, params)
 }
 
 function getUserAvatar(userId: string) {
