@@ -49,6 +49,31 @@ export interface WebQQLiveMessage {
   message: WebQQMessage
 }
 
+export interface WebQQNotice {
+  id: string
+  type: 'friend-request' | 'group-notice'
+  title: string
+  subtitle: string
+  avatar: string
+  status: 'pending' | 'approved' | 'rejected'
+  time: number
+  flag?: string
+  subType?: string
+  requesterId?: string
+  requesterName?: string
+  groupId?: string
+  groupName?: string
+  comment?: string
+}
+
+export interface WebQQNoticeAction {
+  id: string
+  type: WebQQNotice['type']
+  flag: string
+  subType?: string
+  approve: boolean
+}
+
 // WebQQ 只读面板一次加载的联系人数据。
 export interface WebQQContacts {
   friends: WebQQFriend[]
@@ -121,6 +146,15 @@ function getNumberField(source: Record<string, unknown>, keys: string[]) {
   return 0
 }
 
+function getBooleanField(source: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = source[key]
+    if (value === true || value === 'true' || value === 1) return true
+    if (value === false || value === 'false' || value === 0) return false
+  }
+  return undefined
+}
+
 function toArrayResult(result: unknown, key: string) {
   if (Array.isArray(result)) return result
   if (!isRecord(result)) return []
@@ -144,7 +178,10 @@ function getOneBotBots(ctx: OneBotContext) {
 function supportsOneBotAction(bot: OneBotBot) {
   return typeof bot.internal._request === 'function' ||
     typeof bot.internal.get_friend_list === 'function' ||
-    typeof bot.internal.get_group_list === 'function'
+    typeof bot.internal.get_group_list === 'function' ||
+    typeof bot.internal.get_group_system_msg === 'function' ||
+    typeof bot.internal.set_friend_add_request === 'function' ||
+    typeof bot.internal.set_group_add_request === 'function'
 }
 
 function selectBot(ctx: OneBotContext, options: OneBotWebQQOptions) {
@@ -329,6 +366,63 @@ async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlResolver?:
   }
 }
 
+function isHandledGroupNotice(raw: unknown) {
+  if (!isRecord(raw)) return false
+  const checked = raw.checked
+  return checked === true || checked === 1 || checked === 'true'
+}
+
+function normalizeGroupRequestSubType(value: string, bucket: string) {
+  if (value === 'invite' || value === 'invited') return 'invite'
+  if (value === 'add' || value === 'join') return 'add'
+  return bucket === 'invited_requests' ? 'invite' : 'add'
+}
+
+function getGroupNoticeStatus(item: Record<string, unknown>): WebQQNotice['status'] {
+  if (!isHandledGroupNotice(item)) return 'pending'
+  const approved = getBooleanField(item, ['approved', 'approve', 'accepted'])
+  return approved === false ? 'rejected' : 'approved'
+}
+
+function normalizeGroupNotice(raw: unknown, bucket: string, index: number): WebQQNotice {
+  const item = isRecord(raw) ? raw : {}
+  const requestId = getStringField(item, ['request_id', 'requestId', 'flag', 'seq', 'id']) || String(index)
+  const groupId = getStringField(item, ['group_id', 'groupId', 'group_code', 'groupCode'])
+  const groupName = getStringField(item, ['group_name', 'groupName']) || groupId
+  const requesterId = getStringField(item, ['requester_uin', 'requester_id', 'requesterId', 'user_id', 'userId', 'uin'])
+  const requesterName = getStringField(item, ['requester_nick', 'requesterNick', 'nickname', 'nick', 'user_name', 'name']) || requesterId
+  const comment = getStringField(item, ['message', 'comment', 'reason'])
+  const subType = normalizeGroupRequestSubType(getStringField(item, ['sub_type', 'subType', 'request_type', 'type']), bucket)
+  const actionText = bucket === 'invited_requests' ? '邀请入群' : '申请加入群聊'
+  return {
+    id: `group:${requestId}`,
+    type: 'group-notice',
+    title: groupName || '群通知',
+    subtitle: requesterName ? `${requesterName} ${actionText}` : actionText,
+    avatar: groupId ? getGroupAvatar(groupId) : '',
+    status: getGroupNoticeStatus(item),
+    time: toTimestampMs(getStringField(item, ['time', 'timestamp'])),
+    flag: requestId,
+    subType,
+    ...(groupId ? { groupId } : {}),
+    ...(groupName ? { groupName } : {}),
+    ...(requesterId ? { requesterId } : {}),
+    ...(requesterName ? { requesterName } : {}),
+    ...(comment ? { comment } : {}),
+  }
+}
+
+function normalizeGroupNotices(result: unknown) {
+  const notices: WebQQNotice[] = []
+  for (const bucket of ['join_requests', 'invited_requests', 'requests', 'notices']) {
+    const items = toArrayResult(result, bucket)
+    items.forEach((item, index) => {
+      notices.push(normalizeGroupNotice(item, bucket, index))
+    })
+  }
+  return notices
+}
+
 // 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   const getBot = () => selectBot(ctx, options)
@@ -368,6 +462,30 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         : { user_id: toOneBotId(query.peerId), ...baseParams }
       const result = await callAction(bot, action, params)
       return Promise.all(toArrayResult(result, 'messages').map((message) => normalizeMessage(message, bot, imageUrlResolver)))
+    },
+
+    async loadNotices(friendRequests: WebQQNotice[] = []): Promise<WebQQNotice[]> {
+      try {
+        const result = await callAction(getBot(), 'get_group_system_msg', {})
+        return [...friendRequests, ...normalizeGroupNotices(result)]
+      } catch {
+        return friendRequests
+      }
+    },
+
+    async handleNotice(action: WebQQNoticeAction) {
+      if (action.type === 'friend-request') {
+        await callAction(getBot(), 'set_friend_add_request', {
+          flag: action.flag,
+          approve: action.approve,
+        })
+        return
+      }
+      await callAction(getBot(), 'set_group_add_request', {
+        flag: action.flag,
+        sub_type: action.subType || 'add',
+        approve: action.approve,
+      })
     },
   }
 }

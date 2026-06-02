@@ -3,20 +3,20 @@
     <aside class="chat-capsule-webqq__sidebar">
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
-          <button :class="{ 'is-active': activeTab === 'recent' }" type="button" @click="activeTab = 'recent'">
+          <button :class="{ 'is-active': activeTab === 'recent' && !noticeOpen }" type="button" @click="selectTab('recent')">
             <span class="chat-capsule-webqq__tab-icon is-clock"></span>
             最近
           </button>
-          <button :class="{ 'is-active': activeTab === 'friends' }" type="button" @click="activeTab = 'friends'">
+          <button :class="{ 'is-active': activeTab === 'friends' && !noticeOpen }" type="button" @click="selectTab('friends')">
             <span class="chat-capsule-webqq__tab-icon is-user"></span>
             好友
           </button>
-          <button :class="{ 'is-active': activeTab === 'groups' }" type="button" @click="activeTab = 'groups'">
+          <button :class="{ 'is-active': activeTab === 'groups' && !noticeOpen }" type="button" @click="selectTab('groups')">
             <span class="chat-capsule-webqq__tab-icon is-group"></span>
             群组
           </button>
         </div>
-        <button class="chat-capsule-webqq__notify" type="button" aria-label="通知">
+        <button :class="['chat-capsule-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="openNotices">
           <span class="chat-capsule-webqq__tab-icon is-bell"></span>
         </button>
       </div>
@@ -96,20 +96,62 @@
     </aside>
     <section class="chat-capsule-webqq__chat">
       <header class="chat-capsule-webqq__chat-header">
-        <div class="chat-capsule-webqq__chat-title">
+        <div v-if="noticeOpen" class="chat-capsule-webqq__chat-title">
+          <div>
+            <strong>通知</strong>
+            <span>好友申请 / 群通知</span>
+          </div>
+        </div>
+        <div v-else class="chat-capsule-webqq__chat-title">
           <img v-if="currentAvatar" class="chat-capsule-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
           <div>
             <strong>{{ currentTitle }}</strong>
             <span>{{ currentSubtitle }}</span>
           </div>
         </div>
-        <button type="button" @click="loadContacts">刷新</button>
+        <button v-if="noticeOpen" type="button" @click="loadNotices">刷新</button>
+        <button v-else type="button" @click="loadContacts">刷新</button>
       </header>
       <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
-        <div v-if="loading" class="chat-capsule-webqq__placeholder">加载中</div>
-        <div v-else-if="errorText" class="chat-capsule-webqq__placeholder is-error">{{ errorText }}</div>
-        <div v-else-if="!currentChat" class="chat-capsule-webqq__placeholder">选择一个会话</div>
-        <div v-else-if="!messages.length" class="chat-capsule-webqq__placeholder">暂无消息</div>
+        <template v-if="noticeOpen">
+          <div v-if="noticeLoading" class="chat-capsule-webqq__placeholder">加载中</div>
+          <div v-else-if="noticeErrorText" class="chat-capsule-webqq__placeholder is-error">{{ noticeErrorText }}</div>
+          <div v-else-if="!notices.length" class="chat-capsule-webqq__placeholder">暂无通知</div>
+          <div v-else class="chat-capsule-webqq__notices">
+            <article v-for="notice in notices" :key="notice.id" class="chat-capsule-webqq__notice-card">
+              <img v-if="notice.avatar" class="chat-capsule-webqq__notice-avatar" :src="withProxy(notice.avatar)" :alt="notice.title">
+              <span v-else class="chat-capsule-webqq__notice-avatar"></span>
+              <div class="chat-capsule-webqq__notice-main">
+                <span class="chat-capsule-webqq__notice-meta">
+                  <span class="chat-capsule-webqq__notice-type">{{ getNoticeTypeText(notice) }}</span>
+                  <span :class="['chat-capsule-webqq__notice-status', `is-${notice.status}`]">{{ getNoticeStatusText(notice) }}</span>
+                </span>
+                <strong>{{ notice.title }}</strong>
+                <span>{{ notice.subtitle }}</span>
+                <small v-if="notice.comment">{{ notice.comment }}</small>
+              </div>
+              <div class="chat-capsule-webqq__notice-side">
+                <time v-if="notice.time">{{ formatListTime(notice.time) }}</time>
+                <span v-if="canHandleNotice(notice)" class="chat-capsule-webqq__notice-actions">
+                  <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, true)">同意</button>
+                  <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, false)">拒绝</button>
+                </span>
+              </div>
+            </article>
+          </div>
+        </template>
+        <template v-else-if="loading">
+          <div class="chat-capsule-webqq__placeholder">加载中</div>
+        </template>
+        <template v-else-if="errorText">
+          <div class="chat-capsule-webqq__placeholder is-error">{{ errorText }}</div>
+        </template>
+        <template v-else-if="!currentChat">
+          <div class="chat-capsule-webqq__placeholder">选择一个会话</div>
+        </template>
+        <template v-else-if="!messages.length">
+          <div class="chat-capsule-webqq__placeholder">暂无消息</div>
+        </template>
         <template v-else>
           <div
             v-for="message in messages"
@@ -147,7 +189,7 @@
         </template>
       </div>
       <footer class="chat-capsule-webqq__readonly-bar">
-        <span>只读模式</span>
+        <span>{{ noticeOpen ? '只读通知' : '只读模式' }}</span>
       </footer>
     </section>
   </div>
@@ -156,7 +198,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
+import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 
 type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
@@ -174,11 +216,16 @@ const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const conversationUnreadCounts = ref<Record<string, number>>({})
 const messages = ref<WebQQMessage[]>([])
+const notices = ref<WebQQNotice[]>([])
 const messagePane = ref<HTMLElement>()
 const trackingMessages = ref(true)
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
+const noticeOpen = ref(false)
+const noticeLoading = ref(false)
+const handlingNoticeId = ref('')
 const loading = ref(false)
+const noticeErrorText = ref('')
 const errorText = ref('')
 
 const visibleFriends = computed(() => {
@@ -221,6 +268,11 @@ const currentAvatar = computed(() => currentChat.value?.avatar || '')
 
 function getGroupSubtitle(group: WebQQGroup) {
   return `群聊 ${group.groupId} · ${group.memberCount} 人`
+}
+
+function selectTab(tab: 'recent' | 'friends' | 'groups') {
+  activeTab.value = tab
+  noticeOpen.value = false
 }
 
 function getChatSubtitle(chat: ChatSelection) {
@@ -309,6 +361,7 @@ function isMessagePaneAtBottom() {
 }
 
 function updateMessageTracking() {
+  if (noticeOpen.value) return
   trackingMessages.value = isMessagePaneAtBottom()
   if (trackingMessages.value) clearCurrentUnreadCount()
   if (shouldLoadOlderMessages()) loadOlderMessages()
@@ -335,6 +388,23 @@ async function loadContacts() {
   } finally {
     loading.value = false
   }
+}
+
+async function loadNotices() {
+  noticeLoading.value = true
+  noticeErrorText.value = ''
+  try {
+    notices.value = await send('chat-capsule/webqq/notices') as WebQQNotice[] || []
+  } catch (error) {
+    noticeErrorText.value = error instanceof Error ? error.message : '加载通知失败'
+  } finally {
+    noticeLoading.value = false
+  }
+}
+
+function openNotices() {
+  noticeOpen.value = true
+  loadNotices()
 }
 
 async function loadMessages() {
@@ -392,6 +462,7 @@ async function loadOlderMessages() {
 }
 
 function selectFriend(friend: WebQQFriend) {
+  noticeOpen.value = false
   currentChat.value = {
     type: 'friend',
     peerId: friend.userId,
@@ -404,6 +475,7 @@ function selectFriend(friend: WebQQFriend) {
 }
 
 function selectGroup(group: WebQQGroup) {
+  noticeOpen.value = false
   currentChat.value = {
     type: 'group',
     peerId: group.groupId,
@@ -416,6 +488,7 @@ function selectGroup(group: WebQQGroup) {
 }
 
 function selectRecent(item: RecentItem) {
+  noticeOpen.value = false
   currentChat.value = {
     type: item.type,
     peerId: item.peerId,
@@ -436,6 +509,40 @@ function formatTime(timestamp: number) {
 
 function formatListTime(timestamp: number) {
   return formatTime(timestamp)
+}
+
+function getNoticeTypeText(notice: WebQQNotice) {
+  return notice.type === 'friend-request' ? '好友申请' : '群通知'
+}
+
+function getNoticeStatusText(notice: WebQQNotice) {
+  if (notice.status === 'approved') return '已同意'
+  if (notice.status === 'rejected') return '已拒绝'
+  return '待处理'
+}
+
+function canHandleNotice(notice: WebQQNotice) {
+  return notice.status === 'pending' && !!notice.flag
+}
+
+async function handleNotice(notice: WebQQNotice, approve: boolean) {
+  if (!notice.flag) return
+  handlingNoticeId.value = notice.id
+  noticeErrorText.value = ''
+  try {
+    await send('chat-capsule/webqq/notice-action', {
+      id: notice.id,
+      type: notice.type,
+      flag: notice.flag,
+      subType: notice.subType,
+      approve,
+    })
+    await loadNotices()
+  } catch (error) {
+    noticeErrorText.value = error instanceof Error ? error.message : '处理通知失败'
+  } finally {
+    handlingNoticeId.value = ''
+  }
 }
 
 function formatSenderLevel(level: string) {

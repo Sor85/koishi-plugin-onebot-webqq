@@ -400,4 +400,92 @@ describe('onebot webqq adapter', () => {
       count: 20,
     })
   })
+
+  it('loads group system notices with avatars and request results', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_group_system_msg: vi.fn(async () => ({
+          data: {
+            join_requests: [{
+              request_id: 'join-1',
+              group_id: 20000,
+              group_name: 'General',
+              requester_uin: 30000,
+              requester_nick: 'Alice',
+              message: '申请入群',
+              checked: false,
+            }, {
+              request_id: 'join-2',
+              group_id: 20000,
+              group_name: 'General',
+              requester_uin: 40000,
+              requester_nick: 'Bob',
+              approved: false,
+              checked: true,
+            }],
+          },
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadNotices()).resolves.toEqual([{
+      id: 'group:join-1',
+      type: 'group-notice',
+      title: 'General',
+      subtitle: 'Alice 申请加入群聊',
+      avatar: 'https://p.qlogo.cn/gh/20000/20000/640/',
+      status: 'pending',
+      time: 0,
+      flag: 'join-1',
+      subType: 'add',
+      groupId: '20000',
+      groupName: 'General',
+      requesterId: '30000',
+      requesterName: 'Alice',
+      comment: '申请入群',
+    }, {
+      id: 'group:join-2',
+      type: 'group-notice',
+      title: 'General',
+      subtitle: 'Bob 申请加入群聊',
+      avatar: 'https://p.qlogo.cn/gh/20000/20000/640/',
+      status: 'rejected',
+      time: 0,
+      flag: 'join-2',
+      subType: 'add',
+      groupId: '20000',
+      groupName: 'General',
+      requesterId: '40000',
+      requesterName: 'Bob',
+    }])
+    expect(bot.internal.get_group_system_msg).toHaveBeenCalledWith({})
+  })
+
+  it('handles friend and group notice actions through OneBot APIs', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        set_friend_add_request: vi.fn(async () => ({})),
+        set_group_add_request: vi.fn(async () => ({})),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await service.handleNotice({ id: 'friend:friend-flag', type: 'friend-request', flag: 'friend-flag', approve: true })
+    await service.handleNotice({ id: 'group:group-flag', type: 'group-notice', flag: 'group-flag', subType: 'add', approve: false })
+
+    expect(bot.internal.set_friend_add_request).toHaveBeenCalledWith({
+      flag: 'friend-flag',
+      approve: true,
+    })
+    expect(bot.internal.set_group_add_request).toHaveBeenCalledWith({
+      flag: 'group-flag',
+      sub_type: 'add',
+      approve: false,
+    })
+  })
 })

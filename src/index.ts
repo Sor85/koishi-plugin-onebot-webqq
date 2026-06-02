@@ -21,6 +21,8 @@ import {
   WebQQMessage,
   WebQQMessageElement,
   WebQQMessageQuery,
+  WebQQNotice,
+  WebQQNoticeAction,
   WebQQProtocol,
 } from './onebot'
 
@@ -54,6 +56,8 @@ declare module '@koishijs/console' {
     'chat-capsule/webqq/message'(data: WebQQLiveMessage): void
     'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
     'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
+    'chat-capsule/webqq/notices'(): Promise<WebQQNotice[]>
+    'chat-capsule/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
   }
 }
 
@@ -349,6 +353,30 @@ function readWebQQLiveSenderMetadata(session: Session) {
   }
 }
 
+function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const raw = isRecord(session.event) && isRecord(session.event._data) ? session.event._data : {}
+  const requesterId = session.userId || session.event.user?.id
+  const requesterName = readUserName(session) || requesterId
+  if (!requesterId && !requesterName) return
+  const flag = readRecordText(raw, ['flag', 'request_id', 'requestId'])
+  const comment = readRecordText(raw, ['comment', 'message', 'reason'])
+  const id = flag || requesterId || String(session.timestamp)
+  return {
+    id: `friend:${id}`,
+    type: 'friend-request',
+    title: requesterName || '好友申请',
+    subtitle: requesterId ? `来自 QQ ${requesterId}` : '新的好友申请',
+    avatar: getWebQQUserAvatar(requesterId || ''),
+    status: 'pending',
+    time: session.timestamp,
+    ...(flag ? { flag } : {}),
+    ...(requesterId ? { requesterId } : {}),
+    ...(requesterName ? { requesterName } : {}),
+    ...(comment ? { comment } : {}),
+  }
+}
+
 async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
@@ -409,6 +437,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
+  const friendRequestNotices = new Map<string, WebQQNotice>()
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
     if (!session) return
@@ -451,6 +480,12 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     logSnapshot('message')
     broadcast()
     await recordWebQQLiveMessage(session, readWebQQLiveDirection(session))
+  })
+
+  ctx.on('friend-request', (session) => {
+    const notice = createWebQQFriendRequestNotice(session)
+    if (!notice) return
+    friendRequestNotices.set(notice.id, notice)
   })
 
   ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
@@ -508,6 +543,19 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       }
       const history = await webqq.loadMessages(nextQuery)
       return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/notices', () => {
+      return webqq.loadNotices([...friendRequestNotices.values()])
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/notice-action', async (action: WebQQNoticeAction) => {
+      await webqq.handleNotice(action)
+      if (action.type !== 'friend-request') return
+      const notice = friendRequestNotices.get(action.id)
+      if (!notice) return
+      friendRequestNotices.set(action.id, {
+        ...notice,
+        status: action.approve ? 'approved' : 'rejected',
+      })
     }, consoleAuthOptions)
   })
 

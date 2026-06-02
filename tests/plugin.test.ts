@@ -137,6 +137,8 @@ describe('chat capsule plugin wiring', () => {
 
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notices', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notice-action', expect.any(Function), { authority: 1 })
     expect(addListener).not.toHaveBeenCalledWith('chat-capsule/webqq/send', expect.any(Function))
 
     const loadContacts = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/contacts')?.[1]
@@ -144,6 +146,75 @@ describe('chat capsule plugin wiring', () => {
 
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
+  })
+
+  it('exposes pending WebQQ friend requests and group notices through the console listener', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_system_msg: vi.fn(async () => ({
+          data: {
+            join_requests: [{
+              request_id: 'join-1',
+              group_id: 20000,
+              group_name: 'General',
+              requester_uin: 30000,
+              requester_nick: 'Alice',
+              checked: false,
+            }],
+          },
+        })),
+        set_friend_add_request: vi.fn(async () => ({})),
+        set_group_add_request: vi.fn(async () => ({})),
+      },
+    }
+    const { ctx, listeners, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    listeners['friend-request'][0](createSession({
+      userId: '40000',
+      username: 'Bob',
+      event: {
+        user: { id: '40000', name: 'Bob' },
+        _data: { flag: 'friend-flag', comment: '加个好友' },
+      },
+    }))
+
+    const loadNotices = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/notices')?.[1]
+    await expect(loadNotices?.()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'friend:friend-flag',
+        type: 'friend-request',
+        title: 'Bob',
+        avatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+        status: 'pending',
+        comment: '加个好友',
+      }),
+      expect.objectContaining({
+        id: 'group:join-1',
+        type: 'group-notice',
+        title: 'General',
+        avatar: 'https://p.qlogo.cn/gh/20000/20000/640/',
+        status: 'pending',
+      }),
+    ])
+
+    const handleNotice = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/notice-action')?.[1]
+    await handleNotice?.({ id: 'friend:friend-flag', type: 'friend-request', flag: 'friend-flag', approve: true })
+    await handleNotice?.({ id: 'group:join-1', type: 'group-notice', flag: 'join-1', subType: 'add', approve: false })
+
+    expect(bot.internal.set_friend_add_request).toHaveBeenCalledWith({
+      flag: 'friend-flag',
+      approve: true,
+    })
+    expect(bot.internal.set_group_add_request).toHaveBeenCalledWith({
+      flag: 'join-1',
+      sub_type: 'add',
+      approve: false,
+    })
   })
 
   it('requires a logged-in console user for WebQQ data and live broadcasts', async () => {

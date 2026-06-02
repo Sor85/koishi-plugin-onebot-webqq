@@ -36,11 +36,24 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("send('chat-capsule/webqq/contacts')")
     expect(webqqView).toContain("send('chat-capsule/webqq/messages'")
     expect(webqqView).toContain("receive('chat-capsule/webqq/message'")
-    expect(webqqView).toContain("activeTab = 'friends'")
-    expect(webqqView).toContain("activeTab = 'groups'")
+    expect(webqqView).toContain("@click=\"selectTab('friends')\"")
+    expect(webqqView).toContain("@click=\"selectTab('groups')\"")
     expect(webqqView).toContain('v-for="message in messages"')
     expect(webqqView).not.toContain('textarea')
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
+  })
+
+  it('opens a WebQQ notifications page from the bell button', () => {
+    expect(webqqView).toContain('@click="openNotices"')
+    expect(webqqView).toContain("send('chat-capsule/webqq/notices')")
+    expect(webqqView).toContain("send('chat-capsule/webqq/notice-action'")
+    expect(webqqView).toContain('v-for="notice in notices"')
+    expect(webqqView).toContain('chat-capsule-webqq__notice-card')
+    expect(webqqView).toContain(':src="withProxy(notice.avatar)"')
+    expect(webqqView).toContain('getNoticeStatusText(notice)')
+    expect(webqqView).toContain("@click=\"handleNotice(notice, true)\"")
+    expect(webqqView).toContain("@click=\"handleNotice(notice, false)\"")
+    expect(webqqView).toContain('暂无通知')
   })
 
   it('renders sender avatars for WebQQ messages', () => {

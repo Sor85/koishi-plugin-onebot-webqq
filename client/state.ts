@@ -67,6 +67,23 @@ export interface WebQQLiveMessage {
   message: WebQQMessage
 }
 
+export interface WebQQNotice {
+  id: string
+  type: 'friend-request' | 'group-notice'
+  title: string
+  subtitle: string
+  avatar: string
+  status: 'pending' | 'approved' | 'rejected'
+  time: number
+  flag?: string
+  subType?: string
+  requesterId?: string
+  requesterName?: string
+  groupId?: string
+  groupName?: string
+  comment?: string
+}
+
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]
