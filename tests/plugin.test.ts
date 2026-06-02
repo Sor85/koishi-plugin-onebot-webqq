@@ -182,6 +182,15 @@ describe('chat capsule plugin wiring', () => {
         _data: { flag: 'friend-flag', comment: '加个好友' },
       },
     }))
+    listeners['guild-member-removed'][0](createSession({
+      channelId: '20000',
+      userId: '50000',
+      username: 'Carol',
+      event: {
+        guild: { id: '20000', name: 'General' },
+        user: { id: '50000', name: 'Carol' },
+      },
+    }))
 
     const loadNotices = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/notices')?.[1]
     await expect(loadNotices?.()).resolves.toEqual([
@@ -192,6 +201,15 @@ describe('chat capsule plugin wiring', () => {
         avatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
         status: 'pending',
         comment: '加个好友',
+      }),
+      expect.objectContaining({
+        id: 'group:leave:20000:50000:1710000000000',
+        type: 'group-notice',
+        title: 'General',
+        subtitle: 'Carol 退出群聊',
+        avatar: 'https://p.qlogo.cn/gh/20000/20000/640/',
+        status: 'approved',
+        subType: 'leave',
       }),
       expect.objectContaining({
         id: 'group:join-1',

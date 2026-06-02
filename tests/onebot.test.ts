@@ -415,6 +415,7 @@ describe('onebot webqq adapter', () => {
               requester_uin: 30000,
               requester_nick: 'Alice',
               message: '申请入群',
+              request_time: 1710000000,
               checked: false,
             }, {
               request_id: 'join-2',
@@ -424,6 +425,14 @@ describe('onebot webqq adapter', () => {
               requester_nick: 'Bob',
               approved: false,
               checked: true,
+            }],
+            leave_notices: [{
+              notice_id: 'leave-1',
+              group_id: 20000,
+              group_name: 'General',
+              user_id: 50000,
+              nickname: 'Carol',
+              time: 1710000001,
             }],
           },
         })),
@@ -438,7 +447,7 @@ describe('onebot webqq adapter', () => {
       subtitle: 'Alice 申请加入群聊',
       avatar: 'https://p.qlogo.cn/gh/20000/20000/640/',
       status: 'pending',
-      time: 0,
+      time: 1710000000000,
       flag: 'join-1',
       subType: 'add',
       groupId: '20000',
@@ -460,6 +469,19 @@ describe('onebot webqq adapter', () => {
       groupName: 'General',
       requesterId: '40000',
       requesterName: 'Bob',
+    }, {
+      id: 'group:leave:leave-1',
+      type: 'group-notice',
+      title: 'General',
+      subtitle: 'Carol 退出群聊',
+      avatar: 'https://p.qlogo.cn/gh/20000/20000/640/',
+      status: 'approved',
+      time: 1710000001000,
+      subType: 'leave',
+      groupId: '20000',
+      groupName: 'General',
+      requesterId: '50000',
+      requesterName: 'Carol',
     }])
     expect(bot.internal.get_group_system_msg).toHaveBeenCalledWith({})
   })

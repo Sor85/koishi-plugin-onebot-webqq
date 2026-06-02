@@ -43,17 +43,60 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
   })
 
-  it('opens a WebQQ notifications page from the bell button', () => {
+  it('opens a WebQQ notification dropdown menu from the bell button', () => {
     expect(webqqView).toContain('@click="openNotices"')
+    expect(webqqView).toContain('@click="closeNoticeMenu"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__notify-wrap" @click.stop')
+    expect(webqqView).toContain('chat-capsule-webqq__notice-menu')
+    expect(webqqView).toContain("noticeMenuTab === 'friends'")
+    expect(webqqView).toContain("noticeMenuTab === 'groups'")
+    expect(webqqView).toContain("@click=\"noticeMenuTab = 'friends'\"")
+    expect(webqqView).toContain("@click=\"noticeMenuTab = 'groups'\"")
+    expect(webqqView).toContain('sortPendingNotices')
     expect(webqqView).toContain("send('chat-capsule/webqq/notices')")
     expect(webqqView).toContain("send('chat-capsule/webqq/notice-action'")
-    expect(webqqView).toContain('v-for="notice in notices"')
+    expect(webqqView).toContain('v-for="notice in filteredNotices"')
     expect(webqqView).toContain('chat-capsule-webqq__notice-card')
     expect(webqqView).toContain(':src="withProxy(notice.avatar)"')
-    expect(webqqView).toContain('getNoticeStatusText(notice)')
+    expect(webqqView).toContain('class="chat-capsule-webqq__notice-title"')
+    expect(webqqView).toContain('getHandledNoticeStatusText(notice)')
+    expect(webqqView).toContain('chat-capsule-webqq__notice-result')
+    expect(webqqView).toContain('<time v-if="notice.time" class="chat-capsule-webqq__notice-time">{{ formatNoticeTime(notice.time) }}</time>')
+    expect(webqqView).toContain('v-else-if="getHandledNoticeStatusText(notice)"')
+    expect(webqqView).toContain('v-for="line in formatNoticeComment(notice.comment)"')
+    expect(webqqView).toContain('chat-capsule-webqq__notice-comment')
     expect(webqqView).toContain("@click=\"handleNotice(notice, true)\"")
     expect(webqqView).toContain("@click=\"handleNotice(notice, false)\"")
     expect(webqqView).toContain('暂无通知')
+    expect(webqqView).not.toContain('chat-capsule-webqq__notice-meta')
+    expect(webqqView).not.toContain('chat-capsule-webqq__notice-type')
+    expect(webqqView).not.toContain('chat-capsule-webqq__notice-status')
+    expect(webqqView).not.toContain('getNoticeTypeText')
+    expect(webqqView).not.toContain('getNoticeStatusText')
+    expect(webqqView).not.toContain('申请时间：')
+    expect(webqqView).not.toContain("return timestamp ? formatListTime(timestamp) : '未知'")
+    expect(webqqView).not.toContain('<small class="chat-capsule-webqq__notice-time"')
+    expect(webqqView).not.toContain('<div v-if="noticeOpen" class="chat-capsule-webqq__chat-title">')
+  })
+
+  it('closes the WebQQ notification dropdown when clicking elsewhere in the panel', () => {
+    expect(webqqView).toContain('function closeNoticeMenu()')
+    expect(webqqView).toContain('noticeOpen.value = false')
+  })
+
+  it('formats WebQQ notice times as month/day plus clock time', () => {
+    expect(webqqView).toContain('function padNoticeTimePart(value: number)')
+    expect(webqqView).toContain('date.getMonth() + 1')
+    expect(webqqView).toContain('date.getDate()')
+    expect(webqqView).toContain('date.getHours()')
+    expect(webqqView).toContain('date.getMinutes()')
+  })
+
+  it('splits WebQQ notice question and answer comments into separate lines', () => {
+    expect(webqqView).toContain('function formatNoticeComment(comment: string)')
+    expect(webqqView).toContain('问题[:：]')
+    expect(webqqView).toContain('答案[:：]')
+    expect(webqqView).toContain('return match ? [match[1], match[2]] : [comment]')
   })
 
   it('renders sender avatars for WebQQ messages', () => {

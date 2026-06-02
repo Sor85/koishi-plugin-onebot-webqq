@@ -324,6 +324,10 @@ function getWebQQUserAvatar(userId: string) {
   return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640` : ''
 }
 
+function getWebQQGroupAvatar(groupId: string) {
+  return groupId ? `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/` : ''
+}
+
 function readWebQQPeer(session: Session) {
   const isGroup = !!(session.guildId || session.event.guild)
   const peerId = isGroup
@@ -374,6 +378,29 @@ function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefin
     ...(requesterId ? { requesterId } : {}),
     ...(requesterName ? { requesterName } : {}),
     ...(comment ? { comment } : {}),
+  }
+}
+
+function createWebQQGroupLeaveNotice(session: Session): WebQQNotice | undefined {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+  const groupName = session.event.guild?.name || session.event.channel?.name || groupId
+  const requesterId = session.userId || session.event.user?.id
+  const requesterName = readUserName(session) || requesterId
+  if (!groupId) return
+  return {
+    id: `group:leave:${groupId}:${requesterId || 'unknown'}:${session.timestamp}`,
+    type: 'group-notice',
+    title: groupName || '群通知',
+    subtitle: requesterName ? `${requesterName} 退出群聊` : '成员退出群聊',
+    avatar: getWebQQGroupAvatar(groupId),
+    status: 'approved',
+    time: session.timestamp,
+    subType: 'leave',
+    groupId,
+    ...(groupName ? { groupName } : {}),
+    ...(requesterId ? { requesterId } : {}),
+    ...(requesterName ? { requesterName } : {}),
   }
 }
 
@@ -438,6 +465,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
   const friendRequestNotices = new Map<string, WebQQNotice>()
+  const groupLeaveNotices = new Map<string, WebQQNotice>()
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
     if (!session) return
@@ -486,6 +514,12 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     const notice = createWebQQFriendRequestNotice(session)
     if (!notice) return
     friendRequestNotices.set(notice.id, notice)
+  })
+
+  ctx.on('guild-member-removed', (session) => {
+    const notice = createWebQQGroupLeaveNotice(session)
+    if (!notice) return
+    groupLeaveNotices.set(notice.id, notice)
   })
 
   ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
@@ -545,7 +579,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)
     }, consoleAuthOptions)
     console.addListener('chat-capsule/webqq/notices', () => {
-      return webqq.loadNotices([...friendRequestNotices.values()])
+      return webqq.loadNotices([...friendRequestNotices.values(), ...groupLeaveNotices.values()])
     }, consoleAuthOptions)
     console.addListener('chat-capsule/webqq/notice-action', async (action: WebQQNoticeAction) => {
       await webqq.handleNotice(action)

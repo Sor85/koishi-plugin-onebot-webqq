@@ -79,4 +79,34 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__contact-unread')).toContain('right: -6px')
     expect(ruleBody('.chat-capsule-webqq__contact-unread')).toContain('min-width: 18px')
   })
+
+  it('centers the WebQQ notice menu under the bell button', () => {
+    expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('position: relative')
+    expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('z-index: 2')
+    expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('left: 50%')
+    expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('z-index: 3')
+    expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('transform: translateX(-50%)')
+  })
+
+  it('wraps WebQQ notice comments instead of truncating them', () => {
+    expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('white-space: normal')
+    expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow-wrap: anywhere')
+    expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow: visible')
+    expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('text-overflow: clip')
+  })
+
+  it('shows full WebQQ notice titles without truncation', () => {
+    expect(ruleBody('.chat-capsule-webqq__notice-title')).toContain('white-space: normal')
+    expect(ruleBody('.chat-capsule-webqq__notice-title')).toContain('overflow-wrap: anywhere')
+    expect(ruleBody('.chat-capsule-webqq__notice-title')).toContain('overflow: visible')
+    expect(ruleBody('.chat-capsule-webqq__notice-title')).toContain('text-overflow: clip')
+  })
+
+  it('places WebQQ notice status and time in the right side column', () => {
+    expect(ruleBody('.chat-capsule-webqq__notice-side')).toContain('align-self: stretch')
+    expect(ruleBody('.chat-capsule-webqq__notice-time')).toContain('margin-top: auto')
+    expect(ruleBody('.chat-capsule-webqq__notice-time')).toContain('white-space: nowrap')
+    expect(ruleBody('.chat-capsule-webqq__notice-time')).toContain('text-align: right')
+    expect(ruleBody('.chat-capsule-webqq__notice-side .chat-capsule-webqq__notice-result')).toContain('width: max-content')
+  })
 })

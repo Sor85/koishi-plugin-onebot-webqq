@@ -1,24 +1,58 @@
 <template>
-  <div class="chat-capsule-webqq" role="dialog" aria-label="WebQQ 观察窗">
+  <div class="chat-capsule-webqq" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <aside class="chat-capsule-webqq__sidebar">
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
-          <button :class="{ 'is-active': activeTab === 'recent' && !noticeOpen }" type="button" @click="selectTab('recent')">
+          <button :class="{ 'is-active': activeTab === 'recent' }" type="button" @click="selectTab('recent')">
             <span class="chat-capsule-webqq__tab-icon is-clock"></span>
             最近
           </button>
-          <button :class="{ 'is-active': activeTab === 'friends' && !noticeOpen }" type="button" @click="selectTab('friends')">
+          <button :class="{ 'is-active': activeTab === 'friends' }" type="button" @click="selectTab('friends')">
             <span class="chat-capsule-webqq__tab-icon is-user"></span>
             好友
           </button>
-          <button :class="{ 'is-active': activeTab === 'groups' && !noticeOpen }" type="button" @click="selectTab('groups')">
+          <button :class="{ 'is-active': activeTab === 'groups' }" type="button" @click="selectTab('groups')">
             <span class="chat-capsule-webqq__tab-icon is-group"></span>
             群组
           </button>
         </div>
-        <button :class="['chat-capsule-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="openNotices">
-          <span class="chat-capsule-webqq__tab-icon is-bell"></span>
-        </button>
+        <span class="chat-capsule-webqq__notify-wrap" @click.stop>
+          <button :class="['chat-capsule-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="openNotices">
+            <span class="chat-capsule-webqq__tab-icon is-bell"></span>
+          </button>
+          <div v-if="noticeOpen" class="chat-capsule-webqq__notice-menu">
+            <div class="chat-capsule-webqq__notice-tabs">
+              <button :class="{ 'is-active': noticeMenuTab === 'friends' }" type="button" @click="noticeMenuTab = 'friends'">好友申请</button>
+              <button :class="{ 'is-active': noticeMenuTab === 'groups' }" type="button" @click="noticeMenuTab = 'groups'">群通知</button>
+            </div>
+            <div class="chat-capsule-webqq__notice-menu-body">
+              <div v-if="noticeLoading" class="chat-capsule-webqq__notice-empty">加载中</div>
+              <div v-else-if="noticeErrorText" class="chat-capsule-webqq__notice-empty is-error">{{ noticeErrorText }}</div>
+              <div v-else-if="!filteredNotices.length" class="chat-capsule-webqq__notice-empty">暂无通知</div>
+              <div v-else class="chat-capsule-webqq__notices">
+                <article v-for="notice in filteredNotices" :key="notice.id" class="chat-capsule-webqq__notice-card">
+                  <img v-if="notice.avatar" class="chat-capsule-webqq__notice-avatar" :src="withProxy(notice.avatar)" :alt="notice.title">
+                  <span v-else class="chat-capsule-webqq__notice-avatar"></span>
+                  <div class="chat-capsule-webqq__notice-main">
+                    <strong class="chat-capsule-webqq__notice-title">{{ notice.title }}</strong>
+                    <span>{{ notice.subtitle }}</span>
+                    <template v-if="notice.comment">
+                      <small v-for="line in formatNoticeComment(notice.comment)" :key="line" class="chat-capsule-webqq__notice-comment">{{ line }}</small>
+                    </template>
+                  </div>
+                  <div class="chat-capsule-webqq__notice-side">
+                    <span v-if="canHandleNotice(notice)" class="chat-capsule-webqq__notice-actions">
+                      <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, true)">同意</button>
+                      <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, false)">拒绝</button>
+                    </span>
+                    <span v-else-if="getHandledNoticeStatusText(notice)" :class="['chat-capsule-webqq__notice-result', `is-${notice.status}`]">{{ getHandledNoticeStatusText(notice) }}</span>
+                    <time v-if="notice.time" class="chat-capsule-webqq__notice-time">{{ formatNoticeTime(notice.time) }}</time>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </span>
       </div>
       <div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">
         <span class="chat-capsule-webqq__search-icon"></span>
@@ -96,51 +130,17 @@
     </aside>
     <section class="chat-capsule-webqq__chat">
       <header class="chat-capsule-webqq__chat-header">
-        <div v-if="noticeOpen" class="chat-capsule-webqq__chat-title">
-          <div>
-            <strong>通知</strong>
-            <span>好友申请 / 群通知</span>
-          </div>
-        </div>
-        <div v-else class="chat-capsule-webqq__chat-title">
+        <div class="chat-capsule-webqq__chat-title">
           <img v-if="currentAvatar" class="chat-capsule-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
           <div>
             <strong>{{ currentTitle }}</strong>
             <span>{{ currentSubtitle }}</span>
           </div>
         </div>
-        <button v-if="noticeOpen" type="button" @click="loadNotices">刷新</button>
-        <button v-else type="button" @click="loadContacts">刷新</button>
+        <button type="button" @click="loadContacts">刷新</button>
       </header>
       <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
-        <template v-if="noticeOpen">
-          <div v-if="noticeLoading" class="chat-capsule-webqq__placeholder">加载中</div>
-          <div v-else-if="noticeErrorText" class="chat-capsule-webqq__placeholder is-error">{{ noticeErrorText }}</div>
-          <div v-else-if="!notices.length" class="chat-capsule-webqq__placeholder">暂无通知</div>
-          <div v-else class="chat-capsule-webqq__notices">
-            <article v-for="notice in notices" :key="notice.id" class="chat-capsule-webqq__notice-card">
-              <img v-if="notice.avatar" class="chat-capsule-webqq__notice-avatar" :src="withProxy(notice.avatar)" :alt="notice.title">
-              <span v-else class="chat-capsule-webqq__notice-avatar"></span>
-              <div class="chat-capsule-webqq__notice-main">
-                <span class="chat-capsule-webqq__notice-meta">
-                  <span class="chat-capsule-webqq__notice-type">{{ getNoticeTypeText(notice) }}</span>
-                  <span :class="['chat-capsule-webqq__notice-status', `is-${notice.status}`]">{{ getNoticeStatusText(notice) }}</span>
-                </span>
-                <strong>{{ notice.title }}</strong>
-                <span>{{ notice.subtitle }}</span>
-                <small v-if="notice.comment">{{ notice.comment }}</small>
-              </div>
-              <div class="chat-capsule-webqq__notice-side">
-                <time v-if="notice.time">{{ formatListTime(notice.time) }}</time>
-                <span v-if="canHandleNotice(notice)" class="chat-capsule-webqq__notice-actions">
-                  <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, true)">同意</button>
-                  <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, false)">拒绝</button>
-                </span>
-              </div>
-            </article>
-          </div>
-        </template>
-        <template v-else-if="loading">
+        <template v-if="loading">
           <div class="chat-capsule-webqq__placeholder">加载中</div>
         </template>
         <template v-else-if="errorText">
@@ -189,7 +189,7 @@
         </template>
       </div>
       <footer class="chat-capsule-webqq__readonly-bar">
-        <span>{{ noticeOpen ? '只读通知' : '只读模式' }}</span>
+        <span>只读模式</span>
       </footer>
     </section>
   </div>
@@ -222,6 +222,7 @@ const trackingMessages = ref(true)
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
 const noticeOpen = ref(false)
+const noticeMenuTab = ref<'friends' | 'groups'>('friends')
 const noticeLoading = ref(false)
 const handlingNoticeId = ref('')
 const loading = ref(false)
@@ -265,6 +266,13 @@ const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
 const currentSubtitle = computed(() => currentChat.value ? getChatSubtitle(currentChat.value) : '好友 / 群聊')
 const currentAvatar = computed(() => currentChat.value?.avatar || '')
+const filteredNotices = computed(() => {
+  return sortPendingNotices(notices.value.filter((notice) => {
+    return noticeMenuTab.value === 'friends'
+      ? notice.type === 'friend-request'
+      : notice.type === 'group-notice'
+  }))
+})
 
 function getGroupSubtitle(group: WebQQGroup) {
   return `群聊 ${group.groupId} · ${group.memberCount} 人`
@@ -361,7 +369,6 @@ function isMessagePaneAtBottom() {
 }
 
 function updateMessageTracking() {
-  if (noticeOpen.value) return
   trackingMessages.value = isMessagePaneAtBottom()
   if (trackingMessages.value) clearCurrentUnreadCount()
   if (shouldLoadOlderMessages()) loadOlderMessages()
@@ -403,8 +410,12 @@ async function loadNotices() {
 }
 
 function openNotices() {
-  noticeOpen.value = true
-  loadNotices()
+  noticeOpen.value = !noticeOpen.value
+  if (noticeOpen.value) loadNotices()
+}
+
+function closeNoticeMenu() {
+  noticeOpen.value = false
 }
 
 async function loadMessages() {
@@ -511,18 +522,40 @@ function formatListTime(timestamp: number) {
   return formatTime(timestamp)
 }
 
-function getNoticeTypeText(notice: WebQQNotice) {
-  return notice.type === 'friend-request' ? '好友申请' : '群通知'
+function padNoticeTimePart(value: number) {
+  return String(value).padStart(2, '0')
 }
 
-function getNoticeStatusText(notice: WebQQNotice) {
+function formatNoticeTime(timestamp: number) {
+  const date = new Date(timestamp)
+  const month = padNoticeTimePart(date.getMonth() + 1)
+  const day = padNoticeTimePart(date.getDate())
+  const hour = padNoticeTimePart(date.getHours())
+  const minute = padNoticeTimePart(date.getMinutes())
+  return `${month}/${day} ${hour}:${minute}`
+}
+
+function sortPendingNotices(items: WebQQNotice[]) {
+  return items.slice().sort((left, right) => {
+    if (left.status === right.status) return 0
+    return left.status === 'pending' ? -1 : 1
+  })
+}
+
+function formatNoticeComment(comment: string) {
+  const match = comment.match(/^(问题[:：].+?)(?:\s+|(?=答案[:：]))(答案[:：].+)$/)
+  return match ? [match[1], match[2]] : [comment]
+}
+
+function getHandledNoticeStatusText(notice: WebQQNotice) {
+  if (notice.subType === 'leave') return ''
   if (notice.status === 'approved') return '已同意'
   if (notice.status === 'rejected') return '已拒绝'
-  return '待处理'
+  return ''
 }
 
 function canHandleNotice(notice: WebQQNotice) {
-  return notice.status === 'pending' && !!notice.flag
+  return notice.subType !== 'leave' && notice.status === 'pending' && !!notice.flag
 }
 
 async function handleNotice(notice: WebQQNotice, approve: boolean) {
