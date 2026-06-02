@@ -88,6 +88,23 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('transform: translateX(-50%)')
   })
 
+  it('uses inline SVG for WebQQ tab icons instead of pseudo elements', () => {
+    expect(ruleBody('.chat-capsule-webqq__tab-icon')).toContain('stroke: currentColor')
+    expect(style).not.toContain('.chat-capsule-webqq__tab-icon::before')
+    expect(style).not.toContain('.chat-capsule-webqq__tab-icon::after')
+    expect(style).not.toContain('.chat-capsule-webqq__tab-icon.is-clock')
+    expect(style).not.toContain('.chat-capsule-webqq__tab-icon.is-user')
+    expect(style).not.toContain('.chat-capsule-webqq__tab-icon.is-group')
+  })
+
+  it('lets the WebQQ tab header use the panel background with a rounded top-left corner', () => {
+    expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('background: transparent')
+    expect(ruleBody('.chat-capsule-webqq__sidebar')).not.toContain('rgba(255, 255, 255, 0.58)')
+    expect(ruleBody('.chat-capsule-webqq__tabs-row')).toContain('border-radius: 24px 0 0 0')
+    expect(ruleBody('.chat-capsule-webqq__tabs-row')).toContain('background: transparent')
+    expect(ruleBody('.chat-capsule-webqq__tabs-row')).not.toContain('rgba(255, 255, 255, 0.68)')
+  })
+
   it('wraps WebQQ notice comments instead of truncating them', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('white-space: normal')
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow-wrap: anywhere')

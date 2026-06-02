@@ -4,21 +4,35 @@
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
           <button :class="{ 'is-active': activeTab === 'recent' }" type="button" @click="selectTab('recent')">
-            <span class="chat-capsule-webqq__tab-icon is-clock"></span>
+            <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 7v5l3 2"></path>
+            </svg>
             最近
           </button>
           <button :class="{ 'is-active': activeTab === 'friends' }" type="button" @click="selectTab('friends')">
-            <span class="chat-capsule-webqq__tab-icon is-user"></span>
+            <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M5 21a7 7 0 0 1 14 0"></path>
+            </svg>
             好友
           </button>
           <button :class="{ 'is-active': activeTab === 'groups' }" type="button" @click="selectTab('groups')">
-            <span class="chat-capsule-webqq__tab-icon is-group"></span>
+            <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3.5"></circle>
+              <circle cx="17" cy="9" r="3"></circle>
+              <path d="M2.5 21a6.5 6.5 0 0 1 13 0"></path>
+              <path d="M14 16.5A5 5 0 0 1 21.5 21"></path>
+            </svg>
             群组
           </button>
         </div>
         <span class="chat-capsule-webqq__notify-wrap" @click.stop>
           <button :class="['chat-capsule-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="openNotices">
-            <span class="chat-capsule-webqq__tab-icon is-bell"></span>
+            <svg class="chat-capsule-webqq__notify-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 18a3 3 0 0 1-6 0"></path>
+              <path d="M19 16H5c1.4-1.4 2-3.2 2-5.5a5 5 0 0 1 10 0c0 2.3.6 4.1 2 5.5Z"></path>
+            </svg>
           </button>
           <div v-if="noticeOpen" class="chat-capsule-webqq__notice-menu">
             <div class="chat-capsule-webqq__notice-tabs">
