@@ -264,6 +264,54 @@ describe('onebot webqq adapter', () => {
     ])
   })
 
+  it('renders reply segments as quote elements without adding them to the message summary', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 6,
+            message_seq: 16,
+            time: 1710000005,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [
+              { type: 'reply', data: { id: 'quoted-1' } },
+              { type: 'text', data: { text: '这还差不多' } },
+            ],
+          }],
+        })),
+        get_msg: vi.fn(async () => ({
+          message_id: 'quoted-1',
+          sender: {
+            user_id: 40000,
+            nickname: '彩虹猫',
+          },
+          message: [{ type: 'text', data: { text: '宁宁摸摸头' } }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '这还差不多',
+        elements: [
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'text', text: '这还差不多' },
+        ],
+      }),
+    ])
+    expect(bot.internal.get_msg).toHaveBeenCalledWith({
+      message_id: 'quoted-1',
+    })
+  })
+
   it('adds LLBot history ordering parameter only for the LLBot protocol', async () => {
     const bot = {
       platform: 'onebot',

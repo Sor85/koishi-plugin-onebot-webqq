@@ -51,7 +51,8 @@ export interface WebQQMessage {
   direction: 'incoming' | 'outgoing'
   summary: string
   elements: {
-    type: 'text' | 'image' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+    type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+    title?: string
     text?: string
     url?: string
   }[]

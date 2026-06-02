@@ -156,12 +156,25 @@ function readElementText(value: unknown) {
   return value == null ? '' : String(value)
 }
 
+function readLiveQuoteText(raw: unknown): string {
+  if (typeof raw === 'string') return raw
+  if (!isRecord(raw)) return ''
+  const type = readElementText(raw.type)
+  const attrs = isRecord(raw.attrs) ? raw.attrs : {}
+  if (type === 'text') return readElementText(attrs.content)
+  if (type === 'img' || type === 'image') return '[图片]'
+  if (type === 'face') return `[表情 ${readElementText(attrs.id)}]`
+  if (Array.isArray(raw.children)) return raw.children.map(readLiveQuoteText).join('').trim()
+  return readElementText(attrs.content || attrs.text)
+}
+
 type WebQQResolvedImage = {
   url: string
   debug?: unknown
 }
 
 type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQResolvedImage>
+type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
 
 function isRemoteImageSource(file: string) {
   return /^https?:\/\//.test(file)
@@ -213,12 +226,30 @@ function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogg
   }
 }
 
-async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement | undefined> {
+async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement | undefined> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return undefined
   const type = readElementText(raw.type)
   const attrs = isRecord(raw.attrs) ? raw.attrs : {}
   if (type === 'text') return { type: 'text', text: readElementText(attrs.content) }
+  if (type === 'quote' || type === 'reply') {
+    const title = readElementText(attrs.name || attrs.nickname || attrs.senderName || attrs.sender_name)
+    const text = readElementText(attrs.content || attrs.text || attrs.sourceMsgText) ||
+      (Array.isArray(raw.children) ? raw.children.map(readLiveQuoteText).join('').trim() : '')
+    const id = readElementText(attrs.id || attrs.messageId || attrs.message_id)
+    if (!text && id && resolveQuote) {
+      try {
+        return await resolveQuote(id)
+      } catch {
+        return { type: 'quote', text: '[引用消息]' }
+      }
+    }
+    return {
+      type: 'quote',
+      ...(title ? { title } : {}),
+      text: text || '[引用消息]',
+    }
+  }
   if (type === 'img' || type === 'image') {
     const url = readElementText(attrs.src || attrs.url)
     if (url) {
@@ -250,9 +281,9 @@ async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResol
   return { type: 'unknown', text: '[消息]' }
 }
 
-async function normalizeLiveElements(session: Session, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement[]> {
+async function normalizeLiveElements(session: Session, resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement[]> {
   const elements = (await Promise.all((session.elements ?? session.event.message?.elements ?? [])
-    .map((element) => normalizeLiveElement(element, resolveImage))))
+    .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote))))
     .filter((element): element is WebQQMessageElement => !!element)
   if (elements.length) return elements
   const content = session.content?.trim()
@@ -263,6 +294,7 @@ function summarizeWebQQElements(elements: WebQQMessageElement[]) {
   const summary = elements.map((element) => {
     if (element.type === 'text') return element.text
     if (element.type === 'image') return '[图片]'
+    if (element.type === 'quote') return ''
     if (element.type === 'face') return element.text || '[表情]'
     return element.text || '[消息]'
   }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
@@ -290,13 +322,13 @@ function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
   return senderId && senderId === session.bot.selfId ? 'outgoing' : 'incoming'
 }
 
-async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver): Promise<WebQQLiveMessage | undefined> {
+async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
   if (!peer) return
   if (!(session.elements ?? session.event.message?.elements)?.length && !session.content?.trim()) return
   const bot = readBotProfile(session)
-  const elements = await normalizeLiveElements(session, resolveImage)
+  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote)
   const senderId = direction === 'outgoing'
     ? bot.selfId
     : session.userId || session.event.user?.id || 'unknown'
@@ -352,16 +384,21 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
     if (!session) return
-    const payload = await createWebQQLiveMessage(session, direction, async (file, source) => {
-      if (source === 'url') {
-        const url = imageUrlResolver(file) || file
-        logger?.info('webqq image url %s', JSON.stringify({ direction, url: file, proxyUrl: url }))
-        return { url, debug: { url: file } }
-      }
-      const image = await webqq.resolveImage(file)
-      logger?.info('webqq image %s', JSON.stringify({ direction, file, result: image.debug, url: image.url }))
-      return image
-    })
+    const payload = await createWebQQLiveMessage(
+      session,
+      direction,
+      async (file, source) => {
+        if (source === 'url') {
+          const url = imageUrlResolver(file) || file
+          logger?.info('webqq image url %s', JSON.stringify({ direction, url: file, proxyUrl: url }))
+          return { url, debug: { url: file } }
+        }
+        const image = await webqq.resolveImage(file)
+        logger?.info('webqq image %s', JSON.stringify({ direction, file, result: image.debug, url: image.url }))
+        return image
+      },
+      async (id) => webqq.resolveQuote(id),
+    )
     if (!payload) return
     const key = getLiveMessageKey(payload)
     const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)

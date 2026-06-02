@@ -106,7 +106,11 @@
               <div class="chat-capsule-webqq__message-name">{{ message.senderName }}</div>
               <div class="chat-capsule-webqq__bubble">
                 <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
-                  <span v-if="element.type === 'text'">{{ element.text }}</span>
+                  <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
+                    <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
+                    <span>{{ element.text || '[引用消息]' }}</span>
+                  </div>
+                  <span v-else-if="element.type === 'text'">{{ element.text }}</span>
                   <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
                   <span v-else>{{ element.text || message.summary }}</span>
                 </template>

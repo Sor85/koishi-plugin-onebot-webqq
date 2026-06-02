@@ -62,6 +62,12 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
   })
 
+  it('renders quote blocks inside WebQQ message bubbles', () => {
+    expect(webqqView).toContain('element.type === \'quote\'')
+    expect(webqqView).toContain('chat-capsule-webqq__quote')
+    expect(webqqView).toContain('chat-capsule-webqq__quote-title')
+  })
+
   it('loads earlier WebQQ messages when scrolling to the top', () => {
     expect(webqqView).toContain('const historyLoading = ref(false)')
     expect(webqqView).toContain('const historyExhausted = ref(false)')

@@ -21,7 +21,8 @@ export interface WebQQGroup {
 
 // WebQQ 只读面板使用的消息片段。
 export interface WebQQMessageElement {
-  type: 'text' | 'image' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  title?: string
   text?: string
   url?: string
 }
@@ -118,6 +119,11 @@ function toArrayResult(result: unknown, key: string) {
   if (isRecord(result.data) && Array.isArray(result.data[key])) return result.data[key]
   if (Array.isArray(result.data)) return result.data
   return []
+}
+
+function getActionData(result: unknown) {
+  const item = isRecord(result) ? result : {}
+  return isRecord(item.data) ? item.data : item
 }
 
 function getOneBotBots(ctx: OneBotContext) {
@@ -218,6 +224,18 @@ async function resolveOneBotImage(bot: OneBotBot, file: string, imageUrlResolver
   }
 }
 
+async function resolveOneBotQuote(bot: OneBotBot, id: string, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
+  const item = getActionData(await callAction(bot, 'get_msg', { message_id: toOneBotId(id) }))
+  const sender = isRecord(item.sender) ? item.sender : {}
+  const elements = await normalizeMessageElements(item.message, bot, imageUrlResolver)
+  const title = getStringField(sender, ['nickname', 'card', 'name'])
+  return {
+    type: 'quote',
+    ...(title ? { title } : {}),
+    text: summarizeElements(elements),
+  }
+}
+
 async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return { type: 'unknown', text: '[消息]' }
@@ -237,6 +255,24 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
     }
   }
   if (type === 'face') return { type: 'face', text: `[表情 ${getStringField(data, ['id'])}]` }
+  if (type === 'reply' || type === 'quote') {
+    const id = getStringField(data, ['id', 'message_id', 'messageId'])
+    if (id) {
+      try {
+        return await resolveOneBotQuote(bot, id, imageUrlResolver)
+      } catch {
+        return { type: 'quote', text: '[引用消息]' }
+      }
+    }
+    const sender = isRecord(data.sender) ? data.sender : data
+    const title = getStringField(sender, ['nickname', 'card', 'name', 'senderName', 'sender_name'])
+    const text = getStringField(data, ['text', 'content', 'message', 'sourceMsgText'])
+    return {
+      type: 'quote',
+      ...(title ? { title } : {}),
+      text: text || '[引用消息]',
+    }
+  }
   if (type === 'file') return { type: 'file', text: getStringField(data, ['name', 'file']) || '[文件]' }
   if (type === 'record') return { type: 'record', text: '[语音]' }
   if (type === 'video') return { type: 'video', text: '[视频]' }
@@ -253,6 +289,7 @@ function summarizeElements(elements: WebQQMessageElement[]) {
   const summary = elements.map((element) => {
     if (element.type === 'text') return element.text
     if (element.type === 'image') return '[图片]'
+    if (element.type === 'quote') return ''
     if (element.type === 'face') return element.text || '[表情]'
     return element.text || '[消息]'
   }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
@@ -283,6 +320,10 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
   const protocol = options.protocol ?? 'napcat'
   const { imageUrlResolver } = options
   return {
+    async resolveQuote(id: string) {
+      return resolveOneBotQuote(getBot(), id, imageUrlResolver)
+    },
+
     async resolveImage(file: string) {
       return resolveOneBotImage(getBot(), file, imageUrlResolver)
     },
