@@ -260,6 +260,12 @@ describe('chat capsule plugin wiring', () => {
           id: '30000',
           name: 'Alice',
         },
+        member: {
+          name: '群昵称',
+          role: 'admin',
+          level: '100',
+          title: '闪亮头衔',
+        },
         message: {
           id: 'new-1',
           elements: [{ type: 'text', attrs: { content: 'new message' } }],
@@ -273,7 +279,11 @@ describe('chat capsule plugin wiring', () => {
       message: expect.objectContaining({
         id: 'new-1',
         senderId: '30000',
+        senderName: '群昵称',
         senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+        senderRole: '管理员',
+        senderLevel: '100',
+        senderTitle: '闪亮头衔',
         direction: 'incoming',
         summary: 'new message',
       }),

@@ -52,6 +52,16 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
   })
 
+  it('renders WebQQ sender metadata as compact badges', () => {
+    expect(ruleBody('.chat-capsule-webqq__sender-line')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__sender-line')).toContain('gap: 4px')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge')).toContain('border-radius: 5px')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-owner')).toContain('background: #fff3cf')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-admin')).toContain('background: #e9f8ef')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-level')).toContain('background: rgba(148, 163, 184, 0.24)')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-title')).toContain('background: rgba(18, 183, 245, 0.1)')
+  })
+
   it('keeps WebQQ contact message times in the top-right corner', () => {
     expect(ruleBody('.chat-capsule-webqq__contact')).toContain('position: relative')
     expect(ruleBody('.chat-capsule-webqq__contact')).toContain('padding: 10px 58px 10px 12px')

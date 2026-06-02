@@ -49,6 +49,18 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain(':alt="message.senderName"')
   })
 
+  it('renders group badges around sender names in opposite order by direction', () => {
+    expect(webqqView).toContain('chat-capsule-webqq__sender-line')
+    expect(webqqView).toContain("v-if=\"message.direction === 'outgoing'\"")
+    expect(webqqView).toContain("v-if=\"message.direction === 'incoming'\"")
+    expect(webqqView).toContain('message.senderRole')
+    expect(webqqView).toContain('message.senderLevel')
+    expect(webqqView).toContain('message.senderTitle')
+    expect(webqqView).toContain('getSenderAuthorityText')
+    expect(webqqView).toContain('getSenderAuthorityClass')
+    expect(webqqView).toContain('formatSenderLevel')
+  })
+
   it('shows group avatar, group id, and member count in the chat header', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__chat-avatar"')
     expect(webqqView).toContain(':src="withProxy(currentAvatar)"')

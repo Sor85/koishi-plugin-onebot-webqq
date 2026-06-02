@@ -89,6 +89,10 @@ describe('onebot webqq adapter', () => {
             sender: {
               user_id: 30000,
               nickname: 'Alice',
+              card: '群昵称',
+              role: 'owner',
+              level: '100',
+              title: '彩色头衔',
             },
             message: [{ type: 'text', data: { text: 'hello group' } }],
           }],
@@ -116,8 +120,11 @@ describe('onebot webqq adapter', () => {
       sequence: '11',
       time: 1710000000000,
       senderId: '30000',
-      senderName: 'Alice',
+      senderName: '群昵称',
       senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+      senderRole: '群主',
+      senderLevel: '100',
+      senderTitle: '彩色头衔',
       direction: 'incoming',
       summary: 'hello group',
       elements: [{ type: 'text', text: 'hello group' }],
@@ -145,6 +152,37 @@ describe('onebot webqq adapter', () => {
       count: 20,
     })
     expect(bot.internal.send_msg).not.toHaveBeenCalled()
+  })
+
+  it('does not expose normal group member roles as sender badges', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 10,
+            message_seq: 20,
+            time: 1710000010,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+              role: 'member',
+            },
+            message: [{ type: 'text', data: { text: 'normal member' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.not.objectContaining({
+        senderRole: expect.any(String),
+      }),
+    ])
   })
 
   it('resolves image file ids from history messages through get_image', async () => {

@@ -655,11 +655,52 @@
   min-width: 0;
 }
 
+.chat-capsule-webqq__sender-line {
+  display: flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .chat-capsule-webqq__message-name,
 .chat-capsule-webqq__message-time {
   font-size: 11px;
   line-height: 16px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
+}
+
+.chat-capsule-webqq__sender-badge {
+  max-width: 120px;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-radius: 5px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-capsule-webqq__sender-badge.is-owner {
+  background: #fff3cf;
+  color: #9a5b00;
+}
+
+.chat-capsule-webqq__sender-badge.is-admin {
+  background: #e9f8ef;
+  color: #237343;
+}
+
+.chat-capsule-webqq__sender-badge.is-level {
+  background: rgba(148, 163, 184, 0.24);
+  color: #475569;
+}
+
+.chat-capsule-webqq__sender-badge.is-title {
+  background: rgba(18, 183, 245, 0.1);
+  color: #0b7fab;
 }
 
 .chat-capsule-webqq__bubble {

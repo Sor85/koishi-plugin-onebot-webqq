@@ -35,6 +35,9 @@ export interface WebQQMessage {
   senderId: string
   senderName: string
   senderAvatar: string
+  senderRole?: string
+  senderLevel?: string
+  senderTitle?: string
   direction: 'incoming' | 'outgoing'
   summary: string
   elements: WebQQMessageElement[]
@@ -101,6 +104,12 @@ function getStringField(source: Record<string, unknown>, keys: string[]) {
     const value = source[key]
     if (value != null && String(value).trim()) return String(value)
   }
+  return ''
+}
+
+function normalizeGroupRole(role: string) {
+  if (role === 'owner') return '群主'
+  if (role === 'admin' || role === 'administrator') return '管理员'
   return ''
 }
 
@@ -301,13 +310,19 @@ async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlResolver?:
   const sender = isRecord(item.sender) ? item.sender : {}
   const senderId = getStringField(sender, ['user_id', 'uin', 'uid']) || getStringField(item, ['user_id'])
   const elements = await normalizeMessageElements(item.message, bot, imageUrlResolver)
+  const senderRole = normalizeGroupRole(getStringField(sender, ['role']))
+  const senderLevel = getStringField(sender, ['level', 'sender_level', 'senderLevel'])
+  const senderTitle = getStringField(sender, ['title', 'special_title', 'specialTitle'])
   return {
     id: getStringField(item, ['message_id', 'msg_id', 'id']),
     sequence: getStringField(item, ['message_seq', 'msg_seq', 'seq', 'message_id']),
     time: toTimestampMs(item.time),
     senderId,
-    senderName: getStringField(sender, ['nickname', 'card', 'name']) || senderId,
+    senderName: getStringField(sender, ['card', 'nickname', 'name']) || senderId,
     senderAvatar: senderId ? getUserAvatar(senderId) : '',
+    ...(senderRole ? { senderRole } : {}),
+    ...(senderLevel ? { senderLevel } : {}),
+    ...(senderTitle ? { senderTitle } : {}),
     direction: senderId && senderId === bot.selfId ? 'outgoing' : 'incoming',
     summary: summarizeElements(elements),
     elements,

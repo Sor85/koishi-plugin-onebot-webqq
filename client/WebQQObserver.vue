@@ -118,7 +118,18 @@
           >
             <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
             <div class="chat-capsule-webqq__message-content">
-              <div class="chat-capsule-webqq__message-name">{{ message.senderName }}</div>
+              <div class="chat-capsule-webqq__sender-line">
+                <template v-if="message.direction === 'outgoing'">
+                  <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
+                  <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
+                  <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                </template>
+                <template v-if="message.direction === 'incoming'">
+                  <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                  <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
+                  <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
+                </template>
+              </div>
               <div class="chat-capsule-webqq__bubble">
                 <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
                   <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
@@ -425,6 +436,20 @@ function formatTime(timestamp: number) {
 
 function formatListTime(timestamp: number) {
   return formatTime(timestamp)
+}
+
+function formatSenderLevel(level: string) {
+  return level.startsWith('Lv.') ? level : `Lv.${level}`
+}
+
+function getSenderAuthorityText(message: WebQQMessage) {
+  return message.senderTitle || message.senderRole || ''
+}
+
+function getSenderAuthorityClass(message: WebQQMessage) {
+  if (message.senderRole === '群主') return 'is-owner'
+  if (message.senderRole === '管理员') return 'is-admin'
+  return 'is-title'
 }
 
 receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {

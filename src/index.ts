@@ -156,6 +156,21 @@ function readElementText(value: unknown) {
   return value == null ? '' : String(value)
 }
 
+function readRecordText(source: unknown, keys: string[]) {
+  if (!isRecord(source)) return ''
+  for (const key of keys) {
+    const value = source[key]
+    if (value != null && String(value).trim()) return String(value)
+  }
+  return ''
+}
+
+function normalizeGroupRole(role: string) {
+  if (role === 'owner') return '群主'
+  if (role === 'admin' || role === 'administrator') return '管理员'
+  return ''
+}
+
 function readLiveQuoteText(raw: unknown): string {
   if (typeof raw === 'string') return raw
   if (!isRecord(raw)) return ''
@@ -322,6 +337,18 @@ function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
   return senderId && senderId === session.bot.selfId ? 'outgoing' : 'incoming'
 }
 
+function readWebQQLiveSenderMetadata(session: Session) {
+  const member = session.event.member
+  const role = normalizeGroupRole(readRecordText(member, ['role']))
+  const level = readRecordText(member, ['level', 'sender_level', 'senderLevel'])
+  const title = readRecordText(member, ['title', 'special_title', 'specialTitle'])
+  return {
+    ...(role ? { senderRole: role } : {}),
+    ...(level ? { senderLevel: level } : {}),
+    ...(title ? { senderTitle: title } : {}),
+  }
+}
+
 async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
@@ -333,7 +360,7 @@ async function createWebQQLiveMessage(session: Session, direction: WebQQMessage[
     ? bot.selfId
     : session.userId || session.event.user?.id || 'unknown'
   const senderName = direction === 'outgoing'
-    ? bot.name || '机器人'
+    ? readMemberName(session) || bot.name || '机器人'
     : readUserName(session) || senderId
   const id = session.messageId || session.event.message?.id || `${direction}:${peer.type}:${peer.peerId}:${session.timestamp}`
   return {
@@ -345,6 +372,7 @@ async function createWebQQLiveMessage(session: Session, direction: WebQQMessage[
       senderId,
       senderName,
       senderAvatar: getWebQQUserAvatar(senderId),
+      ...readWebQQLiveSenderMetadata(session),
       direction,
       summary: summarizeWebQQElements(elements),
       elements,
