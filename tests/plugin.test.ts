@@ -1,7 +1,10 @@
+import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import * as plugin from '../src'
 import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
+
+const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
 type TestLogger = {
@@ -101,6 +104,12 @@ describe('chat capsule plugin wiring', () => {
 
   it('exports a Config schema for backend options', () => {
     expect(plugin.Config).toBeDefined()
+    expect(pluginSource).toContain('webQQTheme?:')
+    expect(pluginSource).toContain("Schema.const('fresh').description('清爽')")
+    expect(pluginSource).toContain("Schema.const('frosted').description('毛玻璃')")
+    expect(pluginSource).toContain("Schema.const('glass').description('玻璃')")
+    expect(pluginSource).toContain(".default('fresh')")
+    expect(pluginSource).toContain("description('WebQQ 主题')")
   })
 
   it('registers a console entry with empty capsule data', () => {
@@ -118,6 +127,7 @@ describe('chat capsule plugin wiring', () => {
     expect(data?.()).toEqual({
       capsule: undefined,
       debug: false,
+      webQQTheme: 'fresh',
     })
   })
 
@@ -743,6 +753,22 @@ describe('chat capsule plugin wiring', () => {
     expect(data?.()).toEqual({
       capsule: undefined,
       debug: true,
+      webQQTheme: 'fresh',
+    })
+  })
+
+  it('passes configured WebQQ theme to console entry data', () => {
+    const { ctx, addEntry } = createFakeContext()
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { webQQTheme?: 'fresh' | 'frosted' | 'glass' }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, { webQQTheme: 'fresh' })
+
+    const data = addEntry.mock.calls[0][1]
+    expect(data?.()).toEqual({
+      capsule: undefined,
+      debug: false,
+      webQQTheme: 'fresh',
     })
   })
 

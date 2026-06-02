@@ -158,5 +158,8 @@ export interface WebQQContacts {
   recent?: WebQQRecentContact[]
 }
 
+export type WebQQTheme = 'fresh' | 'frosted' | 'glass'
+
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)
+export const webQQTheme = ref<WebQQTheme>('fresh')

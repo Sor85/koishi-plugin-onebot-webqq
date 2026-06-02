@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
+const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
 describe('chat capsule view', () => {
   it('hides the capsule on the logger page', () => {
@@ -43,5 +44,11 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('{{ usage!.outputTokens }}')
     expect(capsuleView).toContain('v-if="thinkingDurationText"')
     expect(capsuleView).toContain('{{ thinkingDurationText }}')
+  })
+
+  it('loads the configured WebQQ theme from console entry data', () => {
+    expect(clientEntry).toContain("import { capsule, debug, webQQTheme, type CapsuleData, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
+    expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
   })
 })

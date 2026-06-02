@@ -40,6 +40,7 @@ export interface Config {
   onebotSelfId?: string
   onebotProtocol?: WebQQProtocol
   historyLimit?: number
+  webQQTheme?: 'fresh' | 'frosted' | 'glass'
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -50,6 +51,11 @@ export const Config: Schema<Config> = Schema.object({
     Schema.const('llbot').description('LLBot'),
   ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
   historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
+  webQQTheme: Schema.union([
+    Schema.const('fresh').description('清爽'),
+    Schema.const('frosted').description('毛玻璃'),
+    Schema.const('glass').description('玻璃'),
+  ]).default('fresh').role('radio').description('WebQQ 主题'),
 })
 
 declare module '@koishijs/console' {
@@ -571,6 +577,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       return {
         capsule: state.snapshot(),
         debug,
+        webQQTheme: config.webQQTheme ?? 'fresh',
       }
     })
     console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)

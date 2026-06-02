@@ -119,6 +119,15 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__tabs-row')).not.toContain('rgba(255, 255, 255, 0.68)')
   })
 
+  it('adds a fresh WebQQ theme with plain gray-white surfaces and blue accents', () => {
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh')).toContain('background: #f4f6f8')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh')).toContain('border: 1px solid #d9e1ea')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh')).toContain('--chat-capsule-webqq-accent: #2563eb')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat')).toContain('background: #ffffff')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__bubble')).toContain('background: #ffffff')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: #2563eb')
+  })
+
   it('wraps WebQQ notice comments instead of truncating them', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('white-space: normal')
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow-wrap: anywhere')

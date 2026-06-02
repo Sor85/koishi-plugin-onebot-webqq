@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sortWebQQGroupMembers, type WebQQGroupMember } from '../client/state'
+import { sortWebQQGroupMembers, webQQTheme, type WebQQGroupMember } from '../client/state'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -12,6 +12,10 @@ function member(userId: string, card: string, role?: string, nickname = card): W
 }
 
 describe('webqq group members', () => {
+  it('uses the fresh WebQQ theme as the frontend default', () => {
+    expect(webQQTheme.value).toBe('fresh')
+  })
+
   it('sorts owner first, then admins and members by A-Z display name', () => {
     const members = [
       member('5', 'zulu'),

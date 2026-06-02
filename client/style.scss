@@ -230,6 +230,17 @@
   pointer-events: auto;
 }
 
+.chat-capsule-webqq.is-theme-fresh {
+  --chat-capsule-webqq-accent: #2563eb;
+
+  color: #172033;
+  background: #f4f6f8;
+  border: 1px solid #d9e1ea;
+  border-radius: 18px;
+  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.18);
+  backdrop-filter: none;
+}
+
 .chat-capsule-webqq__sidebar {
   position: relative;
   z-index: 2;
@@ -1146,6 +1157,61 @@
     background: rgba(255, 255, 255, 0.42);
     font-size: 13px;
   }
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__sidebar,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__tabs-row {
+  background: #f4f6f8;
+  backdrop-filter: none;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__tabs button.is-active,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notify:hover,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notify.is-active,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-tabs button.is-active,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__contact:hover,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__contact.is-active {
+  color: var(--chat-capsule-webqq-accent);
+  background: #e8f0ff;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__search input,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__group-members input {
+  background: #ffffff;
+  border-color: #d9e1ea;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat {
+  background: #ffffff;
+  backdrop-filter: none;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__group-info {
+  background: #f8fafc;
+  backdrop-filter: none;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header button,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-actions button {
+  color: var(--chat-capsule-webqq-accent);
+  background: #e8f0ff;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-menu,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-card,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__group-announcement,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__readonly-bar span {
+  background: #ffffff;
+  border-color: #d9e1ea;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__bubble {
+  background: #ffffff;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble {
+  background: #2563eb;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
 }
 
 @keyframes chat-capsule-thinking-shimmer {

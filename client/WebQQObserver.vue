@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-capsule-webqq" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`]" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <aside class="chat-capsule-webqq__sidebar">
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
@@ -264,7 +264,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { sortWebQQGroupMembers } from './state'
+import { sortWebQQGroupMembers, webQQTheme } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 
 type ChatSelection =

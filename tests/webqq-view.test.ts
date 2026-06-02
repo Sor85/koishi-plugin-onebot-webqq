@@ -18,6 +18,15 @@ describe('webqq observer view', () => {
     expect(capsuleView).toContain('if (webqqOpen.value) webqqMounted.value = true')
   })
 
+  it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
+    expect(webqqView).toContain("import { sortWebQQGroupMembers, webQQTheme } from './state'")
+    expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`]\"")
+    expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
+    expect(webqqView).not.toContain('aria-label="WebQQ 主题"')
+    expect(webqqView).not.toContain('v-model="webQQTheme"')
+    expect(webqqView).not.toContain('webQQThemeOptions')
+  })
+
   it('passes panel visibility to the WebQQ observer', () => {
     expect(capsuleView).toContain(':visible="webqqOpen"')
     expect(webqqView).toContain('defineProps<{ visible: boolean }>()')
