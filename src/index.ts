@@ -285,6 +285,11 @@ function readWebQQPeer(session: Session) {
   }
 }
 
+function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
+  const senderId = session.userId || session.event.user?.id
+  return senderId && senderId === session.bot.selfId ? 'outgoing' : 'incoming'
+}
+
 async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
@@ -380,7 +385,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     recordIncomingMessage(state, createMessageInput(session))
     logSnapshot('message')
     broadcast()
-    await recordWebQQLiveMessage(session, 'incoming')
+    await recordWebQQLiveMessage(session, readWebQQLiveDirection(session))
   })
 
   ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
@@ -397,7 +402,6 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
 
   ctx.before('send', async (session) => {
     recordOutgoingMessage(state)
-    await recordWebQQLiveMessage(session, 'outgoing')
     logSnapshot('send')
     broadcast()
   })

@@ -292,6 +292,67 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('records OneBot self message echoes as outgoing WebQQ messages', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      userId: '10000',
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '10000', name: 'Capsule Bot' },
+        message: {
+          id: 'self-1',
+          elements: [{ type: 'text', attrs: { content: 'sent message' } }],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'self-1',
+        senderId: '10000',
+        senderName: 'Capsule Bot',
+        direction: 'outgoing',
+        summary: 'sent message',
+      }),
+    }, { authority: 1 })
+  })
+
+  it('does not broadcast WebQQ live messages from before send', async () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    await listeners['before:send'][0](createSession({
+      content: 'sent message',
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+      },
+    }))
+
+    expect(broadcast).not.toHaveBeenCalledWith('chat-capsule/webqq/message', expect.any(Object), { authority: 1 })
+  })
+
   it('resolves live OneBot image messages before broadcasting WebQQ updates', async () => {
     const bot = {
       platform: 'onebot',
