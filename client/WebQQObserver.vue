@@ -143,68 +143,118 @@
       </div>
     </aside>
     <section class="chat-capsule-webqq__chat">
-      <header class="chat-capsule-webqq__chat-header">
-        <div class="chat-capsule-webqq__chat-title">
-          <img v-if="currentAvatar" class="chat-capsule-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
-          <div>
-            <strong>{{ currentTitle }}</strong>
-            <span>{{ currentSubtitle }}</span>
-          </div>
-        </div>
-        <button type="button" @click="loadContacts">刷新</button>
-      </header>
-      <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
-        <template v-if="loading">
-          <div class="chat-capsule-webqq__placeholder">加载中</div>
-        </template>
-        <template v-else-if="errorText">
-          <div class="chat-capsule-webqq__placeholder is-error">{{ errorText }}</div>
-        </template>
-        <template v-else-if="!currentChat">
-          <div class="chat-capsule-webqq__placeholder">选择一个会话</div>
-        </template>
-        <template v-else-if="!messages.length">
-          <div class="chat-capsule-webqq__placeholder">暂无消息</div>
-        </template>
-        <template v-else>
-          <div
-            v-for="message in messages"
-            :key="message.id || message.sequence"
-            :class="['chat-capsule-webqq__message', `is-${message.direction}`]"
-          >
-            <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
-            <div class="chat-capsule-webqq__message-content">
-              <div class="chat-capsule-webqq__sender-line">
-                <template v-if="message.direction === 'outgoing'">
-                  <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
-                  <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
-                  <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
-                </template>
-                <template v-if="message.direction === 'incoming'">
-                  <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
-                  <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
-                  <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
-                </template>
-              </div>
-              <div class="chat-capsule-webqq__bubble">
-                <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
-                  <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
-                    <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
-                    <span>{{ element.text || '[引用消息]' }}</span>
-                  </div>
-                  <span v-else-if="element.type === 'text'">{{ element.text }}</span>
-                  <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
-                  <span v-else>{{ element.text || message.summary }}</span>
-                </template>
-              </div>
-              <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
+      <div class="chat-capsule-webqq__chat-main">
+        <header class="chat-capsule-webqq__chat-header">
+          <div class="chat-capsule-webqq__chat-title">
+            <img v-if="currentAvatar" class="chat-capsule-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
+            <div>
+              <strong>{{ currentTitle }}</strong>
+              <span>{{ currentSubtitle }}</span>
             </div>
           </div>
-        </template>
+          <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" aria-label="更多群信息" @click="toggleGroupInfo">
+            <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="19" cy="12" r="1"></circle>
+              <circle cx="5" cy="12" r="1"></circle>
+            </svg>
+          </button>
+        </header>
+        <div class="chat-capsule-webqq__chat-body">
+          <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
+            <template v-if="loading">
+              <div class="chat-capsule-webqq__placeholder">加载中</div>
+            </template>
+            <template v-else-if="errorText">
+              <div class="chat-capsule-webqq__placeholder is-error">{{ errorText }}</div>
+            </template>
+            <template v-else-if="!currentChat">
+              <div class="chat-capsule-webqq__placeholder">选择一个会话</div>
+            </template>
+            <template v-else-if="!messages.length">
+              <div class="chat-capsule-webqq__placeholder">暂无消息</div>
+            </template>
+            <template v-else>
+              <div
+                v-for="message in messages"
+                :key="message.id || message.sequence"
+                :class="['chat-capsule-webqq__message', `is-${message.direction}`]"
+              >
+                <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
+                <div class="chat-capsule-webqq__message-content">
+                  <div class="chat-capsule-webqq__sender-line">
+                    <template v-if="message.direction === 'outgoing'">
+                      <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
+                      <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
+                      <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                    </template>
+                    <template v-if="message.direction === 'incoming'">
+                      <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                      <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
+                      <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
+                    </template>
+                  </div>
+                  <div class="chat-capsule-webqq__bubble">
+                    <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
+                      <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
+                        <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
+                        <span>{{ element.text || '[引用消息]' }}</span>
+                      </div>
+                      <span v-else-if="element.type === 'text'">{{ element.text }}</span>
+                      <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
+                      <span v-else>{{ element.text || message.summary }}</span>
+                    </template>
+                  </div>
+                  <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+        <footer class="chat-capsule-webqq__readonly-bar">
+          <span>只读模式</span>
+        </footer>
       </div>
-      <footer class="chat-capsule-webqq__readonly-bar">
-        <span>只读模式</span>
-      </footer>
+      <aside v-if="groupInfoOpen && currentChat?.type === 'group'" class="chat-capsule-webqq__group-info">
+        <header class="chat-capsule-webqq__group-info-header">
+          <strong>群信息</strong>
+          <button type="button" aria-label="关闭群信息" @click="closeGroupInfo">
+            <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12"></path>
+              <path d="M18 6L6 18"></path>
+            </svg>
+          </button>
+        </header>
+        <div class="chat-capsule-webqq__group-info-body">
+          <section class="chat-capsule-webqq__group-announcements">
+            <h3>群公告</h3>
+            <div v-if="groupInfoLoading" class="chat-capsule-webqq__group-empty">加载中</div>
+            <div v-else-if="groupInfoErrorText" class="chat-capsule-webqq__group-empty is-error">{{ groupInfoErrorText }}</div>
+            <div v-else-if="!groupInfo.announcements.length" class="chat-capsule-webqq__group-empty">暂无群公告</div>
+            <article v-for="announcement in groupInfo.announcements" v-else :key="announcement.id" class="chat-capsule-webqq__group-announcement">
+              <p>{{ announcement.content }}</p>
+              <time v-if="announcement.time">{{ formatNoticeTime(announcement.time) }}</time>
+            </article>
+          </section>
+          <section class="chat-capsule-webqq__group-members">
+            <h3>群成员</h3>
+            <input v-model="groupInfoSearchQuery" type="text" placeholder="搜索群昵称或 QQ 号">
+            <div v-if="groupInfoLoading" class="chat-capsule-webqq__group-empty">加载中</div>
+            <div v-else-if="groupInfoErrorText" class="chat-capsule-webqq__group-empty is-error">{{ groupInfoErrorText }}</div>
+            <div v-else-if="!visibleGroupMembers.length" class="chat-capsule-webqq__group-empty">暂无群成员</div>
+            <div v-else class="chat-capsule-webqq__group-member-list">
+              <article v-for="member in visibleGroupMembers" :key="member.userId" class="chat-capsule-webqq__group-member">
+                <img :src="withProxy(member.avatar)" :alt="getGroupMemberName(member)">
+                <span>
+                  <strong>{{ getGroupMemberName(member) }}</strong>
+                  <small>{{ member.userId }}</small>
+                </span>
+                <em v-if="member.role">{{ member.role }}</em>
+              </article>
+            </div>
+          </section>
+        </div>
+      </aside>
     </section>
   </div>
 </template>
@@ -212,7 +262,8 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
+import { sortWebQQGroupMembers } from './state'
+import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 
 type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
@@ -242,6 +293,11 @@ const handlingNoticeId = ref('')
 const loading = ref(false)
 const noticeErrorText = ref('')
 const errorText = ref('')
+const groupInfoOpen = ref(false)
+const groupInfoLoading = ref(false)
+const groupInfoErrorText = ref('')
+const groupInfoSearchQuery = ref('')
+const groupInfo = ref<WebQQGroupInfo>({ announcements: [], members: [] })
 
 const visibleFriends = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -286,6 +342,15 @@ const filteredNotices = computed(() => {
       ? notice.type === 'friend-request'
       : notice.type === 'group-notice'
   }))
+})
+const visibleGroupMembers = computed(() => {
+  const query = groupInfoSearchQuery.value.trim().toLowerCase()
+  const members = query ? groupInfo.value.members.filter((member) => {
+    return member.card.toLowerCase().includes(query) ||
+      member.nickname.toLowerCase().includes(query) ||
+      member.userId.includes(groupInfoSearchQuery.value)
+  }) : groupInfo.value.members
+  return sortWebQQGroupMembers(members)
 })
 
 function getGroupSubtitle(group: WebQQGroup) {
@@ -432,6 +497,30 @@ function closeNoticeMenu() {
   noticeOpen.value = false
 }
 
+async function loadGroupInfo() {
+  if (currentChat.value?.type !== 'group') return
+  groupInfoLoading.value = true
+  groupInfoErrorText.value = ''
+  try {
+    groupInfo.value = await send('chat-capsule/webqq/group-info', {
+      groupId: currentChat.value.peerId,
+    }) as WebQQGroupInfo || { announcements: [], members: [] }
+  } catch (error) {
+    groupInfoErrorText.value = error instanceof Error ? error.message : '加载群信息失败'
+  } finally {
+    groupInfoLoading.value = false
+  }
+}
+
+function toggleGroupInfo() {
+  groupInfoOpen.value = !groupInfoOpen.value
+  if (groupInfoOpen.value) loadGroupInfo()
+}
+
+function closeGroupInfo() {
+  groupInfoOpen.value = false
+}
+
 async function loadMessages() {
   if (!currentChat.value) return
   trackingMessages.value = true
@@ -488,6 +577,7 @@ async function loadOlderMessages() {
 
 function selectFriend(friend: WebQQFriend) {
   noticeOpen.value = false
+  groupInfoOpen.value = false
   currentChat.value = {
     type: 'friend',
     peerId: friend.userId,
@@ -514,6 +604,7 @@ function selectGroup(group: WebQQGroup) {
 
 function selectRecent(item: RecentItem) {
   noticeOpen.value = false
+  if (item.type !== 'group') groupInfoOpen.value = false
   currentChat.value = {
     type: item.type,
     peerId: item.peerId,
@@ -547,6 +638,10 @@ function formatNoticeTime(timestamp: number) {
   const hour = padNoticeTimePart(date.getHours())
   const minute = padNoticeTimePart(date.getMinutes())
   return `${month}/${day} ${hour}:${minute}`
+}
+
+function getGroupMemberName(member: WebQQGroupMember) {
+  return member.card || member.nickname || member.userId
 }
 
 function sortPendingNotices(items: WebQQNotice[]) {
@@ -626,6 +721,15 @@ watch(() => props.visible, (visible) => {
   if (!visible) return
   clearCurrentUnreadCount()
   if (trackingMessages.value) scrollMessagesToBottom()
+})
+
+watch(() => currentChat.value?.peerId, () => {
+  groupInfoSearchQuery.value = ''
+  if (currentChat.value?.type !== 'group') {
+    groupInfoOpen.value = false
+    return
+  }
+  if (groupInfoOpen.value) loadGroupInfo()
 })
 
 onMounted(loadContacts)

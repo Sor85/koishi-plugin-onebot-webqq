@@ -17,6 +17,8 @@ import {
 import {
   createOneBotWebQQService,
   WebQQContacts,
+  WebQQGroupInfo,
+  WebQQGroupInfoQuery,
   WebQQLiveMessage,
   WebQQMessage,
   WebQQMessageElement,
@@ -55,6 +57,7 @@ declare module '@koishijs/console' {
     'chat-capsule/update'(data: CapsuleSnapshot | undefined): void
     'chat-capsule/webqq/message'(data: WebQQLiveMessage): void
     'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
+    'chat-capsule/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
     'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
     'chat-capsule/webqq/notices'(): Promise<WebQQNotice[]>
     'chat-capsule/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
@@ -577,6 +580,9 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       }
       const history = await webqq.loadMessages(nextQuery)
       return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/group-info', (query: WebQQGroupInfoQuery) => {
+      return webqq.loadGroupInfo(query)
     }, consoleAuthOptions)
     console.addListener('chat-capsule/webqq/notices', () => {
       return webqq.loadNotices([...friendRequestNotices.values(), ...groupLeaveNotices.values()])

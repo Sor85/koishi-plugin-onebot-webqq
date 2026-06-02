@@ -129,6 +129,7 @@ describe('chat capsule plugin wiring', () => {
         get_friend_list: vi.fn(async () => []),
         get_group_list: vi.fn(async () => []),
         get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_group_member_list: vi.fn(async () => []),
       },
     }
     const { ctx, addListener } = createFakeContext({ bots: [bot] })
@@ -137,15 +138,18 @@ describe('chat capsule plugin wiring', () => {
 
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/group-info', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notices', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notice-action', expect.any(Function), { authority: 1 })
     expect(addListener).not.toHaveBeenCalledWith('chat-capsule/webqq/send', expect.any(Function))
 
     const loadContacts = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/contacts')?.[1]
     const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadGroupInfo = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/group-info')?.[1]
 
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
+    await expect(loadGroupInfo?.({ groupId: '20000' })).resolves.toEqual({ announcements: [], members: [] })
   })
 
   it('exposes pending WebQQ friend requests and group notices through the console listener', async () => {

@@ -84,6 +84,55 @@ export interface WebQQNotice {
   comment?: string
 }
 
+export interface WebQQGroupAnnouncement {
+  id: string
+  title: string
+  content: string
+  time?: number
+}
+
+export interface WebQQGroupMember {
+  userId: string
+  nickname: string
+  card: string
+  avatar: string
+  role?: string
+}
+
+export interface WebQQGroupInfo {
+  announcements: WebQQGroupAnnouncement[]
+  members: WebQQGroupMember[]
+}
+
+const webQQGroupRoleRanks: Record<string, number> = {
+  群主: 0,
+  管理员: 1,
+}
+
+function getWebQQGroupMemberDisplayName(member: WebQQGroupMember) {
+  return member.card || member.nickname || member.userId
+}
+
+function getWebQQGroupMemberNameRank(member: WebQQGroupMember) {
+  const first = getWebQQGroupMemberDisplayName(member).trim()[0] || ''
+  if (/^[A-Za-z]$/.test(first)) return 0
+  if (/^[0-9\u4e00-\u9fff]$/.test(first)) return 1
+  return 2
+}
+
+// 按群角色优先级和展示名称排序群成员。
+export function sortWebQQGroupMembers(members: WebQQGroupMember[]) {
+  return members.slice().sort((left, right) => {
+    const roleDiff = (webQQGroupRoleRanks[left.role || ''] ?? 2) - (webQQGroupRoleRanks[right.role || ''] ?? 2)
+    if (roleDiff) return roleDiff
+    const nameRankDiff = getWebQQGroupMemberNameRank(left) - getWebQQGroupMemberNameRank(right)
+    if (nameRankDiff) return nameRankDiff
+    const nameDiff = getWebQQGroupMemberDisplayName(left).localeCompare(getWebQQGroupMemberDisplayName(right), 'en', { sensitivity: 'base' })
+    if (nameDiff) return nameDiff
+    return left.userId.localeCompare(right.userId, 'en', { numeric: true, sensitivity: 'base' })
+  })
+}
+
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]

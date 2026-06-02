@@ -131,6 +131,28 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('currentSubtitle = computed')
   })
 
+  it('opens a group-only WebQQ info panel with announcements and searchable members', () => {
+    expect(webqqView).toContain('v-if="currentChat?.type === \'group\'"')
+    expect(webqqView).toContain('aria-label="更多群信息"')
+    expect(webqqView).toContain('@click="toggleGroupInfo"')
+    expect(webqqView).toContain('aria-label="关闭群信息"')
+    expect(webqqView).toContain('@click="closeGroupInfo"')
+    expect(webqqView).toContain("send('chat-capsule/webqq/group-info'")
+    expect(webqqView).toContain('chat-capsule-webqq__chat-main')
+    expect(webqqView).toContain('chat-capsule-webqq__group-info')
+    expect(webqqView).toContain('chat-capsule-webqq__group-announcements')
+    expect(webqqView).toContain('chat-capsule-webqq__group-members')
+    expect(webqqView).toContain('v-for="announcement in groupInfo.announcements"')
+    expect(webqqView).not.toContain('<strong>{{ announcement.title }}</strong>')
+    expect(webqqView).toContain('v-for="member in visibleGroupMembers"')
+    expect(webqqView).toContain('v-model="groupInfoSearchQuery"')
+    expect(webqqView).toContain('const visibleGroupMembers = computed')
+    expect(webqqView).toContain('sortWebQQGroupMembers(members)')
+    expect(webqqView).toContain('member.card.toLowerCase().includes(query)')
+    expect(webqqView).toContain('member.userId.includes(groupInfoSearchQuery.value)')
+    expect(webqqView).not.toContain('<button type="button" @click="loadContacts">刷新</button>')
+  })
+
   it('shows latest message summary and time in the WebQQ contact list', () => {
     expect(webqqView).toContain('getContactSubtitle')
     expect(webqqView).toContain('getContactTime')

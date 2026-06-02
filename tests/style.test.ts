@@ -43,6 +43,8 @@ describe('chat capsule styles', () => {
 
   it('allows the WebQQ chat message pane to scroll inside the fixed panel', () => {
     expect(ruleBody('.chat-capsule-webqq__chat')).toContain('min-height: 0')
+    expect(ruleBody('.chat-capsule-webqq__chat-body')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__chat-body')).toContain('min-height: 0')
     expect(ruleBody('.chat-capsule-webqq__messages')).toContain('overflow-y: auto')
   })
 
@@ -126,5 +128,21 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-time')).toContain('white-space: nowrap')
     expect(ruleBody('.chat-capsule-webqq__notice-time')).toContain('text-align: right')
     expect(ruleBody('.chat-capsule-webqq__notice-side .chat-capsule-webqq__notice-result')).toContain('width: max-content')
+  })
+
+  it('lays out the WebQQ group info panel as an in-flow right strip', () => {
+    expect(ruleBody('.chat-capsule-webqq__chat')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__chat')).toContain('flex-direction: row')
+    expect(ruleBody('.chat-capsule-webqq__chat-main')).toContain('flex: 1')
+    expect(ruleBody('.chat-capsule-webqq__chat-main')).toContain('min-width: 0')
+    expect(ruleBody('.chat-capsule-webqq__chat-main')).toContain('flex-direction: column')
+    expect(ruleBody('.chat-capsule-webqq__group-info')).toContain('width: 260px')
+    expect(ruleBody('.chat-capsule-webqq__group-info')).toContain('border-left: 1px solid rgba(229, 231, 235, 0.58)')
+    expect(ruleBody('.chat-capsule-webqq__group-info')).not.toContain('position: absolute')
+    expect(ruleBody('.chat-capsule-webqq__group-info-header')).toContain('justify-content: space-between')
+    expect(ruleBody('.chat-capsule-webqq__group-announcements')).toContain('flex: 0 0 25%')
+    expect(ruleBody('.chat-capsule-webqq__group-announcements')).toContain('gap: 12px')
+    expect(ruleBody('.chat-capsule-webqq__group-members')).toContain('flex: 1')
+    expect(ruleBody('.chat-capsule-webqq__group-member-list')).toContain('overflow-y: auto')
   })
 })

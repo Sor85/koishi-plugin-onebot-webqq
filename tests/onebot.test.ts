@@ -72,6 +72,62 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('loads group info with announcements and members', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_group_member_list') return [{
+        user_id: 30000,
+        nickname: 'Alice',
+        card: '群昵称',
+        role: 'owner',
+      }, {
+        user_id: 40000,
+        nickname: 'Bob',
+      }]
+      if (action === '_get_group_notice') return {
+        data: [{
+          fid: 'notice-1',
+          title: '维护公告',
+          message: {
+            text: '今晚维护',
+          },
+          publish_time: 1710000000,
+        }],
+      }
+      return []
+    })
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        _request: request,
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadGroupInfo({ groupId: '20000' })).resolves.toEqual({
+      announcements: [{
+        id: 'notice-1',
+        title: '维护公告',
+        content: '今晚维护',
+        time: 1710000000000,
+      }],
+      members: [{
+        userId: '30000',
+        nickname: 'Alice',
+        card: '群昵称',
+        avatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+        role: '群主',
+      }, {
+        userId: '40000',
+        nickname: 'Bob',
+        card: '',
+        avatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+      }],
+    })
+    expect(request).toHaveBeenCalledWith('get_group_member_list', { group_id: 20000 })
+    expect(request).toHaveBeenCalledWith('_get_group_notice', { group_id: 20000 })
+  })
+
   it('loads group and friend history without calling send actions', async () => {
     const bot = {
       platform: 'onebot',
