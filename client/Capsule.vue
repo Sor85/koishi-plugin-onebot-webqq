@@ -45,7 +45,7 @@
         </span>
       </span>
     </div>
-    <WebQQObserver v-if="webqqMounted" v-show="webqqOpen" />
+    <WebQQObserver v-if="webqqMounted" v-show="webqqOpen" :visible="webqqOpen" />
   </div>
 </template>
 

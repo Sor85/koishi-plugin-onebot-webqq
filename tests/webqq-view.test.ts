@@ -9,13 +9,20 @@ describe('webqq observer view', () => {
     expect(capsuleView).toContain('import WebQQObserver from')
     expect(capsuleView).toContain('const webqqOpen = ref(false)')
     expect(capsuleView).toContain('@click="toggleWebQQ"')
-    expect(capsuleView).toContain('<WebQQObserver v-if="webqqMounted" v-show="webqqOpen" />')
+    expect(capsuleView).toContain('<WebQQObserver v-if="webqqMounted" v-show="webqqOpen" :visible="webqqOpen" />')
   })
 
   it('keeps WebQQ mounted after first open to preserve its last state', () => {
     expect(capsuleView).toContain('const webqqMounted = ref(false)')
     expect(capsuleView).toContain('function toggleWebQQ()')
     expect(capsuleView).toContain('if (webqqOpen.value) webqqMounted.value = true')
+  })
+
+  it('passes panel visibility to the WebQQ observer', () => {
+    expect(capsuleView).toContain(':visible="webqqOpen"')
+    expect(webqqView).toContain('defineProps<{ visible: boolean }>()')
+    expect(webqqView).toContain('!props.visible')
+    expect(webqqView).toContain('watch(() => props.visible')
   })
 
   it('closes WebQQ when clicking outside the capsule host', () => {
@@ -54,6 +61,18 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('getContactTime')
     expect(webqqView).toContain('formatListTime')
     expect(webqqView).toContain('chat-capsule-webqq__contact-time')
+  })
+
+  it('shows unread counts for conversations the user is not viewing', () => {
+    expect(webqqView).toContain('conversationUnreadCounts')
+    expect(webqqView).toContain('class="chat-capsule-webqq__contact-avatar"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__contact-unread"')
+    expect(webqqView).toContain('getUnreadCount(item.type, item.peerId)')
+    expect(webqqView).toContain('getUnreadText')
+    expect(webqqView).toContain("payload.message.direction === 'incoming'")
+    expect(webqqView).toContain('!trackingMessages.value')
+    expect(webqqView).toContain('increaseUnreadCount(payload.type, payload.peerId)')
+    expect(webqqView).toContain('clearUnreadCount(currentChat.value.type, currentChat.value.peerId)')
   })
 
   it('tracks new WebQQ messages only while the message pane is at the bottom', () => {

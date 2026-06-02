@@ -59,4 +59,14 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__contact-time')).toContain('top: 10px')
     expect(ruleBody('.chat-capsule-webqq__contact-time')).toContain('right: 12px')
   })
+
+  it('places WebQQ unread badges on the contact avatar corner', () => {
+    expect(ruleBody('.chat-capsule-webqq__contact-avatar')).toContain('position: relative')
+    expect(ruleBody('.chat-capsule-webqq__contact-avatar')).toContain('width: 38px')
+    expect(ruleBody('.chat-capsule-webqq__contact-avatar')).toContain('height: 38px')
+    expect(ruleBody('.chat-capsule-webqq__contact-unread')).toContain('position: absolute')
+    expect(ruleBody('.chat-capsule-webqq__contact-unread')).toContain('top: -6px')
+    expect(ruleBody('.chat-capsule-webqq__contact-unread')).toContain('right: -6px')
+    expect(ruleBody('.chat-capsule-webqq__contact-unread')).toContain('min-width: 18px')
+  })
 })

@@ -37,8 +37,11 @@
           type="button"
           @click="selectRecent(item)"
         >
-          <img :src="withProxy(item.avatar)" :alt="item.name">
-          <span>
+          <span class="chat-capsule-webqq__contact-avatar">
+            <img :src="withProxy(item.avatar)" :alt="item.name">
+            <span v-if="getUnreadCount(item.type, item.peerId)" class="chat-capsule-webqq__contact-unread">{{ getUnreadText(getUnreadCount(item.type, item.peerId)) }}</span>
+          </span>
+          <span class="chat-capsule-webqq__contact-info">
             <strong>{{ item.name }}</strong>
             <small>{{ getContactSubtitle(item.type, item.peerId, item.subtitle) }}</small>
           </span>
@@ -55,8 +58,11 @@
           type="button"
           @click="selectFriend(friend)"
         >
-          <img :src="withProxy(friend.avatar)" :alt="friend.name">
-          <span>
+          <span class="chat-capsule-webqq__contact-avatar">
+            <img :src="withProxy(friend.avatar)" :alt="friend.name">
+            <span v-if="getUnreadCount('friend', friend.userId)" class="chat-capsule-webqq__contact-unread">{{ getUnreadText(getUnreadCount('friend', friend.userId)) }}</span>
+          </span>
+          <span class="chat-capsule-webqq__contact-info">
             <strong>{{ friend.name }}</strong>
             <small>{{ getContactSubtitle('friend', friend.userId, friend.nickname) }}</small>
           </span>
@@ -73,8 +79,11 @@
           type="button"
           @click="selectGroup(group)"
         >
-          <img :src="withProxy(group.avatar)" :alt="group.name">
-          <span>
+          <span class="chat-capsule-webqq__contact-avatar">
+            <img :src="withProxy(group.avatar)" :alt="group.name">
+            <span v-if="getUnreadCount('group', group.groupId)" class="chat-capsule-webqq__contact-unread">{{ getUnreadText(getUnreadCount('group', group.groupId)) }}</span>
+          </span>
+          <span class="chat-capsule-webqq__contact-info">
             <strong>{{ group.name }}</strong>
             <small>{{ getContactSubtitle('group', group.groupId, getGroupSubtitle(group)) }}</small>
           </span>
@@ -134,7 +143,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
 
@@ -145,11 +154,14 @@ type ChatSelection =
 type RecentItem = ChatSelection
 type ConversationSummary = { summary: string; time: number }
 
+const props = defineProps<{ visible: boolean }>()
+
 const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
 const searchQuery = ref('')
 const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
+const conversationUnreadCounts = ref<Record<string, number>>({})
 const messages = ref<WebQQMessage[]>([])
 const messagePane = ref<HTMLElement>()
 const trackingMessages = ref(true)
@@ -233,6 +245,35 @@ function getContactTime(type: ChatSelection['type'], peerId: string) {
   return getContactSummary(type, peerId)?.time || 0
 }
 
+function getUnreadCount(type: ChatSelection['type'], peerId: string) {
+  return conversationUnreadCounts.value[getChatKey(type, peerId)] || 0
+}
+
+function getUnreadText(count: number) {
+  return count > 99 ? '99+' : String(count)
+}
+
+function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
+  const key = getChatKey(type, peerId)
+  conversationUnreadCounts.value = {
+    ...conversationUnreadCounts.value,
+    [key]: getUnreadCount(type, peerId) + 1,
+  }
+}
+
+function clearUnreadCount(type: ChatSelection['type'], peerId: string) {
+  const key = getChatKey(type, peerId)
+  if (!conversationUnreadCounts.value[key]) return
+  const next = { ...conversationUnreadCounts.value }
+  delete next[key]
+  conversationUnreadCounts.value = next
+}
+
+function clearCurrentUnreadCount() {
+  if (!currentChat.value) return
+  clearUnreadCount(currentChat.value.type, currentChat.value.peerId)
+}
+
 function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
@@ -258,6 +299,7 @@ function isMessagePaneAtBottom() {
 
 function updateMessageTracking() {
   trackingMessages.value = isMessagePaneAtBottom()
+  if (trackingMessages.value) clearCurrentUnreadCount()
   if (shouldLoadOlderMessages()) loadOlderMessages()
 }
 
@@ -346,6 +388,7 @@ function selectFriend(friend: WebQQFriend) {
     subtitle: friend.nickname,
     avatar: friend.avatar,
   }
+  clearCurrentUnreadCount()
   loadMessages()
 }
 
@@ -357,6 +400,7 @@ function selectGroup(group: WebQQGroup) {
     subtitle: getGroupSubtitle(group),
     avatar: group.avatar,
   }
+  clearCurrentUnreadCount()
   loadMessages()
 }
 
@@ -368,6 +412,7 @@ function selectRecent(item: RecentItem) {
     subtitle: item.subtitle,
     avatar: item.avatar,
   }
+  clearCurrentUnreadCount()
   loadMessages()
 }
 
@@ -387,8 +432,21 @@ receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
   if (
     currentChat.value?.type !== payload.type ||
     currentChat.value.peerId !== payload.peerId
-  ) return
+  ) {
+    if (payload.message.direction === 'incoming') increaseUnreadCount(payload.type, payload.peerId)
+    return
+  }
+  if (
+    payload.message.direction === 'incoming' &&
+    (!props.visible || !trackingMessages.value)
+  ) increaseUnreadCount(payload.type, payload.peerId)
   appendMessage(payload.message)
+})
+
+watch(() => props.visible, (visible) => {
+  if (!visible) return
+  clearCurrentUnreadCount()
+  if (trackingMessages.value) scrollMessagesToBottom()
 })
 
 onMounted(loadContacts)
