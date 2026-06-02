@@ -56,8 +56,8 @@ declare module '@koishijs/console' {
 
 interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown
-  addListener(event: string, callback: (...args: any[]) => unknown): unknown
-  broadcast(type: string, body: unknown): unknown
+  addListener(event: string, callback: (...args: any[]) => unknown, options?: { authority?: number }): unknown
+  broadcast(type: string, body: unknown, options?: { authority?: number }): unknown
 }
 
 interface DebugLogger {
@@ -244,9 +244,10 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     protocol: config.onebotProtocol,
   })
   const debug = !!config.debug
+  const consoleAuthOptions = { authority: 1 }
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
-  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
+  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const recordWebQQLiveMessage = (session: Session | undefined, direction: WebQQMessage['direction']) => {
@@ -256,7 +257,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     const key = getLiveMessageKey(payload)
     const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
     liveMessages.set(key, messages)
-    ctx.console?.broadcast('chat-capsule/webqq/message', payload)
+    ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
   }
   const recordGenerating = (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const input = createMessageInput(session, message)
@@ -326,7 +327,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         debug,
       }
     })
-    console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts())
+    console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
     console.addListener('chat-capsule/webqq/messages', async (query: WebQQMessageQuery) => {
       const nextQuery = {
         ...query,
@@ -334,7 +335,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       }
       const history = await webqq.loadMessages(nextQuery)
       return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)
-    })
+    }, consoleAuthOptions)
   })
 
   ctx.inject({

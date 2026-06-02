@@ -51,6 +51,11 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
   })
 
+  it('scrolls to the latest message after the loading placeholder is hidden', () => {
+    expect(webqqView).toContain('finally {\n    loading.value = false\n  }')
+    expect(webqqView).toContain('if (!errorText.value && trackingMessages.value) await scrollMessagesToBottom()')
+  })
+
   it('loads earlier WebQQ messages when scrolling to the top', () => {
     expect(webqqView).toContain('const historyLoading = ref(false)')
     expect(webqqView).toContain('const historyExhausted = ref(false)')

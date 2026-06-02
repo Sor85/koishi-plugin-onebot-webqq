@@ -241,12 +241,12 @@ async function loadMessages() {
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
     }) as WebQQMessage[] || []
-    if (trackingMessages.value) scrollMessagesToBottom()
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
   } finally {
     loading.value = false
   }
+  if (!errorText.value && trackingMessages.value) await scrollMessagesToBottom()
 }
 
 function shouldLoadOlderMessages() {

@@ -11,8 +11,8 @@ type TestLogger = {
 function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[] } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
-  const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined) => {})
-  const addListener = vi.fn((_event: string, _listener: (...args: unknown[]) => unknown) => {})
+  const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined, _options?: { authority?: number }) => {})
+  const addListener = vi.fn((_event: string, _listener: (...args: unknown[]) => unknown, _options?: { authority?: number }) => {})
   const hasConsole = options.console ?? true
 
   const base: Pick<ChatCapsuleContext, 'on' | 'before'> = {
@@ -132,8 +132,8 @@ describe('chat capsule plugin wiring', () => {
 
     plugin.apply(ctx)
 
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function))
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function))
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
     expect(addListener).not.toHaveBeenCalledWith('chat-capsule/webqq/send', expect.any(Function))
 
     const loadContacts = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/contacts')?.[1]
@@ -141,6 +141,30 @@ describe('chat capsule plugin wiring', () => {
 
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
+  })
+
+  it('requires a logged-in console user for WebQQ data and live broadcasts', () => {
+    const { ctx, listeners, addListener, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
+
+    listeners.message[0](createSession({
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'new message' } }],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', expect.any(Object), { authority: 1 })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', expect.any(Object), { authority: 1 })
   })
 
   it('uses the configured WebQQ protocol for OneBot history calls', async () => {
@@ -250,7 +274,7 @@ describe('chat capsule plugin wiring', () => {
         direction: 'incoming',
         summary: 'new message',
       }),
-    })
+    }, { authority: 1 })
 
     const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
@@ -322,7 +346,7 @@ describe('chat capsule plugin wiring', () => {
         received: 1,
         sent: 0,
       },
-    })
+    }, { authority: 1 })
   })
 
   it('increments sent counter from before send and broadcasts the latest snapshot', () => {
@@ -351,7 +375,7 @@ describe('chat capsule plugin wiring', () => {
         received: 1,
         sent: 1,
       },
-    })
+    }, { authority: 1 })
   })
 
   it('falls back to session names and ids when event names are missing', () => {

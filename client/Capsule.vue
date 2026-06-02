@@ -51,7 +51,7 @@
 
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Universal, router, store, withProxy } from '@koishijs/client'
+import { Universal, activities, router, store, withProxy } from '@koishijs/client'
 import { capsule } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
@@ -59,7 +59,7 @@ const webqqOpen = ref(false)
 const webqqMounted = ref(false)
 const capsuleHost = ref<HTMLElement>()
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
-const isLoggedIn = computed(() => !!store.permissions)
+const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))
 const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
 const isThinking = computed(() => activityText.value === '正在思考')
