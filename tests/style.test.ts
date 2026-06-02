@@ -55,6 +55,7 @@ describe('chat capsule styles', () => {
   it('renders WebQQ sender metadata as compact badges', () => {
     expect(ruleBody('.chat-capsule-webqq__sender-line')).toContain('display: flex')
     expect(ruleBody('.chat-capsule-webqq__sender-line')).toContain('gap: 4px')
+    expect(ruleBody('.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__sender-line')).toContain('justify-content: flex-end')
     expect(ruleBody('.chat-capsule-webqq__sender-badge')).toContain('border-radius: 5px')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-owner')).toContain('background: #fff3cf')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-admin')).toContain('background: #e9f8ef')

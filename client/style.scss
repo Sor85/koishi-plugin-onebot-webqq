@@ -812,6 +812,10 @@
   gap: 4px;
 }
 
+.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__sender-line {
+  justify-content: flex-end;
+}
+
 .chat-capsule-webqq__message-name,
 .chat-capsule-webqq__message-time {
   font-size: 11px;
