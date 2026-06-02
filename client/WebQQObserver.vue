@@ -107,7 +107,7 @@
               <div class="chat-capsule-webqq__bubble">
                 <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
                   <span v-if="element.type === 'text'">{{ element.text }}</span>
-                  <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片">
+                  <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
                   <span v-else>{{ element.text || message.summary }}</span>
                 </template>
               </div>
@@ -209,6 +209,10 @@ function isMessagePaneAtBottom() {
 function updateMessageTracking() {
   trackingMessages.value = isMessagePaneAtBottom()
   if (shouldLoadOlderMessages()) loadOlderMessages()
+}
+
+function handleMessageImageLoad() {
+  if (trackingMessages.value) scrollMessagesToBottom()
 }
 
 async function scrollMessagesToBottom() {

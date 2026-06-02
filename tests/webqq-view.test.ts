@@ -56,6 +56,12 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('if (!errorText.value && trackingMessages.value) await scrollMessagesToBottom()')
   })
 
+  it('keeps following the latest message after WebQQ images finish loading', () => {
+    expect(webqqView).toContain('@load="handleMessageImageLoad"')
+    expect(webqqView).toContain('function handleMessageImageLoad()')
+    expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
+  })
+
   it('loads earlier WebQQ messages when scrolling to the top', () => {
     expect(webqqView).toContain('const historyLoading = ref(false)')
     expect(webqqView).toContain('const historyExhausted = ref(false)')

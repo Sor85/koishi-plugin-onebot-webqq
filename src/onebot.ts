@@ -61,6 +61,7 @@ export interface WebQQMessageQuery {
 export interface OneBotWebQQOptions {
   selfId?: string
   protocol?: WebQQProtocol
+  imageUrlResolver?: (file: string) => string
 }
 
 interface OneBotContext {
@@ -181,13 +182,60 @@ function normalizeGroup(raw: unknown): WebQQGroup {
   }
 }
 
-function normalizeSegment(raw: unknown): WebQQMessageElement {
+function isRemoteUrl(value: string) {
+  return /^https?:\/\//.test(value)
+}
+
+function resolveImageUrl(result: unknown, imageUrlResolver?: (file: string) => string) {
+  const item = isRecord(result) ? result : {}
+  const source = isRecord(item.data) ? item.data : item
+  const url = getStringField(source, ['url'])
+  if (url) return imageUrlResolver?.(url) || url
+  const file = getStringField(source, ['file', 'path'])
+  if (!file) return ''
+  return imageUrlResolver?.(file) || ''
+}
+
+function readImageDebug(result: unknown) {
+  const item = isRecord(result) ? result : {}
+  if (isRecord(item.data)) {
+    return {
+      url: getStringField(item.data, ['url']),
+      file: getStringField(item.data, ['file', 'path']),
+    }
+  }
+  return {
+    url: getStringField(item, ['url']),
+    file: getStringField(item, ['file', 'path']),
+  }
+}
+
+async function resolveOneBotImage(bot: OneBotBot, file: string, imageUrlResolver?: (file: string) => string) {
+  const result = await callAction(bot, 'get_image', { file })
+  return {
+    url: resolveImageUrl(result, imageUrlResolver),
+    debug: readImageDebug(result),
+  }
+}
+
+async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return { type: 'unknown', text: '[消息]' }
   const type = getStringField(raw, ['type'])
   const data = isRecord(raw.data) ? raw.data : raw
   if (type === 'text') return { type: 'text', text: getStringField(data, ['text', 'content']) }
-  if (type === 'image') return { type: 'image', url: getStringField(data, ['url', 'file']) }
+  if (type === 'image') {
+    const url = getStringField(data, ['url'])
+    if (url) return { type: 'image', url: imageUrlResolver?.(url) || url }
+    const file = getStringField(data, ['file', 'file_id'])
+    if (!file) return { type: 'image' }
+    if (isRemoteUrl(file)) return { type: 'image', url: imageUrlResolver?.(file) || file }
+    try {
+      return { type: 'image', url: (await resolveOneBotImage(bot, file, imageUrlResolver)).url }
+    } catch {
+      return { type: 'image' }
+    }
+  }
   if (type === 'face') return { type: 'face', text: `[表情 ${getStringField(data, ['id'])}]` }
   if (type === 'file') return { type: 'file', text: getStringField(data, ['name', 'file']) || '[文件]' }
   if (type === 'record') return { type: 'record', text: '[语音]' }
@@ -195,9 +243,9 @@ function normalizeSegment(raw: unknown): WebQQMessageElement {
   return { type: 'unknown', text: '[消息]' }
 }
 
-function normalizeMessageElements(message: unknown) {
+async function normalizeMessageElements(message: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string) {
   if (typeof message === 'string') return [{ type: 'text' as const, text: message }]
-  if (Array.isArray(message)) return message.map(normalizeSegment)
+  if (Array.isArray(message)) return Promise.all(message.map((segment) => normalizeSegment(segment, bot, imageUrlResolver)))
   return [{ type: 'unknown' as const, text: '[消息]' }]
 }
 
@@ -211,11 +259,11 @@ function summarizeElements(elements: WebQQMessageElement[]) {
   return summary || '[消息]'
 }
 
-function normalizeMessage(raw: unknown, bot: OneBotBot): WebQQMessage {
+async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string): Promise<WebQQMessage> {
   const item = isRecord(raw) ? raw : {}
   const sender = isRecord(item.sender) ? item.sender : {}
   const senderId = getStringField(sender, ['user_id', 'uin', 'uid']) || getStringField(item, ['user_id'])
-  const elements = normalizeMessageElements(item.message)
+  const elements = await normalizeMessageElements(item.message, bot, imageUrlResolver)
   return {
     id: getStringField(item, ['message_id', 'msg_id', 'id']),
     sequence: getStringField(item, ['message_seq', 'msg_seq', 'seq', 'message_id']),
@@ -233,7 +281,12 @@ function normalizeMessage(raw: unknown, bot: OneBotBot): WebQQMessage {
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   const getBot = () => selectBot(ctx, options)
   const protocol = options.protocol ?? 'napcat'
+  const { imageUrlResolver } = options
   return {
+    async resolveImage(file: string) {
+      return resolveOneBotImage(getBot(), file, imageUrlResolver)
+    },
+
     async loadContacts(): Promise<WebQQContacts> {
       const bot = getBot()
       const [friendsResult, groupsResult] = await Promise.all([
@@ -258,7 +311,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         ? { group_id: toOneBotId(query.peerId), ...baseParams }
         : { user_id: toOneBotId(query.peerId), ...baseParams }
       const result = await callAction(bot, action, params)
-      return toArrayResult(result, 'messages').map((message) => normalizeMessage(message, bot))
+      return Promise.all(toArrayResult(result, 'messages').map((message) => normalizeMessage(message, bot, imageUrlResolver)))
     },
   }
 }

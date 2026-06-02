@@ -8,11 +8,12 @@ type TestLogger = {
   info: ReturnType<typeof vi.fn>
 }
 
-function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[] } = {}) {
+function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[]; server?: boolean } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
   const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined, _options?: { authority?: number }) => {})
   const addListener = vi.fn((_event: string, _listener: (...args: unknown[]) => unknown, _options?: { authority?: number }) => {})
+  const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
   const hasConsole = options.console ?? true
 
   const base: Pick<ChatCapsuleContext, 'on' | 'before'> = {
@@ -33,25 +34,27 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
         broadcast,
         addListener,
       },
+      ...(options.server ? { server: { get: serverGet } } : {}),
       ...(options.character ? { chatluna_character: options.character } : {}),
       inject(services, callback) {
         if ('console' in services) callback(ctx)
         if ('chatluna_character' in services && options.character) callback(ctx)
       },
     }
-    return { ctx, listeners, addEntry, broadcast, addListener }
+    return { ctx, listeners, addEntry, broadcast, addListener, serverGet }
   }
 
   const ctx: ChatCapsuleContext & { bots?: unknown[] } = {
     ...base,
     ...(options.bots ? { bots: options.bots } : {}),
+    ...(options.server ? { server: { get: serverGet } } : {}),
     ...(options.character ? { chatluna_character: options.character } : {}),
     inject(services, callback) {
       if ('chatluna_character' in services && options.character) callback(ctx)
     },
   }
 
-  return { ctx, listeners, addEntry, broadcast, addListener }
+  return { ctx, listeners, addEntry, broadcast, addListener, serverGet }
 }
 
 function createSession(overrides: Record<string, unknown> = {}) {
@@ -92,7 +95,7 @@ describe('chat capsule plugin wiring', () => {
   it('exports plugin name and optional console injection', () => {
     expect(plugin.name).toBe('chat-capsule')
     expect(plugin.inject).toEqual({
-      optional: ['console', 'chatluna', 'chatluna_character'],
+      optional: ['console', 'server', 'chatluna', 'chatluna_character'],
     })
   })
 
@@ -143,7 +146,7 @@ describe('chat capsule plugin wiring', () => {
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
   })
 
-  it('requires a logged-in console user for WebQQ data and live broadcasts', () => {
+  it('requires a logged-in console user for WebQQ data and live broadcasts', async () => {
     const { ctx, listeners, addListener, broadcast } = createFakeContext()
 
     plugin.apply(ctx)
@@ -151,7 +154,7 @@ describe('chat capsule plugin wiring', () => {
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
 
-    listeners.message[0](createSession({
+    await listeners.message[0](createSession({
       event: {
         guild: { id: '20000', name: 'Guild Name' },
         channel: { id: '20000', name: 'Guild Name' },
@@ -240,7 +243,7 @@ describe('chat capsule plugin wiring', () => {
     const { ctx, listeners, addListener, broadcast } = createFakeContext({ bots: [bot] })
 
     plugin.apply(ctx)
-    listeners.message[0](createSession({
+    await listeners.message[0](createSession({
       timestamp: 1710000001000,
       event: {
         platform: 'onebot',
@@ -287,6 +290,110 @@ describe('chat capsule plugin wiring', () => {
         summary: 'new message',
       }),
     ])
+  })
+
+  it('resolves live OneBot image messages before broadcasting WebQQ updates', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_image: vi.fn(async () => ({
+          url: 'https://example.com/live.jpg',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'image-1',
+          elements: [{ type: 'img', attrs: { file: 'live.image' } }],
+        },
+      },
+    }))
+
+    expect(bot.internal.get_image).toHaveBeenCalledWith({
+      file: 'live.image',
+    })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'image-1',
+        summary: '[图片]',
+        elements: [{ type: 'image', url: 'https://example.com/live.jpg' }],
+      }),
+    }, { authority: 1 })
+  })
+
+  it('proxies live OneBot image URLs before broadcasting WebQQ updates', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_image: vi.fn(async () => ({
+          url: 'https://example.com/unused.jpg',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot], server: true })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'image-url-1',
+          elements: [{
+            type: 'img',
+            attrs: {
+              src: 'https://multimedia.nt.qq.com.cn/download?fileid=remote',
+            },
+          }],
+        },
+      },
+    }))
+
+    expect(bot.internal.get_image).not.toHaveBeenCalled()
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'image-url-1',
+        summary: '[图片]',
+        elements: [{
+          type: 'image',
+          url: expect.stringMatching(/^\/chat-capsule\/webqq\/image\//),
+        }],
+      }),
+    }, { authority: 1 })
   })
 
   it('passes enabled debug config to console entry data', () => {
@@ -349,14 +456,14 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
-  it('increments sent counter from before send and broadcasts the latest snapshot', () => {
+  it('increments sent counter from before send and broadcasts the latest snapshot', async () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 
     plugin.apply(ctx)
-    listeners.message[0](createSession())
+    await listeners.message[0](createSession())
     broadcast.mockClear()
 
-    listeners['before:send'][0]()
+    await listeners['before:send'][0]()
 
     expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', {
       bot: {

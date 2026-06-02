@@ -1,6 +1,9 @@
 import type { Session } from 'koishi'
 import Schema from 'schemastery'
 import { resolve } from 'path'
+import { createReadStream } from 'fs'
+import { randomUUID } from 'crypto'
+import { extname } from 'path'
 import type { Entry } from '@koishijs/console'
 import {
   CapsuleSnapshot,
@@ -25,7 +28,7 @@ export const name = 'chat-capsule'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {
-  optional: ['console', 'chatluna', 'chatluna_character'],
+  optional: ['console', 'server', 'chatluna', 'chatluna_character'],
 }
 
 export interface Config {
@@ -64,6 +67,17 @@ interface DebugLogger {
   info(format: string, ...param: unknown[]): unknown
 }
 
+interface WebQQImageContext {
+  params: Record<string, string>
+  status?: number
+  body?: unknown
+  set(name: string, value: string): unknown
+}
+
+interface WebQQImageServer {
+  get(path: string, callback: (ctx: WebQQImageContext) => unknown): unknown
+}
+
 interface ChatLunaMessage {
   id?: string
   name?: string
@@ -87,11 +101,12 @@ interface ChatLunaModelUsage {
 // 描述插件运行所需的最小 Koishi 上下文能力。
 export interface ChatCapsuleContext {
   console?: ConsoleService
+  server?: WebQQImageServer
   chatluna_character?: ChatLunaCharacterService
   bots?: unknown[]
   logger?(name: string): DebugLogger
   on(event: string, listener: (...args: any[]) => void): unknown
-  before(event: 'send', listener: (session?: Session) => void): unknown
+  before(event: 'send', listener: (session?: Session) => unknown): unknown
   inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
 }
 
@@ -141,14 +156,92 @@ function readElementText(value: unknown) {
   return value == null ? '' : String(value)
 }
 
-function normalizeLiveElement(raw: unknown): WebQQMessageElement | undefined {
+type WebQQResolvedImage = {
+  url: string
+  debug?: unknown
+}
+
+type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQResolvedImage>
+
+function isRemoteImageSource(file: string) {
+  return /^https?:\/\//.test(file)
+}
+
+function getImageContentType(file: string) {
+  switch (extname(file).toLowerCase()) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg'
+    case '.gif':
+      return 'image/gif'
+    case '.webp':
+      return 'image/webp'
+    case '.bmp':
+      return 'image/bmp'
+    case '.svg':
+      return 'image/svg+xml'
+    default:
+      return 'image/png'
+  }
+}
+
+function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogger) {
+  const files = new Map<string, string>()
+  ctx.server?.get('/chat-capsule/webqq/image/:id', async (routerCtx) => {
+    const file = files.get(routerCtx.params.id)
+    if (!file) {
+      routerCtx.status = 404
+      return
+    }
+    logger?.info('webqq image proxy %s', JSON.stringify({ id: routerCtx.params.id, file }))
+    if (isRemoteImageSource(file)) {
+      const response = await fetch(file)
+      routerCtx.status = response.status
+      if (!response.ok) return
+      routerCtx.set('content-type', response.headers.get('content-type') || getImageContentType(file))
+      routerCtx.body = Buffer.from(await response.arrayBuffer())
+      return
+    }
+    routerCtx.set('content-type', getImageContentType(file))
+    routerCtx.body = createReadStream(file)
+  })
+  return (file: string) => {
+    if (!ctx.server) return ''
+    const id = randomUUID()
+    files.set(id, file)
+    return `/chat-capsule/webqq/image/${id}`
+  }
+}
+
+async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement | undefined> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return undefined
   const type = readElementText(raw.type)
   const attrs = isRecord(raw.attrs) ? raw.attrs : {}
   if (type === 'text') return { type: 'text', text: readElementText(attrs.content) }
   if (type === 'img' || type === 'image') {
-    return { type: 'image', url: readElementText(attrs.src || attrs.url || attrs.file) }
+    const url = readElementText(attrs.src || attrs.url)
+    if (url) {
+      try {
+        return { type: 'image', url: resolveImage ? (await resolveImage(url, 'url')).url : url }
+      } catch {
+        return { type: 'image', url }
+      }
+    }
+    const file = readElementText(attrs.file || attrs.file_id)
+    if (!file) return { type: 'image' }
+    if (isRemoteImageSource(file)) {
+      try {
+        return { type: 'image', url: resolveImage ? (await resolveImage(file, 'url')).url : file }
+      } catch {
+        return { type: 'image', url: file }
+      }
+    }
+    try {
+      return { type: 'image', url: resolveImage ? (await resolveImage(file)).url : '' }
+    } catch {
+      return { type: 'image' }
+    }
   }
   if (type === 'face') return { type: 'face', text: `[表情 ${readElementText(attrs.id)}]` }
   if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
@@ -157,9 +250,9 @@ function normalizeLiveElement(raw: unknown): WebQQMessageElement | undefined {
   return { type: 'unknown', text: '[消息]' }
 }
 
-function normalizeLiveElements(session: Session): WebQQMessageElement[] {
-  const elements = (session.elements ?? session.event.message?.elements ?? [])
-    .map(normalizeLiveElement)
+async function normalizeLiveElements(session: Session, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement[]> {
+  const elements = (await Promise.all((session.elements ?? session.event.message?.elements ?? [])
+    .map((element) => normalizeLiveElement(element, resolveImage))))
     .filter((element): element is WebQQMessageElement => !!element)
   if (elements.length) return elements
   const content = session.content?.trim()
@@ -192,13 +285,13 @@ function readWebQQPeer(session: Session) {
   }
 }
 
-function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction']): WebQQLiveMessage | undefined {
+async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
   if (!peer) return
   if (!(session.elements ?? session.event.message?.elements)?.length && !session.content?.trim()) return
   const bot = readBotProfile(session)
-  const elements = normalizeLiveElements(session)
+  const elements = await normalizeLiveElements(session, resolveImage)
   const senderId = direction === 'outgoing'
     ? bot.selfId
     : session.userId || session.event.user?.id || 'unknown'
@@ -239,20 +332,31 @@ function mergeWebQQMessages(history: WebQQMessage[], live: WebQQMessage[] = [], 
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
   const historyLimit = config.historyLimit ?? 100
+  const debug = !!config.debug
+  const logger = debug ? ctx.logger?.('chat-capsule') : undefined
+  const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger)
   const webqq = createOneBotWebQQService(ctx, {
     selfId: config.onebotSelfId,
     protocol: config.onebotProtocol,
+    imageUrlResolver,
   })
-  const debug = !!config.debug
   const consoleAuthOptions = { authority: 1 }
-  const logger = debug ? ctx.logger?.('chat-capsule') : undefined
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
-  const recordWebQQLiveMessage = (session: Session | undefined, direction: WebQQMessage['direction']) => {
+  const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
     if (!session) return
-    const payload = createWebQQLiveMessage(session, direction)
+    const payload = await createWebQQLiveMessage(session, direction, async (file, source) => {
+      if (source === 'url') {
+        const url = imageUrlResolver(file) || file
+        logger?.info('webqq image url %s', JSON.stringify({ direction, url: file, proxyUrl: url }))
+        return { url, debug: { url: file } }
+      }
+      const image = await webqq.resolveImage(file)
+      logger?.info('webqq image %s', JSON.stringify({ direction, file, result: image.debug, url: image.url }))
+      return image
+    })
     if (!payload) return
     const key = getLiveMessageKey(payload)
     const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
@@ -272,11 +376,11 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     broadcast()
   }
 
-  ctx.on('message', (session) => {
+  ctx.on('message', async (session) => {
     recordIncomingMessage(state, createMessageInput(session))
     logSnapshot('message')
     broadcast()
-    recordWebQQLiveMessage(session, 'incoming')
+    await recordWebQQLiveMessage(session, 'incoming')
   })
 
   ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
@@ -291,9 +395,9 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     clearActivity('after-chat-error')
   })
 
-  ctx.before('send', (session) => {
+  ctx.before('send', async (session) => {
     recordOutgoingMessage(state)
-    recordWebQQLiveMessage(session, 'outgoing')
+    await recordWebQQLiveMessage(session, 'outgoing')
     logSnapshot('send')
     broadcast()
   })
