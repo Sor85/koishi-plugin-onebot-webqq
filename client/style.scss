@@ -444,13 +444,14 @@
 }
 
 .chat-capsule-webqq__contact {
+  position: relative;
   width: 100%;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 10px 58px 10px 12px;
   border: 0;
   border-radius: 0;
   text-align: left;
@@ -464,15 +465,16 @@
     background: rgba(252, 231, 243, 0.72);
   }
 
+  > span {
+    min-width: 0;
+    flex: 1;
+  }
+
   img {
     width: 38px;
     height: 38px;
     border-radius: 50%;
     object-fit: cover;
-  }
-
-  span {
-    min-width: 0;
   }
 
   strong,
@@ -494,6 +496,15 @@
     line-height: 16px;
     color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
   }
+}
+
+.chat-capsule-webqq__contact-time {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .chat-capsule-webqq__empty-list {
@@ -554,6 +565,21 @@
     border-radius: 8px;
     cursor: pointer;
   }
+}
+
+.chat-capsule-webqq__chat-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-capsule-webqq__chat-avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .chat-capsule-webqq__messages {

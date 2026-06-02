@@ -40,8 +40,9 @@
           <img :src="withProxy(item.avatar)" :alt="item.name">
           <span>
             <strong>{{ item.name }}</strong>
-            <small>{{ item.subtitle }}</small>
+            <small>{{ getContactSubtitle(item.type, item.peerId, item.subtitle) }}</small>
           </span>
+          <time v-if="getContactTime(item.type, item.peerId)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime(item.type, item.peerId)) }}</time>
         </button>
         <div v-if="activeTab === 'recent' && !recentItems.length" class="chat-capsule-webqq__empty-list">
           暂无最近会话
@@ -57,8 +58,9 @@
           <img :src="withProxy(friend.avatar)" :alt="friend.name">
           <span>
             <strong>{{ friend.name }}</strong>
-            <small>{{ friend.nickname }}</small>
+            <small>{{ getContactSubtitle('friend', friend.userId, friend.nickname) }}</small>
           </span>
+          <time v-if="getContactTime('friend', friend.userId)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime('friend', friend.userId)) }}</time>
         </button>
         <div v-if="activeTab === 'friends' && !visibleFriends.length" class="chat-capsule-webqq__empty-list">
           暂无好友
@@ -74,8 +76,9 @@
           <img :src="withProxy(group.avatar)" :alt="group.name">
           <span>
             <strong>{{ group.name }}</strong>
-            <small>{{ group.memberCount }} 人</small>
+            <small>{{ getContactSubtitle('group', group.groupId, getGroupSubtitle(group)) }}</small>
           </span>
+          <time v-if="getContactTime('group', group.groupId)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime('group', group.groupId)) }}</time>
         </button>
         <div v-if="activeTab === 'groups' && !visibleGroups.length" class="chat-capsule-webqq__empty-list">
           暂无群组
@@ -84,9 +87,12 @@
     </aside>
     <section class="chat-capsule-webqq__chat">
       <header class="chat-capsule-webqq__chat-header">
-        <div>
-          <strong>{{ currentTitle }}</strong>
-          <span>{{ currentSubtitle }}</span>
+        <div class="chat-capsule-webqq__chat-title">
+          <img v-if="currentAvatar" class="chat-capsule-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
+          <div>
+            <strong>{{ currentTitle }}</strong>
+            <span>{{ currentSubtitle }}</span>
+          </div>
         </div>
         <button type="button" @click="loadContacts">刷新</button>
       </header>
@@ -133,15 +139,17 @@ import { receive, send, withProxy } from '@koishijs/client'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
 
 type ChatSelection =
-  | { type: 'friend'; peerId: string; name: string; subtitle: string }
-  | { type: 'group'; peerId: string; name: string; subtitle: string }
+  | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
+  | { type: 'group'; peerId: string; name: string; subtitle: string; avatar: string }
 
-type RecentItem = ChatSelection & { avatar: string }
+type RecentItem = ChatSelection
+type ConversationSummary = { summary: string; time: number }
 
 const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
 const searchQuery = ref('')
 const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
+const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const messages = ref<WebQQMessage[]>([])
 const messagePane = ref<HTMLElement>()
 const trackingMessages = ref(true)
@@ -178,14 +186,52 @@ const recentItems = computed<RecentItem[]>(() => {
     type: 'group' as const,
     peerId: group.groupId,
     name: group.name,
-    subtitle: `${group.memberCount} 人`,
+    subtitle: getGroupSubtitle(group),
     avatar: group.avatar,
   }))
   return [...friends, ...groups]
 })
 const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
-const currentSubtitle = computed(() => currentChat.value?.subtitle || '好友 / 群聊')
+const currentSubtitle = computed(() => currentChat.value ? getChatSubtitle(currentChat.value) : '好友 / 群聊')
+const currentAvatar = computed(() => currentChat.value?.avatar || '')
+
+function getGroupSubtitle(group: WebQQGroup) {
+  return `群聊 ${group.groupId} · ${group.memberCount} 人`
+}
+
+function getChatSubtitle(chat: ChatSelection) {
+  if (chat.type !== 'group') return chat.subtitle
+  const group = contacts.value.groups.find((item) => item.groupId === chat.peerId)
+  return group ? getGroupSubtitle(group) : chat.subtitle
+}
+
+function getChatKey(type: ChatSelection['type'], peerId: string) {
+  return `${type}:${peerId}`
+}
+
+function updateConversationSummary(type: ChatSelection['type'], peerId: string, message?: WebQQMessage) {
+  if (!message) return
+  conversationSummaries.value = {
+    ...conversationSummaries.value,
+    [getChatKey(type, peerId)]: {
+      summary: message.summary,
+      time: message.time,
+    },
+  }
+}
+
+function getContactSummary(type: ChatSelection['type'], peerId: string) {
+  return conversationSummaries.value[getChatKey(type, peerId)]
+}
+
+function getContactSubtitle(type: ChatSelection['type'], peerId: string, fallback: string) {
+  return getContactSummary(type, peerId)?.summary || fallback
+}
+
+function getContactTime(type: ChatSelection['type'], peerId: string) {
+  return getContactSummary(type, peerId)?.time || 0
+}
 
 function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
@@ -249,6 +295,7 @@ async function loadMessages() {
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
     }) as WebQQMessage[] || []
+    updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
   } finally {
@@ -280,6 +327,7 @@ async function loadOlderMessages() {
       beforeSequence: messages.value[0]?.sequence,
     }) as WebQQMessage[] || []
     messages.value = mergeMessages(olderMessages, messages.value)
+    updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
     historyExhausted.value = messages.value.length === previousCount
     await nextTick()
     if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
@@ -296,6 +344,7 @@ function selectFriend(friend: WebQQFriend) {
     peerId: friend.userId,
     name: friend.name,
     subtitle: friend.nickname,
+    avatar: friend.avatar,
   }
   loadMessages()
 }
@@ -305,7 +354,8 @@ function selectGroup(group: WebQQGroup) {
     type: 'group',
     peerId: group.groupId,
     name: group.name,
-    subtitle: `${group.memberCount} 人`,
+    subtitle: getGroupSubtitle(group),
+    avatar: group.avatar,
   }
   loadMessages()
 }
@@ -316,6 +366,7 @@ function selectRecent(item: RecentItem) {
     peerId: item.peerId,
     name: item.name,
     subtitle: item.subtitle,
+    avatar: item.avatar,
   }
   loadMessages()
 }
@@ -327,7 +378,12 @@ function formatTime(timestamp: number) {
   })
 }
 
+function formatListTime(timestamp: number) {
+  return formatTime(timestamp)
+}
+
 receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
+  updateConversationSummary(payload.type, payload.peerId, payload.message)
   if (
     currentChat.value?.type !== payload.type ||
     currentChat.value.peerId !== payload.peerId

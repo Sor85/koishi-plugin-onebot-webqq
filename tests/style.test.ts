@@ -51,4 +51,12 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
   })
+
+  it('keeps WebQQ contact message times in the top-right corner', () => {
+    expect(ruleBody('.chat-capsule-webqq__contact')).toContain('position: relative')
+    expect(ruleBody('.chat-capsule-webqq__contact')).toContain('padding: 10px 58px 10px 12px')
+    expect(ruleBody('.chat-capsule-webqq__contact-time')).toContain('position: absolute')
+    expect(ruleBody('.chat-capsule-webqq__contact-time')).toContain('top: 10px')
+    expect(ruleBody('.chat-capsule-webqq__contact-time')).toContain('right: 12px')
+  })
 })

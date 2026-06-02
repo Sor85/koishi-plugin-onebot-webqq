@@ -42,6 +42,20 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain(':alt="message.senderName"')
   })
 
+  it('shows group avatar, group id, and member count in the chat header', () => {
+    expect(webqqView).toContain('class="chat-capsule-webqq__chat-avatar"')
+    expect(webqqView).toContain(':src="withProxy(currentAvatar)"')
+    expect(webqqView).toContain('function getGroupSubtitle')
+    expect(webqqView).toContain('currentSubtitle = computed')
+  })
+
+  it('shows latest message summary and time in the WebQQ contact list', () => {
+    expect(webqqView).toContain('getContactSubtitle')
+    expect(webqqView).toContain('getContactTime')
+    expect(webqqView).toContain('formatListTime')
+    expect(webqqView).toContain('chat-capsule-webqq__contact-time')
+  })
+
   it('tracks new WebQQ messages only while the message pane is at the bottom', () => {
     expect(webqqView).toContain('ref="messagePane"')
     expect(webqqView).toContain('@scroll="updateMessageTracking"')
