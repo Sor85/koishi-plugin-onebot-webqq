@@ -91,31 +91,33 @@
           </span>
           <span class="chat-capsule-webqq__contact-info">
             <strong>{{ item.name }}</strong>
-            <small>{{ getContactSubtitle(item.type, item.peerId, item.subtitle) }}</small>
+            <small>{{ getContactSubtitle(item.type, item.peerId, item.summary || item.subtitle) }}</small>
           </span>
-          <time v-if="getContactTime(item.type, item.peerId)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime(item.type, item.peerId)) }}</time>
+          <time v-if="getContactTime(item.type, item.peerId, item.time)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime(item.type, item.peerId, item.time)) }}</time>
         </button>
         <div v-if="activeTab === 'recent' && !recentItems.length" class="chat-capsule-webqq__empty-list">
           暂无最近会话
         </div>
-        <button
-          v-for="friend in visibleFriends"
-          v-show="activeTab === 'friends'"
-          :key="friend.userId"
-          :class="['chat-capsule-webqq__contact', { 'is-active': currentPeerId === friend.userId }]"
-          type="button"
-          @click="selectFriend(friend)"
-        >
-          <span class="chat-capsule-webqq__contact-avatar">
-            <img :src="withProxy(friend.avatar)" :alt="friend.name">
-            <span v-if="getUnreadCount('friend', friend.userId)" class="chat-capsule-webqq__contact-unread">{{ getUnreadText(getUnreadCount('friend', friend.userId)) }}</span>
-          </span>
-          <span class="chat-capsule-webqq__contact-info">
-            <strong>{{ friend.name }}</strong>
-            <small>{{ getContactSubtitle('friend', friend.userId, friend.nickname) }}</small>
-          </span>
-          <time v-if="getContactTime('friend', friend.userId)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime('friend', friend.userId)) }}</time>
-        </button>
+        <section v-for="category in visibleFriendCategories" v-show="activeTab === 'friends'" :key="category.id" class="chat-capsule-webqq__friend-category">
+          <h4 class="chat-capsule-webqq__friend-category-title">{{ category.name }}</h4>
+          <button
+            v-for="friend in category.friends"
+            :key="friend.userId"
+            :class="['chat-capsule-webqq__contact', { 'is-active': currentPeerId === friend.userId }]"
+            type="button"
+            @click="selectFriend(friend)"
+          >
+            <span class="chat-capsule-webqq__contact-avatar">
+              <img :src="withProxy(friend.avatar)" :alt="friend.name">
+              <span v-if="getUnreadCount('friend', friend.userId)" class="chat-capsule-webqq__contact-unread">{{ getUnreadText(getUnreadCount('friend', friend.userId)) }}</span>
+            </span>
+            <span class="chat-capsule-webqq__contact-info">
+              <strong>{{ friend.name }}</strong>
+              <small>{{ getContactSubtitle('friend', friend.userId, friend.nickname) }}</small>
+            </span>
+            <time v-if="getContactTime('friend', friend.userId)" class="chat-capsule-webqq__contact-time">{{ formatListTime(getContactTime('friend', friend.userId)) }}</time>
+          </button>
+        </section>
         <div v-if="activeTab === 'friends' && !visibleFriends.length" class="chat-capsule-webqq__empty-list">
           暂无好友
         </div>
@@ -269,8 +271,9 @@ type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
   | { type: 'group'; peerId: string; name: string; subtitle: string; avatar: string }
 
-type RecentItem = ChatSelection
+type RecentItem = ChatSelection & { summary?: string; time?: number }
 type ConversationSummary = { summary: string; time: number }
+type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
 
 const props = defineProps<{ visible: boolean }>()
 
@@ -315,22 +318,37 @@ const visibleGroups = computed(() => {
     return group.name.toLowerCase().includes(query) || group.groupId.includes(searchQuery.value)
   })
 })
+const visibleFriendCategories = computed<FriendCategoryView[]>(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  const categories = contacts.value.friendCategories?.length
+    ? contacts.value.friendCategories
+    : [{ id: 'all', name: '好友', friends: contacts.value.friends }]
+  return categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    friends: category.friends.filter((friend) => {
+      if (!query) return true
+      return friend.name.toLowerCase().includes(query) ||
+        friend.nickname.toLowerCase().includes(query) ||
+        friend.userId.includes(searchQuery.value)
+    }),
+  })).filter((category) => category.friends.length)
+})
 const recentItems = computed<RecentItem[]>(() => {
-  const friends = contacts.value.friends.slice(0, 4).map((friend) => ({
-    type: 'friend' as const,
-    peerId: friend.userId,
-    name: friend.name,
-    subtitle: friend.nickname,
-    avatar: friend.avatar,
-  }))
-  const groups = contacts.value.groups.slice(0, 4).map((group) => ({
-    type: 'group' as const,
-    peerId: group.groupId,
-    name: group.name,
-    subtitle: getGroupSubtitle(group),
-    avatar: group.avatar,
-  }))
-  return [...friends, ...groups]
+  const items = new Map<string, RecentItem>()
+  for (const item of contacts.value.recent ?? []) {
+    items.set(getChatKey(item.type, item.peerId), item)
+  }
+  for (const [key, summary] of Object.entries(conversationSummaries.value)) {
+    const item = findContactByKey(key)
+    if (!item) continue
+    items.set(key, {
+      ...item,
+      summary: summary.summary,
+      time: summary.time,
+    })
+  }
+  return [...items.values()].sort((left, right) => (right.time || 0) - (left.time || 0))
 })
 const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
@@ -372,6 +390,32 @@ function getChatKey(type: ChatSelection['type'], peerId: string) {
   return `${type}:${peerId}`
 }
 
+function findContactByKey(key: string): RecentItem | undefined {
+  const [type, peerId] = key.split(':', 2)
+  if (type === 'friend') {
+    const friend = contacts.value.friends.find((item) => item.userId === peerId)
+    if (!friend) return
+    return {
+      type: 'friend',
+      peerId: friend.userId,
+      name: friend.name,
+      subtitle: friend.nickname,
+      avatar: friend.avatar,
+    }
+  }
+  if (type === 'group') {
+    const group = contacts.value.groups.find((item) => item.groupId === peerId)
+    if (!group) return
+    return {
+      type: 'group',
+      peerId: group.groupId,
+      name: group.name,
+      subtitle: getGroupSubtitle(group),
+      avatar: group.avatar,
+    }
+  }
+}
+
 function updateConversationSummary(type: ChatSelection['type'], peerId: string, message?: WebQQMessage) {
   if (!message) return
   conversationSummaries.value = {
@@ -391,8 +435,8 @@ function getContactSubtitle(type: ChatSelection['type'], peerId: string, fallbac
   return getContactSummary(type, peerId)?.summary || fallback
 }
 
-function getContactTime(type: ChatSelection['type'], peerId: string) {
-  return getContactSummary(type, peerId)?.time || 0
+function getContactTime(type: ChatSelection['type'], peerId: string, fallback = 0) {
+  return getContactSummary(type, peerId)?.time || fallback
 }
 
 function getUnreadCount(type: ChatSelection['type'], peerId: string) {

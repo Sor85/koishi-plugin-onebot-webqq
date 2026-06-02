@@ -9,6 +9,8 @@ export interface WebQQFriend {
   name: string
   nickname: string
   avatar: string
+  categoryId?: string
+  categoryName?: string
 }
 
 // WebQQ 只读面板使用的群数据。
@@ -94,6 +96,22 @@ export interface WebQQGroupInfo {
   members: WebQQGroupMember[]
 }
 
+export interface WebQQFriendCategory {
+  id: string
+  name: string
+  friends: WebQQFriend[]
+}
+
+export interface WebQQRecentContact {
+  type: WebQQChatType
+  peerId: string
+  name: string
+  subtitle: string
+  avatar: string
+  summary: string
+  time: number
+}
+
 export interface WebQQGroupInfoQuery {
   groupId: string
 }
@@ -102,6 +120,8 @@ export interface WebQQGroupInfoQuery {
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]
+  friendCategories?: WebQQFriendCategory[]
+  recent?: WebQQRecentContact[]
 }
 
 export interface WebQQMessageQuery {
@@ -247,7 +267,7 @@ function getGroupAvatar(groupId: string) {
   return `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/`
 }
 
-function normalizeFriend(raw: unknown): WebQQFriend {
+function normalizeFriend(raw: unknown, category?: { id: string; name: string }): WebQQFriend {
   const item = isRecord(raw) ? raw : {}
   const userId = getStringField(item, ['user_id', 'uin', 'uid'])
   const nickname = getStringField(item, ['nickname', 'nick', 'name']) || userId
@@ -257,7 +277,16 @@ function normalizeFriend(raw: unknown): WebQQFriend {
     name: remark || nickname,
     nickname,
     avatar: getUserAvatar(userId),
+    ...(category ? { categoryId: category.id, categoryName: category.name } : {}),
   }
+}
+
+function normalizeFriendCategory(raw: unknown, index: number): WebQQFriendCategory {
+  const item = isRecord(raw) ? raw : {}
+  const id = getStringField(item, ['categoryId', 'category_id', 'id']) || String(index)
+  const name = getStringField(item, ['categoryName', 'category_name', 'name']) || '未分组'
+  const friends = toArrayResult(item, 'buddyList').map((friend) => normalizeFriend(friend, { id, name }))
+  return { id, name, friends }
 }
 
 function normalizeGroup(raw: unknown): WebQQGroup {
@@ -269,6 +298,41 @@ function normalizeGroup(raw: unknown): WebQQGroup {
     memberCount: getNumberField(item, ['member_count', 'memberCount']),
     avatar: getGroupAvatar(groupId),
   }
+}
+
+function getRecentPeerType(raw: Record<string, unknown>, peerId: string, friends: WebQQFriend[], groups: WebQQGroup[]): WebQQChatType {
+  const chatType = getStringField(raw, ['chatType', 'chat_type', 'type'])
+  if (chatType === '2' || chatType === 'group') return 'group'
+  if (chatType === '1' || chatType === 'friend' || chatType === 'private') return 'friend'
+  if (groups.some((group) => group.groupId === peerId)) return 'group'
+  return 'friend'
+}
+
+async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: WebQQFriend[], groups: WebQQGroup[], imageUrlResolver?: (file: string) => string): Promise<WebQQRecentContact | undefined> {
+  const item = isRecord(raw) ? raw : {}
+  const peerId = getStringField(item, ['peerUin', 'peer_uin', 'uin', 'user_id', 'group_id'])
+  if (!peerId) return
+  const type = getRecentPeerType(item, peerId, friends, groups)
+  const friend = type === 'friend' ? friends.find((value) => value.userId === peerId) : undefined
+  const group = type === 'group' ? groups.find((value) => value.groupId === peerId) : undefined
+  const rawName = getStringField(item, ['remark', 'peerName', 'peer_name', 'name', 'nick', 'nickname'])
+  const message = isRecord(item.lastestMsg) ? item.lastestMsg : isRecord(item.latestMsg) ? item.latestMsg : undefined
+  const elements = message ? await normalizeMessageElements(message.message, bot, imageUrlResolver) : []
+  const summary = elements.length ? summarizeElements(elements) : getTextValue(item.lastestMsg) || getTextValue(item.latestMsg)
+  const time = toTimestampMs(getStringField(item, ['msgTime', 'msg_time', 'time', 'timestamp']) || (message ? message.time : 0))
+  return {
+    type,
+    peerId,
+    name: friend?.name || group?.name || rawName || peerId,
+    subtitle: friend?.nickname || (group ? getGroupSubtitle(group) : rawName || peerId),
+    avatar: type === 'friend' ? getUserAvatar(peerId) : getGroupAvatar(peerId),
+    summary,
+    time,
+  }
+}
+
+function getGroupSubtitle(group: WebQQGroup) {
+  return `群聊 ${group.groupId} · ${group.memberCount} 人`
 }
 
 function normalizeGroupMember(raw: unknown): WebQQGroupMember {
@@ -388,7 +452,8 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
     }
     const sender = isRecord(data.sender) ? data.sender : data
     const title = getStringField(sender, ['nickname', 'card', 'name', 'senderName', 'sender_name'])
-    const text = getStringField(data, ['text', 'content', 'message', 'sourceMsgText'])
+    const inlineElements = data.message != null ? await normalizeMessageElements(data.message, bot, imageUrlResolver) : []
+    const text = getTextValue(data.text) || getTextValue(data.content) || getTextValue(data.sourceMsgText) || (inlineElements.length ? summarizeElements(inlineElements) : '')
     return {
       type: 'quote',
       ...(title ? { title } : {}),
@@ -505,6 +570,24 @@ function normalizeGroupNotices(result: unknown) {
   return notices
 }
 
+async function loadFriendCategories(bot: OneBotBot) {
+  try {
+    return toArrayResult(await callAction(bot, 'get_friends_with_category'), 'categories').map(normalizeFriendCategory)
+  } catch {
+    return []
+  }
+}
+
+async function loadRecentContacts(bot: OneBotBot, friends: WebQQFriend[], groups: WebQQGroup[], imageUrlResolver?: (file: string) => string) {
+  try {
+    const result = await callAction(bot, 'get_recent_contact', { count: 50 })
+    const recent = await Promise.all(toArrayResult(result, 'contacts').map((item) => normalizeRecentContact(item, bot, friends, groups, imageUrlResolver)))
+    return recent.filter((item): item is WebQQRecentContact => !!item)
+  } catch {
+    return []
+  }
+}
+
 // 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   const getBot = () => selectBot(ctx, options)
@@ -521,13 +604,20 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     async loadContacts(): Promise<WebQQContacts> {
       const bot = getBot()
-      const [friendsResult, groupsResult] = await Promise.all([
-        callAction(bot, 'get_friend_list'),
+      const [friendCategories, groupsResult] = await Promise.all([
+        loadFriendCategories(bot),
         callAction(bot, 'get_group_list'),
       ])
+      const friends = friendCategories.length
+        ? friendCategories.flatMap((category) => category.friends)
+        : toArrayResult(await callAction(bot, 'get_friend_list'), 'friends').map((friend) => normalizeFriend(friend))
+      const groups = toArrayResult(groupsResult, 'groups').map(normalizeGroup)
+      const recent = await loadRecentContacts(bot, friends, groups, imageUrlResolver)
       return {
-        friends: toArrayResult(friendsResult, 'friends').map(normalizeFriend),
-        groups: toArrayResult(groupsResult, 'groups').map(normalizeGroup),
+        friends,
+        groups,
+        ...(friendCategories.length ? { friendCategories } : {}),
+        ...(recent.length ? { recent } : {}),
       }
     },
 

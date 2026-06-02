@@ -553,6 +553,19 @@
   font-size: 13px;
 }
 
+.chat-capsule-webqq__friend-category {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-capsule-webqq__friend-category-title {
+  margin: 10px 12px 4px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
 .chat-capsule-webqq__chat {
   position: relative;
   min-width: 0;
@@ -1073,9 +1086,9 @@
 }
 
 .chat-capsule-webqq__bubble {
-  display: inline-flex;
+  display: flex;
   max-width: 100%;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 4px;
   margin: 3px 0;
   padding: 9px 11px;

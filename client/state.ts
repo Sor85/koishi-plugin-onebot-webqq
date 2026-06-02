@@ -32,6 +32,8 @@ export interface WebQQFriend {
   name: string
   nickname: string
   avatar: string
+  categoryId?: string
+  categoryName?: string
 }
 
 export interface WebQQGroup {
@@ -104,6 +106,22 @@ export interface WebQQGroupInfo {
   members: WebQQGroupMember[]
 }
 
+export interface WebQQFriendCategory {
+  id: string
+  name: string
+  friends: WebQQFriend[]
+}
+
+export interface WebQQRecentContact {
+  type: 'friend' | 'group'
+  peerId: string
+  name: string
+  subtitle: string
+  avatar: string
+  summary: string
+  time: number
+}
+
 const webQQGroupRoleRanks: Record<string, number> = {
   群主: 0,
   管理员: 1,
@@ -136,6 +154,8 @@ export function sortWebQQGroupMembers(members: WebQQGroupMember[]) {
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]
+  friendCategories?: WebQQFriendCategory[]
+  recent?: WebQQRecentContact[]
 }
 
 export const capsule = ref<CapsuleData>()

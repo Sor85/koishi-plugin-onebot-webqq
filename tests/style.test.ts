@@ -54,6 +54,17 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
   })
 
+  it('stacks WebQQ rich message elements vertically inside the bubble', () => {
+    expect(style).toContain('.chat-capsule-webqq__bubble {\n  display: flex')
+    expect(style).toContain('.chat-capsule-webqq__bubble {\n  display: flex;\n  max-width: 100%;\n  flex-direction: column')
+    expect(style).not.toContain('.chat-capsule-webqq__bubble {\n  display: inline-flex')
+  })
+
+  it('styles WebQQ friend category headings in the friend list', () => {
+    expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('font-size: 12px')
+    expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('color: #9ca3af')
+  })
+
   it('renders WebQQ sender metadata as compact badges', () => {
     expect(ruleBody('.chat-capsule-webqq__sender-line')).toContain('display: flex')
     expect(ruleBody('.chat-capsule-webqq__sender-line')).toContain('gap: 4px')

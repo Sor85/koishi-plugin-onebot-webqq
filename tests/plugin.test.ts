@@ -615,6 +615,61 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('renders live quote attrs message payloads before the WebQQ message body', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'quote-attrs-1',
+          elements: [
+            {
+              type: 'quote',
+              attrs: {
+                name: '彩虹猫',
+                message: [{ type: 'text', attrs: { content: '宁宁摸摸头' } }],
+              },
+            },
+            { type: 'text', attrs: { content: '这还差不多' } },
+          ],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'quote-attrs-1',
+        summary: '这还差不多',
+        elements: [
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'text', text: '这还差不多' },
+        ],
+      }),
+    }, { authority: 1 })
+  })
+
   it('resolves live reply ids before rendering WebQQ quote elements', async () => {
     const bot = {
       platform: 'onebot',

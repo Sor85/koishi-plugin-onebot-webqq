@@ -47,6 +47,21 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
   })
 
+  it('uses backend recent contacts instead of the first contacts in each list', () => {
+    expect(webqqView).toContain('contacts.value.recent')
+    expect(webqqView).toContain('conversationSummaries.value')
+    expect(webqqView).not.toContain('contacts.value.friends.slice(0, 4)')
+    expect(webqqView).not.toContain('contacts.value.groups.slice(0, 4)')
+  })
+
+  it('renders WebQQ friends under backend categories', () => {
+    expect(webqqView).toContain('visibleFriendCategories')
+    expect(webqqView).toContain('v-for="category in visibleFriendCategories"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__friend-category"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__friend-category-title"')
+    expect(webqqView).toContain('v-for="friend in category.friends"')
+  })
+
   it('opens a WebQQ notification dropdown menu from the bell button', () => {
     expect(webqqView).toContain('@click="openNotices"')
     expect(webqqView).toContain('@click="closeNoticeMenu"')

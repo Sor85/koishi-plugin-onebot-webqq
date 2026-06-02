@@ -37,6 +37,90 @@ describe('onebot webqq adapter', () => {
     expect(request).toHaveBeenCalledWith('get_group_list', {})
   })
 
+  it('loads friend categories and recent contacts when the OneBot implementation supports them', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_friends_with_category') return [{
+        categoryId: 1,
+        categoryName: '家人',
+        buddyList: [{
+          user_id: 30000,
+          nickname: 'Alice',
+          remark: 'Alice Remark',
+        }],
+      }]
+      if (action === 'get_group_list') return [{
+        group_id: 20000,
+        group_name: 'General',
+      }]
+      if (action === 'get_recent_contact') return [{
+        chatType: 1,
+        peerUin: 30000,
+        remark: 'Alice Remark',
+        peerName: 'Alice',
+        msgTime: 1710000000,
+        lastestMsg: {
+          message_id: 1,
+          message_seq: 11,
+          time: 1710000000,
+          sender: { user_id: 30000, nickname: 'Alice' },
+          message: [{ type: 'text', data: { text: 'hello recent friend' } }],
+        },
+      }, {
+        chatType: 2,
+        peerUin: 20000,
+        peerName: 'General',
+        msgTime: 1710000001,
+        lastestMsg: {
+          message_id: 2,
+          message_seq: 12,
+          time: 1710000001,
+          sender: { user_id: 30000, nickname: 'Alice' },
+          message: [{ type: 'text', data: { text: 'hello recent group' } }],
+        },
+      }]
+      return []
+    })
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        _request: request,
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadContacts()).resolves.toMatchObject({
+      friends: [{
+        userId: '30000',
+        name: 'Alice Remark',
+        categoryName: '家人',
+      }],
+      friendCategories: [{
+        id: '1',
+        name: '家人',
+        friends: [{
+          userId: '30000',
+          name: 'Alice Remark',
+        }],
+      }],
+      recent: [{
+        type: 'friend',
+        peerId: '30000',
+        name: 'Alice Remark',
+        summary: 'hello recent friend',
+        time: 1710000000000,
+      }, {
+        type: 'group',
+        peerId: '20000',
+        name: 'General',
+        summary: 'hello recent group',
+        time: 1710000001000,
+      }],
+    })
+    expect(request).toHaveBeenCalledWith('get_friends_with_category', {})
+    expect(request).toHaveBeenCalledWith('get_recent_contact', { count: 50 })
+  })
+
   it('loads friends and groups from the selected OneBot bot', async () => {
     const bot = {
       platform: 'onebot',
@@ -565,5 +649,48 @@ describe('onebot webqq adapter', () => {
       sub_type: 'add',
       approve: false,
     })
+  })
+
+  it('renders inline reply payloads as quote elements when no reply id is present', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 7,
+            message_seq: 17,
+            time: 1710000006,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [
+              {
+                type: 'reply',
+                data: {
+                  sender: { nickname: '彩虹猫' },
+                  message: [{ type: 'text', data: { text: '宁宁摸摸头' } }],
+                },
+              },
+              { type: 'text', data: { text: '这还差不多' } },
+            ],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '这还差不多',
+        elements: [
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'text', text: '这还差不多' },
+        ],
+      }),
+    ])
   })
 })

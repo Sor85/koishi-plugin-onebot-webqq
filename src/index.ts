@@ -257,6 +257,7 @@ async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResol
   if (type === 'quote' || type === 'reply') {
     const title = readElementText(attrs.name || attrs.nickname || attrs.senderName || attrs.sender_name)
     const text = readElementText(attrs.content || attrs.text || attrs.sourceMsgText) ||
+      (Array.isArray(attrs.message) ? attrs.message.map(readLiveQuoteText).join('').trim() : '') ||
       (Array.isArray(raw.children) ? raw.children.map(readLiveQuoteText).join('').trim() : '')
     const id = readElementText(attrs.id || attrs.messageId || attrs.message_id)
     if (!text && id && resolveQuote) {
