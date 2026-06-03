@@ -273,9 +273,14 @@ type ChatSelection =
 
 type RecentItem = ChatSelection & { summary?: string; time?: number }
 type ConversationSummary = { summary: string; time: number }
+type WebQQStoredState = {
+  conversationSummaries: Record<string, ConversationSummary>
+  conversationUnreadCounts: Record<string, number>
+}
 type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
 
 const props = defineProps<{ visible: boolean }>()
+const webQQStorageKey = 'chat-capsule:webqq:v1'
 
 const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
 const searchQuery = ref('')
@@ -283,6 +288,9 @@ const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const conversationUnreadCounts = ref<Record<string, number>>({})
+const stored = loadWebQQStoredState()
+conversationSummaries.value = stored.conversationSummaries
+conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
 const notices = ref<WebQQNotice[]>([])
 const messagePane = ref<HTMLElement>()
@@ -301,6 +309,57 @@ const groupInfoLoading = ref(false)
 const groupInfoErrorText = ref('')
 const groupInfoSearchQuery = ref('')
 const groupInfo = ref<WebQQGroupInfo>({ announcements: [], members: [] })
+
+function readStoredConversationSummaries(value: unknown) {
+  const summaries: Record<string, ConversationSummary> = {}
+  if (!value || typeof value !== 'object') return summaries
+  for (const [key, raw] of Object.entries(value)) {
+    if (!raw || typeof raw !== 'object') continue
+    const summary = Reflect.get(raw, 'summary')
+    const time = Reflect.get(raw, 'time')
+    if (typeof summary === 'string' && typeof time === 'number') summaries[key] = { summary, time }
+  }
+  return summaries
+}
+
+function readStoredUnreadCounts(value: unknown) {
+  const counts: Record<string, number> = {}
+  if (!value || typeof value !== 'object') return counts
+  for (const [key, count] of Object.entries(value)) {
+    if (typeof count === 'number' && count > 0) counts[key] = count
+  }
+  return counts
+}
+
+function loadWebQQStoredState(): WebQQStoredState {
+  const empty = {
+    conversationSummaries: {},
+    conversationUnreadCounts: {},
+  }
+  if (typeof localStorage === 'undefined') return empty
+  try {
+    const raw = localStorage.getItem(webQQStorageKey)
+    if (!raw) return empty
+    const data = JSON.parse(raw)
+    if (!data || typeof data !== 'object') return empty
+    return {
+      conversationSummaries: readStoredConversationSummaries(Reflect.get(data, 'conversationSummaries')),
+      conversationUnreadCounts: readStoredUnreadCounts(Reflect.get(data, 'conversationUnreadCounts')),
+    }
+  } catch {
+    return empty
+  }
+}
+
+function persistWebQQState() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(webQQStorageKey, JSON.stringify({
+      conversationSummaries: conversationSummaries.value,
+      conversationUnreadCounts: conversationUnreadCounts.value,
+    }))
+  } catch {}
+}
 
 const visibleFriends = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -425,6 +484,7 @@ function updateConversationSummary(type: ChatSelection['type'], peerId: string, 
       time: message.time,
     },
   }
+  persistWebQQState()
 }
 
 function getContactSummary(type: ChatSelection['type'], peerId: string) {
@@ -453,6 +513,7 @@ function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
     ...conversationUnreadCounts.value,
     [key]: getUnreadCount(type, peerId) + 1,
   }
+  persistWebQQState()
 }
 
 function clearUnreadCount(type: ChatSelection['type'], peerId: string) {
@@ -461,6 +522,7 @@ function clearUnreadCount(type: ChatSelection['type'], peerId: string) {
   const next = { ...conversationUnreadCounts.value }
   delete next[key]
   conversationUnreadCounts.value = next
+  persistWebQQState()
 }
 
 function clearCurrentUnreadCount() {

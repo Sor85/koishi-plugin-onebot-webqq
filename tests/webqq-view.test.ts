@@ -63,6 +63,18 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('contacts.value.groups.slice(0, 4)')
   })
 
+  it('persists WebQQ recent message summaries and unread counts in browser storage', () => {
+    expect(webqqView).toContain("const webQQStorageKey = 'chat-capsule:webqq:v1'")
+    expect(webqqView).toContain('function loadWebQQStoredState()')
+    expect(webqqView).toContain('function persistWebQQState()')
+    expect(webqqView).toContain('localStorage.getItem(webQQStorageKey)')
+    expect(webqqView).toContain('localStorage.setItem(webQQStorageKey')
+    expect(webqqView).toContain('conversationSummaries.value = stored.conversationSummaries')
+    expect(webqqView).toContain('conversationUnreadCounts.value = stored.conversationUnreadCounts')
+    expect(webqqView).toContain('persistWebQQState()')
+    expect(webqqView).not.toContain('messages.value = stored')
+  })
+
   it('renders WebQQ friends under backend categories', () => {
     expect(webqqView).toContain('visibleFriendCategories')
     expect(webqqView).toContain('v-for="category in visibleFriendCategories"')
