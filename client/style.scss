@@ -1184,6 +1184,11 @@
   gap: 6px;
 }
 
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-body,
+.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-body {
+  flex-direction: row-reverse;
+}
+
 .chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-time {
   opacity: 0;
   white-space: nowrap;
