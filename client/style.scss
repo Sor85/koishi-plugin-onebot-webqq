@@ -230,7 +230,7 @@
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 24px;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
-  backdrop-filter: blur(24px);
+  backdrop-filter: saturate(180%) blur(20px);
   pointer-events: auto;
 }
 
@@ -245,12 +245,12 @@
 
 .chat-capsule-webqq.is-theme-frosted {
   color: #172033;
-  background: rgba(244, 246, 248, 0.72);
+  background: rgba(244, 246, 248, 0.86);
   border: 1px solid rgba(217, 225, 234, 0.78);
   border-radius: 18px;
   box-shadow: 0 18px 52px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(34px) saturate(1.24);
-  -webkit-backdrop-filter: blur(34px) saturate(1.24);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq__sidebar {
@@ -261,7 +261,7 @@
   flex-direction: column;
   border-right: 1px solid rgba(229, 231, 235, 0.58);
   background: transparent;
-  backdrop-filter: blur(24px);
+  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq__tabs-row {
@@ -275,7 +275,7 @@
   border-bottom: 1px solid rgba(229, 231, 235, 0.58);
   border-radius: 24px 0 0 0;
   background: transparent;
-  backdrop-filter: blur(24px);
+  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq__tabs {
@@ -358,7 +358,7 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(24px);
+  backdrop-filter: saturate(180%) blur(20px);
   transform: translateX(-50%);
 }
 
@@ -596,7 +596,7 @@
   display: flex;
   flex-direction: row;
   background: rgba(255, 255, 255, 0.44);
-  backdrop-filter: blur(24px);
+  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq__chat-main {
@@ -705,7 +705,7 @@
   background:
     radial-gradient(circle at 18% 12%, rgba(167, 139, 250, 0.12), transparent 34%),
     linear-gradient(135deg, rgba(245, 241, 255, 0.96), rgba(255, 246, 250, 0.96));
-  backdrop-filter: blur(24px);
+  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq__group-info-header {
@@ -1274,9 +1274,9 @@
 
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__sidebar,
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__tabs-row {
-  background: rgba(244, 246, 248, 0.58);
-  backdrop-filter: blur(26px) saturate(1.2);
-  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  background: rgba(244, 246, 248, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__tabs button.is-active,
@@ -1317,9 +1317,9 @@
 }
 
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat {
-  background: rgba(241, 245, 249, 0.68);
-  backdrop-filter: blur(26px) saturate(1.2);
-  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  background: rgba(241, 245, 249, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-main {
@@ -1334,18 +1334,18 @@
   position: absolute;
   inset: 0 0 auto;
   z-index: 2;
-  background: rgba(248, 250, 252, 0.68);
-  backdrop-filter: blur(28px) saturate(1.28);
-  -webkit-backdrop-filter: blur(28px) saturate(1.28);
+  background: rgba(248, 250, 252, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat-header {
   position: absolute;
   inset: 0 0 auto;
   z-index: 2;
-  background: rgba(248, 250, 252, 0.5);
-  backdrop-filter: blur(28px) saturate(1.28);
-  -webkit-backdrop-filter: blur(28px) saturate(1.28);
+  background: rgba(248, 250, 252, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__messages {
@@ -1362,9 +1362,9 @@
 }
 
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__group-info {
-  background: rgba(248, 250, 252, 0.7);
-  backdrop-filter: blur(26px) saturate(1.2);
-  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  background: rgba(248, 250, 252, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header button,
@@ -1389,10 +1389,10 @@
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-menu,
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-card,
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__group-announcement {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.86);
   border-color: rgba(217, 225, 234, 0.78);
-  backdrop-filter: blur(26px) saturate(1.2);
-  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__bubble {
@@ -1400,7 +1400,7 @@
 }
 
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__bubble {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble {
