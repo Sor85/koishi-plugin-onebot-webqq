@@ -1034,12 +1034,20 @@
   }
 }
 
+.chat-capsule-webqq__message.is-merged {
+  margin-top: -14px;
+}
+
 .chat-capsule-webqq__message-avatar {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.chat-capsule-webqq__message.is-merged .chat-capsule-webqq__message-avatar {
+  visibility: hidden;
 }
 
 .chat-capsule-webqq__message-content {
@@ -1051,6 +1059,17 @@
 }
 
 .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-content {
+  align-items: flex-end;
+}
+
+.chat-capsule-webqq__message-body {
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-body {
   align-items: flex-end;
 }
 
@@ -1104,6 +1123,51 @@
 .chat-capsule-webqq__sender-badge.is-title {
   background: rgba(18, 183, 245, 0.1);
   color: #0b7fab;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message-body {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message-time {
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.16s ease;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message:hover .chat-capsule-webqq__message-time {
+  opacity: 1;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble {
+  margin: 1px 0;
+  border-radius: 18px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-cluster-first:not(.is-outgoing) .chat-capsule-webqq__bubble {
+  border-bottom-left-radius: 3px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-cluster-middle:not(.is-outgoing) .chat-capsule-webqq__bubble {
+  border-radius: 3px 18px 18px 3px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-cluster-last:not(.is-outgoing) .chat-capsule-webqq__bubble {
+  border-top-left-radius: 3px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-outgoing.is-cluster-first .chat-capsule-webqq__bubble {
+  border-bottom-right-radius: 3px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-outgoing.is-cluster-middle .chat-capsule-webqq__bubble {
+  border-radius: 18px 3px 3px 18px;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-outgoing.is-cluster-last .chat-capsule-webqq__bubble {
+  border-top-right-radius: 3px;
 }
 
 .chat-capsule-webqq__bubble {

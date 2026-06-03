@@ -19,8 +19,8 @@ describe('webqq observer view', () => {
   })
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
-    expect(webqqView).toContain("import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQTheme } from './state'")
-    expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`]\"")
+    expect(webqqView).toContain("import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme } from './state'")
+    expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`]\"")
     expect(webqqView).toContain(':style="webQQAccentStyle"')
     expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
     expect(webqqView).not.toContain('aria-label="WebQQ 主题"')
@@ -63,7 +63,7 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('is-clock')
     expect(webqqView).not.toContain('is-user')
     expect(webqqView).not.toContain('is-group')
-    expect(webqqView).toContain('v-for="message in messages"')
+    expect(webqqView).toContain('v-for="(message, index) in messages"')
     expect(webqqView).not.toContain('textarea')
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
   })
@@ -158,6 +158,27 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__message-avatar"')
     expect(webqqView).toContain(':src="withProxy(message.senderAvatar)"')
     expect(webqqView).toContain(':alt="message.senderName"')
+  })
+
+  it('marks consecutive messages from the same sender as merged in Telegram chat style', () => {
+    expect(webqqView).toContain("v-for=\"(message, index) in messages\"")
+    expect(webqqView).toContain("'is-merged': isMergedMessage(index)")
+    expect(webqqView).toContain('getMessageClusterClass(index)')
+    expect(webqqView).toContain('v-if="!isMergedMessage(index)"')
+    expect(webqqView).toContain('function getMessageClusterClass(index: number)')
+    expect(webqqView).toContain('function isMergedMessage(index: number)')
+    expect(webqqView).toContain("webQQChatStyle.value !== 'telegram'")
+    expect(webqqView).toContain("return 'is-cluster-middle'")
+    expect(webqqView).toContain("return 'is-cluster-first'")
+    expect(webqqView).toContain("return 'is-cluster-last'")
+    expect(webqqView).toContain('previous.senderId === message.senderId')
+    expect(webqqView).toContain('previous.direction === message.direction')
+  })
+
+  it('wraps WebQQ message bubbles with their time for Telegram hover layout', () => {
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-body"')
+    expect(webqqView).toContain('<div class="chat-capsule-webqq__bubble">')
+    expect(webqqView).toContain('<div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>')
   })
 
   it('renders group badges around sender names in opposite order by direction', () => {

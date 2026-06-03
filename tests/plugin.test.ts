@@ -110,6 +110,10 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("Schema.const('glass').description('玻璃')")
     expect(pluginSource).toContain(".default('fresh')")
     expect(pluginSource).toContain("description('WebQQ 主题')")
+    expect(pluginSource).toContain("webQQChatStyle?:")
+    expect(pluginSource).toContain("Schema.const('qq').description('传统 QQ')")
+    expect(pluginSource).toContain("Schema.const('telegram').description('Telegram')")
+    expect(pluginSource).toContain("description('WebQQ 聊天页面样式')")
     expect(pluginSource).toContain("webQQAccentColor?:")
     expect(pluginSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色')")
     expect(pluginSource).toContain("useBotAvatarThemeColor?: boolean")
@@ -132,6 +136,7 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: false,
       webQQTheme: 'fresh',
+      webQQChatStyle: 'qq',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
     })
@@ -760,6 +765,7 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: true,
       webQQTheme: 'fresh',
+      webQQChatStyle: 'qq',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
     })
@@ -769,6 +775,7 @@ describe('chat capsule plugin wiring', () => {
     const { ctx, addEntry } = createFakeContext()
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
       webQQTheme?: 'fresh' | 'frosted' | 'glass'
+      webQQChatStyle?: 'qq' | 'telegram'
       webQQAccentColor?: string
       useBotAvatarThemeColor?: boolean
     }) => void
@@ -776,6 +783,7 @@ describe('chat capsule plugin wiring', () => {
 
     applyWithConfig(ctx, {
       webQQTheme: 'fresh',
+      webQQChatStyle: 'telegram',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
     })
@@ -785,6 +793,7 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: false,
       webQQTheme: 'fresh',
+      webQQChatStyle: 'telegram',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
     })

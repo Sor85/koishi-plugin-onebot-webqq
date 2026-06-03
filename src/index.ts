@@ -41,6 +41,7 @@ export interface Config {
   onebotProtocol?: WebQQProtocol
   historyLimit?: number
   webQQTheme?: 'fresh' | 'frosted' | 'glass'
+  webQQChatStyle?: 'qq' | 'telegram'
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
 }
@@ -58,6 +59,10 @@ export const Config: Schema<Config> = Schema.object({
     Schema.const('frosted').description('毛玻璃'),
     Schema.const('glass').description('玻璃'),
   ]).default('fresh').role('radio').description('WebQQ 主题'),
+  webQQChatStyle: Schema.union([
+    Schema.const('qq').description('传统 QQ'),
+    Schema.const('telegram').description('Telegram'),
+  ]).default('qq').role('radio').description('WebQQ 聊天页面样式'),
   webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
   useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
 })
@@ -602,6 +607,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         capsule: getConsoleSnapshot(),
         debug,
         webQQTheme: config.webQQTheme ?? 'fresh',
+        webQQChatStyle: config.webQQChatStyle ?? 'qq',
         webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
         useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
       }

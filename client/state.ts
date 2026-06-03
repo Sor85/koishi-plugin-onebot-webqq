@@ -159,10 +159,12 @@ export interface WebQQContacts {
 }
 
 export type WebQQTheme = 'fresh' | 'frosted' | 'glass'
+export type WebQQChatStyle = 'qq' | 'telegram'
 
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)
 export const useBotAvatarThemeColor = ref(false)
 export const webQQAccentColor = ref('#2563eb')
 export const webQQAvatarAccentColor = ref('')
+export const webQQChatStyle = ref<WebQQChatStyle>('qq')
 export const webQQTheme = ref<WebQQTheme>('fresh')

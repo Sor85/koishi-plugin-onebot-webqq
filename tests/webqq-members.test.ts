@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQTheme, type WebQQGroupMember } from '../client/state'
+import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type WebQQGroupMember } from '../client/state'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -14,6 +14,7 @@ function member(userId: string, card: string, role?: string, nickname = card): W
 describe('webqq group members', () => {
   it('uses the fresh WebQQ theme as the frontend default', () => {
     expect(webQQTheme.value).toBe('fresh')
+    expect(webQQChatStyle.value).toBe('qq')
     expect(webQQAccentColor.value).toBe('#2563eb')
     expect(webQQAvatarAccentColor.value).toBe('')
     expect(useBotAvatarThemeColor.value).toBe(false)

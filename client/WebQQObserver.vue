@@ -1,5 +1,5 @@
 <template>
-  <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <aside class="chat-capsule-webqq__sidebar">
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
@@ -178,13 +178,13 @@
             </template>
             <template v-else>
               <div
-                v-for="message in messages"
+                v-for="(message, index) in messages"
                 :key="message.id || message.sequence"
-                :class="['chat-capsule-webqq__message', `is-${message.direction}`]"
+                :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index) }]"
               >
                 <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
                 <div class="chat-capsule-webqq__message-content">
-                  <div class="chat-capsule-webqq__sender-line">
+                  <div v-if="!isMergedMessage(index)" class="chat-capsule-webqq__sender-line">
                     <template v-if="message.direction === 'outgoing'">
                       <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
                       <span v-if="message.senderLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
@@ -196,18 +196,20 @@
                       <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
                     </template>
                   </div>
-                  <div class="chat-capsule-webqq__bubble">
-                    <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
-                      <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
-                        <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
-                        <span>{{ element.text || '[引用消息]' }}</span>
-                      </div>
-                      <span v-else-if="element.type === 'text'">{{ element.text }}</span>
-                      <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
-                      <span v-else>{{ element.text || message.summary }}</span>
-                    </template>
+                  <div class="chat-capsule-webqq__message-body">
+                    <div class="chat-capsule-webqq__bubble">
+                      <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
+                        <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
+                          <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
+                          <span>{{ element.text || '[引用消息]' }}</span>
+                        </div>
+                        <span v-else-if="element.type === 'text'">{{ element.text }}</span>
+                        <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
+                        <span v-else>{{ element.text || message.summary }}</span>
+                      </template>
+                    </div>
+                    <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
                   </div>
-                  <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
                 </div>
               </div>
             </template>
@@ -264,7 +266,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQTheme } from './state'
+import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 
 type ChatSelection =
@@ -559,6 +561,34 @@ function clearCurrentUnreadCount() {
 
 function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
+}
+
+function isMergedMessage(index: number) {
+  if (webQQChatStyle.value !== 'telegram') return false
+  const message = messages.value[index]
+  const previous = messages.value[index - 1]
+  return !!message &&
+    !!previous &&
+    previous.senderId === message.senderId &&
+    previous.direction === message.direction
+}
+
+function getMessageClusterClass(index: number) {
+  if (webQQChatStyle.value !== 'telegram') return ''
+  const message = messages.value[index]
+  const previous = messages.value[index - 1]
+  const next = messages.value[index + 1]
+  if (!message) return ''
+  const hasPrevious = !!previous &&
+    previous.senderId === message.senderId &&
+    previous.direction === message.direction
+  const hasNext = !!next &&
+    next.senderId === message.senderId &&
+    next.direction === message.direction
+  if (hasPrevious && hasNext) return 'is-cluster-middle'
+  if (hasNext) return 'is-cluster-first'
+  if (hasPrevious) return 'is-cluster-last'
+  return ''
 }
 
 function appendMessage(message: WebQQMessage) {
