@@ -83,6 +83,10 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-title')).toContain('background: rgba(18, 183, 245, 0.1)')
   })
 
+  it('keeps WebQQ sender metadata away from the first message bubble', () => {
+    expect(ruleBody('.chat-capsule-webqq__sender-line + .chat-capsule-webqq__message-body')).toContain('margin-top: 6px')
+  })
+
   it('hides repeated avatars on merged Telegram-style WebQQ messages', () => {
     expect(ruleBody('.chat-capsule-webqq__message.is-merged')).toContain('margin-top: -14px')
     expect(ruleBody('.chat-capsule-webqq__message.is-merged .chat-capsule-webqq__message-avatar')).toContain('visibility: hidden')

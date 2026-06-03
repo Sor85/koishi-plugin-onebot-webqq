@@ -1085,6 +1085,10 @@
   justify-content: flex-end;
 }
 
+.chat-capsule-webqq__sender-line + .chat-capsule-webqq__message-body {
+  margin-top: 6px;
+}
+
 .chat-capsule-webqq__message-name,
 .chat-capsule-webqq__message-time {
   font-size: 11px;
