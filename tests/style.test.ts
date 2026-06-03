@@ -121,6 +121,10 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-body')).toContain('flex-direction: row')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-body')).toContain('align-items: flex-end')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-body')).toContain('gap: 6px')
+    expect(style).toContain(`.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-body,
+.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-body {
+  flex-direction: row-reverse;
+}`)
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-time')).toContain('opacity: 0')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-time')).toContain('white-space: nowrap')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message:hover .chat-capsule-webqq__message-time')).toContain('opacity: 1')
