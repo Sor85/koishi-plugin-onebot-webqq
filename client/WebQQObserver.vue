@@ -218,9 +218,6 @@
             </template>
           </div>
         </div>
-        <footer class="chat-capsule-webqq__readonly-bar">
-          <span>只读模式</span>
-        </footer>
       </div>
       <aside v-if="groupInfoOpen && currentChat?.type === 'group'" class="chat-capsule-webqq__group-info">
         <header class="chat-capsule-webqq__group-info-header">

@@ -66,6 +66,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('v-for="(message, index) in messages"')
     expect(webqqView).not.toContain('textarea')
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
+    expect(webqqView).not.toContain('只读模式')
+    expect(webqqView).not.toContain('chat-capsule-webqq__readonly-bar')
   })
 
   it('uses backend recent contacts instead of the first contacts in each list', () => {

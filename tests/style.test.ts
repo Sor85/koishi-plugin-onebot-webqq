@@ -73,6 +73,10 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-media img')).toContain('border-radius: 8px')
   })
 
+  it('does not keep the removed WebQQ readonly bar styles', () => {
+    expect(style).not.toContain('chat-capsule-webqq__readonly-bar')
+  })
+
   it('styles WebQQ friend category headings in the friend list', () => {
     expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('font-size: 12px')
     expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('color: #9ca3af')
