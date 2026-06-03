@@ -60,6 +60,13 @@ describe('chat capsule styles', () => {
     expect(style).not.toContain('.chat-capsule-webqq__bubble {\n  display: inline-flex')
   })
 
+  it('shrinks WebQQ text bubbles to their own message content', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-content')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__message-content')).toContain('flex-direction: column')
+    expect(ruleBody('.chat-capsule-webqq__message-content')).toContain('align-items: flex-start')
+    expect(ruleBody('.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-content')).toContain('align-items: flex-end')
+  })
+
   it('styles WebQQ friend category headings in the friend list', () => {
     expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('font-size: 12px')
     expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('color: #9ca3af')
