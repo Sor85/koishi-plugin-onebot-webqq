@@ -173,14 +173,25 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: var(--chat-capsule-webqq-accent)')
   })
 
+  it('makes the frosted WebQQ theme a blurred fresh-style surface', () => {
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted')).toContain('background: rgba(244, 246, 248, 0.72)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted')).toContain('border: 1px solid rgba(217, 225, 234, 0.78)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted')).toContain('border-radius: 18px')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted')).toContain('backdrop-filter: blur(34px) saturate(1.24)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted')).toContain('-webkit-backdrop-filter: blur(34px) saturate(1.24)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat')).toContain('background: rgba(241, 245, 249, 0.68)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__bubble')).toContain('background: rgba(255, 255, 255, 0.72)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: var(--chat-capsule-webqq-accent)')
+  })
+
   it('overlays the fresh WebQQ chat header with live backdrop blur', () => {
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-main')).toContain('position: relative')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('position: absolute')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('inset: 0 0 auto')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('z-index: 2')
-    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.78)')
-    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('backdrop-filter: blur(18px) saturate(1.2)')
-    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('-webkit-backdrop-filter: blur(18px) saturate(1.2)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.68)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('backdrop-filter: blur(28px) saturate(1.28)')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header')).toContain('-webkit-backdrop-filter: blur(28px) saturate(1.28)')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__messages')).toContain('padding: 84px 22px 20px')
   })
 
