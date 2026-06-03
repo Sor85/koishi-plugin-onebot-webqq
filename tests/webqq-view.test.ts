@@ -171,14 +171,24 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("return 'is-cluster-middle'")
     expect(webqqView).toContain("return 'is-cluster-first'")
     expect(webqqView).toContain("return 'is-cluster-last'")
-    expect(webqqView).toContain('previous.senderId === message.senderId')
-    expect(webqqView).toContain('previous.direction === message.direction')
+    expect(webqqView).toContain("if (!message) return ''")
+    expect(webqqView).toContain('function getClusterBubbleMessage(index: number, step: 1 | -1)')
+    expect(webqqView).toContain('if (!isImageOnlyMessage(candidate)) return candidate')
+    expect(webqqView).toContain('const hasPrevious = !!getClusterBubbleMessage(index, -1)')
+    expect(webqqView).toContain('const hasNext = !!getClusterBubbleMessage(index, 1)')
   })
 
   it('wraps WebQQ message bubbles with their time for Telegram hover layout', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__message-body"')
-    expect(webqqView).toContain('<div class="chat-capsule-webqq__bubble">')
+    expect(webqqView).toContain('<div v-else class="chat-capsule-webqq__bubble">')
     expect(webqqView).toContain('<div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>')
+  })
+
+  it('renders image-only WebQQ messages without a text bubble', () => {
+    expect(webqqView).toContain('v-if="isImageOnlyMessage(message)"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-media"')
+    expect(webqqView).toContain(':src="withProxy(message.elements[0].url)"')
+    expect(webqqView).toContain('function isImageOnlyMessage(message: WebQQMessage)')
   })
 
   it('renders group badges around sender names in opposite order by direction', () => {

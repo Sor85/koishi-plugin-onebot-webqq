@@ -67,6 +67,12 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__message-content')).toContain('align-items: flex-end')
   })
 
+  it('renders WebQQ image-only messages without bubble background', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-media')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__message-media img')).toContain('max-width: min(220px, 100%)')
+    expect(ruleBody('.chat-capsule-webqq__message-media img')).toContain('border-radius: 8px')
+  })
+
   it('styles WebQQ friend category headings in the friend list', () => {
     expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('font-size: 12px')
     expect(ruleBody('.chat-capsule-webqq__friend-category-title')).toContain('color: #9ca3af')

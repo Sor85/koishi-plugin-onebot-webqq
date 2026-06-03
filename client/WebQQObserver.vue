@@ -197,7 +197,10 @@
                     </template>
                   </div>
                   <div class="chat-capsule-webqq__message-body">
-                    <div class="chat-capsule-webqq__bubble">
+                    <div v-if="isImageOnlyMessage(message)" class="chat-capsule-webqq__message-media">
+                      <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
+                    </div>
+                    <div v-else class="chat-capsule-webqq__bubble">
                       <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
                         <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
                           <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
@@ -563,6 +566,26 @@ function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
 
+function isImageOnlyMessage(message: WebQQMessage) {
+  return message.elements.length === 1 &&
+    message.elements[0].type === 'image' &&
+    !!message.elements[0].url
+}
+
+function getClusterBubbleMessage(index: number, step: 1 | -1) {
+  const message = messages.value[index]
+  if (!message) return
+  for (let cursor = index + step; cursor >= 0 && cursor < messages.value.length; cursor += step) {
+    const candidate = messages.value[cursor]
+    if (
+      !candidate ||
+      candidate.senderId !== message.senderId ||
+      candidate.direction !== message.direction
+    ) return
+    if (!isImageOnlyMessage(candidate)) return candidate
+  }
+}
+
 function isMergedMessage(index: number) {
   if (webQQChatStyle.value !== 'telegram') return false
   const message = messages.value[index]
@@ -576,15 +599,9 @@ function isMergedMessage(index: number) {
 function getMessageClusterClass(index: number) {
   if (webQQChatStyle.value !== 'telegram') return ''
   const message = messages.value[index]
-  const previous = messages.value[index - 1]
-  const next = messages.value[index + 1]
   if (!message) return ''
-  const hasPrevious = !!previous &&
-    previous.senderId === message.senderId &&
-    previous.direction === message.direction
-  const hasNext = !!next &&
-    next.senderId === message.senderId &&
-    next.direction === message.direction
+  const hasPrevious = !!getClusterBubbleMessage(index, -1)
+  const hasNext = !!getClusterBubbleMessage(index, 1)
   if (hasPrevious && hasNext) return 'is-cluster-middle'
   if (hasNext) return 'is-cluster-first'
   if (hasPrevious) return 'is-cluster-last'
