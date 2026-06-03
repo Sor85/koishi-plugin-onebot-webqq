@@ -2,12 +2,20 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
+const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
 describe('chat capsule view', () => {
   it('hides the capsule on the logger page', () => {
-    expect(capsuleView).toContain("import { Universal, router, withProxy } from '@koishijs/client'")
+    expect(capsuleView).toContain("import { Universal, activities, router, store, withProxy } from '@koishijs/client'")
     expect(capsuleView).toContain("const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')")
-    expect(capsuleView).toContain('v-if="!isLoggerRoute"')
+    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)')
+    expect(capsuleView).toContain('v-if="shouldShowCapsule"')
+  })
+
+  it('hides the capsule before the Koishi console user is logged in', () => {
+    expect(capsuleView).toContain("const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))")
+    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)')
+    expect(capsuleView).toContain('v-if="shouldShowCapsule"')
   })
 
   it('splits thinking status and current user into separate lines', () => {
@@ -36,5 +44,29 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('{{ usage!.outputTokens }}')
     expect(capsuleView).toContain('v-if="thinkingDurationText"')
     expect(capsuleView).toContain('{{ thinkingDurationText }}')
+  })
+
+  it('loads the configured WebQQ theme from console entry data', () => {
+    expect(clientEntry).toContain("import { capsule, debug, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
+    expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
+    expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
+    expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'")
+    expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
+    expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
+  })
+
+  it('checks and caches bot avatar theme colors in the browser', () => {
+    expect(clientEntry).toContain("import { Context, receive, withProxy } from '@koishijs/client'")
+    expect(clientEntry).toContain("const webQQAvatarThemeStorageKey = 'chat-capsule:webqq-avatar-theme:v1'")
+    expect(clientEntry).toContain('function loadCachedAvatarThemeColor(avatar: string)')
+    expect(clientEntry).toContain('function cacheAvatarThemeColor(avatar: string, color: string)')
+    expect(clientEntry).toContain('function extractDominantAvatarColor(avatar: string)')
+    expect(clientEntry).toContain('function updateWebQQAvatarThemeColor(data?: CapsuleData)')
+    expect(clientEntry).toContain('webQQAvatarAccentColor.value = cached ||')
+    expect(clientEntry).toContain('localStorage.getItem(webQQAvatarThemeStorageKey)')
+    expect(clientEntry).toContain('localStorage.setItem(webQQAvatarThemeStorageKey')
+    expect(clientEntry).toContain('image.src = withProxy(avatar)')
+    expect(clientEntry).toContain('updateWebQQAvatarThemeColor(capsule.value)')
   })
 })

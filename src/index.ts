@@ -1,6 +1,9 @@
 import type { Session } from 'koishi'
 import Schema from 'schemastery'
 import { resolve } from 'path'
+import { createReadStream } from 'fs'
+import { randomUUID } from 'crypto'
+import { extname } from 'path'
 import type { Entry } from '@koishijs/console'
 import {
   CapsuleSnapshot,
@@ -11,35 +14,90 @@ import {
   recordModelUsage,
   recordOutgoingMessage,
 } from './state'
+import {
+  createOneBotWebQQService,
+  WebQQContacts,
+  WebQQGroupInfo,
+  WebQQGroupInfoQuery,
+  WebQQLiveMessage,
+  WebQQMessage,
+  WebQQMessageElement,
+  WebQQMessageQuery,
+  WebQQNotice,
+  WebQQNoticeAction,
+  WebQQProtocol,
+} from './onebot'
 
 export const name = 'chat-capsule'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {
-  optional: ['console', 'chatluna', 'chatluna_character'],
+  optional: ['console', 'server', 'chatluna', 'chatluna_character'],
 }
 
 export interface Config {
   debug?: boolean
+  onebotSelfId?: string
+  onebotProtocol?: WebQQProtocol
+  historyLimit?: number
+  webQQTheme?: 'fresh' | 'frosted' | 'glass'
+  webQQChatStyle?: 'qq' | 'telegram'
+  webQQAccentColor?: string
+  useBotAvatarThemeColor?: boolean
 }
 
 export const Config: Schema<Config> = Schema.object({
   debug: Schema.boolean().default(false).description('显示前端调试信息'),
+  onebotSelfId: Schema.string().description('用于读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人'),
+  onebotProtocol: Schema.union([
+    Schema.const('napcat').description('NapCat'),
+    Schema.const('llbot').description('LLBot'),
+  ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
+  historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
+  webQQTheme: Schema.union([
+    Schema.const('fresh').description('清爽'),
+    Schema.const('frosted').description('毛玻璃'),
+    Schema.const('glass').description('玻璃'),
+  ]).default('fresh').role('radio').description('WebQQ 主题'),
+  webQQChatStyle: Schema.union([
+    Schema.const('qq').description('传统 QQ'),
+    Schema.const('telegram').description('Telegram'),
+  ]).default('qq').role('radio').description('WebQQ 聊天页面样式'),
+  webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
+  useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
 })
 
 declare module '@koishijs/console' {
   interface Events {
     'chat-capsule/update'(data: CapsuleSnapshot | undefined): void
+    'chat-capsule/webqq/message'(data: WebQQLiveMessage): void
+    'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
+    'chat-capsule/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
+    'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
+    'chat-capsule/webqq/notices'(): Promise<WebQQNotice[]>
+    'chat-capsule/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
   }
 }
 
 interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown
-  broadcast(type: string, body: unknown): unknown
+  addListener(event: string, callback: (...args: any[]) => unknown, options?: { authority?: number }): unknown
+  broadcast(type: string, body: unknown, options?: { authority?: number }): unknown
 }
 
 interface DebugLogger {
   info(format: string, ...param: unknown[]): unknown
+}
+
+interface WebQQImageContext {
+  params: Record<string, string>
+  status?: number
+  body?: unknown
+  set(name: string, value: string): unknown
+}
+
+interface WebQQImageServer {
+  get(path: string, callback: (ctx: WebQQImageContext) => unknown): unknown
 }
 
 interface ChatLunaMessage {
@@ -65,10 +123,12 @@ interface ChatLunaModelUsage {
 // 描述插件运行所需的最小 Koishi 上下文能力。
 export interface ChatCapsuleContext {
   console?: ConsoleService
+  server?: WebQQImageServer
   chatluna_character?: ChatLunaCharacterService
+  bots?: unknown[]
   logger?(name: string): DebugLogger
   on(event: string, listener: (...args: any[]) => void): unknown
-  before(event: 'send', listener: () => void): unknown
+  before(event: 'send', listener: (session?: Session) => unknown): unknown
   inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
 }
 
@@ -110,13 +170,365 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
+}
+
+function readElementText(value: unknown) {
+  return value == null ? '' : String(value)
+}
+
+function readRecordText(source: unknown, keys: string[]) {
+  if (!isRecord(source)) return ''
+  for (const key of keys) {
+    const value = source[key]
+    if (value != null && String(value).trim()) return String(value)
+  }
+  return ''
+}
+
+function normalizeGroupRole(role: string) {
+  if (role === 'owner') return '群主'
+  if (role === 'admin' || role === 'administrator') return '管理员'
+  return ''
+}
+
+function readLiveQuoteText(raw: unknown): string {
+  if (typeof raw === 'string') return raw
+  if (!isRecord(raw)) return ''
+  const type = readElementText(raw.type)
+  const attrs = isRecord(raw.attrs) ? raw.attrs : {}
+  if (type === 'text') return readElementText(attrs.content)
+  if (type === 'img' || type === 'image') return '[图片]'
+  if (type === 'face') return `[表情 ${readElementText(attrs.id)}]`
+  if (Array.isArray(raw.children)) return raw.children.map(readLiveQuoteText).join('').trim()
+  return readElementText(attrs.content || attrs.text)
+}
+
+type WebQQResolvedImage = {
+  url: string
+  debug?: unknown
+}
+
+type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQResolvedImage>
+type WebQQImageUrlResolver = (file: string) => string
+type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
+
+function isRemoteImageSource(file: string) {
+  return /^https?:\/\//.test(file)
+}
+
+function getImageContentType(file: string) {
+  switch (extname(file).toLowerCase()) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg'
+    case '.gif':
+      return 'image/gif'
+    case '.webp':
+      return 'image/webp'
+    case '.bmp':
+      return 'image/bmp'
+    case '.svg':
+      return 'image/svg+xml'
+    default:
+      return 'image/png'
+  }
+}
+
+function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogger) {
+  const files = new Map<string, string>()
+  const ids = new Map<string, string>()
+  ctx.server?.get('/chat-capsule/webqq/image/:id', async (routerCtx) => {
+    const file = files.get(routerCtx.params.id)
+    if (!file) {
+      routerCtx.status = 404
+      return
+    }
+    logger?.info('webqq image proxy %s', JSON.stringify({ id: routerCtx.params.id, file }))
+    if (isRemoteImageSource(file)) {
+      const response = await fetch(file)
+      routerCtx.status = response.status
+      if (!response.ok) return
+      routerCtx.set('content-type', response.headers.get('content-type') || getImageContentType(file))
+      routerCtx.body = Buffer.from(await response.arrayBuffer())
+      return
+    }
+    routerCtx.set('content-type', getImageContentType(file))
+    routerCtx.body = createReadStream(file)
+  })
+  return (file: string) => {
+    if (!ctx.server) return ''
+    const cached = ids.get(file)
+    if (cached) return `/chat-capsule/webqq/image/${cached}`
+    const id = randomUUID()
+    files.set(id, file)
+    ids.set(file, id)
+    return `/chat-capsule/webqq/image/${id}`
+  }
+}
+
+function resolveConsoleSnapshot(snapshot: CapsuleSnapshot | undefined, imageUrlResolver: WebQQImageUrlResolver) {
+  const avatar = snapshot?.bot.avatar
+  if (!snapshot || !avatar) return snapshot
+  const proxiedAvatar = imageUrlResolver(avatar)
+  if (!proxiedAvatar) return snapshot
+  return {
+    ...snapshot,
+    bot: {
+      ...snapshot.bot,
+      avatar: proxiedAvatar,
+    },
+  }
+}
+
+async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement | undefined> {
+  if (typeof raw === 'string') return { type: 'text', text: raw }
+  if (!isRecord(raw)) return undefined
+  const type = readElementText(raw.type)
+  const attrs = isRecord(raw.attrs) ? raw.attrs : {}
+  if (type === 'text') return { type: 'text', text: readElementText(attrs.content) }
+  if (type === 'quote' || type === 'reply') {
+    const title = readElementText(attrs.name || attrs.nickname || attrs.senderName || attrs.sender_name)
+    const text = readElementText(attrs.content || attrs.text || attrs.sourceMsgText) ||
+      (Array.isArray(attrs.message) ? attrs.message.map(readLiveQuoteText).join('').trim() : '') ||
+      (Array.isArray(raw.children) ? raw.children.map(readLiveQuoteText).join('').trim() : '')
+    const id = readElementText(attrs.id || attrs.messageId || attrs.message_id)
+    if (!text && id && resolveQuote) {
+      try {
+        return await resolveQuote(id)
+      } catch {
+        return { type: 'quote', text: '[引用消息]' }
+      }
+    }
+    return {
+      type: 'quote',
+      ...(title ? { title } : {}),
+      text: text || '[引用消息]',
+    }
+  }
+  if (type === 'img' || type === 'image') {
+    const url = readElementText(attrs.src || attrs.url)
+    if (url) {
+      try {
+        return { type: 'image', url: resolveImage ? (await resolveImage(url, 'url')).url : url }
+      } catch {
+        return { type: 'image', url }
+      }
+    }
+    const file = readElementText(attrs.file || attrs.file_id)
+    if (!file) return { type: 'image' }
+    if (isRemoteImageSource(file)) {
+      try {
+        return { type: 'image', url: resolveImage ? (await resolveImage(file, 'url')).url : file }
+      } catch {
+        return { type: 'image', url: file }
+      }
+    }
+    try {
+      return { type: 'image', url: resolveImage ? (await resolveImage(file)).url : '' }
+    } catch {
+      return { type: 'image' }
+    }
+  }
+  if (type === 'face') return { type: 'face', text: `[表情 ${readElementText(attrs.id)}]` }
+  if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
+  if (type === 'audio' || type === 'record') return { type: 'record', text: '[语音]' }
+  if (type === 'video') return { type: 'video', text: '[视频]' }
+  return { type: 'unknown', text: '[消息]' }
+}
+
+async function normalizeLiveElements(session: Session, resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement[]> {
+  const elements = (await Promise.all((session.elements ?? session.event.message?.elements ?? [])
+    .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote))))
+    .filter((element): element is WebQQMessageElement => !!element)
+  if (elements.length) return elements
+  const content = session.content?.trim()
+  return content ? [{ type: 'text', text: content }] : [{ type: 'unknown', text: '[消息]' }]
+}
+
+function summarizeWebQQElements(elements: WebQQMessageElement[]) {
+  const summary = elements.map((element) => {
+    if (element.type === 'text') return element.text
+    if (element.type === 'image') return '[图片]'
+    if (element.type === 'quote') return ''
+    if (element.type === 'face') return element.text || '[表情]'
+    return element.text || '[消息]'
+  }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
+  return summary || '[消息]'
+}
+
+function getWebQQUserAvatar(userId: string) {
+  return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640` : ''
+}
+
+function getWebQQGroupAvatar(groupId: string) {
+  return groupId ? `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/` : ''
+}
+
+function readWebQQPeer(session: Session) {
+  const isGroup = !!(session.guildId || session.event.guild)
+  const peerId = isGroup
+    ? session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+    : session.userId || session.event.user?.id || session.channelId || session.event.channel?.id
+  if (!peerId) return
+  return {
+    type: isGroup ? 'group' as const : 'friend' as const,
+    peerId,
+  }
+}
+
+function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
+  const senderId = session.userId || session.event.user?.id
+  return senderId && senderId === session.bot.selfId ? 'outgoing' : 'incoming'
+}
+
+function readWebQQLiveSenderMetadata(session: Session) {
+  const member = session.event.member
+  const role = normalizeGroupRole(readRecordText(member, ['role']))
+  const level = readRecordText(member, ['level', 'sender_level', 'senderLevel'])
+  const title = readRecordText(member, ['title', 'special_title', 'specialTitle'])
+  return {
+    ...(role ? { senderRole: role } : {}),
+    ...(level ? { senderLevel: level } : {}),
+    ...(title ? { senderTitle: title } : {}),
+  }
+}
+
+function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const raw = isRecord(session.event) && isRecord(session.event._data) ? session.event._data : {}
+  const requesterId = session.userId || session.event.user?.id
+  const requesterName = readUserName(session) || requesterId
+  if (!requesterId && !requesterName) return
+  const flag = readRecordText(raw, ['flag', 'request_id', 'requestId'])
+  const comment = readRecordText(raw, ['comment', 'message', 'reason'])
+  const id = flag || requesterId || String(session.timestamp)
+  return {
+    id: `friend:${id}`,
+    type: 'friend-request',
+    title: requesterName || '好友申请',
+    subtitle: requesterId ? `来自 QQ ${requesterId}` : '新的好友申请',
+    avatar: getWebQQUserAvatar(requesterId || ''),
+    status: 'pending',
+    time: session.timestamp,
+    ...(flag ? { flag } : {}),
+    ...(requesterId ? { requesterId } : {}),
+    ...(requesterName ? { requesterName } : {}),
+    ...(comment ? { comment } : {}),
+  }
+}
+
+function createWebQQGroupLeaveNotice(session: Session): WebQQNotice | undefined {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+  const groupName = session.event.guild?.name || session.event.channel?.name || groupId
+  const requesterId = session.userId || session.event.user?.id
+  const requesterName = readUserName(session) || requesterId
+  if (!groupId) return
+  return {
+    id: `group:leave:${groupId}:${requesterId || 'unknown'}:${session.timestamp}`,
+    type: 'group-notice',
+    title: groupName || '群通知',
+    subtitle: requesterName ? `${requesterName} 退出群聊` : '成员退出群聊',
+    avatar: getWebQQGroupAvatar(groupId),
+    status: 'approved',
+    time: session.timestamp,
+    subType: 'leave',
+    groupId,
+    ...(groupName ? { groupName } : {}),
+    ...(requesterId ? { requesterId } : {}),
+    ...(requesterName ? { requesterName } : {}),
+  }
+}
+
+async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQLiveMessage | undefined> {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const peer = readWebQQPeer(session)
+  if (!peer) return
+  if (!(session.elements ?? session.event.message?.elements)?.length && !session.content?.trim()) return
+  const bot = readBotProfile(session)
+  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote)
+  const senderId = direction === 'outgoing'
+    ? bot.selfId
+    : session.userId || session.event.user?.id || 'unknown'
+  const senderName = direction === 'outgoing'
+    ? readMemberName(session) || bot.name || '机器人'
+    : readUserName(session) || senderId
+  const id = session.messageId || session.event.message?.id || `${direction}:${peer.type}:${peer.peerId}:${session.timestamp}`
+  return {
+    ...peer,
+    message: {
+      id,
+      sequence: session.messageId || session.event.message?.id || String(session.timestamp),
+      time: session.timestamp,
+      senderId,
+      senderName,
+      senderAvatar: getWebQQUserAvatar(senderId),
+      ...readWebQQLiveSenderMetadata(session),
+      direction,
+      summary: summarizeWebQQElements(elements),
+      elements,
+    },
+  }
+}
+
+function getMessageKey(message: WebQQMessage) {
+  return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
+}
+
+function mergeWebQQMessages(history: WebQQMessage[], live: WebQQMessage[] = [], limit?: number) {
+  const messages = new Map<string, WebQQMessage>()
+  for (const message of [...history, ...live]) {
+    messages.set(getMessageKey(message), message)
+  }
+  const merged = [...messages.values()].sort((a, b) => a.time - b.time)
+  return limit ? merged.slice(-limit) : merged
+}
+
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const state = createCapsuleState()
+  const historyLimit = config.historyLimit ?? 100
   const debug = !!config.debug
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
+  const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger)
+  const webqq = createOneBotWebQQService(ctx, {
+    selfId: config.onebotSelfId,
+    protocol: config.onebotProtocol,
+    imageUrlResolver,
+  })
+  const consoleAuthOptions = { authority: 1 }
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
-  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot())
+  const getConsoleSnapshot = () => resolveConsoleSnapshot(state.snapshot(), imageUrlResolver)
+  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', getConsoleSnapshot(), consoleAuthOptions)
+  const liveMessages = new Map<string, WebQQMessage[]>()
+  const friendRequestNotices = new Map<string, WebQQNotice>()
+  const groupLeaveNotices = new Map<string, WebQQNotice>()
+  const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
+  const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
+    if (!session) return
+    const payload = await createWebQQLiveMessage(
+      session,
+      direction,
+      async (file, source) => {
+        if (source === 'url') {
+          const url = imageUrlResolver(file) || file
+          logger?.info('webqq image url %s', JSON.stringify({ direction, url: file, proxyUrl: url }))
+          return { url, debug: { url: file } }
+        }
+        const image = await webqq.resolveImage(file)
+        logger?.info('webqq image %s', JSON.stringify({ direction, file, result: image.debug, url: image.url }))
+        return image
+      },
+      async (id) => webqq.resolveQuote(id),
+    )
+    if (!payload) return
+    const key = getLiveMessageKey(payload)
+    const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
+    liveMessages.set(key, messages)
+    ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
+  }
   const recordGenerating = (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const input = createMessageInput(session, message)
     input.user.name = readMemberName(session) || input.user.name
@@ -130,10 +542,23 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     broadcast()
   }
 
-  ctx.on('message', (session) => {
+  ctx.on('message', async (session) => {
     recordIncomingMessage(state, createMessageInput(session))
     logSnapshot('message')
     broadcast()
+    await recordWebQQLiveMessage(session, readWebQQLiveDirection(session))
+  })
+
+  ctx.on('friend-request', (session) => {
+    const notice = createWebQQFriendRequestNotice(session)
+    if (!notice) return
+    friendRequestNotices.set(notice.id, notice)
+  })
+
+  ctx.on('guild-member-removed', (session) => {
+    const notice = createWebQQGroupLeaveNotice(session)
+    if (!notice) return
+    groupLeaveNotices.set(notice.id, notice)
   })
 
   ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
@@ -148,7 +573,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     clearActivity('after-chat-error')
   })
 
-  ctx.before('send', () => {
+  ctx.before('send', async (session) => {
     recordOutgoingMessage(state)
     logSnapshot('send')
     broadcast()
@@ -179,10 +604,39 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     }, () => {
       logSnapshot('entry')
       return {
-        capsule: state.snapshot(),
+        capsule: getConsoleSnapshot(),
         debug,
+        webQQTheme: config.webQQTheme ?? 'fresh',
+        webQQChatStyle: config.webQQChatStyle ?? 'qq',
+        webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
+        useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
       }
     })
+    console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/messages', async (query: WebQQMessageQuery) => {
+      const nextQuery = {
+        ...query,
+        limit: query.limit ?? historyLimit,
+      }
+      const history = await webqq.loadMessages(nextQuery)
+      return mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/group-info', (query: WebQQGroupInfoQuery) => {
+      return webqq.loadGroupInfo(query)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/notices', () => {
+      return webqq.loadNotices([...friendRequestNotices.values(), ...groupLeaveNotices.values()])
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/notice-action', async (action: WebQQNoticeAction) => {
+      await webqq.handleNotice(action)
+      if (action.type !== 'friend-request') return
+      const notice = friendRequestNotices.get(action.id)
+      if (!notice) return
+      friendRequestNotices.set(action.id, {
+        ...notice,
+        status: action.approve ? 'approved' : 'rejected',
+      })
+    }, consoleAuthOptions)
   })
 
   ctx.inject({
