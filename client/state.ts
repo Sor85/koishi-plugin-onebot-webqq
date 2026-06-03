@@ -162,4 +162,7 @@ export type WebQQTheme = 'fresh' | 'frosted' | 'glass'
 
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)
+export const useBotAvatarThemeColor = ref(false)
+export const webQQAccentColor = ref('#2563eb')
+export const webQQAvatarAccentColor = ref('')
 export const webQQTheme = ref<WebQQTheme>('fresh')

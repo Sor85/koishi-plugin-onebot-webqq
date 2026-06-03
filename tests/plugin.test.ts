@@ -110,6 +110,10 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("Schema.const('glass').description('玻璃')")
     expect(pluginSource).toContain(".default('fresh')")
     expect(pluginSource).toContain("description('WebQQ 主题')")
+    expect(pluginSource).toContain("webQQAccentColor?:")
+    expect(pluginSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色')")
+    expect(pluginSource).toContain("useBotAvatarThemeColor?: boolean")
+    expect(pluginSource).toContain("Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效')")
   })
 
   it('registers a console entry with empty capsule data', () => {
@@ -128,6 +132,8 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: false,
       webQQTheme: 'fresh',
+      webQQAccentColor: '#2563eb',
+      useBotAvatarThemeColor: false,
     })
   })
 
@@ -754,21 +760,33 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       debug: true,
       webQQTheme: 'fresh',
+      webQQAccentColor: '#2563eb',
+      useBotAvatarThemeColor: false,
     })
   })
 
-  it('passes configured WebQQ theme to console entry data', () => {
+  it('passes configured WebQQ theme and accent settings to console entry data', () => {
     const { ctx, addEntry } = createFakeContext()
-    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { webQQTheme?: 'fresh' | 'frosted' | 'glass' }) => void
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
+      webQQTheme?: 'fresh' | 'frosted' | 'glass'
+      webQQAccentColor?: string
+      useBotAvatarThemeColor?: boolean
+    }) => void
     const applyWithConfig: ApplyWithConfig = plugin.apply
 
-    applyWithConfig(ctx, { webQQTheme: 'fresh' })
+    applyWithConfig(ctx, {
+      webQQTheme: 'fresh',
+      webQQAccentColor: '#22c55e',
+      useBotAvatarThemeColor: false,
+    })
 
     const data = addEntry.mock.calls[0][1]
     expect(data?.()).toEqual({
       capsule: undefined,
       debug: false,
       webQQTheme: 'fresh',
+      webQQAccentColor: '#22c55e',
+      useBotAvatarThemeColor: false,
     })
   })
 
@@ -816,6 +834,30 @@ describe('chat capsule plugin wiring', () => {
         sent: 0,
       },
     }, { authority: 1 })
+  })
+
+  it('proxies bot avatars in console snapshots when server is available', () => {
+    const { ctx, listeners, addEntry, broadcast } = createFakeContext({ server: true })
+
+    plugin.apply(ctx)
+    listeners.message[0](createSession())
+
+    const data = addEntry.mock.calls[0][1]
+    const entryData = data?.()
+    const broadcastData = broadcast.mock.calls[0][1] as CapsuleSnapshot
+    expect(entryData).toEqual(expect.objectContaining({
+      capsule: expect.objectContaining({
+        bot: expect.objectContaining({
+          avatar: expect.stringMatching(/^\/chat-capsule\/webqq\/image\//),
+        }),
+      }),
+    }))
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', expect.objectContaining({
+      bot: expect.objectContaining({
+        avatar: expect.stringMatching(/^\/chat-capsule\/webqq\/image\//),
+      }),
+    }), { authority: 1 })
+    expect(entryData?.capsule?.bot.avatar).toBe(broadcastData.bot.avatar)
   })
 
   it('increments sent counter from before send and broadcasts the latest snapshot', async () => {

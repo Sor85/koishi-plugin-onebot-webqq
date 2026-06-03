@@ -41,6 +41,8 @@ export interface Config {
   onebotProtocol?: WebQQProtocol
   historyLimit?: number
   webQQTheme?: 'fresh' | 'frosted' | 'glass'
+  webQQAccentColor?: string
+  useBotAvatarThemeColor?: boolean
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -56,6 +58,8 @@ export const Config: Schema<Config> = Schema.object({
     Schema.const('frosted').description('毛玻璃'),
     Schema.const('glass').description('玻璃'),
   ]).default('fresh').role('radio').description('WebQQ 主题'),
+  webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
+  useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
 })
 
 declare module '@koishijs/console' {
@@ -202,6 +206,7 @@ type WebQQResolvedImage = {
 }
 
 type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQResolvedImage>
+type WebQQImageUrlResolver = (file: string) => string
 type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
 
 function isRemoteImageSource(file: string) {
@@ -228,6 +233,7 @@ function getImageContentType(file: string) {
 
 function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogger) {
   const files = new Map<string, string>()
+  const ids = new Map<string, string>()
   ctx.server?.get('/chat-capsule/webqq/image/:id', async (routerCtx) => {
     const file = files.get(routerCtx.params.id)
     if (!file) {
@@ -248,9 +254,26 @@ function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogg
   })
   return (file: string) => {
     if (!ctx.server) return ''
+    const cached = ids.get(file)
+    if (cached) return `/chat-capsule/webqq/image/${cached}`
     const id = randomUUID()
     files.set(id, file)
+    ids.set(file, id)
     return `/chat-capsule/webqq/image/${id}`
+  }
+}
+
+function resolveConsoleSnapshot(snapshot: CapsuleSnapshot | undefined, imageUrlResolver: WebQQImageUrlResolver) {
+  const avatar = snapshot?.bot.avatar
+  if (!snapshot || !avatar) return snapshot
+  const proxiedAvatar = imageUrlResolver(avatar)
+  if (!proxiedAvatar) return snapshot
+  return {
+    ...snapshot,
+    bot: {
+      ...snapshot.bot,
+      avatar: proxiedAvatar,
+    },
   }
 }
 
@@ -472,7 +495,8 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   })
   const consoleAuthOptions = { authority: 1 }
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
-  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
+  const getConsoleSnapshot = () => resolveConsoleSnapshot(state.snapshot(), imageUrlResolver)
+  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', getConsoleSnapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
@@ -575,9 +599,11 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     }, () => {
       logSnapshot('entry')
       return {
-        capsule: state.snapshot(),
+        capsule: getConsoleSnapshot(),
         debug,
         webQQTheme: config.webQQTheme ?? 'fresh',
+        webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
+        useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
       }
     })
     console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)

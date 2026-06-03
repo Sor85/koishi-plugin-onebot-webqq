@@ -122,10 +122,16 @@ describe('chat capsule styles', () => {
   it('adds a fresh WebQQ theme with plain gray-white surfaces and blue accents', () => {
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh')).toContain('background: #f4f6f8')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh')).toContain('border: 1px solid #d9e1ea')
-    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh')).toContain('--chat-capsule-webqq-accent: #2563eb')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat')).toContain('background: #ffffff')
     expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__bubble')).toContain('background: #ffffff')
-    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: #2563eb')
+    expect(ruleBody('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: var(--chat-capsule-webqq-accent)')
+  })
+
+  it('uses WebQQ accent variables for theme-colored controls', () => {
+    expect(ruleBody('.chat-capsule-webqq')).toContain('--chat-capsule-webqq-accent: #2563eb')
+    expect(style).toContain('color: var(--chat-capsule-webqq-accent)')
+    expect(style).toContain('background: var(--chat-capsule-webqq-accent-soft)')
+    expect(ruleBody('.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: var(--chat-capsule-webqq-accent)')
   })
 
   it('wraps WebQQ notice comments instead of truncating them', () => {

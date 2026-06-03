@@ -47,8 +47,24 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, webQQTheme, type CapsuleData, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQTheme, type CapsuleData, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
+    expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
+    expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
+  })
+
+  it('checks and caches bot avatar theme colors in the browser', () => {
+    expect(clientEntry).toContain("import { Context, receive, withProxy } from '@koishijs/client'")
+    expect(clientEntry).toContain("const webQQAvatarThemeStorageKey = 'chat-capsule:webqq-avatar-theme:v1'")
+    expect(clientEntry).toContain('function loadCachedAvatarThemeColor(avatar: string)')
+    expect(clientEntry).toContain('function cacheAvatarThemeColor(avatar: string, color: string)')
+    expect(clientEntry).toContain('function extractDominantAvatarColor(avatar: string)')
+    expect(clientEntry).toContain('function updateWebQQAvatarThemeColor(data?: CapsuleData)')
+    expect(clientEntry).toContain('webQQAvatarAccentColor.value = cached ||')
+    expect(clientEntry).toContain('localStorage.getItem(webQQAvatarThemeStorageKey)')
+    expect(clientEntry).toContain('localStorage.setItem(webQQAvatarThemeStorageKey')
+    expect(clientEntry).toContain('image.src = withProxy(avatar)')
+    expect(clientEntry).toContain('updateWebQQAvatarThemeColor(capsule.value)')
   })
 })

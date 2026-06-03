@@ -19,12 +19,24 @@ describe('webqq observer view', () => {
   })
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
-    expect(webqqView).toContain("import { sortWebQQGroupMembers, webQQTheme } from './state'")
+    expect(webqqView).toContain("import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQTheme } from './state'")
     expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`]\"")
+    expect(webqqView).toContain(':style="webQQAccentStyle"')
     expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
     expect(webqqView).not.toContain('aria-label="WebQQ 主题"')
     expect(webqqView).not.toContain('v-model="webQQTheme"')
     expect(webqqView).not.toContain('webQQThemeOptions')
+  })
+
+  it('uses bot avatar accent color ahead of the manual WebQQ accent color', () => {
+    expect(webqqView).toContain('const webQQEffectiveAccentColor = computed')
+    expect(webqqView).toContain('if (useBotAvatarThemeColor.value)')
+    expect(webqqView).toContain('return normalizeAccentColor(webQQAvatarAccentColor.value)')
+    expect(webqqView).toContain("return '#2563eb'")
+    expect(webqqView).toContain('return normalizeAccentColor(webQQAccentColor.value)')
+    expect(webqqView).toContain('const webQQAccentStyle = computed')
+    expect(webqqView).toContain("'--chat-capsule-webqq-accent': webQQEffectiveAccentColor.value")
+    expect(webqqView).toContain("'--chat-capsule-webqq-accent-soft': hexToRgba(webQQEffectiveAccentColor.value, 0.14)")
   })
 
   it('passes panel visibility to the WebQQ observer', () => {

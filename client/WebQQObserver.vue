@@ -1,5 +1,5 @@
 <template>
-  <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`]" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <aside class="chat-capsule-webqq__sidebar">
       <div class="chat-capsule-webqq__tabs-row">
         <div class="chat-capsule-webqq__tabs">
@@ -264,7 +264,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { sortWebQQGroupMembers, webQQTheme } from './state'
+import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQTheme } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 
 type ChatSelection =
@@ -360,6 +360,33 @@ function persistWebQQState() {
     }))
   } catch {}
 }
+
+function normalizeAccentColor(color: string) {
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : '#2563eb'
+}
+
+function hexToRgba(color: string, opacity: number) {
+  const normalized = normalizeAccentColor(color)
+  const red = Number.parseInt(normalized.slice(1, 3), 16)
+  const green = Number.parseInt(normalized.slice(3, 5), 16)
+  const blue = Number.parseInt(normalized.slice(5, 7), 16)
+  return `rgba(${red}, ${green}, ${blue}, ${opacity})`
+}
+
+const webQQEffectiveAccentColor = computed(() => {
+  if (useBotAvatarThemeColor.value) {
+    if (webQQAvatarAccentColor.value) return normalizeAccentColor(webQQAvatarAccentColor.value)
+    return '#2563eb'
+  }
+  return normalizeAccentColor(webQQAccentColor.value)
+})
+
+const webQQAccentStyle = computed(() => ({
+  '--chat-capsule-webqq-accent': webQQEffectiveAccentColor.value,
+  '--chat-capsule-webqq-accent-soft': hexToRgba(webQQEffectiveAccentColor.value, 0.14),
+  '--chat-capsule-webqq-accent-hover': hexToRgba(webQQEffectiveAccentColor.value, 0.18),
+  '--chat-capsule-webqq-accent-shadow': hexToRgba(webQQEffectiveAccentColor.value, 0.24),
+}))
 
 const visibleFriends = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
