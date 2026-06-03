@@ -1030,6 +1030,16 @@
       color: #ffffff;
       background: var(--chat-capsule-webqq-accent);
       box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+
+      .chat-capsule-webqq__quote {
+        border-left-color: rgba(255, 255, 255, 0.62);
+        background: rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .chat-capsule-webqq__quote-title {
+        color: #ffffff;
+      }
     }
   }
 }

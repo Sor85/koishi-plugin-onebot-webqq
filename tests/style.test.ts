@@ -182,6 +182,24 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: var(--chat-capsule-webqq-accent)')
   })
 
+  it('keeps quoted text readable inside dark outgoing WebQQ bubbles', () => {
+    expect(style).toContain(`.chat-capsule-webqq__bubble {
+      color: #ffffff;
+      background: var(--chat-capsule-webqq-accent);
+      box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+
+      .chat-capsule-webqq__quote {
+        border-left-color: rgba(255, 255, 255, 0.62);
+        background: rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .chat-capsule-webqq__quote-title {
+        color: #ffffff;
+      }
+    }`)
+  })
+
   it('wraps WebQQ notice comments instead of truncating them', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('white-space: normal')
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow-wrap: anywhere')
