@@ -15,6 +15,9 @@ export interface CapsuleMessageInput {
   user: {
     id: string
     name?: string
+    senderRole?: string
+    senderLevel?: string
+    senderTitle?: string
   }
   timestamp: number
 }
@@ -43,6 +46,9 @@ export interface CapsuleSnapshot {
     channelName: string
     userId?: string
     userName?: string
+    senderRole?: string
+    senderLevel?: string
+    senderTitle?: string
     activityText?: string
     conversationId?: string
     usage?: {
@@ -149,6 +155,9 @@ export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessa
     ? {
         userId: state.current.conversation.userId,
         userName: state.current.conversation.userName,
+        senderRole: state.current.conversation.senderRole,
+        senderLevel: state.current.conversation.senderLevel,
+        senderTitle: state.current.conversation.senderTitle,
         activityText: state.current.conversation.activityText,
         ...(state.current.conversation.conversationId ? {
           conversationId: state.current.conversation.conversationId,
@@ -187,6 +196,9 @@ export function recordConversationActivity(
       ...snapshot.conversation,
       userId: input.user.id,
       userName: input.user.name || input.user.id,
+      senderRole: input.user.senderRole,
+      senderLevel: input.user.senderLevel,
+      senderTitle: input.user.senderTitle,
       activityText,
       ...(options.conversationId ? {
         conversationId: options.conversationId,

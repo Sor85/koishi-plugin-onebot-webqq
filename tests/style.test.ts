@@ -247,6 +247,15 @@ describe('chat capsule styles', () => {
     }`)
   })
 
+  it('keeps the WebQQ thinking indicator compact with six-pixel dots', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-dots')).not.toContain('min-width: 58px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-dots')).toMatch(/(?:min-)?width:\s*4[24]px/)
+    expect(ruleBody('.chat-capsule-webqq__thinking-dot')).toContain('width: 6px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-dot')).toContain('height: 6px')
+    expect(style).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(ruleBody('@media (prefers-reduced-motion: reduce)')).toContain('animation: none')
+  })
+
   it('wraps WebQQ notice comments instead of truncating them', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('white-space: normal')
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow-wrap: anywhere')

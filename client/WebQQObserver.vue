@@ -173,14 +173,14 @@
             <template v-else-if="!currentChat">
               <div class="chat-capsule-webqq__placeholder">选择一个会话</div>
             </template>
-            <template v-else-if="!messages.length">
+            <template v-else-if="!visibleMessages.length">
               <div class="chat-capsule-webqq__placeholder">暂无消息</div>
             </template>
             <template v-else>
               <div
-                v-for="(message, index) in messages"
+                v-for="(message, index) in visibleMessages"
                 :key="message.id || message.sequence"
-                :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index) }]"
+                :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message) }]"
               >
                 <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
                 <div class="chat-capsule-webqq__message-content">
@@ -201,14 +201,22 @@
                       <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
                     </div>
                     <div v-else class="chat-capsule-webqq__bubble">
-                      <template v-for="(element, index) in message.elements" :key="`${message.id}:${index}`">
-                        <div v-if="element.type === 'quote'" class="chat-capsule-webqq__quote">
-                          <strong v-if="element.title" class="chat-capsule-webqq__quote-title">{{ element.title }}</strong>
-                          <span>{{ element.text || '[引用消息]' }}</span>
+                      <span v-if="isBotThinkingMessage(message)" class="chat-capsule-webqq__thinking-dots" aria-label="机器人正在思考">
+                        <span v-for="dot in 3" :key="dot" class="chat-capsule-webqq__thinking-dot"></span>
+                      </span>
+                      <template v-else v-for="(run, runIndex) in getWebQQElementRuns(message.elements)" :key="`${message.id}:run:${runIndex}`">
+                        <span v-if="run.type === 'inline'" class="chat-capsule-webqq__inline-run">
+                          <template v-for="element in run.elements" :key="`${message.id}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
+                            <span v-if="element.type === 'text'">{{ element.text }}</span>
+                            <span v-else>{{ element.text || message.summary }}</span>
+                          </template>
+                        </span>
+                        <div v-else-if="run.element.type === 'quote'" class="chat-capsule-webqq__quote">
+                          <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
+                          <span>{{ run.element.text || '[引用消息]' }}</span>
                         </div>
-                        <span v-else-if="element.type === 'text'">{{ element.text }}</span>
-                        <img v-else-if="element.type === 'image' && element.url" :src="withProxy(element.url)" alt="图片" @load="handleMessageImageLoad">
-                        <span v-else>{{ element.text || message.summary }}</span>
+                        <img v-else-if="run.element.type === 'image' && run.element.url" :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
+                        <span v-else>{{ run.element.text || message.summary }}</span>
                       </template>
                     </div>
                     <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
@@ -266,8 +274,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme } from './state'
+import { capsule, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
+import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'
 
 type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
@@ -280,6 +289,10 @@ type WebQQStoredState = {
   conversationUnreadCounts: Record<string, number>
 }
 type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
+type WebQQMessageElement = WebQQMessage['elements'][number]
+type WebQQElementRun =
+  | { type: 'inline'; elements: WebQQMessageElement[] }
+  | { type: 'block'; element: WebQQMessageElement }
 
 const props = defineProps<{ visible: boolean }>()
 const webQQStorageKey = 'chat-capsule:webqq:v1'
@@ -290,6 +303,7 @@ const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const conversationUnreadCounts = ref<Record<string, number>>({})
+const senderMetadataCache = ref<WebQQSenderMetadataCache>({})
 const stored = loadWebQQStoredState()
 conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
@@ -458,6 +472,35 @@ const visibleGroupMembers = computed(() => {
   }) : groupInfo.value.members
   return sortWebQQGroupMembers(members)
 })
+const botThinkingMessage = computed<WebQQMessage | undefined>(() => {
+  const conversation = capsule.value?.conversation
+  const bot = capsule.value?.bot
+  if (!currentChat.value || !conversation || !bot || conversation.activityText !== '正在思考') return
+  const peerId = currentChat.value.type === 'group'
+    ? conversation.channelId
+    : conversation.userId || conversation.channelId
+  if (peerId !== currentChat.value.peerId) return
+  if (hasOutgoingMessageAfter(conversation.timestamp)) return
+  const targetName = conversation.userName || currentChat.value.name
+  return {
+    id: `thinking:${currentChat.value.type}:${currentChat.value.peerId}:${conversation.timestamp}`,
+    sequence: `thinking:${conversation.timestamp}`,
+    time: conversation.timestamp,
+    senderId: bot.selfId,
+    senderName: bot.name || '机器人',
+    senderAvatar: bot.avatar || (bot.selfId ? `https://q1.qlogo.cn/g?b=qq&nk=${bot.selfId}&s=640` : ''),
+    senderRole: conversation.senderRole,
+    senderLevel: conversation.senderLevel,
+    senderTitle: conversation.senderTitle,
+    direction: 'outgoing',
+    summary: targetName ? `正在回复 ${targetName}` : '正在思考',
+    elements: [{ type: 'unknown', text: '正在思考' }],
+  }
+})
+const visibleMessages = computed(() => {
+  const cachedMessages = messages.value.map(applyMessageSenderMetadata)
+  return botThinkingMessage.value ? [...cachedMessages, applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages
+})
 
 function getGroupSubtitle(group: WebQQGroup) {
   return `群聊 ${group.groupId} · ${group.memberCount} 人`
@@ -563,10 +606,48 @@ function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
 
+function rememberMessageSenderMetadata(type: ChatSelection['type'], peerId: string, nextMessages: WebQQMessage[]) {
+  senderMetadataCache.value = rememberWebQQSenderMetadata(senderMetadataCache.value, type, peerId, nextMessages)
+}
+
+function applyMessageSenderMetadata(message: WebQQMessage) {
+  if (!currentChat.value) return message
+  return applyCachedWebQQSenderMetadata(senderMetadataCache.value, currentChat.value.type, currentChat.value.peerId, message)
+}
+
+function isBotThinkingMessage(message: WebQQMessage) {
+  return message.id === botThinkingMessage.value?.id
+}
+
+function hasOutgoingMessageAfter(timestamp: number) {
+  return messages.value.some((message) => message.direction === 'outgoing' && message.time >= timestamp)
+}
+
 function isImageOnlyMessage(message: WebQQMessage) {
   return message.elements.length === 1 &&
     message.elements[0].type === 'image' &&
     !!message.elements[0].url
+}
+
+function isInlineWebQQElement(element: WebQQMessageElement) {
+  return element.type !== 'quote' && element.type !== 'image'
+}
+
+function getWebQQElementRuns(elements: WebQQMessageElement[]) {
+  const runs: WebQQElementRun[] = []
+  for (const element of elements) {
+    if (!isInlineWebQQElement(element)) {
+      runs.push({ type: 'block', element })
+      continue
+    }
+    const last = runs.at(-1)
+    if (last?.type === 'inline') {
+      last.elements.push(element)
+    } else {
+      runs.push({ type: 'inline', elements: [element] })
+    }
+  }
+  return runs
 }
 
 function getClusterBubbleMessage(index: number, step: 1 | -1) {
@@ -709,6 +790,7 @@ async function loadMessages() {
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
     }) as WebQQMessage[] || []
+    rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)
     updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
@@ -740,6 +822,7 @@ async function loadOlderMessages() {
       peerId: currentChat.value.peerId,
       beforeSequence: messages.value[0]?.sequence,
     }) as WebQQMessage[] || []
+    rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, olderMessages)
     messages.value = mergeMessages(olderMessages, messages.value)
     updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
     historyExhausted.value = messages.value.length === previousCount
@@ -879,6 +962,7 @@ function getSenderAuthorityClass(message: WebQQMessage) {
 }
 
 receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
+  rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
   updateConversationSummary(payload.type, payload.peerId, payload.message)
   if (
     currentChat.value?.type !== payload.type ||
@@ -897,6 +981,11 @@ receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
 watch(() => props.visible, (visible) => {
   if (!visible) return
   clearCurrentUnreadCount()
+  if (trackingMessages.value) scrollMessagesToBottom()
+})
+
+watch(() => botThinkingMessage.value, (message) => {
+  if (message && currentChat.value) rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, [message])
   if (trackingMessages.value) scrollMessagesToBottom()
 })
 

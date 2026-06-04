@@ -2,7 +2,16 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
+const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
+const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
+
+function sourceBetween(source: string, start: string, end: string) {
+  const startIndex = source.indexOf(start)
+  if (startIndex < 0) return ''
+  const endIndex = source.indexOf(end, startIndex + start.length)
+  return endIndex < 0 ? source.slice(startIndex) : source.slice(startIndex, endIndex)
+}
 
 describe('webqq observer view', () => {
   it('opens a read-only WebQQ panel from the capsule avatar', () => {
@@ -19,7 +28,13 @@ describe('webqq observer view', () => {
   })
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
-    expect(webqqView).toContain("import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme } from './state'")
+    expect(webqqView).toContain("from './state'")
+    expect(webqqView).toContain('sortWebQQGroupMembers')
+    expect(webqqView).toContain('useBotAvatarThemeColor')
+    expect(webqqView).toContain('webQQAccentColor')
+    expect(webqqView).toContain('webQQAvatarAccentColor')
+    expect(webqqView).toContain('webQQChatStyle')
+    expect(webqqView).toContain('webQQTheme')
     expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`]\"")
     expect(webqqView).toContain(':style="webQQAccentStyle"')
     expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
@@ -63,11 +78,103 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('is-clock')
     expect(webqqView).not.toContain('is-user')
     expect(webqqView).not.toContain('is-group')
-    expect(webqqView).toContain('v-for="(message, index) in messages"')
+    expect(webqqView).toMatch(/v-for="\(message, index\) in (messages|visibleMessages)"/)
     expect(webqqView).not.toContain('textarea')
     expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
     expect(webqqView).not.toContain('只读模式')
     expect(webqqView).not.toContain('chat-capsule-webqq__readonly-bar')
+  })
+
+  it('renders a transient outgoing bot thinking message after the real WebQQ messages', () => {
+    expect(webqqView).toContain('const visibleMessages = computed')
+    expect(webqqView).toContain('const cachedMessages = messages.value.map(applyMessageSenderMetadata)')
+    expect(webqqView).toContain('return botThinkingMessage.value ? [...cachedMessages, applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages')
+    expect(webqqView).toContain('v-for="(message, index) in visibleMessages"')
+    expect(webqqView).toContain("'is-thinking': isBotThinkingMessage(message)")
+    expect(webqqView).toContain('function isBotThinkingMessage(message: WebQQMessage)')
+    expect(webqqView).not.toContain('chat-capsule-webqq__thinking-bubble')
+    expect(style).not.toContain('chat-capsule-webqq__thinking-bubble')
+    const messageBodySource = sourceBetween(
+      webqqView,
+      'class="chat-capsule-webqq__message-body"',
+      'class="chat-capsule-webqq__message-time"',
+    )
+    expect(messageBodySource.indexOf('class="chat-capsule-webqq__thinking-dots"')).toBeGreaterThan(messageBodySource.indexOf('class="chat-capsule-webqq__bubble"'))
+  })
+
+  it('uses three animated floating dots as the temporary bot thinking content', () => {
+    expect(webqqView).toContain('class="chat-capsule-webqq__thinking-dots"')
+    expect(webqqView).toContain('v-for="dot in 3"')
+    expect(webqqView).toContain(':key="dot"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__thinking-dot"')
+    expect(style).toContain('@keyframes chat-capsule-webqq-thinking-dot')
+  })
+
+  it('shows the temporary bot thinking bubble only for the capsule current WebQQ conversation', () => {
+    expect(webqqView).toContain('const botThinkingMessage = computed<WebQQMessage | undefined>(() => {')
+    expect(webqqView).toContain('const conversation = capsule.value?.conversation')
+    expect(webqqView).toContain("conversation.activityText !== '正在思考'")
+    expect(webqqView).toContain('conversation.channelId')
+    expect(webqqView).toContain('conversation.userId')
+    expect(webqqView).toContain('conversation.userName')
+    expect(webqqView).toContain('currentChat.value.type')
+    expect(webqqView).toContain('currentChat.value.peerId')
+  })
+
+  it('hides the temporary bot thinking bubble after a real outgoing WebQQ message reaches the same conversation', () => {
+    expect(webqqView).toContain('function hasOutgoingMessageAfter(timestamp: number)')
+    expect(webqqView).toContain("messages.value.some((message) => message.direction === 'outgoing' && message.time >= timestamp)")
+    expect(webqqView).toContain('if (hasOutgoingMessageAfter(conversation.timestamp)) return')
+  })
+
+  it('lets capsule conversation data carry group sender metadata', () => {
+    const capsuleConversationSource = sourceBetween(
+      clientState,
+      'conversation: {',
+      '  counters: {',
+    )
+
+    expect(capsuleConversationSource).toContain('senderRole?: string')
+    expect(capsuleConversationSource).toContain('senderLevel?: string')
+    expect(capsuleConversationSource).toContain('senderTitle?: string')
+  })
+
+  it('uses capsule conversation group sender metadata on the temporary bot thinking message', () => {
+    const thinkingMessageSource = sourceBetween(
+      webqqView,
+      'const botThinkingMessage = computed<WebQQMessage | undefined>(() => {',
+      'const visibleMessages = computed(() => {',
+    )
+
+    expect(thinkingMessageSource).toContain("direction: 'outgoing'")
+    expect(thinkingMessageSource).toMatch(/senderRole:\s*conversation\.senderRole/)
+    expect(thinkingMessageSource).toMatch(/senderLevel:\s*conversation\.senderLevel/)
+    expect(thinkingMessageSource).toMatch(/senderTitle:\s*conversation\.senderTitle/)
+    expect(webqqView).toContain("v-if=\"message.direction === 'outgoing'\"")
+    expect(webqqView).toContain('getSenderAuthorityText(message)')
+    expect(webqqView).toContain('message.senderLevel')
+  })
+
+  it('hydrates missing live WebQQ sender metadata from cached messages in the same conversation', () => {
+    const visibleMessagesSource = sourceBetween(
+      webqqView,
+      'const visibleMessages = computed(() => {',
+      'function getGroupSubtitle',
+    )
+    const receiveSource = sourceBetween(
+      webqqView,
+      "receive('chat-capsule/webqq/message'",
+      "watch(() => props.visible",
+    )
+
+    expect(webqqView).toContain('applyCachedWebQQSenderMetadata')
+    expect(webqqView).toContain('rememberWebQQSenderMetadata')
+    expect(webqqView).toContain('const senderMetadataCache = ref')
+    expect(webqqView).toContain('function rememberMessageSenderMetadata')
+    expect(webqqView).toContain('function applyMessageSenderMetadata')
+    expect(visibleMessagesSource).toContain('messages.value.map(applyMessageSenderMetadata)')
+    expect(webqqView).toContain('rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)')
+    expect(receiveSource).toContain('rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])')
   })
 
   it('uses backend recent contacts instead of the first contacts in each list', () => {
@@ -163,7 +270,7 @@ describe('webqq observer view', () => {
   })
 
   it('marks consecutive messages from the same sender as merged in Telegram chat style', () => {
-    expect(webqqView).toContain("v-for=\"(message, index) in messages\"")
+    expect(webqqView).toMatch(/v-for="\(message, index\) in (messages|visibleMessages)"/)
     expect(webqqView).toContain("'is-merged': isMergedMessage(index)")
     expect(webqqView).toContain('getMessageClusterClass(index)')
     expect(webqqView).toContain('v-if="!isMergedMessage(index)"')
@@ -191,6 +298,19 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__message-media"')
     expect(webqqView).toContain(':src="withProxy(message.elements[0].url)"')
     expect(webqqView).toContain('function isImageOnlyMessage(message: WebQQMessage)')
+  })
+
+  it('renders consecutive inline WebQQ elements inside one inline container', () => {
+    const bubbleSource = sourceBetween(
+      webqqView,
+      '<div v-else class="chat-capsule-webqq__bubble">',
+      '<div class="chat-capsule-webqq__message-time"',
+    )
+
+    expect(bubbleSource).toContain('getWebQQElementRuns(message.elements)')
+    expect(bubbleSource).toContain('class="chat-capsule-webqq__inline-run"')
+    expect(bubbleSource).toContain('v-for="element in run.elements"')
+    expect(bubbleSource).not.toContain('v-for="(element, index) in message.elements"')
   })
 
   it('renders group badges around sender names in opposite order by direction', () => {

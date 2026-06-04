@@ -203,6 +203,38 @@ describe('chat capsule state', () => {
     })
   })
 
+  it('keeps group sender metadata on active conversation status', () => {
+    const state = createCapsuleState()
+
+    recordConversationActivity(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+        name: 'General',
+      },
+      user: {
+        id: '30000',
+        name: 'Alice',
+        senderRole: '管理员',
+        senderLevel: '100',
+        senderTitle: '闪亮头衔',
+      },
+      timestamp: 1710000000007,
+    }, '正在思考')
+
+    expect(state.snapshot()?.conversation).toMatchObject({
+      userId: '30000',
+      userName: 'Alice',
+      activityText: '正在思考',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
+  })
+
   it('records usage for the active conversation only', () => {
     const state = createCapsuleState()
 

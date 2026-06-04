@@ -13,6 +13,9 @@ export interface CapsuleData {
     channelName: string
     userId?: string
     userName?: string
+    senderRole?: string
+    senderLevel?: string
+    senderTitle?: string
     activityText?: string
     usage?: {
       inputTokens: number

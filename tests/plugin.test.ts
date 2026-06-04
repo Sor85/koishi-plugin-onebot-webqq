@@ -995,6 +995,84 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('carries group sender metadata from ChatLuna before-chat sessions into thinking conversation', () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    listeners['chatluna/before-chat'][0]('conversation-1', {
+      id: '30000',
+      name: 'Alice',
+    }, {}, {}, createSession({
+      event: {
+        guild: {
+          name: 'Guild Name',
+        },
+        channel: {
+          name: 'Channel Name',
+        },
+        member: {
+          name: '群昵称',
+          role: 'admin',
+          level: '100',
+          title: '闪亮头衔',
+        },
+        user: {
+          name: 'Event Alice',
+        },
+      },
+    }))
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
+      userId: '30000',
+      userName: '群昵称',
+      activityText: '正在思考',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
+  })
+
+  it('loads bot group sender metadata from OneBot before showing ChatLuna thinking status', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_member_info: vi.fn(async () => ({
+          role: 'admin',
+          level: '100',
+          title: '闪亮头衔',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    await listeners['chatluna/before-chat'][0]('conversation-1', {
+      id: '30000',
+      name: 'Alice',
+    }, {}, {}, createSession({ bot }))
+
+    expect(bot.internal.get_group_member_info).toHaveBeenCalledWith({
+      group_id: 20000,
+      user_id: 10000,
+      no_cache: false,
+    })
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
+      channelId: '20000',
+      activityText: '正在思考',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
+  })
+
   it('updates usage from matching ChatLuna model usage events', () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 
@@ -1092,6 +1170,45 @@ describe('chat capsule plugin wiring', () => {
 
     expect(character.acquireResponseLock).toBe(originalAcquireResponseLock)
     expect(character.releaseResponseLock).toBe(originalReleaseResponseLock)
+  })
+
+  it('carries group sender metadata from ChatLuna character collect sessions into thinking conversation', () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+    const session = createSession({
+      event: {
+        guild: {
+          name: 'Guild Name',
+        },
+        channel: {
+          name: 'Channel Name',
+        },
+        member: {
+          name: '群昵称',
+          role: 'admin',
+          level: '100',
+          title: '闪亮头衔',
+        },
+        user: {
+          name: 'Event Alice',
+        },
+      },
+    })
+
+    plugin.apply(ctx)
+    listeners['chatluna_character/message_collect'][0](session, [{
+      id: '30000',
+      name: 'Alice',
+      content: 'hello',
+    }], 'trigger')
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation).toMatchObject({
+      userId: '30000',
+      userName: '群昵称',
+      activityText: '正在思考',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
   })
 
   it('keeps message and send listeners safe when console is unavailable', () => {

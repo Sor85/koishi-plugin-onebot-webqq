@@ -120,6 +120,12 @@ interface ChatLunaModelUsage {
   }
 }
 
+interface WebQQSenderMetadata {
+  senderRole?: string
+  senderLevel?: string
+  senderTitle?: string
+}
+
 // 描述插件运行所需的最小 Koishi 上下文能力。
 export interface ChatCapsuleContext {
   console?: ConsoleService
@@ -156,6 +162,7 @@ function readUserName(session: Session) {
 }
 
 function createMessageInput(session: Session, message?: ChatLunaMessage) {
+  const senderMetadata = readWebQQLiveSenderMetadata(session)
   return {
     bot: readBotProfile(session),
     channel: {
@@ -165,6 +172,7 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
     user: {
       id: message?.id || session.userId || session.event.user?.id || 'unknown',
       name: message?.name || readUserName(session),
+      ...senderMetadata,
     },
     timestamp: session.timestamp,
   }
@@ -191,6 +199,30 @@ function normalizeGroupRole(role: string) {
   if (role === 'owner') return '群主'
   if (role === 'admin' || role === 'administrator') return '管理员'
   return ''
+}
+
+function toOneBotId(value: string) {
+  return /^\d+$/.test(value) ? Number(value) : value
+}
+
+function getActionData(result: unknown) {
+  const item = isRecord(result) ? result : {}
+  return isRecord(item.data) ? item.data : item
+}
+
+function readWebQQSenderMetadata(source: unknown): WebQQSenderMetadata {
+  const role = normalizeGroupRole(readRecordText(source, ['role']))
+  const level = readRecordText(source, ['level', 'sender_level', 'senderLevel'])
+  const title = readRecordText(source, ['title', 'special_title', 'specialTitle'])
+  return {
+    ...(role ? { senderRole: role } : {}),
+    ...(level ? { senderLevel: level } : {}),
+    ...(title ? { senderTitle: title } : {}),
+  }
+}
+
+function hasWebQQSenderMetadata(metadata: WebQQSenderMetadata) {
+  return !!(metadata.senderRole || metadata.senderLevel || metadata.senderTitle)
 }
 
 function readLiveQuoteText(raw: unknown): string {
@@ -388,15 +420,31 @@ function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
 }
 
 function readWebQQLiveSenderMetadata(session: Session) {
-  const member = session.event.member
-  const role = normalizeGroupRole(readRecordText(member, ['role']))
-  const level = readRecordText(member, ['level', 'sender_level', 'senderLevel'])
-  const title = readRecordText(member, ['title', 'special_title', 'specialTitle'])
-  return {
-    ...(role ? { senderRole: role } : {}),
-    ...(level ? { senderLevel: level } : {}),
-    ...(title ? { senderTitle: title } : {}),
+  return readWebQQSenderMetadata(session.event.member)
+}
+
+async function readWebQQBotGroupSenderMetadata(session: Session): Promise<WebQQSenderMetadata | undefined> {
+  if ((session.bot.platform || session.platform) !== 'onebot') return
+  const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+  const userId = session.bot.selfId || session.selfId
+  if (!groupId || !userId || !isRecord(session.bot)) return
+  const internal = isRecord(session.bot.internal) ? session.bot.internal : undefined
+  if (!internal) return
+  const params = {
+    group_id: toOneBotId(groupId),
+    user_id: toOneBotId(userId),
+    no_cache: false,
   }
+  let result: unknown
+  if (typeof internal.get_group_member_info === 'function') {
+    result = await internal.get_group_member_info(params)
+  } else if (typeof internal._request === 'function') {
+    result = await internal._request('get_group_member_info', params)
+  } else {
+    return
+  }
+  const metadata = readWebQQSenderMetadata(getActionData(result))
+  return hasWebQQSenderMetadata(metadata) ? metadata : undefined
 }
 
 function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {
@@ -533,11 +581,22 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     liveMessages.set(key, messages)
     ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
   }
-  const recordGenerating = (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
+  const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const input = createMessageInput(session, message)
     input.user.name = readMemberName(session) || input.user.name
     recordConversationActivity(state, input, '正在思考', { conversationId })
     logSnapshot('generating')
+    broadcast()
+    const botSenderMetadata = await readWebQQBotGroupSenderMetadata(session)
+    if (!botSenderMetadata) return
+    recordConversationActivity(state, {
+      ...input,
+      user: {
+        ...input.user,
+        ...botSenderMetadata,
+      },
+    }, '正在思考', { conversationId })
+    logSnapshot('generating-metadata')
     broadcast()
   }
   const clearActivity = (source: string) => {
@@ -565,8 +624,8 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     groupLeaveNotices.set(notice.id, notice)
   })
 
-  ctx.on('chatluna/before-chat', (conversationId, message, _variables, _chatInterface, session) => {
-    recordGenerating(session, message, conversationId)
+  ctx.on('chatluna/before-chat', async (conversationId, message, _variables, _chatInterface, session) => {
+    await recordGenerating(session, message, conversationId)
   })
 
   ctx.on('chatluna/after-chat', () => {
@@ -678,7 +737,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     })
   })
 
-  ctx.on('chatluna_character/message_collect', (session, messages) => {
-    recordGenerating(session, messages?.at(-1))
+  ctx.on('chatluna_character/message_collect', async (session, messages) => {
+    await recordGenerating(session, messages?.at(-1))
   })
 }
