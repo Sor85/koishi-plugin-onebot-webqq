@@ -428,6 +428,10 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
   const type = getStringField(raw, ['type'])
   const data = isRecord(raw.data) ? raw.data : raw
   if (type === 'text') return { type: 'text', text: getStringField(data, ['text', 'content']) }
+  if (type === 'at') {
+    const target = getStringField(data, ['name', 'nickname', 'card', 'text', 'qq', 'id', 'user_id', 'uin'])
+    return target ? { type: 'text', text: `@${target}` } : { type: 'unknown', text: '[消息]' }
+  }
   if (type === 'image') {
     const url = getStringField(data, ['url'])
     if (url) return { type: 'image', url: imageUrlResolver?.(url) || url }
