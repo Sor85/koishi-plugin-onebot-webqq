@@ -23,7 +23,6 @@
         </div>
         <div class="chat-capsule__meta" :title="metaTitle">
           <span v-if="displayActivityText" class="chat-capsule__activity">{{ displayActivityText }}</span>
-          <span v-if="thinkingDurationText" class="chat-capsule__detail">{{ thinkingDurationText }}</span>
         </div>
       </div>
       <span v-if="hasUsage" class="chat-capsule__usage" :title="usageTitle" aria-label="本次 token 用量">
@@ -77,19 +76,13 @@ const usageTitle = computed(() => {
   if (!usage) return ''
   return `输入 ${usage.inputTokens} / 输出 ${usage.outputTokens}`
 })
-const thinkingDurationText = computed(() => {
-  const duration = capsule.value?.conversation.thinkingDurationMs
-  if (duration == null) return ''
-  const seconds = Math.max(0, Math.round(duration / 1000))
-  return `已思考 ${seconds} s`
-})
 const displayActivityText = computed(() => {
   if (userActivityText.value) return userActivityText.value
-  return thinkingDurationText.value || hasUsage.value ? '' : '空闲中'
+  return hasUsage.value ? '' : '空闲中'
 })
 
 const metaTitle = computed(() => {
-  return [displayActivityText.value, thinkingDurationText.value, usageTitle.value].filter(Boolean).join(' · ')
+  return [displayActivityText.value, usageTitle.value].filter(Boolean).join(' · ')
 })
 
 const statusClass = computed(() => {

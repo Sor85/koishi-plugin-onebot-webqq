@@ -138,7 +138,6 @@
 }
 
 .chat-capsule__activity,
-.chat-capsule__detail,
 .chat-capsule__title-status {
   min-width: 0;
 
@@ -162,10 +161,6 @@
 .chat-capsule__activity {
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.chat-capsule__detail {
-  flex-shrink: 0;
 }
 
 .chat-capsule__usage {
