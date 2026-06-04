@@ -416,6 +416,223 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('refreshes live group sender metadata from OneBot member info and overwrites cached changes', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_group_member_info: vi.fn()
+          .mockResolvedValueOnce({
+            role: 'admin',
+            level: '100',
+            title: '旧头衔',
+          })
+          .mockResolvedValueOnce({
+            role: 'owner',
+            level: '101',
+            title: '新头衔',
+          }),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, addListener, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'first' } }],
+        },
+      },
+    }))
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-2',
+          elements: [{ type: 'text', attrs: { content: 'second' } }],
+        },
+      },
+    }))
+
+    expect(bot.internal.get_group_member_info).toHaveBeenNthCalledWith(1, {
+      group_id: 20000,
+      user_id: 30000,
+      no_cache: true,
+    })
+    expect(bot.internal.get_group_member_info).toHaveBeenNthCalledWith(2, {
+      group_id: 20000,
+      user_id: 30000,
+      no_cache: true,
+    })
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    expect(webQQCalls[0][1].message).not.toHaveProperty('senderRole')
+    expect(webQQCalls[1][1].message).toMatchObject({
+      id: 'new-1',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '旧头衔',
+    })
+    expect(webQQCalls[2][1].message).toMatchObject({
+      id: 'new-2',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '旧头衔',
+    })
+    expect(webQQCalls[3][1].message).toMatchObject({
+      id: 'new-2',
+      senderRole: '群主',
+      senderLevel: '101',
+      senderTitle: '新头衔',
+    })
+
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'new-1',
+        senderRole: '管理员',
+        senderLevel: '100',
+        senderTitle: '旧头衔',
+      }),
+      expect.objectContaining({
+        id: 'new-2',
+        senderRole: '群主',
+        senderLevel: '101',
+        senderTitle: '新头衔',
+      }),
+    ])
+  })
+
+  it('refreshes outgoing bot WebQQ group sender metadata from OneBot member info', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_member_info: vi.fn(async () => ({
+          role: 'admin',
+          level: '100',
+          title: '闪亮头衔',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      userId: '10000',
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '10000', name: 'Capsule Bot' },
+        message: {
+          id: 'bot-1',
+          elements: [{ type: 'text', attrs: { content: 'bot reply' } }],
+        },
+      },
+    }))
+
+    expect(bot.internal.get_group_member_info).toHaveBeenCalledWith({
+      group_id: 20000,
+      user_id: 10000,
+      no_cache: true,
+    })
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    expect(webQQCalls[0][1].message).toMatchObject({
+      id: 'bot-1',
+      senderId: '10000',
+      direction: 'outgoing',
+    })
+    expect(webQQCalls[0][1].message).not.toHaveProperty('senderRole')
+    expect(webQQCalls[1][1].message).toMatchObject({
+      id: 'bot-1',
+      senderId: '10000',
+      direction: 'outgoing',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
+  })
+
+  it('keeps live WebQQ messages when OneBot member info refresh fails', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_member_info: vi.fn(async () => {
+          throw new Error('member info failed')
+        }),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await expect(listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'first' } }],
+        },
+      },
+    }))).resolves.toBeUndefined()
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'new-1',
+        summary: 'first',
+      }),
+    }, { authority: 1 })
+  })
+
   it('broadcasts live at segments as text in WebQQ messages', async () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 

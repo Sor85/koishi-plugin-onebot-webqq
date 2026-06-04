@@ -16,6 +16,7 @@ import {
 } from './state'
 import {
   createOneBotWebQQService,
+  WebQQChatType,
   WebQQContacts,
   WebQQGroupInfo,
   WebQQGroupInfoQuery,
@@ -225,6 +226,39 @@ function hasWebQQSenderMetadata(metadata: WebQQSenderMetadata) {
   return !!(metadata.senderRole || metadata.senderLevel || metadata.senderTitle)
 }
 
+function readWebQQMessageSenderMetadata(message: WebQQMessage): WebQQSenderMetadata {
+  return {
+    ...(message.senderRole ? { senderRole: message.senderRole } : {}),
+    ...(message.senderLevel ? { senderLevel: message.senderLevel } : {}),
+    ...(message.senderTitle ? { senderTitle: message.senderTitle } : {}),
+  }
+}
+
+function isSameWebQQSenderMetadata(left: WebQQSenderMetadata | undefined, right: WebQQSenderMetadata) {
+  return !!left &&
+    left.senderRole === right.senderRole &&
+    left.senderLevel === right.senderLevel &&
+    left.senderTitle === right.senderTitle
+}
+
+function fillWebQQMessageSenderMetadata(message: WebQQMessage, metadata?: WebQQSenderMetadata) {
+  if (!metadata) return message
+  return {
+    ...message,
+    ...(!message.senderRole && metadata.senderRole ? { senderRole: metadata.senderRole } : {}),
+    ...(!message.senderLevel && metadata.senderLevel ? { senderLevel: metadata.senderLevel } : {}),
+    ...(!message.senderTitle && metadata.senderTitle ? { senderTitle: metadata.senderTitle } : {}),
+  }
+}
+
+function replaceWebQQMessageSenderMetadata(message: WebQQMessage, metadata: WebQQSenderMetadata) {
+  const { senderRole: _senderRole, senderLevel: _senderLevel, senderTitle: _senderTitle, ...next } = message
+  return {
+    ...next,
+    ...metadata,
+  }
+}
+
 function readLiveQuoteText(raw: unknown): string {
   if (typeof raw === 'string') return raw
   if (!isRecord(raw)) return ''
@@ -423,17 +457,16 @@ function readWebQQLiveSenderMetadata(session: Session) {
   return readWebQQSenderMetadata(session.event.member)
 }
 
-async function readWebQQBotGroupSenderMetadata(session: Session): Promise<WebQQSenderMetadata | undefined> {
+async function readWebQQGroupSenderMetadata(session: Session, userId: string, noCache: boolean): Promise<WebQQSenderMetadata | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
-  const userId = session.bot.selfId || session.selfId
   if (!groupId || !userId || !isRecord(session.bot)) return
   const internal = isRecord(session.bot.internal) ? session.bot.internal : undefined
   if (!internal) return
   const params = {
     group_id: toOneBotId(groupId),
     user_id: toOneBotId(userId),
-    no_cache: false,
+    no_cache: noCache,
   }
   let result: unknown
   if (typeof internal.get_group_member_info === 'function') {
@@ -445,6 +478,12 @@ async function readWebQQBotGroupSenderMetadata(session: Session): Promise<WebQQS
   }
   const metadata = readWebQQSenderMetadata(getActionData(result))
   return hasWebQQSenderMetadata(metadata) ? metadata : undefined
+}
+
+async function readWebQQBotGroupSenderMetadata(session: Session): Promise<WebQQSenderMetadata | undefined> {
+  const userId = session.bot.selfId || session.selfId
+  if (!userId) return
+  return readWebQQGroupSenderMetadata(session, userId, false)
 }
 
 function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {
@@ -555,12 +594,49 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const getConsoleSnapshot = () => resolveConsoleSnapshot(state.snapshot(), imageUrlResolver)
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', getConsoleSnapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
+  const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
+  const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
+  const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
+    return type === 'group' ? liveSenderMetadata.get(getLiveSenderMetadataKey(peerId, userId)) : undefined
+  }
+  // 记录 live 消息路径里最新的群成员身份缓存。
+  const rememberLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string, metadata: WebQQSenderMetadata) => {
+    if (type !== 'group' || !hasWebQQSenderMetadata(metadata)) return false
+    const key = getLiveSenderMetadataKey(peerId, userId)
+    if (isSameWebQQSenderMetadata(liveSenderMetadata.get(key), metadata)) return false
+    liveSenderMetadata.set(key, metadata)
+    return true
+  }
+  // 写入 live 消息缓存并推送给 WebQQ 前端。
+  const broadcastWebQQLivePayload = (payload: WebQQLiveMessage) => {
+    const key = getLiveMessageKey(payload)
+    const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
+    liveMessages.set(key, messages)
+    ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
+  }
+  // 每条群 live 消息后台刷新发送者群身份，变化时用同 id 消息覆盖。
+  const refreshWebQQLiveSenderMetadata = async (session: Session, payload: WebQQLiveMessage) => {
+    if (payload.type !== 'group') return
+    let metadata: WebQQSenderMetadata | undefined
+    try {
+      metadata = await readWebQQGroupSenderMetadata(session, payload.message.senderId, true)
+    } catch (error) {
+      logger?.info('webqq sender metadata refresh failed %s', error instanceof Error ? error.message : String(error))
+      return
+    }
+    if (!metadata) return
+    if (!rememberLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId, metadata)) return
+    broadcastWebQQLivePayload({
+      ...payload,
+      message: replaceWebQQMessageSenderMetadata(payload.message, metadata),
+    })
+  }
   const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
     if (!session) return
-    const payload = await createWebQQLiveMessage(
+    let payload = await createWebQQLiveMessage(
       session,
       direction,
       async (file, source) => {
@@ -576,10 +652,16 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       async (id) => webqq.resolveQuote(id),
     )
     if (!payload) return
-    const key = getLiveMessageKey(payload)
-    const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
-    liveMessages.set(key, messages)
-    ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
+    payload = {
+      ...payload,
+      message: fillWebQQMessageSenderMetadata(
+        payload.message,
+        getLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId),
+      ),
+    }
+    rememberLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId, readWebQQMessageSenderMetadata(payload.message))
+    broadcastWebQQLivePayload(payload)
+    await refreshWebQQLiveSenderMetadata(session, payload)
   }
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const input = createMessageInput(session, message)
