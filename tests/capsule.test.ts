@@ -46,6 +46,20 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('{{ thinkingDurationText }}')
   })
 
+  it('uses cached bot avatar and name before live capsule data arrives', () => {
+    expect(capsuleView).toContain("const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'")
+    expect(capsuleView).toContain('const cachedBotProfile = ref(loadCachedBotProfile())')
+    expect(capsuleView).toContain('const displayBotName = computed(() => capsule.value?.bot.name || cachedBotProfile.value.name ||')
+    expect(capsuleView).toContain('const displayBotAvatar = computed(() => capsule.value?.bot.avatar || cachedBotProfile.value.avatar ||')
+    expect(capsuleView).toContain('watch(() => capsule.value?.bot')
+    expect(capsuleView).toContain('cacheBotProfile(bot.name, bot.avatar)')
+    expect(capsuleView).toContain('v-if="displayBotAvatar"')
+    expect(capsuleView).toContain(':src="withProxy(displayBotAvatar)"')
+    expect(capsuleView).toContain(':alt="displayBotName"')
+    expect(capsuleView).toContain(':title="displayBotName"')
+    expect(capsuleView).toContain('{{ displayBotName }}')
+  })
+
   it('loads the configured WebQQ theme from console entry data', () => {
     expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
