@@ -256,6 +256,21 @@ describe('chat capsule styles', () => {
     expect(ruleBody('@media (prefers-reduced-motion: reduce)')).toContain('animation: none')
   })
 
+  it('keeps completed WebQQ thinking disclosure clickable and readable', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-toggle')).toContain('cursor: pointer')
+    expect(ruleBody('.chat-capsule-webqq__thinking-toggle')).toContain('border: 0')
+    expect(ruleBody('.chat-capsule-webqq__thinking-toggle')).toContain('background: transparent')
+    expect(ruleBody('.chat-capsule-webqq__thinking-content')).toContain('white-space: pre-wrap')
+    expect(ruleBody('.chat-capsule-webqq__thinking-content')).toContain('overflow-wrap: anywhere')
+  })
+
+  it('aligns completed WebQQ thinking after outgoing bubbles instead of the avatar edge', () => {
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('gap: 8px')
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('flex-direction: row-reverse')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-row')).toContain('margin: -12px 40px 16px auto')
+  })
+
   it('wraps WebQQ notice comments instead of truncating them', () => {
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('white-space: normal')
     expect(ruleBody('.chat-capsule-webqq__notice-comment')).toContain('overflow-wrap: anywhere')

@@ -123,6 +123,13 @@ interface ChatLunaModelUsage {
   }
 }
 
+interface ChatLunaCharacterAfterChatPayload {
+  session?: Session
+  lastResponseMessage?: unknown
+  completionMessages?: unknown
+  text?: unknown
+}
+
 interface WebQQSenderMetadata {
   senderRole?: string
   senderLevel?: string
@@ -196,6 +203,53 @@ function readRecordText(source: unknown, keys: string[]) {
     if (value != null && String(value).trim()) return String(value)
   }
   return ''
+}
+
+function readStructuredText(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (value == null) return ''
+  if (Array.isArray(value)) return value.map(readStructuredText).join('')
+  if (!isRecord(value)) return ''
+  if (value.content !== undefined && value.content !== value) return readStructuredText(value.content)
+  if (value.text !== undefined) return readStructuredText(value.text)
+  if (Array.isArray(value.children)) return readStructuredText(value.children)
+  if (isRecord(value.attrs)) return readRecordText(value.attrs, ['content', 'text'])
+  if (isRecord(value.kwargs)) return readStructuredText(value.kwargs)
+  if (isRecord(value.lc_kwargs)) return readStructuredText(value.lc_kwargs)
+  return ''
+}
+
+function isAssistantMessageSnapshot(value: unknown) {
+  if (!isRecord(value)) return false
+  const role = String(value.role ?? value.type ?? '').trim().toLowerCase()
+  if (role === 'assistant' || role === 'ai') return true
+  const id = Array.isArray(value.id) ? value.id.map(String).join(':').toLowerCase() : ''
+  return id.includes('aimessage') || id.includes('assistantmessage')
+}
+
+function readCompletionMessagesText(value: unknown) {
+  if (!Array.isArray(value)) return ''
+  for (let index = value.length - 1; index >= 0; index--) {
+    const message = value[index]
+    if (!isAssistantMessageSnapshot(message)) continue
+    const text = readStructuredText(message)
+    if (text) return text
+  }
+  return ''
+}
+
+function readCharacterAfterChatText(payload: ChatLunaCharacterAfterChatPayload) {
+  return readStructuredText(payload.lastResponseMessage)
+    || readStructuredText(payload.text)
+    || readCompletionMessagesText(payload.completionMessages)
+}
+
+// 提取 character 回复中的 <think> 标签内容，用于展示已完成的角色思考。
+function parseThinkContent(text: string) {
+  const thoughts = Array.from(text.matchAll(/<think\b[^>]*>([\s\S]*?)<\/think\s*>/gi))
+    .map((match) => (match[1] ?? '').trim())
+    .filter(Boolean)
+  return thoughts.join('\n\n')
 }
 
 function normalizeGroupRole(role: string) {
@@ -596,9 +650,11 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const getConsoleSnapshot = () => resolveConsoleSnapshot(state.snapshot(), imageUrlResolver)
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', getConsoleSnapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
+  const pendingWebQQThinking = new Map<string, NonNullable<WebQQMessage['thinking']>>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
+  let currentThinkingStartedAt: number | undefined
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
   const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
@@ -618,6 +674,20 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
     liveMessages.set(key, messages)
     ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
+  }
+  const attachPendingWebQQThinking = (payload: WebQQLiveMessage): WebQQLiveMessage => {
+    if (payload.message.direction !== 'outgoing') return payload
+    const key = getLiveMessageKey(payload)
+    const thinking = pendingWebQQThinking.get(key)
+    if (!thinking) return payload
+    pendingWebQQThinking.delete(key)
+    return {
+      ...payload,
+      message: {
+        ...payload.message,
+        thinking,
+      },
+    }
   }
   // 每条群 live 消息后台刷新发送者群身份，变化时用同 id 消息覆盖。
   const refreshWebQQLiveSenderMetadata = async (session: Session, payload: WebQQLiveMessage) => {
@@ -654,21 +724,23 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
       async (id) => webqq.resolveQuote(id),
     )
     if (!payload) return
-    payload = {
+    payload = attachPendingWebQQThinking({
       ...payload,
       message: fillWebQQMessageSenderMetadata(
         payload.message,
         getLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId),
       ),
-    }
+    })
     rememberLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId, readWebQQMessageSenderMetadata(payload.message))
     broadcastWebQQLivePayload(payload)
     await refreshWebQQLiveSenderMetadata(session, payload)
   }
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
+    const thinkingStartedAt = Date.now()
+    currentThinkingStartedAt = thinkingStartedAt
     const input = createMessageInput(session, message)
     input.user.name = readMemberName(session) || input.user.name
-    recordConversationActivity(state, input, '正在思考', { conversationId })
+    recordConversationActivity(state, input, '正在思考', { conversationId, now: thinkingStartedAt })
     logSnapshot('generating')
     broadcast()
     const botSenderMetadata = await readWebQQBotGroupSenderMetadata(session)
@@ -679,14 +751,44 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         ...input.user,
         ...botSenderMetadata,
       },
-    }, '正在思考', { conversationId })
+    }, '正在思考', { conversationId, now: thinkingStartedAt })
     logSnapshot('generating-metadata')
     broadcast()
   }
   const clearActivity = (source: string) => {
     clearConversationActivity(state)
+    currentThinkingStartedAt = undefined
     logSnapshot(source)
     broadcast()
+  }
+  const getCurrentThinkingDurationMs = () => {
+    return currentThinkingStartedAt == null ? 0 : Math.max(0, Date.now() - currentThinkingStartedAt)
+  }
+  const updateLastOutgoingWebQQThinking = (payload: ChatLunaCharacterAfterChatPayload) => {
+    if (!payload.session) return
+    const content = parseThinkContent(readCharacterAfterChatText(payload))
+    if (!content) return
+    const peer = readWebQQPeer(payload.session)
+    if (!peer) return
+    const key = getLiveMessageKey(peer)
+    const thinking = {
+      content,
+      durationMs: getCurrentThinkingDurationMs(),
+    }
+    const messages = liveMessages.get(key)
+    const message = messages?.slice().reverse().find((item) => item.direction === 'outgoing')
+    if (!message) {
+      pendingWebQQThinking.set(key, thinking)
+      return
+    }
+    pendingWebQQThinking.delete(key)
+    broadcastWebQQLivePayload({
+      ...peer,
+      message: {
+        ...message,
+        thinking,
+      },
+    })
   }
 
   ctx.on('message', async (session) => {
@@ -718,6 +820,10 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
 
   ctx.on('chatluna/after-chat-error', () => {
     clearActivity('after-chat-error')
+  })
+
+  ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
+    updateLastOutgoingWebQQThinking(payload)
   })
 
   ctx.before('send', async (session) => {

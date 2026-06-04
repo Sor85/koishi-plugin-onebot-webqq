@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
 const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
+const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
@@ -299,6 +300,58 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__message-media"')
     expect(webqqView).toContain(':src="withProxy(message.elements[0].url)"')
     expect(webqqView).toContain('function isImageOnlyMessage(message: WebQQMessage)')
+  })
+
+  it('declares optional completed thinking data on backend and client WebQQ messages', () => {
+    const backendMessageSource = sourceBetween(
+      onebotSource,
+      'export interface WebQQMessage {',
+      'export interface WebQQLiveMessage',
+    )
+    const clientMessageSource = sourceBetween(
+      clientState,
+      'export interface WebQQMessage {',
+      'export interface WebQQLiveMessage',
+    )
+
+    for (const messageSource of [backendMessageSource, clientMessageSource]) {
+      expect(messageSource).toContain('thinking?:')
+      expect(messageSource).toContain('content: string')
+      expect(messageSource).toContain('durationMs: number')
+    }
+  })
+
+  it('renders completed thinking below WebQQ messages as a collapsible disclosure', () => {
+    expect(webqqView).toContain('const expandedThinkingMessageIds = ref')
+    expect(webqqView).toContain('function formatThinkingDuration(durationMs: number)')
+    expect(webqqView).toContain('Math.round(durationMs / 1000)')
+    expect(webqqView).toContain('return `已思考 ${seconds}s`')
+    expect(webqqView).toContain('function isThinkingExpanded(message: WebQQMessage)')
+    expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
+    expect(webqqView).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
+    expect(webqqView).toContain('candidate.thinking?.content')
+    expect(webqqView).toContain('class="chat-capsule-webqq__thinking-row"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__thinking-toggle"')
+    expect(webqqView).toContain('@click="toggleThinking(getLastOutgoingClusterThinkingMessage(index))"')
+    expect(webqqView).toContain('formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs)')
+    expect(webqqView).toContain('class="chat-capsule-webqq__thinking-content"')
+    expect(webqqView).toContain('{{ getLastOutgoingClusterThinkingMessage(index).thinking.content }}')
+  })
+
+  it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {
+    const thinkingRowStart = '<div\n                  v-if="getLastOutgoingClusterThinkingMessage(index)"'
+    const messageContentSource = sourceBetween(
+      webqqView,
+      'class="chat-capsule-webqq__message-content"',
+      thinkingRowStart,
+    )
+
+    expect(messageContentSource).not.toContain('class="chat-capsule-webqq__thinking-toggle"')
+    expect(messageContentSource).not.toContain('class="chat-capsule-webqq__thinking-content"')
+    expect(webqqView.indexOf(thinkingRowStart)).toBeGreaterThan(webqqView.indexOf('class="chat-capsule-webqq__message-content"'))
+    expect(webqqView).toContain('getLastOutgoingClusterThinkingMessage(index)')
+    expect(webqqView).toContain('formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs)')
+    expect(webqqView).toContain('toggleThinking(getLastOutgoingClusterThinkingMessage(index))')
   })
 
   it('renders consecutive inline WebQQ elements inside one inline container', () => {

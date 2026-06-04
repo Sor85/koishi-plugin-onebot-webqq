@@ -1435,6 +1435,364 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('updates the last outgoing WebQQ message with completed character thinking content', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1710000000000)
+      const bot = {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        internal: {
+          get_friend_list: vi.fn(async () => []),
+          get_group_list: vi.fn(async () => []),
+          get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        },
+        toJSON: () => ({
+          user: {
+            name: 'Capsule Bot',
+            avatar: 'https://example.com/avatar.png',
+          },
+        }),
+      }
+      const { ctx, listeners, addListener, broadcast } = createFakeContext({ bots: [bot] })
+      const session = createSession({
+        bot,
+        timestamp: 1710000000000,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '30000', name: 'Alice' },
+        },
+      })
+
+      plugin.apply(ctx)
+      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+      await listeners.message[0](createSession({
+        bot,
+        userId: '10000',
+        timestamp: 1710000003600,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '10000', name: 'Capsule Bot' },
+          message: {
+            id: 'self-1',
+            elements: [{ type: 'text', attrs: { content: '这是答案' } }],
+          },
+        },
+      }))
+
+      const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      expect(initialWebQQCalls).toHaveLength(1)
+      expect(initialWebQQCalls[0][1].message).not.toHaveProperty('thinking')
+
+      vi.setSystemTime(1710000004200)
+      listeners['chatluna_character/after-chat'][0]({
+        session,
+        lastResponseMessage: {
+          content: '开头<think>\n先分析\n再回答\n</think>这是答案',
+        },
+      })
+
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      expect(webQQCalls.at(-1)?.[1]).toEqual({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'self-1',
+          direction: 'outgoing',
+          summary: '这是答案',
+          thinking: {
+            content: '先分析\n再回答',
+            durationMs: 4200,
+          },
+        }),
+      })
+
+      const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+      await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+        expect.objectContaining({
+          id: 'self-1',
+          thinking: {
+            content: '先分析\n再回答',
+            durationMs: 4200,
+          },
+        }),
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('extracts character thinking from completionMessages LangChain AIMessage snapshots', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1710000000000)
+      const bot = {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        internal: {
+          get_friend_list: vi.fn(async () => []),
+          get_group_list: vi.fn(async () => []),
+          get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        },
+        toJSON: () => ({
+          user: {
+            name: 'Capsule Bot',
+            avatar: 'https://example.com/avatar.png',
+          },
+        }),
+      }
+      const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+      const session = createSession({
+        bot,
+        timestamp: 1710000000000,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '30000', name: 'Alice' },
+        },
+      })
+
+      plugin.apply(ctx)
+      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+      await listeners.message[0](createSession({
+        bot,
+        userId: '10000',
+        timestamp: 1710000003600,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '10000', name: 'Capsule Bot' },
+          message: {
+            id: 'self-1',
+            elements: [{ type: 'text', attrs: { content: '这是答案' } }],
+          },
+        },
+      }))
+
+      const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      expect(initialWebQQCalls).toHaveLength(1)
+      expect(initialWebQQCalls[0][1].message).not.toHaveProperty('thinking')
+
+      vi.setSystemTime(1710000004200)
+      listeners['chatluna_character/after-chat'][0]({
+        session,
+        completionMessages: [{
+          lc: 1,
+          type: 'constructor',
+          id: ['langchain_core', 'messages', 'AIMessage'],
+          kwargs: {
+            content: '前<think>\n从快照分析\n</think>后',
+          },
+        }],
+      })
+
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      expect(webQQCalls.at(-1)?.[1]).toEqual({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'self-1',
+          direction: 'outgoing',
+          thinking: {
+            content: '从快照分析',
+            durationMs: 4200,
+          },
+        }),
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps completed character thinking pending until the matching outgoing WebQQ message arrives', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1710000000000)
+      const bot = {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        internal: {
+          get_friend_list: vi.fn(async () => []),
+          get_group_list: vi.fn(async () => []),
+          get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        },
+        toJSON: () => ({
+          user: {
+            name: 'Capsule Bot',
+            avatar: 'https://example.com/avatar.png',
+          },
+        }),
+      }
+      const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+      const session = createSession({
+        bot,
+        timestamp: 1710000000000,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '30000', name: 'Alice' },
+        },
+      })
+
+      plugin.apply(ctx)
+      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+
+      vi.setSystemTime(1710000004200)
+      listeners['chatluna_character/after-chat'][0]({
+        session,
+        lastResponseMessage: {
+          content: '开头<think>\n先分析\n再回答\n</think>这是答案',
+        },
+      })
+
+      expect(broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')).toHaveLength(0)
+
+      await listeners.message[0](createSession({
+        bot,
+        userId: '30000',
+        timestamp: 1710000004300,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '30000', name: 'Alice' },
+          message: {
+            id: 'incoming-1',
+            elements: [{ type: 'text', attrs: { content: '收到' } }],
+          },
+        },
+      }))
+
+      await listeners.message[0](createSession({
+        bot,
+        channelId: '20001',
+        userId: '10000',
+        timestamp: 1710000004400,
+        event: {
+          guild: { id: '20001', name: 'Other Guild' },
+          channel: { id: '20001', name: 'Other Guild' },
+          user: { id: '10000', name: 'Capsule Bot' },
+          message: {
+            id: 'other-self-1',
+            elements: [{ type: 'text', attrs: { content: '别处回复' } }],
+          },
+        },
+      }))
+
+      const nonMatchingWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      expect(nonMatchingWebQQCalls).toHaveLength(2)
+      expect(nonMatchingWebQQCalls[0][1].message).toMatchObject({
+        id: 'incoming-1',
+        direction: 'incoming',
+      })
+      expect(nonMatchingWebQQCalls[0][1].message).not.toHaveProperty('thinking')
+      expect(nonMatchingWebQQCalls[1][1]).toEqual(expect.objectContaining({
+        peerId: '20001',
+        message: expect.objectContaining({
+          id: 'other-self-1',
+          direction: 'outgoing',
+        }),
+      }))
+      expect(nonMatchingWebQQCalls[1][1].message).not.toHaveProperty('thinking')
+
+      await listeners.message[0](createSession({
+        bot,
+        userId: '10000',
+        timestamp: 1710000004500,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '10000', name: 'Capsule Bot' },
+          message: {
+            id: 'self-1',
+            elements: [{ type: 'text', attrs: { content: '这是答案' } }],
+          },
+        },
+      }))
+
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      expect(webQQCalls.at(-1)?.[1]).toEqual({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'self-1',
+          direction: 'outgoing',
+          summary: '这是答案',
+          thinking: {
+            content: '先分析\n再回答',
+            durationMs: 4200,
+          },
+        }),
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not add thinking data to WebQQ messages when character output has no non-empty think content', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+    const session = createSession({
+      bot,
+      timestamp: 1710000000000,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+      },
+    })
+
+    plugin.apply(ctx)
+    await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+    await listeners.message[0](createSession({
+      bot,
+      userId: '10000',
+      timestamp: 1710000003600,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '10000', name: 'Capsule Bot' },
+        message: {
+          id: 'self-1',
+          elements: [{ type: 'text', attrs: { content: '这是答案' } }],
+        },
+      },
+    }))
+
+    listeners['chatluna_character/after-chat'][0]({
+      session,
+      text: '开头<think>   </think>这是答案',
+    })
+
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    expect(webQQCalls).toHaveLength(1)
+    expect(webQQCalls[0][1].message).toMatchObject({
+      id: 'self-1',
+      direction: 'outgoing',
+      summary: '这是答案',
+    })
+    expect(webQQCalls[0][1].message).not.toHaveProperty('thinking')
+  })
+
   it('keeps message and send listeners safe when console is unavailable', () => {
     const { ctx, listeners } = createFakeContext({ console: false })
 

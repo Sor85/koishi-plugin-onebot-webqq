@@ -177,52 +177,72 @@
               <div class="chat-capsule-webqq__placeholder">暂无消息</div>
             </template>
             <template v-else>
-              <div
-                v-for="(message, index) in visibleMessages"
-                :key="message.id || message.sequence"
-                :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message) }]"
-              >
-                <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
-                <div class="chat-capsule-webqq__message-content">
-                  <div v-if="!isMergedMessage(index)" class="chat-capsule-webqq__sender-line">
-                    <template v-if="message.direction === 'outgoing'">
-                      <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
-                      <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
-                      <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
-                    </template>
-                    <template v-if="message.direction === 'incoming'">
-                      <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
-                      <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
-                      <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
-                    </template>
-                  </div>
-                  <div class="chat-capsule-webqq__message-body">
-                    <div v-if="isImageOnlyMessage(message)" class="chat-capsule-webqq__message-media">
-                      <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
-                    </div>
-                    <div v-else class="chat-capsule-webqq__bubble">
-                      <span v-if="isBotThinkingMessage(message)" class="chat-capsule-webqq__thinking-dots" aria-label="机器人正在思考">
-                        <span v-for="dot in 3" :key="dot" class="chat-capsule-webqq__thinking-dot"></span>
-                      </span>
-                      <template v-else v-for="(run, runIndex) in getWebQQElementRuns(message.elements)" :key="`${message.id}:run:${runIndex}`">
-                        <span v-if="run.type === 'inline'" class="chat-capsule-webqq__inline-run">
-                          <template v-for="element in run.elements" :key="`${message.id}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
-                            <span v-if="element.type === 'text'">{{ element.text }}</span>
-                            <span v-else>{{ element.text || message.summary }}</span>
-                          </template>
-                        </span>
-                        <div v-else-if="run.element.type === 'quote'" class="chat-capsule-webqq__quote">
-                          <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
-                          <span>{{ run.element.text || '[引用消息]' }}</span>
-                        </div>
-                        <img v-else-if="run.element.type === 'image' && run.element.url" :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
-                        <span v-else>{{ run.element.text || message.summary }}</span>
+              <template v-for="(message, index) in visibleMessages" :key="message.id || message.sequence">
+                <div
+                  :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message) }]"
+                >
+                  <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
+                  <div class="chat-capsule-webqq__message-content">
+                    <div v-if="!isMergedMessage(index)" class="chat-capsule-webqq__sender-line">
+                      <template v-if="message.direction === 'outgoing'">
+                        <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
+                        <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
+                        <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                      </template>
+                      <template v-if="message.direction === 'incoming'">
+                        <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                        <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
+                        <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
                       </template>
                     </div>
-                    <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
+                    <div class="chat-capsule-webqq__message-body">
+                      <div v-if="isImageOnlyMessage(message)" class="chat-capsule-webqq__message-media">
+                        <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
+                      </div>
+                      <div v-else class="chat-capsule-webqq__bubble">
+                        <span v-if="isBotThinkingMessage(message)" class="chat-capsule-webqq__thinking-dots" aria-label="机器人正在思考">
+                          <span v-for="dot in 3" :key="dot" class="chat-capsule-webqq__thinking-dot"></span>
+                        </span>
+                        <template v-else v-for="(run, runIndex) in getWebQQElementRuns(message.elements)" :key="`${message.id}:run:${runIndex}`">
+                          <span v-if="run.type === 'inline'" class="chat-capsule-webqq__inline-run">
+                            <template v-for="element in run.elements" :key="`${message.id}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
+                              <span v-if="element.type === 'text'">{{ element.text }}</span>
+                              <span v-else>{{ element.text || message.summary }}</span>
+                            </template>
+                          </span>
+                          <div v-else-if="run.element.type === 'quote'" class="chat-capsule-webqq__quote">
+                            <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
+                            <span>{{ run.element.text || '[引用消息]' }}</span>
+                          </div>
+                          <img v-else-if="run.element.type === 'image' && run.element.url" :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
+                          <span v-else>{{ run.element.text || message.summary }}</span>
+                        </template>
+                      </div>
+                      <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
+                <div
+                  v-if="getLastOutgoingClusterThinkingMessage(index)"
+                  class="chat-capsule-webqq__thinking-row"
+                >
+                  <button
+                    class="chat-capsule-webqq__thinking-toggle"
+                    type="button"
+                    :aria-expanded="isThinkingExpanded(getLastOutgoingClusterThinkingMessage(index))"
+                    @click="toggleThinking(getLastOutgoingClusterThinkingMessage(index))"
+                  >
+                    <span>{{ formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs) }}</span>
+                    <svg class="chat-capsule-webqq__thinking-chevron" viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M6 3.5 10.5 8 6 12.5"></path>
+                    </svg>
+                  </button>
+                  <div
+                    v-if="isThinkingExpanded(getLastOutgoingClusterThinkingMessage(index))"
+                    class="chat-capsule-webqq__thinking-content"
+                  >{{ getLastOutgoingClusterThinkingMessage(index).thinking.content }}</div>
+                </div>
+              </template>
             </template>
           </div>
         </div>
@@ -293,6 +313,7 @@ type WebQQMessageElement = WebQQMessage['elements'][number]
 type WebQQElementRun =
   | { type: 'inline'; elements: WebQQMessageElement[] }
   | { type: 'block'; element: WebQQMessageElement }
+type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
 
 const props = defineProps<{ visible: boolean }>()
 const webQQStorageKey = 'chat-capsule:webqq:v1'
@@ -311,6 +332,7 @@ const messages = ref<WebQQMessage[]>([])
 const notices = ref<WebQQNotice[]>([])
 const messagePane = ref<HTMLElement>()
 const trackingMessages = ref(true)
+const expandedThinkingMessageIds = ref(new Set<string>())
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
 const noticeOpen = ref(false)
@@ -617,6 +639,45 @@ function applyMessageSenderMetadata(message: WebQQMessage) {
 
 function isBotThinkingMessage(message: WebQQMessage) {
   return message.id === botThinkingMessage.value?.id
+}
+
+function formatThinkingDuration(durationMs: number) {
+  const seconds = Math.max(0, Math.round(durationMs / 1000))
+  return `已思考 ${seconds}s`
+}
+
+function isThinkingExpanded(message: WebQQMessage) {
+  return expandedThinkingMessageIds.value.has(getMessageKey(message))
+}
+
+function toggleThinking(message: WebQQMessage) {
+  const key = getMessageKey(message)
+  const next = new Set(expandedThinkingMessageIds.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedThinkingMessageIds.value = next
+}
+
+function isSameOutgoingClusterMessage(left: WebQQMessage | undefined, right: WebQQMessage | undefined) {
+  return !!left &&
+    !!right &&
+    left.direction === 'outgoing' &&
+    right.direction === 'outgoing' &&
+    left.senderId === right.senderId
+}
+
+function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMessage | undefined {
+  const message = visibleMessages.value[index]
+  if (!message || message.direction !== 'outgoing') return
+  if (isSameOutgoingClusterMessage(message, visibleMessages.value[index + 1])) return
+  for (let cursor = index; cursor >= 0; cursor--) {
+    const candidate = visibleMessages.value[cursor]
+    if (!isSameOutgoingClusterMessage(message, candidate)) break
+    if (candidate.thinking?.content) return candidate as WebQQThinkingMessage
+  }
 }
 
 function hasOutgoingMessageAfter(timestamp: number) {

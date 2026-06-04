@@ -42,6 +42,10 @@ export interface WebQQMessage {
   senderTitle?: string
   direction: 'incoming' | 'outgoing'
   summary: string
+  thinking?: {
+    content: string
+    durationMs: number
+  }
   elements: WebQQMessageElement[]
 }
 

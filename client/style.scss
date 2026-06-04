@@ -1130,6 +1130,54 @@
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
 }
 
+.chat-capsule-webqq__thinking-row {
+  max-width: 74%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: -12px 40px 16px auto;
+  text-align: right;
+}
+
+.chat-capsule-webqq__thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.chat-capsule-webqq__thinking-chevron {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.chat-capsule-webqq__thinking-content {
+  max-width: min(360px, 100%);
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(148, 163, 184, 0.54);
+  border-radius: 6px;
+  color: var(--k-text-normal, var(--fg2, #475569));
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
 .chat-capsule-webqq__sender-badge {
   max-width: 120px;
   overflow: hidden;

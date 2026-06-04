@@ -58,6 +58,10 @@ export interface WebQQMessage {
   senderTitle?: string
   direction: 'incoming' | 'outgoing'
   summary: string
+  thinking?: {
+    content: string
+    durationMs: number
+  }
   elements: {
     type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'
     title?: string
