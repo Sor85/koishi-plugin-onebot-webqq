@@ -37,6 +37,13 @@ describe('chat capsule styles', () => {
     expect(style).not.toContain('.chat-capsule__usage-icon')
   })
 
+  it('starts the main capsule thinking shimmer outside the visible text on the first loop', () => {
+    expect(style).toContain('animation-delay: -0.01s')
+    expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).toContain('background-position: 120% 0')
+    expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).toContain('background-position: -160% 0')
+    expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).not.toContain('background-position: 100% 0')
+  })
+
   it('allows the WebQQ chat message pane to scroll inside the fixed panel', () => {
     expect(ruleBody('.chat-capsule-webqq__chat')).toContain('min-height: 0')
     expect(ruleBody('.chat-capsule-webqq__chat-body')).toContain('display: flex')

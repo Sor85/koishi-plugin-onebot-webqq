@@ -150,11 +150,12 @@
       var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.55))) 60%
     );
     background-size: 240% 100%;
-    background-position: 100% 0;
+    background-position: 120% 0;
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: chat-capsule-thinking-shimmer 1.8s linear infinite;
+    animation-delay: -0.01s;
   }
 }
 
@@ -1500,11 +1501,11 @@
 
 @keyframes chat-capsule-thinking-shimmer {
   0% {
-    background-position: 100% 0;
+    background-position: 120% 0;
   }
 
   100% {
-    background-position: -140% 0;
+    background-position: -160% 0;
   }
 }
 
