@@ -197,7 +197,9 @@
                     </div>
                     <div class="chat-capsule-webqq__message-body">
                       <div v-if="isImageOnlyMessage(message)" class="chat-capsule-webqq__message-media">
-                        <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
+                        <button class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(message.elements[0].url)">
+                          <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
+                        </button>
                       </div>
                       <div v-else class="chat-capsule-webqq__bubble">
                         <span v-if="isBotThinkingMessage(message)" class="chat-capsule-webqq__thinking-dots" aria-label="机器人正在思考">
@@ -214,7 +216,9 @@
                             <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
                             <span>{{ run.element.text || '[引用消息]' }}</span>
                           </div>
-                          <img v-else-if="run.element.type === 'image' && run.element.url" :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
+                          <button v-else-if="run.element.type === 'image' && run.element.url" class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(run.element.url)">
+                            <img :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
+                          </button>
                           <span v-else>{{ run.element.text || message.summary }}</span>
                         </template>
                       </div>
@@ -306,6 +310,25 @@
         </div>
       </aside>
     </section>
+    <div
+      v-if="imagePreviewUrl"
+      ref="imagePreview"
+      class="chat-capsule-webqq__image-preview"
+      role="dialog"
+      aria-modal="true"
+      aria-label="图片预览"
+      tabindex="0"
+      @click.self="closeImagePreview"
+      @keydown.esc="closeImagePreview"
+    >
+      <button class="chat-capsule-webqq__image-preview-close" type="button" aria-label="关闭图片预览" @click="closeImagePreview">
+        <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12"></path>
+          <path d="M18 6L6 18"></path>
+        </svg>
+      </button>
+      <img :src="imagePreviewUrl" alt="图片预览">
+    </div>
   </div>
 </template>
 
@@ -349,6 +372,8 @@ conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
 const notices = ref<WebQQNotice[]>([])
 const messagePane = ref<HTMLElement>()
+const imagePreview = ref<HTMLElement>()
+const imagePreviewUrl = ref('')
 const trackingMessages = ref(true)
 const expandedThinkingMessageIds = ref(new Set<string>())
 const historyLoading = ref(false)
@@ -792,6 +817,18 @@ function updateMessageTracking() {
 
 function handleMessageImageLoad() {
   if (trackingMessages.value) scrollMessagesToBottom()
+}
+
+// 打开图片预览并把焦点移到遮罩，便于使用 Esc 关闭。
+async function openImagePreview(url: string) {
+  imagePreviewUrl.value = withProxy(url)
+  await nextTick()
+  imagePreview.value?.focus()
+}
+
+// 清空当前预览图，恢复聊天窗口交互。
+function closeImagePreview() {
+  imagePreviewUrl.value = ''
 }
 
 async function scrollMessagesToBottom() {

@@ -302,6 +302,25 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('function isImageOnlyMessage(message: WebQQMessage)')
   })
 
+  it('opens WebQQ message images in a full-size preview overlay', () => {
+    expect(webqqView).toContain('const imagePreviewUrl = ref(\'\')')
+    expect(webqqView).toContain('const imagePreview = ref<HTMLElement>()')
+    expect(webqqView).toContain('function openImagePreview(url: string)')
+    expect(webqqView).toContain('imagePreviewUrl.value = withProxy(url)')
+    expect(webqqView).toContain('imagePreview.value?.focus()')
+    expect(webqqView).toContain('function closeImagePreview()')
+    expect(webqqView).toContain('imagePreviewUrl.value = \'\'')
+    expect(webqqView).toContain('@click="openImagePreview(message.elements[0].url)"')
+    expect(webqqView).toContain('@click="openImagePreview(run.element.url)"')
+    expect(webqqView).toContain('v-if="imagePreviewUrl"')
+    expect(webqqView).toContain('ref="imagePreview"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__image-preview"')
+    expect(webqqView).toContain('@click.self="closeImagePreview"')
+    expect(webqqView).toContain('@keydown.esc="closeImagePreview"')
+    expect(webqqView).toContain(':src="imagePreviewUrl"')
+    expect(webqqView).toContain('aria-label="关闭图片预览"')
+  })
+
   it('declares optional completed thinking data on backend and client WebQQ messages', () => {
     const backendMessageSource = sourceBetween(
       onebotSource,

@@ -76,6 +76,19 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-media img')).toContain('border-radius: 8px')
   })
 
+  it('styles WebQQ message images as clickable previews', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-image')).toContain('cursor: pointer')
+    expect(ruleBody('.chat-capsule-webqq__message-image')).toContain('background: transparent')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('position: fixed')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('inset: 0')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('z-index: 10002')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('background: rgba(15, 23, 42, 0.78)')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('cursor: default')
+    expect(ruleBody('.chat-capsule-webqq__image-preview img')).toContain('max-width: min(1120px, calc(100vw - 64px))')
+    expect(ruleBody('.chat-capsule-webqq__image-preview img')).toContain('max-height: calc(100vh - 64px)')
+    expect(ruleBody('.chat-capsule-webqq__image-preview-close')).toContain('position: fixed')
+  })
+
   it('does not keep the removed WebQQ readonly bar styles', () => {
     expect(style).not.toContain('chat-capsule-webqq__readonly-bar')
   })
