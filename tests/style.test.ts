@@ -264,6 +264,23 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__thinking-content')).toContain('overflow-wrap: anywhere')
   })
 
+  it('reveals completed WebQQ thinking usage only while the thinking toggle is hovered or focused', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('opacity: 0')
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('visibility: hidden')
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('pointer-events: none')
+    expect(style).toContain(`.chat-capsule-webqq__thinking-toggle:hover .chat-capsule-webqq__thinking-usage,
+.chat-capsule-webqq__thinking-toggle:focus-visible .chat-capsule-webqq__thinking-usage {
+  opacity: 1;
+  visibility: visible;
+}`)
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).not.toContain(' / ')
+  })
+
+  it('keeps completed WebQQ thinking usage groups spaced from each other and the duration', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage-icon.is-output')).toContain('margin-left: 4px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('margin-right: 8px')
+  })
+
   it('aligns completed WebQQ thinking after outgoing bubbles instead of the avatar edge', () => {
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('gap: 8px')
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('flex-direction: row-reverse')

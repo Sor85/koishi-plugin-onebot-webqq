@@ -232,6 +232,24 @@
                     :aria-expanded="isThinkingExpanded(getLastOutgoingClusterThinkingMessage(index))"
                     @click="toggleThinking(getLastOutgoingClusterThinkingMessage(index))"
                   >
+                    <span
+                      v-if="getLastOutgoingClusterThinkingMessage(index).thinking.usage"
+                      class="chat-capsule-webqq__thinking-usage"
+                      aria-label="本次 token 用量"
+                    >
+                      <svg class="chat-capsule-webqq__thinking-usage-icon is-input" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20V8"></path>
+                        <path d="m7 13 5-5 5 5"></path>
+                        <path d="M5 4h14"></path>
+                      </svg>
+                      <span>{{ getLastOutgoingClusterThinkingMessage(index).thinking.usage.inputTokens }}</span>
+                      <svg class="chat-capsule-webqq__thinking-usage-icon is-output" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 4v12"></path>
+                        <path d="m7 11 5 5 5-5"></path>
+                        <path d="M5 20h14"></path>
+                      </svg>
+                      <span>{{ getLastOutgoingClusterThinkingMessage(index).thinking.usage.outputTokens }}</span>
+                    </span>
                     <span>{{ formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs) }}</span>
                     <svg class="chat-capsule-webqq__thinking-chevron" viewBox="0 0 16 16" aria-hidden="true">
                       <path d="M6 3.5 10.5 8 6 12.5"></path>

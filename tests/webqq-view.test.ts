@@ -354,6 +354,30 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('toggleThinking(getLastOutgoingClusterThinkingMessage(index))')
   })
 
+  it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {
+    const thinkingToggleSource = sourceBetween(
+      webqqView,
+      'class="chat-capsule-webqq__thinking-toggle"',
+      'class="chat-capsule-webqq__thinking-chevron"',
+    )
+
+    expect(webqqView).not.toContain("return `输入 ${usage.inputTokens} / 输出 ${usage.outputTokens}`")
+    expect(webqqView).not.toContain('输入 ${usage.inputTokens}')
+    expect(webqqView).not.toContain('输出 ${usage.outputTokens}')
+    expect(thinkingToggleSource).toContain('getLastOutgoingClusterThinkingMessage(index).thinking.usage')
+    expect(thinkingToggleSource).toContain('class="chat-capsule-webqq__thinking-usage"')
+    expect(thinkingToggleSource).toContain('class="chat-capsule-webqq__thinking-usage-icon is-input"')
+    expect(thinkingToggleSource).toContain('class="chat-capsule-webqq__thinking-usage-icon is-output"')
+    expect(thinkingToggleSource).toContain('{{ getLastOutgoingClusterThinkingMessage(index).thinking.usage.inputTokens }}')
+    expect(thinkingToggleSource).toContain('{{ getLastOutgoingClusterThinkingMessage(index).thinking.usage.outputTokens }}')
+    expect(thinkingToggleSource).not.toContain(' / ')
+    expect(thinkingToggleSource.indexOf('class="chat-capsule-webqq__thinking-usage"')).toBeLessThan(
+      thinkingToggleSource.indexOf('formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs)'),
+    )
+    expect(webqqView).toContain('function formatThinkingDuration(durationMs: number)')
+    expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
+  })
+
   it('renders consecutive inline WebQQ elements inside one inline container', () => {
     const bubbleSource = sourceBetween(
       webqqView,

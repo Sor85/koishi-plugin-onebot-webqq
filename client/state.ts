@@ -61,6 +61,10 @@ export interface WebQQMessage {
   thinking?: {
     content: string
     durationMs: number
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+    }
   }
   elements: {
     type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'

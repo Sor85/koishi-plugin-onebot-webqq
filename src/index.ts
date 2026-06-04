@@ -114,6 +114,7 @@ interface ChatLunaCharacterService {
 }
 
 interface ChatLunaModelUsage {
+  source?: string
   context?: {
     conversationId?: string
   }
@@ -134,6 +135,12 @@ interface WebQQSenderMetadata {
   senderRole?: string
   senderLevel?: string
   senderTitle?: string
+}
+
+const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
+
+function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
+  return visibleUsageSources.has(usage.source || '')
 }
 
 // 描述插件运行所需的最小 Koishi 上下文能力。
@@ -771,9 +778,13 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     const peer = readWebQQPeer(payload.session)
     if (!peer) return
     const key = getLiveMessageKey(peer)
+    const usage = state.snapshot()?.conversation.usage
     const thinking = {
       content,
       durationMs: getCurrentThinkingDurationMs(),
+      ...(usage ? {
+        usage,
+      } : {}),
     }
     const messages = liveMessages.get(key)
     const message = messages?.slice().reverse().find((item) => item.direction === 'outgoing')
@@ -833,6 +844,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   })
 
   ctx.on('chatluna/model-usage', (usage: ChatLunaModelUsage) => {
+    if (!shouldDisplayModelUsage(usage)) return
     const changed = recordModelUsage(state, {
       conversationId: usage.context?.conversationId,
       inputTokens: usage.usageMetadata?.input_tokens,

@@ -45,6 +45,10 @@ export interface WebQQMessage {
   thinking?: {
     content: string
     durationMs: number
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+    }
   }
   elements: WebQQMessageElement[]
 }

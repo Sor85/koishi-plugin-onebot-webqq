@@ -1304,6 +1304,7 @@ describe('chat capsule plugin wiring', () => {
     listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession())
 
     listeners['chatluna/model-usage'][0]({
+      source: 'chatluna',
       context: {
         conversationId: 'conversation-2',
       },
@@ -1317,6 +1318,21 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toBeUndefined()
 
     listeners['chatluna/model-usage'][0]({
+      source: 'extension-agent',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 56,
+        output_tokens: 78,
+        total_tokens: 134,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toBeUndefined()
+
+    listeners['chatluna/model-usage'][0]({
+      source: 'chatluna',
       context: {
         conversationId: 'conversation-1',
       },
@@ -1330,6 +1346,81 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toEqual({
       inputTokens: 12,
       outputTokens: 34,
+    })
+
+    listeners['chatluna/model-usage'][0]({
+      source: 'extension-tools',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 90,
+        output_tokens: 91,
+        total_tokens: 181,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toEqual({
+      inputTokens: 12,
+      outputTokens: 34,
+    })
+
+    listeners['chatluna/model-usage'][0]({
+      source: 'unknown',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 101,
+        output_tokens: 102,
+        total_tokens: 203,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toEqual({
+      inputTokens: 12,
+      outputTokens: 34,
+    })
+  })
+
+  it('accepts ChatLuna character usage sources for the current conversation', () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession())
+
+    listeners['chatluna/model-usage'][0]({
+      source: 'chatluna-character',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 21,
+        output_tokens: 43,
+        total_tokens: 64,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toEqual({
+      inputTokens: 21,
+      outputTokens: 43,
+    })
+
+    listeners['chatluna/model-usage'][0]({
+      source: 'character',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 22,
+        output_tokens: 44,
+        total_tokens: 66,
+      },
+    })
+
+    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation.usage).toEqual({
+      inputTokens: 22,
+      outputTokens: 44,
     })
   })
 
@@ -1468,6 +1559,25 @@ describe('chat capsule plugin wiring', () => {
 
       plugin.apply(ctx)
       await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+      listeners['chatluna/model-usage'][0]({
+        source: 'chatluna-character',
+        usageMetadata: {
+          input_tokens: 12,
+          output_tokens: 34,
+          total_tokens: 46,
+        },
+      })
+      listeners['chatluna/model-usage'][0]({
+        source: 'extension-agent',
+        context: {
+          conversationId: 'conversation-1',
+        },
+        usageMetadata: {
+          input_tokens: 90,
+          output_tokens: 91,
+          total_tokens: 181,
+        },
+      })
       await listeners.message[0](createSession({
         bot,
         userId: '10000',
@@ -1506,6 +1616,10 @@ describe('chat capsule plugin wiring', () => {
           thinking: {
             content: '先分析\n再回答',
             durationMs: 4200,
+            usage: {
+              inputTokens: 12,
+              outputTokens: 34,
+            },
           },
         }),
       })
@@ -1517,6 +1631,10 @@ describe('chat capsule plugin wiring', () => {
           thinking: {
             content: '先分析\n再回答',
             durationMs: 4200,
+            usage: {
+              inputTokens: 12,
+              outputTokens: 34,
+            },
           },
         }),
       ])

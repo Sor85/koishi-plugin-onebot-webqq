@@ -1148,6 +1148,38 @@
   line-height: 18px;
 }
 
+.chat-capsule-webqq__thinking-usage {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 8px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.16s ease, visibility 0.16s ease;
+}
+
+.chat-capsule-webqq__thinking-toggle:hover .chat-capsule-webqq__thinking-usage,
+.chat-capsule-webqq__thinking-toggle:focus-visible .chat-capsule-webqq__thinking-usage {
+  opacity: 1;
+  visibility: visible;
+}
+
+.chat-capsule-webqq__thinking-usage-icon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.chat-capsule-webqq__thinking-usage-icon.is-output {
+  margin-left: 4px;
+}
+
 .chat-capsule-webqq__thinking-chevron {
   width: 13px;
   height: 13px;
