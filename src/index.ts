@@ -288,6 +288,10 @@ async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResol
   const type = readElementText(raw.type)
   const attrs = isRecord(raw.attrs) ? raw.attrs : {}
   if (type === 'text') return { type: 'text', text: readElementText(attrs.content) }
+  if (type === 'at') {
+    const target = readRecordText(attrs, ['name', 'nickname', 'card', 'text', 'content', 'id', 'qq', 'user_id', 'uin'])
+    return target ? { type: 'text', text: `@${target}` } : { type: 'unknown', text: '[消息]' }
+  }
   if (type === 'quote' || type === 'reply') {
     const title = readElementText(attrs.name || attrs.nickname || attrs.senderName || attrs.sender_name)
     const text = readElementText(attrs.content || attrs.text || attrs.sourceMsgText) ||

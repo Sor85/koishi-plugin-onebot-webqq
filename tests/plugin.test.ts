@@ -416,6 +416,52 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('broadcasts live at segments as text in WebQQ messages', async () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      event: {
+        guild: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+        message: {
+          id: 'at-1',
+          elements: [
+            { type: 'at', attrs: { id: '10000', name: '宁宁' } },
+            { type: 'text', attrs: { content: ' 那我自己去吃' } },
+          ],
+        },
+      },
+      elements: [
+        { type: 'at', attrs: { id: '10000', name: '宁宁' } },
+        { type: 'text', attrs: { content: ' 那我自己去吃' } },
+      ],
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'at-1',
+        summary: '@宁宁 那我自己去吃',
+        elements: [
+          { type: 'text', text: '@宁宁' },
+          { type: 'text', text: ' 那我自己去吃' },
+        ],
+      }),
+    }, { authority: 1 })
+  })
+
   it('records OneBot self message echoes as outgoing WebQQ messages', async () => {
     const bot = {
       platform: 'onebot',
