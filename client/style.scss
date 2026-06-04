@@ -10,7 +10,7 @@
   z-index: 10000;
   display: inline-flex;
   align-items: center;
-  width: 286px;
+  width: 220px;
   max-width: calc(100vw - 32px);
   min-height: 52px;
   padding: 5px 12px 5px 7px;
@@ -161,46 +161,6 @@
 .chat-capsule__activity {
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.chat-capsule__usage {
-  flex-shrink: 0;
-  align-self: stretch;
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: space-around;
-  min-width: 42px;
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 1px solid var(--k-color-divider, #e0e4e8);
-  font-size: 11px;
-  line-height: 14px;
-  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.72)));
-}
-
-.chat-capsule__usage-row {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 4px;
-
-  &.is-input {
-    color: var(--el-color-success, #67c23a);
-  }
-
-  &.is-output {
-    color: var(--k-color-primary, #409eff);
-  }
-}
-
-.chat-capsule__usage-icon {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .chat-capsule-webqq {
