@@ -325,6 +325,56 @@ describe('onebot webqq adapter', () => {
     ])
   })
 
+  it('renders at segments as text in history messages', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 3,
+            message_seq: 13,
+            time: 1710000002,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [
+              { type: 'at', data: { qq: '10000', name: '宁宁' } },
+              { type: 'text', data: { text: '在吗' } },
+            ],
+          }, {
+            message_id: 4,
+            message_seq: 14,
+            time: 1710000003,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'at', data: { qq: '10001' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '@宁宁在吗',
+        elements: [
+          { type: 'text', text: '@宁宁' },
+          { type: 'text', text: '在吗' },
+        ],
+      }),
+      expect.objectContaining({
+        summary: '@10001',
+        elements: [{ type: 'text', text: '@10001' }],
+      }),
+    ])
+  })
+
   it('resolves image file ids from history messages through get_image', async () => {
     const bot = {
       platform: 'onebot',
