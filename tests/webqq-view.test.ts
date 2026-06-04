@@ -35,6 +35,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('webQQAvatarAccentColor')
     expect(webqqView).toContain('webQQChatStyle')
     expect(webqqView).toContain('webQQTheme')
+    expect(webqqView).toContain('hideWebQQGroupLevel')
     expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`]\"")
     expect(webqqView).toContain(':style="webQQAccentStyle"')
     expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
@@ -152,7 +153,7 @@ describe('webqq observer view', () => {
     expect(thinkingMessageSource).toMatch(/senderTitle:\s*conversation\.senderTitle/)
     expect(webqqView).toContain("v-if=\"message.direction === 'outgoing'\"")
     expect(webqqView).toContain('getSenderAuthorityText(message)')
-    expect(webqqView).toContain('message.senderLevel')
+    expect(webqqView).toContain('message.senderLevel && !hideWebQQGroupLevel')
   })
 
   it('hydrates missing live WebQQ sender metadata from cached messages in the same conversation', () => {

@@ -118,6 +118,8 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色')")
     expect(pluginSource).toContain("useBotAvatarThemeColor?: boolean")
     expect(pluginSource).toContain("Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效')")
+    expect(pluginSource).toContain("hideWebQQGroupLevel?: boolean")
+    expect(pluginSource).toContain("Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标')")
   })
 
   it('registers a console entry with empty capsule data', () => {
@@ -139,6 +141,7 @@ describe('chat capsule plugin wiring', () => {
       webQQChatStyle: 'qq',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
+      hideWebQQGroupLevel: false,
     })
   })
 
@@ -1031,6 +1034,7 @@ describe('chat capsule plugin wiring', () => {
       webQQChatStyle: 'qq',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
+      hideWebQQGroupLevel: false,
     })
   })
 
@@ -1041,6 +1045,7 @@ describe('chat capsule plugin wiring', () => {
       webQQChatStyle?: 'qq' | 'telegram'
       webQQAccentColor?: string
       useBotAvatarThemeColor?: boolean
+      hideWebQQGroupLevel?: boolean
     }) => void
     const applyWithConfig: ApplyWithConfig = plugin.apply
 
@@ -1049,6 +1054,7 @@ describe('chat capsule plugin wiring', () => {
       webQQChatStyle: 'telegram',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
+      hideWebQQGroupLevel: true,
     })
 
     const data = addEntry.mock.calls[0][1]
@@ -1059,6 +1065,7 @@ describe('chat capsule plugin wiring', () => {
       webQQChatStyle: 'telegram',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
+      hideWebQQGroupLevel: true,
     })
   })
 

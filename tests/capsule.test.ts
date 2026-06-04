@@ -47,13 +47,15 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
+    expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
     expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'")
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
+    expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false')
   })
 
   it('checks and caches bot avatar theme colors in the browser', () => {
