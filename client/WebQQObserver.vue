@@ -225,7 +225,13 @@
                             @click.stop="openForwardDialog(run.element)"
                           >
                             <strong class="chat-capsule-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
-                            <span>{{ run.element.text || '[合并转发]' }}</span>
+                            <template v-if="run.element.items?.length">
+                              <span v-for="(item, itemIndex) in getForwardPreviewItems(run.element)" :key="`${message.id}:forward:${runIndex}:${itemIndex}`">
+                                {{ getForwardItemName(item) }}：{{ getForwardPreviewText(item) }}
+                              </span>
+                              <span class="chat-capsule-webqq__forward-entry">查看{{ run.element.items.length }}条转发消息</span>
+                            </template>
+                            <span v-else>{{ run.element.text || '[合并转发]' }}</span>
                           </button>
                           <div
                             v-else-if="run.element.type === 'card'"
@@ -456,6 +462,7 @@ type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage[
 const props = defineProps<{ visible: boolean }>()
 const webQQStorageKey = 'chat-capsule:webqq:v1'
 const defaultWebQQForwardAvatar = 'https://q1.qlogo.cn/g?b=qq&nk=0&s=640'
+const webQQForwardPreviewLimit = 4
 
 const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
 const searchQuery = ref('')
@@ -860,6 +867,22 @@ function getForwardItemName(item: WebQQForwardItem) {
 
 function getForwardItemAvatar(item: WebQQForwardItem) {
   return item.senderAvatar || defaultWebQQForwardAvatar
+}
+
+function getForwardPreviewItems(element: WebQQMessageElement) {
+  return element.items?.slice(0, webQQForwardPreviewLimit) ?? []
+}
+
+function getForwardPreviewText(item: WebQQForwardItem) {
+  return item.elements.map((element) => {
+    if (element.type === 'text') return element.text
+    if (element.type === 'image') return '[图片]'
+    if (element.type === 'quote') return element.text || '[引用消息]'
+    if (element.type === 'forward') return '[合并转发]'
+    if (element.type === 'card') return element.title || element.text || '[卡片消息]'
+    if (element.type === 'face') return element.text || '[表情]'
+    return element.text || '[消息]'
+  }).filter(Boolean).join('') || '[消息]'
 }
 
 function getForwardItemSenderKey(item: WebQQForwardItem | undefined) {

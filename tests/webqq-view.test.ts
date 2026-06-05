@@ -533,6 +533,30 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("element.type !== 'forward'")
   })
 
+  it('limits WebQQ forward bubble previews to the first four items and shows a total entry', () => {
+    const forwardBubbleSource = sourceBetween(
+      webqqView,
+      'v-else-if="run.element.type === \'forward\'"',
+      '</button>',
+    )
+    const hasFixedPreviewLimit = /(?:const\s+[\w_]*forward[\w_]*preview[\w_]*(?:limit|count|items)[\w_]*\s*=\s*4|\.slice\(0,\s*4\)|\.slice\(0,\s*[\w_]*forward[\w_]*preview[\w_]*(?:limit|count|items)[\w_]*\))/i.test(webqqView)
+    const hasPreviewItemsLoop = /v-for="[^"]*(?:run\.element\.items|forward[\w_]*preview|get[\w_]*forward[\w_]*preview)[^"]*"/is.test(forwardBubbleSource)
+    const hasPreviewItemSummary = /(?:item\.elements|(?:get|format)[\w_]*forward[\w_]*(?:summary|previewtext|previewText)[\w_]*\(item\))/i.test(forwardBubbleSource)
+    const hasTotalEntryInBubble = /(?:查看[\s\S]{0,120}条转发消息|(?:get|format)[\w_]*forward[\w_]*(?:count|total|entry)[\w_]*\(run\.element\))/i.test(forwardBubbleSource)
+    const hasTotalEntryText = /查看[\s\S]{0,160}(?:items(?:\?\.|\.)length|run\.element\.items(?:\?\.|\.)length)[\s\S]{0,160}条转发消息/i.test(webqqView)
+    const missingRequirements = [
+      hasFixedPreviewLimit ? '' : 'forward preview uses a fixed limit of 4',
+      hasPreviewItemsLoop ? '' : 'forward bubble renders a preview loop from run.element.items',
+      hasPreviewItemSummary ? '' : 'forward preview summary is derived from item.elements',
+      hasTotalEntryInBubble && hasTotalEntryText ? '' : 'forward bubble shows 查看${items.length}条转发消息 total entry',
+      forwardBubbleSource.includes('@click.stop="openForwardDialog(run.element)"') ? '' : 'forward total entry keeps opening openForwardDialog(run.element)',
+      forwardBubbleSource.includes("run.element.text || '[合并转发]'") ? '' : 'forward elements without items keep the existing [合并转发] fallback',
+      /webQQ.*Forward.*Preview/i.test(clientState) ? 'forward preview must not add a client state config option' : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('renders card message elements as block previews inside WebQQ bubbles', () => {
     const backendMessageSource = sourceBetween(
       onebotSource,

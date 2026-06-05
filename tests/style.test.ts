@@ -267,6 +267,42 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__forward span')).toContain('white-space: pre-line')
   })
 
+  it('shortens WebQQ forward cards with a width rule that overrides quote width', () => {
+    expect(style).toMatch(/\n\.chat-capsule-webqq__bubble\s*{[\s\S]*?\n  \.chat-capsule-webqq__quote\s*{[\s\S]*?width:\s*100%\s*;/)
+
+    const forwardWidthOverrideBody = [
+      '.chat-capsule-webqq__quote.chat-capsule-webqq__forward',
+      '.chat-capsule-webqq__bubble .chat-capsule-webqq__forward',
+    ]
+      .map((selector) => ruleBody(selector))
+      .find((body) => body.includes('max-width: 100%'))
+
+    expect(
+      forwardWidthOverrideBody,
+      'forward 宽度规则选择器优先级不足，会被 quote 的 width:100% 覆盖',
+    ).toBeTruthy()
+    expect(forwardWidthOverrideBody, 'forward 卡片宽度还没有缩到 260px').toContain('width: 260px')
+    expect(forwardWidthOverrideBody).toContain('max-width: 100%')
+  })
+
+  it('centers the WebQQ forward entry as a fixed bottom row without top-heavy padding', () => {
+    const entryBody = ruleBody('.chat-capsule-webqq__forward-entry')
+
+    expect(entryBody).toContain('display: flex')
+    expect(entryBody).toContain('align-items: center')
+    expect.soft(entryBody).toMatch(/(?:^|\n)\s*(?:min-height|height):\s*\d+(?:px|rem|em)\s*;/)
+    expect.soft(entryBody).not.toMatch(/(?:^|\n)\s*padding:\s*[1-9]\d*(?:\.\d+)?px\s+[^;]*\s+0\b/)
+    expect.soft(entryBody).not.toMatch(/(?:^|\n)\s*padding-top:\s*[1-9]\d*(?:\.\d+)?px\s*;/)
+  })
+
+  it('left-aligns the WebQQ forward entry label while leaving the arrow on the right', () => {
+    const entryBody = ruleBody('.chat-capsule-webqq__forward-entry')
+
+    expect(entryBody).toContain('text-align: left')
+    expect(entryBody).toContain('justify-content: space-between')
+    expect(ruleBody('.chat-capsule-webqq__forward-entry::after')).toContain('content:')
+  })
+
   it('styles WebQQ forward message details as an LLBot-style centered modal', () => {
     expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('position: fixed')
     expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('inset: 0')
