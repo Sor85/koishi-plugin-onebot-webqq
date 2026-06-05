@@ -29,7 +29,7 @@ import {
   WebQQProtocol,
 } from './onebot'
 
-export const name = 'chat-capsule'
+export const name = 'onebot-webqq'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {

@@ -99,7 +99,7 @@ function createSession(overrides: Record<string, unknown> = {}) {
 
 describe('chat capsule plugin wiring', () => {
   it('exports plugin name and optional console injection', () => {
-    expect(plugin.name).toBe('chat-capsule')
+    expect(plugin.name).toBe('onebot-webqq')
     expect(plugin.inject).toEqual({
       optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
     })

@@ -4007,9 +4007,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"koishi-plugin-chat-capsule@workspace:.":
+"koishi-plugin-onebot-webqq@workspace:.":
   version: 0.0.0-use.local
-  resolution: "koishi-plugin-chat-capsule@workspace:."
+  resolution: "koishi-plugin-onebot-webqq@workspace:."
   dependencies:
     "@koishijs/client": "npm:^5.30.0"
     "@koishijs/console": "npm:^5.30.0"

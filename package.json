@@ -1,5 +1,5 @@
 {
-  "name": "koishi-plugin-chat-capsule",
+  "name": "koishi-plugin-onebot-webqq",
   "description": "在 Koishi 控制台右下角显示当前聊天胶囊",
   "version": "0.0.1",
   "type": "commonjs",
@@ -19,10 +19,10 @@
     "client"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/Sor85/koishi-plugin-chat-capsule",
+  "homepage": "https://github.com/Sor85/koishi-plugin-onebot-webqq",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Sor85/koishi-plugin-chat-capsule.git"
+    "url": "https://github.com/Sor85/koishi-plugin-onebot-webqq.git"
   },
   "scripts": {
     "clean": "shx rm -rf lib dist",
