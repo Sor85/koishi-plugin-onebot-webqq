@@ -36,7 +36,8 @@ describe('webqq observer view', () => {
   it('keeps WebQQ mounted after first open to preserve its last state', () => {
     expect(capsuleView).toContain('const webqqMounted = ref(false)')
     expect(capsuleView).toContain('function toggleWebQQ()')
-    expect(capsuleView).toContain('if (webqqOpen.value) webqqMounted.value = true')
+    expect(capsuleView).toContain('if (webqqOpen.value)')
+    expect(capsuleView).toContain('webqqMounted.value = true')
   })
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {

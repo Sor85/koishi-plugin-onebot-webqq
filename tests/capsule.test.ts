@@ -18,6 +18,71 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('v-if="shouldShowCapsule"')
   })
 
+  it('renders a graphical WebQQ avatar guide without visible instruction text', () => {
+    const guideSource = capsuleView.match(/<Transition\s+name="chat-capsule-avatar-guide">[\s\S]*?<\/Transition>/)?.[0] ?? ''
+    const missingRequirements = [
+      guideSource ? '' : '缺少头像图形引导过渡容器',
+      guideSource.includes('v-if="webQQAvatarGuideVisible && !webqqOpen"')
+        ? ''
+        : '头像图形引导没有只在 WebQQ 未打开时显示',
+      guideSource.includes('class="chat-capsule__avatar-guide"')
+        ? ''
+        : '缺少头像图形引导层',
+      guideSource.includes(':style="webQQAvatarGuideStyle"')
+        ? '头像图形引导不应再绑定 bot 头像主题色'
+        : '',
+      guideSource.includes('aria-hidden="true"') ? '' : '图形引导应该对读屏隐藏',
+      guideSource.includes('class="chat-capsule__avatar-guide-ring"')
+        ? ''
+        : '图形引导缺少头像光圈',
+      guideSource.includes('chat-capsule__avatar-guide-arrow')
+        ? '图形引导不应再显示箭头'
+        : '',
+      guideSource.includes('点击头像') ? '图形引导不应显示文字说明' : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('shows the graphical WebQQ avatar guide on first use and capsule body clicks', () => {
+    const mountedSource = capsuleView.match(/onMounted\(\(\) => \{[\s\S]*?^}\)/m)?.[0] ?? ''
+    const missingRequirements = [
+      capsuleView.includes("const webQQAvatarGuideStorageKey = 'chat-capsule:webqq-avatar-guide:v1'")
+        ? ''
+        : '缺少头像引导本地存储 key',
+      capsuleView.includes('const webQQAvatarGuideVisible = ref(false)')
+        ? ''
+        : '缺少头像引导显示状态',
+      capsuleView.includes("import { capsule } from './state'")
+        ? ''
+        : '头像图形引导应只读取胶囊状态',
+      capsuleView.includes('webQQAvatarGuideStyle') || capsuleView.includes('webQQAvatarAccentColor')
+        ? '头像图形引导不应读取 bot 头像主题色状态'
+        : '',
+      capsuleView.includes('function hasSeenWebQQAvatarGuide()')
+        ? ''
+        : '缺少首次使用判断函数',
+      capsuleView.includes('function rememberWebQQAvatarGuide()')
+        ? ''
+        : '缺少首次使用记录函数',
+      capsuleView.includes('function showWebQQAvatarGuide(')
+        ? ''
+        : '缺少展示头像图形引导函数',
+      capsuleView.includes('@click="showWebQQAvatarGuide()"')
+        ? ''
+        : '胶囊主体点击没有触发头像图形引导',
+      mountedSource.includes('!hasSeenWebQQAvatarGuide()')
+        && mountedSource.includes('showWebQQAvatarGuide(true)')
+        ? ''
+        : '首次使用没有自动展示并记录头像图形引导',
+      capsuleView.includes("localStorage.setItem(webQQAvatarGuideStorageKey, 'seen')")
+        ? ''
+        : '头像图形引导没有写入已展示状态',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('splits thinking status and current user into separate lines', () => {
     expect(capsuleView).toContain("const titleStatusText = computed(() => isThinking.value ? activityText.value : '')")
     expect(capsuleView).toContain("const userActivityText = computed(() => userName.value ? `正在与 ${userName.value} 对话` : '')")

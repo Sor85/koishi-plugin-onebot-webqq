@@ -22,6 +22,54 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__avatar').match(/img\s*{[\s\S]*border-radius:\s*inherit/)).toBeTruthy()
   })
 
+  it('styles the WebQQ avatar guide as an elegant theme-colored halo', () => {
+    const guideBody = ruleBody('.chat-capsule__avatar-guide')
+    const ringBody = ruleBody('.chat-capsule__avatar-guide-ring')
+    const transitionBody = ruleBody(`.chat-capsule-avatar-guide-enter-active,
+.chat-capsule-avatar-guide-leave-active`)
+    const reducedMotionBody = ruleBody('@media (prefers-reduced-motion: reduce)')
+    const missingRequirements = [
+      ruleBody('.chat-capsule__body').includes('pointer-events: auto')
+        ? ''
+        : '胶囊主体空白处不可点击',
+      guideBody.includes('position: absolute') ? '' : '头像图形引导没有绝对定位到胶囊内',
+      guideBody.includes('pointer-events: none') ? '' : '头像图形引导不应拦截点击头像',
+      ringBody.includes('var(--k-color-primary, #409eff)')
+        ? ''
+        : '头像光圈没有使用当前主题主色',
+      style.includes('--chat-capsule-avatar-guide-color')
+        ? '头像光圈不应再依赖 bot 头像主题色 CSS 变量'
+        : '',
+      ringBody.includes('border-radius: 50%') ? '' : '头像图形引导缺少圆形光圈',
+      ringBody.includes('animation: chat-capsule-avatar-guide-ring 2.4s cubic-bezier')
+        ? ''
+        : '头像光圈动画不够柔和',
+      style.includes('.chat-capsule__avatar-guide-ring::after')
+        && style.includes('@keyframes chat-capsule-avatar-guide-halo')
+        ? ''
+        : '头像光圈缺少柔和外扩 halo',
+      transitionBody.includes('transition: opacity')
+        && transitionBody.includes('transform')
+        ? ''
+        : '头像图形引导缺少出现/消失过渡',
+      style.includes('@keyframes chat-capsule-avatar-guide-ring')
+        ? ''
+        : '头像图形引导缺少关键帧动画',
+      reducedMotionBody.includes('.chat-capsule__avatar-guide-ring')
+        && reducedMotionBody.includes('animation: none')
+        ? ''
+        : '头像图形引导没有在 prefers-reduced-motion 下关闭动画',
+      style.includes('chat-capsule__avatar-guide-arrow')
+        ? '头像图形引导不应包含箭头样式'
+        : '',
+      style.includes('chat-capsule__avatar-guide-text')
+        ? '头像图形引导不应包含文字样式'
+        : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('keeps the bot name smaller and anchored near the top', () => {
     expect(ruleBody('.chat-capsule__body')).toContain('align-self: stretch')
     expect(ruleBody('.chat-capsule__body')).toContain('justify-content: flex-start')

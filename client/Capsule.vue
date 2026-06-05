@@ -14,7 +14,16 @@
           <span :class="['chat-capsule__status', statusClass]"></span>
         </span>
       </button>
-      <div class="chat-capsule__body">
+      <Transition name="chat-capsule-avatar-guide">
+        <span
+          v-if="webQQAvatarGuideVisible && !webqqOpen"
+          class="chat-capsule__avatar-guide"
+          aria-hidden="true"
+        >
+          <span class="chat-capsule__avatar-guide-ring"></span>
+        </span>
+      </Transition>
+      <div class="chat-capsule__body" @click="showWebQQAvatarGuide()">
         <div class="chat-capsule__title-line">
           <div class="chat-capsule__title" :title="displayBotName">
             {{ displayBotName }}
@@ -37,10 +46,13 @@ import { capsule } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
 const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'
+const webQQAvatarGuideStorageKey = 'chat-capsule:webqq-avatar-guide:v1'
 const webqqOpen = ref(false)
 const webqqMounted = ref(false)
+const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
+let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))
 const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)
@@ -93,6 +105,40 @@ function cacheBotProfile(name: string, avatar?: string) {
   } catch {}
 }
 
+function hasSeenWebQQAvatarGuide() {
+  if (typeof localStorage === 'undefined') return true
+  try {
+    return localStorage.getItem(webQQAvatarGuideStorageKey) === 'seen'
+  } catch {
+    return true
+  }
+}
+
+function rememberWebQQAvatarGuide() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(webQQAvatarGuideStorageKey, 'seen')
+  } catch {}
+}
+
+function hideWebQQAvatarGuide() {
+  webQQAvatarGuideVisible.value = false
+  if (!webQQAvatarGuideTimer) return
+  clearTimeout(webQQAvatarGuideTimer)
+  webQQAvatarGuideTimer = undefined
+}
+
+function showWebQQAvatarGuide(remember = false) {
+  if (webqqOpen.value) return
+  if (remember) rememberWebQQAvatarGuide()
+  webQQAvatarGuideVisible.value = true
+  if (webQQAvatarGuideTimer) clearTimeout(webQQAvatarGuideTimer)
+  webQQAvatarGuideTimer = setTimeout(() => {
+    webQQAvatarGuideVisible.value = false
+    webQQAvatarGuideTimer = undefined
+  }, 3600)
+}
+
 function closeWebQQOnOutsideClick(event: PointerEvent) {
   if (!webqqOpen.value) return
   const target = event.target
@@ -102,15 +148,21 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
 
 function toggleWebQQ() {
   webqqOpen.value = !webqqOpen.value
-  if (webqqOpen.value) webqqMounted.value = true
+  if (webqqOpen.value) {
+    webqqMounted.value = true
+    rememberWebQQAvatarGuide()
+    hideWebQQAvatarGuide()
+  }
 }
 
 onMounted(() => {
   document.addEventListener('pointerdown', closeWebQQOnOutsideClick)
+  if (!hasSeenWebQQAvatarGuide()) showWebQQAvatarGuide(true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)
+  hideWebQQAvatarGuide()
 })
 
 watch(() => capsule.value?.bot, (bot) => {
