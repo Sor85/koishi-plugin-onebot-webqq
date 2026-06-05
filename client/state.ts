@@ -13,6 +13,9 @@ export interface CapsuleData {
     channelName: string
     userId?: string
     userName?: string
+    senderRole?: string
+    senderLevel?: string
+    senderTitle?: string
     activityText?: string
     usage?: {
       inputTokens: number
@@ -43,6 +46,23 @@ export interface WebQQGroup {
   avatar: string
 }
 
+export interface WebQQForwardItem {
+  title?: string
+  senderId?: string
+  senderAvatar?: string
+  elements: WebQQMessageElement[]
+}
+
+export interface WebQQMessageElement {
+  type: 'text' | 'image' | 'quote' | 'forward' | 'card' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  title?: string
+  text?: string
+  url?: string
+  imageUrl?: string
+  source?: string
+  items?: WebQQForwardItem[]
+}
+
 export interface WebQQMessage {
   id: string
   sequence: string
@@ -55,12 +75,15 @@ export interface WebQQMessage {
   senderTitle?: string
   direction: 'incoming' | 'outgoing'
   summary: string
-  elements: {
-    type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'
-    title?: string
-    text?: string
-    url?: string
-  }[]
+  thinking?: {
+    content: string
+    durationMs: number
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+    }
+  }
+  elements: WebQQMessageElement[]
 }
 
 export interface WebQQLiveMessage {
@@ -163,7 +186,10 @@ export type WebQQChatStyle = 'qq' | 'telegram'
 
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)
+export const hideWebQQGroupLevel = ref(false)
+export const showWebQQCapsuleUnread = ref(true)
 export const useBotAvatarThemeColor = ref(false)
+export const webQQTotalUnread = ref(0)
 export const webQQAccentColor = ref('#2563eb')
 export const webQQAvatarAccentColor = ref('')
 export const webQQChatStyle = ref<WebQQChatStyle>('qq')

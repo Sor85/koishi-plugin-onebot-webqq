@@ -4,89 +4,77 @@
       <button
         class="chat-capsule__avatar-button"
         type="button"
-        aria-label="打开 WebQQ 观察窗"
+        :aria-label="capsuleButtonLabel"
         :aria-expanded="webqqOpen"
         @click="toggleWebQQ"
       >
         <span class="chat-capsule__avatar">
-          <img v-if="capsule?.bot.avatar" :src="withProxy(capsule.bot.avatar)" :alt="capsule.bot.name">
+          <img v-if="displayBotAvatar" :src="withProxy(displayBotAvatar)" :alt="displayBotName">
           <k-icon v-else name="robot" />
           <span :class="['chat-capsule__status', statusClass]"></span>
+          <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="chat-capsule__avatar-unread">{{ capsuleUnreadText }}</span>
         </span>
       </button>
-      <div class="chat-capsule__body">
+      <Transition name="chat-capsule-avatar-guide">
+        <span
+          v-if="webQQAvatarGuideVisible && !webqqOpen"
+          class="chat-capsule__avatar-guide"
+          aria-hidden="true"
+        >
+          <span class="chat-capsule__avatar-guide-ring"></span>
+        </span>
+      </Transition>
+      <div class="chat-capsule__body" @click="showWebQQAvatarGuide()">
         <div class="chat-capsule__title-line">
-          <div class="chat-capsule__title" :title="capsule?.bot.name || '空闲'">
-            {{ capsule?.bot.name || '空闲' }}
+          <div class="chat-capsule__title" :title="displayBotName">
+            {{ displayBotName }}
           </div>
           <span v-if="titleStatusText" class="chat-capsule__title-status is-thinking">{{ titleStatusText }}</span>
         </div>
         <div class="chat-capsule__meta" :title="metaTitle">
           <span v-if="displayActivityText" class="chat-capsule__activity">{{ displayActivityText }}</span>
-          <span v-if="thinkingDurationText" class="chat-capsule__detail">{{ thinkingDurationText }}</span>
         </div>
       </div>
-      <span v-if="hasUsage" class="chat-capsule__usage" :title="usageTitle" aria-label="本次 token 用量">
-        <span class="chat-capsule__usage-row is-input">
-          <svg class="chat-capsule__usage-icon is-input" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 20V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-            <path d="m7 13 5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M5 4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-          </svg>
-          <span>{{ usage!.inputTokens }}</span>
-        </span>
-        <span class="chat-capsule__usage-row is-output">
-          <svg class="chat-capsule__usage-icon is-output" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 4v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-            <path d="m7 11 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-          </svg>
-          <span>{{ usage!.outputTokens }}</span>
-        </span>
-      </span>
     </div>
-    <WebQQObserver v-if="webqqMounted" v-show="webqqOpen" :visible="webqqOpen" />
+    <WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
-import { capsule } from './state'
+import { capsule, showWebQQCapsuleUnread, webQQTotalUnread } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
+const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'
+const webQQAvatarGuideStorageKey = 'chat-capsule:webqq-avatar-guide:v1'
 const webqqOpen = ref(false)
-const webqqMounted = ref(false)
+const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()
+const cachedBotProfile = ref(loadCachedBotProfile())
+let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))
 const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)
+const displayBotName = computed(() => capsule.value?.bot.name || cachedBotProfile.value.name || '空闲')
+const displayBotAvatar = computed(() => capsule.value?.bot.avatar || cachedBotProfile.value.avatar || '')
+const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))
+const capsuleButtonLabel = computed(() => {
+  return showWebQQCapsuleUnread.value && webQQTotalUnread.value
+    ? `打开 WebQQ 观察窗，${capsuleUnreadText.value} 条未读消息`
+    : '打开 WebQQ 观察窗'
+})
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
 const isThinking = computed(() => activityText.value === '正在思考')
 const titleStatusText = computed(() => isThinking.value ? activityText.value : '')
 const userName = computed(() => capsule.value?.conversation.userName || '')
 const userActivityText = computed(() => userName.value ? `正在与 ${userName.value} 对话` : '')
-const usage = computed(() => capsule.value?.conversation.usage)
-const hasUsage = computed(() => !!usage.value)
-const usageTitle = computed(() => {
-  const usage = capsule.value?.conversation.usage
-  if (!usage) return ''
-  return `输入 ${usage.inputTokens} / 输出 ${usage.outputTokens}`
-})
-const thinkingDurationText = computed(() => {
-  const duration = capsule.value?.conversation.thinkingDurationMs
-  if (duration == null) return ''
-  const seconds = Math.max(0, Math.round(duration / 1000))
-  return `已思考 ${seconds} s`
-})
 const displayActivityText = computed(() => {
   if (userActivityText.value) return userActivityText.value
-  return thinkingDurationText.value || hasUsage.value ? '' : '空闲中'
+  return '空闲中'
 })
 
-const metaTitle = computed(() => {
-  return [displayActivityText.value, thinkingDurationText.value, usageTitle.value].filter(Boolean).join(' · ')
-})
+const metaTitle = computed(() => displayActivityText.value)
 
 const statusClass = computed(() => {
   switch (capsule.value?.bot.status) {
@@ -100,6 +88,67 @@ const statusClass = computed(() => {
   }
 })
 
+function getCapsuleUnreadText(count: number) {
+  return count > 99999 ? '99999+' : String(count)
+}
+
+function loadCachedBotProfile() {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    const data = JSON.parse(localStorage.getItem(capsuleProfileStorageKey) || '{}')
+    return data && typeof data === 'object'
+      ? {
+          name: typeof data.name === 'string' ? data.name : '',
+          avatar: typeof data.avatar === 'string' ? data.avatar : '',
+        }
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+function cacheBotProfile(name: string, avatar?: string) {
+  if (typeof localStorage === 'undefined' || !name) return
+  cachedBotProfile.value = { name, avatar: avatar || '' }
+  try {
+    localStorage.setItem(capsuleProfileStorageKey, JSON.stringify(cachedBotProfile.value))
+  } catch {}
+}
+
+function hasSeenWebQQAvatarGuide() {
+  if (typeof localStorage === 'undefined') return true
+  try {
+    return localStorage.getItem(webQQAvatarGuideStorageKey) === 'seen'
+  } catch {
+    return true
+  }
+}
+
+function rememberWebQQAvatarGuide() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(webQQAvatarGuideStorageKey, 'seen')
+  } catch {}
+}
+
+function hideWebQQAvatarGuide() {
+  webQQAvatarGuideVisible.value = false
+  if (!webQQAvatarGuideTimer) return
+  clearTimeout(webQQAvatarGuideTimer)
+  webQQAvatarGuideTimer = undefined
+}
+
+function showWebQQAvatarGuide(remember = false) {
+  if (webqqOpen.value) return
+  if (remember) rememberWebQQAvatarGuide()
+  webQQAvatarGuideVisible.value = true
+  if (webQQAvatarGuideTimer) clearTimeout(webQQAvatarGuideTimer)
+  webQQAvatarGuideTimer = setTimeout(() => {
+    webQQAvatarGuideVisible.value = false
+    webQQAvatarGuideTimer = undefined
+  }, 3600)
+}
+
 function closeWebQQOnOutsideClick(event: PointerEvent) {
   if (!webqqOpen.value) return
   const target = event.target
@@ -109,15 +158,25 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
 
 function toggleWebQQ() {
   webqqOpen.value = !webqqOpen.value
-  if (webqqOpen.value) webqqMounted.value = true
+  if (webqqOpen.value) {
+    rememberWebQQAvatarGuide()
+    hideWebQQAvatarGuide()
+  }
 }
 
 onMounted(() => {
   document.addEventListener('pointerdown', closeWebQQOnOutsideClick)
+  if (!hasSeenWebQQAvatarGuide()) showWebQQAvatarGuide(true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)
+  hideWebQQAvatarGuide()
 })
+
+watch(() => capsule.value?.bot, (bot) => {
+  if (!bot) return
+  cacheBotProfile(bot.name, bot.avatar)
+}, { immediate: true })
 
 </script>

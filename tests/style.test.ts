@@ -22,6 +22,64 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__avatar').match(/img\s*{[\s\S]*border-radius:\s*inherit/)).toBeTruthy()
   })
 
+  it('places the capsule total unread badge on the bot avatar corner', () => {
+    const unreadBody = ruleBody('.chat-capsule__avatar-unread')
+    expect(ruleBody('.chat-capsule__avatar')).toContain('position: relative')
+    expect(unreadBody).toContain('position: absolute')
+    expect(unreadBody).toContain('top: -5px')
+    expect(unreadBody).toContain('right: -10px')
+    expect(unreadBody).toContain('min-width: 18px')
+    expect(unreadBody).toContain('background: #ef4444')
+  })
+
+  it('styles the WebQQ avatar guide as an elegant theme-colored halo', () => {
+    const guideBody = ruleBody('.chat-capsule__avatar-guide')
+    const ringBody = ruleBody('.chat-capsule__avatar-guide-ring')
+    const transitionBody = ruleBody(`.chat-capsule-avatar-guide-enter-active,
+.chat-capsule-avatar-guide-leave-active`)
+    const reducedMotionBody = ruleBody('@media (prefers-reduced-motion: reduce)')
+    const missingRequirements = [
+      ruleBody('.chat-capsule__body').includes('pointer-events: auto')
+        ? ''
+        : '胶囊主体空白处不可点击',
+      guideBody.includes('position: absolute') ? '' : '头像图形引导没有绝对定位到胶囊内',
+      guideBody.includes('pointer-events: none') ? '' : '头像图形引导不应拦截点击头像',
+      ringBody.includes('var(--k-color-primary, #409eff)')
+        ? ''
+        : '头像光圈没有使用当前主题主色',
+      style.includes('--chat-capsule-avatar-guide-color')
+        ? '头像光圈不应再依赖 bot 头像主题色 CSS 变量'
+        : '',
+      ringBody.includes('border-radius: 50%') ? '' : '头像图形引导缺少圆形光圈',
+      ringBody.includes('animation: chat-capsule-avatar-guide-ring 2.4s cubic-bezier')
+        ? ''
+        : '头像光圈动画不够柔和',
+      style.includes('.chat-capsule__avatar-guide-ring::after')
+        && style.includes('@keyframes chat-capsule-avatar-guide-halo')
+        ? ''
+        : '头像光圈缺少柔和外扩 halo',
+      transitionBody.includes('transition: opacity')
+        && transitionBody.includes('transform')
+        ? ''
+        : '头像图形引导缺少出现/消失过渡',
+      style.includes('@keyframes chat-capsule-avatar-guide-ring')
+        ? ''
+        : '头像图形引导缺少关键帧动画',
+      reducedMotionBody.includes('.chat-capsule__avatar-guide-ring')
+        && reducedMotionBody.includes('animation: none')
+        ? ''
+        : '头像图形引导没有在 prefers-reduced-motion 下关闭动画',
+      style.includes('chat-capsule__avatar-guide-arrow')
+        ? '头像图形引导不应包含箭头样式'
+        : '',
+      style.includes('chat-capsule__avatar-guide-text')
+        ? '头像图形引导不应包含文字样式'
+        : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('keeps the bot name smaller and anchored near the top', () => {
     expect(ruleBody('.chat-capsule__body')).toContain('align-self: stretch')
     expect(ruleBody('.chat-capsule__body')).toContain('justify-content: flex-start')
@@ -30,15 +88,18 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__title')).toContain('line-height: 18px')
   })
 
-  it('stacks usage rows vertically beside the activity text', () => {
-    expect(ruleBody('.chat-capsule')).toContain('width: 286px')
-    expect(ruleBody('.chat-capsule__usage')).toContain('flex-direction: column')
-    expect(ruleBody('.chat-capsule__usage')).toContain('align-self: stretch')
-    expect(ruleBody('.chat-capsule__usage')).toContain('justify-content: space-around')
-    expect(ruleBody('.chat-capsule__usage-row')).toContain('align-items: center')
-    expect(ruleBody('.chat-capsule__usage-row')).toContain('justify-content: flex-start')
-    expect(ruleBody('.chat-capsule__usage-icon')).toContain('width: 13px')
-    expect(ruleBody('.chat-capsule__usage-icon')).toContain('stroke: currentColor')
+  it('keeps the main capsule compact without usage rows', () => {
+    expect(ruleBody('.chat-capsule')).toContain('width: 220px')
+    expect(style).not.toContain('.chat-capsule__usage')
+    expect(style).not.toContain('.chat-capsule__usage-row')
+    expect(style).not.toContain('.chat-capsule__usage-icon')
+  })
+
+  it('starts the main capsule thinking shimmer outside the visible text on the first loop', () => {
+    expect(style).toContain('animation-delay: -0.01s')
+    expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).toContain('background-position: 120% 0')
+    expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).toContain('background-position: -160% 0')
+    expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).not.toContain('background-position: 100% 0')
   })
 
   it('allows the WebQQ chat message pane to scroll inside the fixed panel', () => {
@@ -46,6 +107,52 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__chat-body')).toContain('display: flex')
     expect(ruleBody('.chat-capsule-webqq__chat-body')).toContain('min-height: 0')
     expect(ruleBody('.chat-capsule-webqq__messages')).toContain('overflow-y: auto')
+  })
+
+  it('styles the WebQQ return-to-bottom button as a clickable bottom overlay', () => {
+    const scrollBottomBody = ruleBody('.chat-capsule-webqq__scroll-bottom')
+    const missingRequirements = [
+      scrollBottomBody ? '' : '缺少 .chat-capsule-webqq__scroll-bottom 样式',
+      /position:\s*(absolute|fixed)\s*;/.test(scrollBottomBody)
+        ? ''
+        : '返回底部按钮没有固定或绝对定位',
+      /bottom:\s*[^;]+;/.test(scrollBottomBody) ? '' : '返回底部按钮没有定位到聊天主体底部附近',
+      scrollBottomBody.includes('cursor: pointer') ? '' : '返回底部按钮缺少可点击控件样式',
+      /display:\s*(inline-flex|flex)\s*;/.test(scrollBottomBody)
+        ? ''
+        : '返回底部按钮没有使用 flex 对齐按钮内容',
+      /z-index:\s*[^;]+;/.test(scrollBottomBody) ? '' : '返回底部按钮缺少覆盖在消息区域上的层级',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('animates the WebQQ return-to-bottom button without ignoring reduced motion', () => {
+    const transitionBody = ruleBody(`.webqq-scroll-bottom-enter-active,
+.webqq-scroll-bottom-leave-active`)
+    const hiddenBody = ruleBody(`.webqq-scroll-bottom-enter-from,
+.webqq-scroll-bottom-leave-to`)
+    const reducedMotionBody = ruleBody('@media (prefers-reduced-motion: reduce)')
+    const missingRequirements = [
+      transitionBody ? '' : '缺少返回底部按钮 enter/leave active 过渡样式',
+      transitionBody.includes('transition: opacity')
+        ? ''
+        : '返回底部按钮过渡没有包含 opacity',
+      transitionBody.includes('transform')
+        ? ''
+        : '返回底部按钮过渡没有包含 transform',
+      hiddenBody.includes('opacity: 0') ? '' : '返回底部按钮进入/离开状态没有淡入淡出',
+      /translateY\([^)]*px\)/.test(hiddenBody)
+        ? ''
+        : '返回底部按钮进入/离开状态没有纵向位移',
+      reducedMotionBody.includes('.webqq-scroll-bottom-enter-active')
+        && reducedMotionBody.includes('.webqq-scroll-bottom-leave-active')
+        && reducedMotionBody.includes('transition: none')
+        ? ''
+        : '返回底部按钮过渡没有在 prefers-reduced-motion 下关闭',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('sizes WebQQ message avatars beside bubbles', () => {
@@ -71,6 +178,19 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-media')).toContain('display: flex')
     expect(ruleBody('.chat-capsule-webqq__message-media img')).toContain('max-width: min(220px, 100%)')
     expect(ruleBody('.chat-capsule-webqq__message-media img')).toContain('border-radius: 8px')
+  })
+
+  it('styles WebQQ message images as clickable previews', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-image')).toContain('cursor: pointer')
+    expect(ruleBody('.chat-capsule-webqq__message-image')).toContain('background: transparent')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('position: fixed')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('inset: 0')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('z-index: 10002')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('background: rgba(15, 23, 42, 0.78)')
+    expect(ruleBody('.chat-capsule-webqq__image-preview')).toContain('cursor: default')
+    expect(ruleBody('.chat-capsule-webqq__image-preview img')).toContain('max-width: min(1120px, calc(100vw - 64px))')
+    expect(ruleBody('.chat-capsule-webqq__image-preview img')).toContain('max-height: calc(100vh - 64px)')
+    expect(ruleBody('.chat-capsule-webqq__image-preview-close')).toContain('position: fixed')
   })
 
   it('does not keep the removed WebQQ readonly bar styles', () => {
@@ -245,6 +365,115 @@ describe('chat capsule styles', () => {
         color: #ffffff;
       }
     }`)
+  })
+
+  it('keeps WebQQ forward message previews readable across multiple lines', () => {
+    expect(ruleBody('.chat-capsule-webqq__forward span')).toContain('white-space: pre-line')
+  })
+
+  it('shortens WebQQ forward cards with a width rule that overrides quote width', () => {
+    expect(style).toMatch(/\n\.chat-capsule-webqq__bubble\s*{[\s\S]*?\n  \.chat-capsule-webqq__quote\s*{[\s\S]*?width:\s*100%\s*;/)
+
+    const forwardWidthOverrideBody = [
+      '.chat-capsule-webqq__quote.chat-capsule-webqq__forward',
+      '.chat-capsule-webqq__bubble .chat-capsule-webqq__forward',
+    ]
+      .map((selector) => ruleBody(selector))
+      .find((body) => body.includes('max-width: 100%'))
+
+    expect(
+      forwardWidthOverrideBody,
+      'forward 宽度规则选择器优先级不足，会被 quote 的 width:100% 覆盖',
+    ).toBeTruthy()
+    expect(forwardWidthOverrideBody, 'forward 卡片宽度还没有缩到 260px').toContain('width: 260px')
+    expect(forwardWidthOverrideBody).toContain('max-width: 100%')
+  })
+
+  it('centers the WebQQ forward entry as a fixed bottom row without top-heavy padding', () => {
+    const entryBody = ruleBody('.chat-capsule-webqq__forward-entry')
+
+    expect(entryBody).toContain('display: flex')
+    expect(entryBody).toContain('align-items: center')
+    expect.soft(entryBody).toMatch(/(?:^|\n)\s*(?:min-height|height):\s*\d+(?:px|rem|em)\s*;/)
+    expect.soft(entryBody).not.toMatch(/(?:^|\n)\s*padding:\s*[1-9]\d*(?:\.\d+)?px\s+[^;]*\s+0\b/)
+    expect.soft(entryBody).not.toMatch(/(?:^|\n)\s*padding-top:\s*[1-9]\d*(?:\.\d+)?px\s*;/)
+  })
+
+  it('left-aligns the WebQQ forward entry label while leaving the arrow on the right', () => {
+    const entryBody = ruleBody('.chat-capsule-webqq__forward-entry')
+
+    expect(entryBody).toContain('text-align: left')
+    expect(entryBody).toContain('justify-content: space-between')
+    expect(ruleBody('.chat-capsule-webqq__forward-entry::after')).toContain('content:')
+  })
+
+  it('styles WebQQ forward message details as an LLBot-style centered modal', () => {
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('position: fixed')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('inset: 0')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('align-items: center')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal')).toContain('width: min(480px, calc(100vw - 32px))')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal')).toContain('max-height: min(80vh, 620px)')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).not.toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).not.toContain('flex-direction: column')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).not.toContain('align-items: flex-start')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).toContain('overflow-y: auto')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message')).toContain('max-width: 74%')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message')).not.toContain('margin-bottom')
+    expect(style).not.toContain('.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message.is-merged')
+    expect(style).not.toContain('chat-capsule-webqq__forward-popover')
+    expect(style).not.toContain('chat-capsule-webqq__forward-page')
+  })
+
+  it('styles WebQQ card message previews as compact block cards', () => {
+    expect(ruleBody('.chat-capsule-webqq__card')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__card')).toContain('border-radius: 8px')
+    expect(ruleBody('.chat-capsule-webqq__card')).toContain('text-decoration: none')
+    expect(ruleBody('.chat-capsule-webqq__card-cover')).toContain('width: 42px')
+    expect(ruleBody('.chat-capsule-webqq__card-cover')).toContain('object-fit: cover')
+    expect(ruleBody('.chat-capsule-webqq__card-title')).toContain('font-weight: 600')
+    expect(ruleBody('.chat-capsule-webqq__card-desc')).toContain('overflow-wrap: anywhere')
+    expect(ruleBody('.chat-capsule-webqq__card-source')).toContain('font-size: 11px')
+  })
+
+  it('keeps the WebQQ thinking indicator compact with six-pixel dots', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-dots')).not.toContain('min-width: 58px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-dots')).toMatch(/(?:min-)?width:\s*4[24]px/)
+    expect(ruleBody('.chat-capsule-webqq__thinking-dot')).toContain('width: 6px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-dot')).toContain('height: 6px')
+    expect(style).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(ruleBody('@media (prefers-reduced-motion: reduce)')).toContain('animation: none')
+  })
+
+  it('keeps completed WebQQ thinking disclosure clickable and readable', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-toggle')).toContain('cursor: pointer')
+    expect(ruleBody('.chat-capsule-webqq__thinking-toggle')).toContain('border: 0')
+    expect(ruleBody('.chat-capsule-webqq__thinking-toggle')).toContain('background: transparent')
+    expect(ruleBody('.chat-capsule-webqq__thinking-content')).toContain('white-space: pre-wrap')
+    expect(ruleBody('.chat-capsule-webqq__thinking-content')).toContain('overflow-wrap: anywhere')
+  })
+
+  it('reveals completed WebQQ thinking usage only while the thinking toggle is hovered or focused', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('opacity: 0')
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('visibility: hidden')
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('pointer-events: none')
+    expect(style).toContain(`.chat-capsule-webqq__thinking-toggle:hover .chat-capsule-webqq__thinking-usage,
+.chat-capsule-webqq__thinking-toggle:focus-visible .chat-capsule-webqq__thinking-usage {
+  opacity: 1;
+  visibility: visible;
+}`)
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).not.toContain(' / ')
+  })
+
+  it('keeps completed WebQQ thinking usage groups spaced from each other and the duration', () => {
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage-icon.is-output')).toContain('margin-left: 4px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-usage')).toContain('margin-right: 8px')
+  })
+
+  it('aligns completed WebQQ thinking after outgoing bubbles instead of the avatar edge', () => {
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('gap: 8px')
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('flex-direction: row-reverse')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
+    expect(ruleBody('.chat-capsule-webqq__thinking-row')).toContain('margin: -12px 40px 16px auto')
   })
 
   it('wraps WebQQ notice comments instead of truncating them', () => {

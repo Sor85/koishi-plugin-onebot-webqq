@@ -21,12 +21,23 @@ export interface WebQQGroup {
   avatar: string
 }
 
+// WebQQ 只读面板使用的合并转发节点。
+export interface WebQQForwardItem {
+  title?: string
+  senderId?: string
+  senderAvatar?: string
+  elements: WebQQMessageElement[]
+}
+
 // WebQQ 只读面板使用的消息片段。
 export interface WebQQMessageElement {
-  type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  type: 'text' | 'image' | 'quote' | 'forward' | 'card' | 'face' | 'file' | 'record' | 'video' | 'unknown'
   title?: string
   text?: string
   url?: string
+  imageUrl?: string
+  source?: string
+  items?: WebQQForwardItem[]
 }
 
 // WebQQ 只读面板使用的历史消息。
@@ -42,6 +53,14 @@ export interface WebQQMessage {
   senderTitle?: string
   direction: 'incoming' | 'outgoing'
   summary: string
+  thinking?: {
+    content: string
+    durationMs: number
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+    }
+  }
   elements: WebQQMessageElement[]
 }
 
@@ -186,6 +205,51 @@ function getTextValue(value: unknown): string {
     if (text) return text
   }
   return ''
+}
+
+function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
+  if (isRecord(value)) return value
+  if (typeof value !== 'string') return
+  try {
+    const parsed = JSON.parse(value)
+    return isRecord(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function getCardMeta(payload: Record<string, unknown>) {
+  const meta = isRecord(payload.meta) ? payload.meta : undefined
+  if (!meta) return undefined
+  const view = getStringField(payload, ['view'])
+  if (view && isRecord(meta[view])) return meta[view]
+  return Object.values(meta).find(isRecord)
+}
+
+function normalizeCardElement(data: Record<string, unknown>): WebQQMessageElement {
+  const payload = parseJsonRecord(data.data) ||
+    parseJsonRecord(data.content) ||
+    parseJsonRecord(data.json) ||
+    parseJsonRecord(data)
+  const meta = payload ? getCardMeta(payload) : undefined
+  const card = meta ?? payload ?? data
+  const title = getStringField(card, ['title']) ||
+    (payload ? getStringField(payload, ['title', 'prompt']) : '') ||
+    '卡片消息'
+  const text = getStringField(card, ['desc', 'summary', 'content']) ||
+    (payload ? getStringField(payload, ['desc', 'prompt']) : '') ||
+    '[卡片消息]'
+  const url = getStringField(card, ['jumpUrl', 'jump_url', 'url', 'source_url'])
+  const imageUrl = getStringField(card, ['preview', 'image', 'imageUrl', 'image_url', 'picUrl', 'pic_url', 'icon', 'source_icon'])
+  const source = getStringField(card, ['tag', 'source', 'app'])
+  return {
+    type: 'card',
+    title,
+    text,
+    ...(url ? { url } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(source ? { source } : {}),
+  }
 }
 
 function normalizeGroupRole(role: string) {
@@ -422,6 +486,65 @@ async function resolveOneBotQuote(bot: OneBotBot, id: string, imageUrlResolver?:
   }
 }
 
+// 不同 OneBot 实现对合并转发详情参数命名不一致，优先标准 id，再兼容 message_id。
+async function callForwardMessage(bot: OneBotBot, id: string) {
+  try {
+    return await callAction(bot, 'get_forward_msg', { id })
+  } catch (error) {
+    try {
+      return await callAction(bot, 'get_forward_msg', { message_id: id })
+    } catch {
+      throw error
+    }
+  }
+}
+
+function readForwardNodes(result: unknown) {
+  const message = toArrayResult(result, 'message')
+  if (message.length) return message
+  const messages = toArrayResult(result, 'messages')
+  if (messages.length) return messages
+  return toArrayResult(result, 'nodes')
+}
+
+async function normalizeForwardNode(raw: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string) {
+  const item = isRecord(raw) ? raw : {}
+  const data = isRecord(item.data) ? item.data : item
+  const sender = isRecord(data.sender)
+    ? data.sender
+    : isRecord(item.sender)
+      ? item.sender
+      : data
+  const senderId = getStringField(sender, ['user_id', 'uin', 'uid'])
+  const title = getStringField(sender, ['nickname', 'card', 'name', 'senderName', 'sender_name', 'user_id', 'uin'])
+  const content = data.content ?? data.message ?? item.message
+  const elements = content == null ? [] : await normalizeMessageElements(content, bot, imageUrlResolver)
+  const normalizedElements = elements.length ? elements : [{ type: 'unknown' as const, text: '[消息]' }]
+  const summary = summarizeElements(normalizedElements) || getTextValue(content) || '[消息]'
+  return {
+    item: {
+      ...(title ? { title } : {}),
+      ...(senderId ? { senderId } : {}),
+      senderAvatar: senderId ? getUserAvatar(senderId) : getUserAvatar('0'),
+      elements: normalizedElements,
+    },
+    text: title ? `${title}：${summary}` : summary,
+  }
+}
+
+// 读取合并转发详情并压缩成 WebQQ 可展示的多行摘要。
+async function resolveOneBotForward(bot: OneBotBot, id: string, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
+  const nodes = readForwardNodes(await callForwardMessage(bot, id))
+  const nodesData = await Promise.all(nodes.map((node) => normalizeForwardNode(node, bot, imageUrlResolver)))
+  const lines = nodesData.map((node) => node.text)
+  return {
+    type: 'forward',
+    title: '合并转发',
+    text: lines.join('\n') || '[合并转发]',
+    items: nodesData.map((node) => node.item),
+  }
+}
+
 async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return { type: 'unknown', text: '[消息]' }
@@ -464,6 +587,16 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
       text: text || '[引用消息]',
     }
   }
+  if (type === 'forward') {
+    const id = getStringField(data, ['id', 'message_id', 'messageId', 'resid'])
+    if (!id) return { type: 'forward', title: '合并转发', text: '[合并转发]' }
+    try {
+      return await resolveOneBotForward(bot, id, imageUrlResolver)
+    } catch {
+      return { type: 'forward', title: '合并转发', text: '[合并转发]' }
+    }
+  }
+  if (type === 'json' || type === 'lightapp' || type === 'xml') return normalizeCardElement(data)
   if (type === 'file') return { type: 'file', text: getStringField(data, ['name', 'file']) || '[文件]' }
   if (type === 'record') return { type: 'record', text: '[语音]' }
   if (type === 'video') return { type: 'video', text: '[视频]' }
@@ -481,6 +614,8 @@ function summarizeElements(elements: WebQQMessageElement[]) {
     if (element.type === 'text') return element.text
     if (element.type === 'image') return '[图片]'
     if (element.type === 'quote') return ''
+    if (element.type === 'forward') return '[合并转发]'
+    if (element.type === 'card') return element.title && element.title !== '卡片消息' ? element.title : element.text || '[卡片消息]'
     if (element.type === 'face') return element.text || '[表情]'
     return element.text || '[消息]'
   }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
@@ -600,6 +735,10 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
   return {
     async resolveQuote(id: string) {
       return resolveOneBotQuote(getBot(), id, imageUrlResolver)
+    },
+
+    async resolveForward(id: string) {
+      return resolveOneBotForward(getBot(), id, imageUrlResolver)
     },
 
     async resolveImage(file: string) {
