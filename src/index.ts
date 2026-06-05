@@ -33,7 +33,7 @@ export const name = 'chat-capsule'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {
-  optional: ['console', 'server', 'chatluna', 'chatluna_character'],
+  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
 }
 
 export interface Config {
@@ -47,6 +47,7 @@ export interface Config {
   useBotAvatarThemeColor?: boolean
   hideWebQQGroupLevel?: boolean
   showWebQQCapsuleUnread?: boolean
+  webQQStorageBackend?: 'browser' | 'koishi'
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -70,6 +71,10 @@ export const Config: Schema<Config> = Schema.object({
   useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
   hideWebQQGroupLevel: Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标'),
   showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
+  webQQStorageBackend: Schema.union([
+    Schema.const('browser').description('浏览器'),
+    Schema.const('koishi').description('Koishi 数据库'),
+  ]).default('browser').role('radio').description('WebQQ 状态存储后端'),
 })
 
 declare module '@koishijs/console' {
@@ -81,6 +86,16 @@ declare module '@koishijs/console' {
     'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
     'chat-capsule/webqq/notices'(): Promise<WebQQNotice[]>
     'chat-capsule/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
+    'chat-capsule/webqq/storage/load'(): Promise<WebQQStoredState>
+    'chat-capsule/webqq/storage/save'(state: WebQQStoredState): Promise<void>
+    'chat-capsule/webqq/messages/cache/load'(query: WebQQMessageCacheQuery): Promise<WebQQMessage[]>
+    'chat-capsule/webqq/messages/cache/save'(payload: WebQQMessageCachePayload): Promise<void>
+  }
+}
+
+declare module 'koishi' {
+  interface Tables {
+    chat_capsule_webqq_storage: ChatCapsuleStorageRow
   }
 }
 
@@ -88,6 +103,15 @@ interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown
   addListener(event: string, callback: (...args: any[]) => unknown, options?: { authority?: number }): unknown
   broadcast(type: string, body: unknown, options?: { authority?: number }): unknown
+}
+
+interface ModelService {
+  extend(table: string, fields: Record<string, string>, options?: { primary?: string }): unknown
+}
+
+interface DatabaseService {
+  get(table: string, query: Record<string, unknown>): Promise<unknown[]>
+  upsert(table: string, rows: unknown[]): Promise<unknown>
 }
 
 interface DebugLogger {
@@ -139,7 +163,40 @@ interface WebQQSenderMetadata {
   senderTitle?: string
 }
 
+interface WebQQConversationSummary {
+  summary: string
+  time: number
+}
+
+interface WebQQStoredState {
+  conversationSummaries: Record<string, WebQQConversationSummary>
+  conversationUnreadCounts: Record<string, number>
+}
+
+interface WebQQMessageCacheQuery {
+  type: WebQQChatType
+  peerId: string
+}
+
+interface WebQQMessageCachePayload extends WebQQMessageCacheQuery {
+  messages: WebQQMessage[]
+}
+
+interface WebQQStoragePayload {
+  conversationSummaries?: Record<string, WebQQConversationSummary>
+  conversationUnreadCounts?: Record<string, number>
+  messages?: WebQQMessage[]
+}
+
+interface ChatCapsuleStorageRow {
+  id: string
+  payload: WebQQStoragePayload
+  updatedAt: Date
+}
+
 const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
+const chatCapsuleStorageTable = 'chat_capsule_webqq_storage'
+const webQQStateStorageId = 'state:webqq'
 
 function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
   return visibleUsageSources.has(usage.source || '')
@@ -149,6 +206,8 @@ function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
 export interface ChatCapsuleContext {
   console?: ConsoleService
   server?: WebQQImageServer
+  database?: DatabaseService
+  model?: ModelService
   chatluna_character?: ChatLunaCharacterService
   bots?: unknown[]
   logger?(name: string): DebugLogger
@@ -237,6 +296,103 @@ function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
   } catch {
     return undefined
   }
+}
+
+function createEmptyWebQQStoredState(): WebQQStoredState {
+  return {
+    conversationSummaries: {},
+    conversationUnreadCounts: {},
+  }
+}
+
+function readWebQQStoredState(value: unknown): WebQQStoredState {
+  const empty = createEmptyWebQQStoredState()
+  if (!isRecord(value)) return empty
+  return {
+    conversationSummaries: readWebQQStoredConversationSummaries(value.conversationSummaries),
+    conversationUnreadCounts: readWebQQStoredUnreadCounts(value.conversationUnreadCounts),
+  }
+}
+
+function readWebQQStoredConversationSummaries(value: unknown) {
+  const summaries: Record<string, WebQQConversationSummary> = {}
+  if (!isRecord(value)) return summaries
+  for (const [key, raw] of Object.entries(value)) {
+    if (!isRecord(raw)) continue
+    if (typeof raw.summary === 'string' && typeof raw.time === 'number') summaries[key] = {
+      summary: raw.summary,
+      time: raw.time,
+    }
+  }
+  return summaries
+}
+
+function readWebQQStoredUnreadCounts(value: unknown) {
+  const counts: Record<string, number> = {}
+  if (!isRecord(value)) return counts
+  for (const [key, count] of Object.entries(value)) {
+    if (typeof count === 'number' && count > 0) counts[key] = count
+  }
+  return counts
+}
+
+async function loadWebQQStorage(ctx: ChatCapsuleContext, config: Config): Promise<WebQQStoredState> {
+  if (config.webQQStorageBackend === 'koishi') return loadKoishiWebQQStorage(ctx)
+  return createEmptyWebQQStoredState()
+}
+
+async function saveWebQQStorage(ctx: ChatCapsuleContext, config: Config, state: WebQQStoredState): Promise<void> {
+  const normalized = readWebQQStoredState(state)
+  if (config.webQQStorageBackend === 'koishi') {
+    await saveKoishiWebQQStorage(ctx, normalized)
+    return
+  }
+}
+
+async function loadKoishiWebQQStorage(ctx: ChatCapsuleContext) {
+  const database = getWebQQDatabase(ctx)
+  const [row] = await database.get(chatCapsuleStorageTable, { id: webQQStateStorageId })
+  return readWebQQStoredState(isRecord(row) ? row.payload : undefined)
+}
+
+async function saveKoishiWebQQStorage(ctx: ChatCapsuleContext, state: WebQQStoredState) {
+  const database = getWebQQDatabase(ctx)
+  await database.upsert(chatCapsuleStorageTable, [{
+    id: webQQStateStorageId,
+    payload: state,
+    updatedAt: new Date(),
+  }])
+}
+
+function getWebQQDatabase(ctx: ChatCapsuleContext) {
+  if (!ctx.database) throw new Error('Koishi 数据库服务不可用')
+  return ctx.database
+}
+
+function getWebQQMessageStorageId(query: WebQQMessageCacheQuery) {
+  return `messages:${query.type}:${query.peerId}`
+}
+
+function readWebQQStoredMessages(value: unknown) {
+  if (!isRecord(value) || !Array.isArray(value.messages)) return []
+  return value.messages.filter(isRecord) as unknown as WebQQMessage[]
+}
+
+async function loadKoishiWebQQMessageCache(ctx: ChatCapsuleContext, config: Config, query: WebQQMessageCacheQuery) {
+  if (config.webQQStorageBackend !== 'koishi') return []
+  const database = getWebQQDatabase(ctx)
+  const [row] = await database.get(chatCapsuleStorageTable, { id: getWebQQMessageStorageId(query) })
+  return readWebQQStoredMessages(isRecord(row) ? row.payload : undefined)
+}
+
+async function saveKoishiWebQQMessageCache(ctx: ChatCapsuleContext, config: Config, payload: WebQQMessageCachePayload) {
+  if (config.webQQStorageBackend !== 'koishi') return
+  const database = getWebQQDatabase(ctx)
+  await database.upsert(chatCapsuleStorageTable, [{
+    id: getWebQQMessageStorageId(payload),
+    payload: { messages: payload.messages },
+    updatedAt: new Date(),
+  }])
 }
 
 function readCardMeta(payload: Record<string, unknown>) {
@@ -741,6 +897,15 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
   let currentThinkingStartedAt: number | undefined
+
+  ctx.model?.extend(chatCapsuleStorageTable, {
+    id: 'string(128)',
+    payload: 'object',
+    updatedAt: 'timestamp',
+  }, {
+    primary: 'id',
+  })
+
   const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
   const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
@@ -937,6 +1102,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
 
   ctx.inject({
     console: { required: true },
+    database: { required: false },
   }, (inner) => {
     const console = inner.console
     if (!console) return
@@ -957,6 +1123,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
         hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? false,
         showWebQQCapsuleUnread: config.showWebQQCapsuleUnread ?? true,
+        webQQStorageBackend: config.webQQStorageBackend ?? 'browser',
       }
     })
     console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
@@ -983,6 +1150,18 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         ...notice,
         status: action.approve ? 'approved' : 'rejected',
       })
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/storage/load', () => {
+      return loadWebQQStorage(inner, config)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/storage/save', (state: WebQQStoredState) => {
+      return saveWebQQStorage(inner, config, state)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/messages/cache/load', (query: WebQQMessageCacheQuery) => {
+      return loadKoishiWebQQMessageCache(inner, config, query)
+    }, consoleAuthOptions)
+    console.addListener('chat-capsule/webqq/messages/cache/save', (payload: WebQQMessageCachePayload) => {
+      return saveKoishiWebQQMessageCache(inner, config, payload)
     }, consoleAuthOptions)
   })
 

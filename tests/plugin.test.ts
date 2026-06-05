@@ -11,12 +11,13 @@ type TestLogger = {
   info: ReturnType<typeof vi.fn>
 }
 
-function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[]; server?: boolean } = {}) {
+function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[]; server?: boolean; database?: Record<string, unknown> } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
   const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined, _options?: { authority?: number }) => {})
   const addListener = vi.fn((_event: string, _listener: (...args: unknown[]) => unknown, _options?: { authority?: number }) => {})
   const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+  const modelExtend = vi.fn((_table: string, _fields: unknown, _options?: unknown) => {})
   const hasConsole = options.console ?? true
 
   const base: Pick<ChatCapsuleContext, 'on' | 'before'> = {
@@ -39,12 +40,13 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
       },
       ...(options.server ? { server: { get: serverGet } } : {}),
       ...(options.character ? { chatluna_character: options.character } : {}),
+      ...(options.database ? { database: options.database, model: { extend: modelExtend } } : {}),
       inject(services, callback) {
         if ('console' in services) callback(ctx)
         if ('chatluna_character' in services && options.character) callback(ctx)
       },
     }
-    return { ctx, listeners, addEntry, broadcast, addListener, serverGet }
+    return { ctx, listeners, addEntry, broadcast, addListener, serverGet, modelExtend }
   }
 
   const ctx: ChatCapsuleContext & { bots?: unknown[] } = {
@@ -52,12 +54,13 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
     ...(options.bots ? { bots: options.bots } : {}),
     ...(options.server ? { server: { get: serverGet } } : {}),
     ...(options.character ? { chatluna_character: options.character } : {}),
+    ...(options.database ? { database: options.database, model: { extend: modelExtend } } : {}),
     inject(services, callback) {
       if ('chatluna_character' in services && options.character) callback(ctx)
     },
   }
 
-  return { ctx, listeners, addEntry, broadcast, addListener, serverGet }
+  return { ctx, listeners, addEntry, broadcast, addListener, serverGet, modelExtend }
 }
 
 function createSession(overrides: Record<string, unknown> = {}) {
@@ -98,7 +101,7 @@ describe('chat capsule plugin wiring', () => {
   it('exports plugin name and optional console injection', () => {
     expect(plugin.name).toBe('chat-capsule')
     expect(plugin.inject).toEqual({
-      optional: ['console', 'server', 'chatluna', 'chatluna_character'],
+      optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
     })
   })
 
@@ -122,6 +125,14 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标')")
     expect(pluginSource).toContain("showWebQQCapsuleUnread?: boolean")
     expect(pluginSource).toContain("Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数')")
+    expect(pluginSource).toContain("webQQStorageBackend?: 'browser' | 'koishi'")
+    expect(pluginSource).toContain("Schema.const('browser').description('浏览器')")
+    expect(pluginSource).toContain("Schema.const('koishi').description('Koishi 数据库')")
+    expect(pluginSource).toContain(".default('browser')")
+    expect(pluginSource).toContain("description('WebQQ 状态存储后端')")
+    expect(pluginSource).not.toContain("Schema.const('s3')")
+    expect(pluginSource).not.toContain('webQQS3')
+    expect(pluginSource).not.toContain('@aws-sdk/client-s3')
   })
 
   it('registers a console entry with empty capsule data', () => {
@@ -145,6 +156,7 @@ describe('chat capsule plugin wiring', () => {
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: false,
       showWebQQCapsuleUnread: true,
+      webQQStorageBackend: 'browser',
     })
   })
 
@@ -168,6 +180,10 @@ describe('chat capsule plugin wiring', () => {
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/group-info', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notices', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notice-action', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/storage/load', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/storage/save', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages/cache/load', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages/cache/save', expect.any(Function), { authority: 1 })
     expect(addListener).not.toHaveBeenCalledWith('chat-capsule/webqq/send', expect.any(Function))
 
     const loadContacts = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/contacts')?.[1]
@@ -177,6 +193,77 @@ describe('chat capsule plugin wiring', () => {
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
     await expect(loadGroupInfo?.({ groupId: '20000' })).resolves.toEqual({ announcements: [], members: [] })
+  })
+
+  it('loads and saves WebQQ state and message cache through the Koishi database backend', async () => {
+    const storedState = {
+      conversationSummaries: {
+        'friend:10001': { summary: '你好', time: 1710000000000 },
+      },
+      conversationUnreadCounts: {
+        'friend:10001': 2,
+      },
+    }
+    const cachedMessages = [{
+      id: 'msg-1',
+      sequence: '100',
+      time: 1710000000000,
+      senderId: '10000',
+      senderName: 'Capsule Bot',
+      senderAvatar: 'https://example.com/avatar.png',
+      direction: 'outgoing',
+      summary: '这是答案',
+      thinking: {
+        content: '先分析',
+        durationMs: 2400,
+        usage: {
+          inputTokens: 12,
+          outputTokens: 34,
+        },
+      },
+      elements: [{ type: 'text', text: '这是答案' }],
+    }]
+    const database = {
+      get: vi.fn(async (_table: string, query: { id?: string }) => {
+        if (query.id === 'state:webqq') return [{ id: 'state:webqq', payload: storedState }]
+        if (query.id === 'messages:friend:10001') return [{ id: 'messages:friend:10001', payload: { messages: cachedMessages } }]
+        return []
+      }),
+      upsert: vi.fn(async () => {}),
+    }
+    const { ctx, addListener, modelExtend } = createFakeContext({ database })
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { webQQStorageBackend?: 'koishi' }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, { webQQStorageBackend: 'koishi' })
+
+    expect(modelExtend).toHaveBeenCalledWith('chat_capsule_webqq_storage', {
+      id: 'string(128)',
+      payload: 'object',
+      updatedAt: 'timestamp',
+    }, { primary: 'id' })
+
+    const loadStorage = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/storage/load')?.[1]
+    const saveStorage = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/storage/save')?.[1]
+    const loadMessageCache = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages/cache/load')?.[1]
+    const saveMessageCache = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages/cache/save')?.[1]
+    await expect(loadStorage?.()).resolves.toEqual(storedState)
+    await saveStorage?.(storedState)
+    await expect(loadMessageCache?.({ type: 'friend', peerId: '10001' })).resolves.toEqual(cachedMessages)
+    await saveMessageCache?.({ type: 'friend', peerId: '10001', messages: cachedMessages })
+
+    expect(database.get).toHaveBeenCalledWith('chat_capsule_webqq_storage', { id: 'state:webqq' })
+    expect(database.get).toHaveBeenCalledWith('chat_capsule_webqq_storage', { id: 'messages:friend:10001' })
+    expect(database.upsert).toHaveBeenCalledWith('chat_capsule_webqq_storage', [{
+      id: 'state:webqq',
+      payload: storedState,
+      updatedAt: expect.any(Date),
+    }])
+    expect(database.upsert).toHaveBeenCalledWith('chat_capsule_webqq_storage', [{
+      id: 'messages:friend:10001',
+      payload: { messages: cachedMessages },
+      updatedAt: expect.any(Date),
+    }])
   })
 
   it('exposes pending WebQQ friend requests and group notices through the console listener', async () => {
@@ -1170,6 +1257,7 @@ describe('chat capsule plugin wiring', () => {
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: false,
       showWebQQCapsuleUnread: true,
+      webQQStorageBackend: 'browser',
     })
   })
 
@@ -1182,6 +1270,7 @@ describe('chat capsule plugin wiring', () => {
       useBotAvatarThemeColor?: boolean
       hideWebQQGroupLevel?: boolean
       showWebQQCapsuleUnread?: boolean
+      webQQStorageBackend?: 'browser' | 'koishi'
     }) => void
     const applyWithConfig: ApplyWithConfig = plugin.apply
 
@@ -1192,6 +1281,7 @@ describe('chat capsule plugin wiring', () => {
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: true,
       showWebQQCapsuleUnread: false,
+      webQQStorageBackend: 'koishi',
     })
 
     const data = addEntry.mock.calls[0][1]
@@ -1204,6 +1294,7 @@ describe('chat capsule plugin wiring', () => {
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: true,
       showWebQQCapsuleUnread: false,
+      webQQStorageBackend: 'koishi',
     })
   })
 

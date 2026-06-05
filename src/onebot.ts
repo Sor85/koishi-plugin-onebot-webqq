@@ -163,12 +163,15 @@ interface OneBotContext {
 interface OneBotBot {
   platform?: string
   selfId?: string
+  status?: number
   internal: OneBotInternal
 }
 
 interface OneBotInternal extends Record<string, unknown> {
   _request?: (action: string, params: Record<string, unknown>) => Promise<unknown>
 }
+
+const oneBotOnlineStatus = 1
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
@@ -305,11 +308,15 @@ function supportsOneBotAction(bot: OneBotBot) {
     typeof bot.internal.set_group_add_request === 'function'
 }
 
+function isOneBotReady(bot: OneBotBot) {
+  return (typeof bot.status !== 'number' || bot.status === oneBotOnlineStatus) && supportsOneBotAction(bot)
+}
+
 function selectBot(ctx: OneBotContext, options: OneBotWebQQOptions) {
   const bots = getOneBotBots(ctx)
   const selected = options.selfId
-    ? bots.find((bot) => bot.selfId === options.selfId)
-    : bots.find(supportsOneBotAction)
+    ? bots.find((bot) => bot.selfId === options.selfId && isOneBotReady(bot))
+    : bots.find(isOneBotReady)
   if (!selected) throw new Error(options.selfId ? `未找到 selfId 为 ${options.selfId} 的 OneBot 机器人` : '未找到可用的 OneBot 机器人')
   return selected
 }
