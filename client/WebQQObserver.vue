@@ -452,8 +452,9 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { capsule, hideWebQQGroupLevel, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, webQQTotalUnread } from './state'
+import { capsule, hideWebQQGroupLevel, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
+import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from './webqq-message-cache'
 import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'
 
 type ChatSelection =
@@ -475,6 +476,8 @@ type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage[
 
 const props = defineProps<{ visible: boolean }>()
 const webQQStorageKey = 'chat-capsule:webqq:v1'
+const webQQContactsRetryLimit = 10
+const webQQContactsRetryDelayMs = 800
 const defaultWebQQForwardAvatar = 'https://q1.qlogo.cn/g?b=qq&nk=0&s=640'
 const webQQForwardPreviewLimit = 4
 
@@ -485,7 +488,7 @@ const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const conversationUnreadCounts = ref<Record<string, number>>({})
 const senderMetadataCache = ref<WebQQSenderMetadataCache>({})
-const stored = loadWebQQStoredState()
+const stored = loadBrowserWebQQStoredState()
 conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
@@ -533,11 +536,39 @@ function readStoredUnreadCounts(value: unknown) {
   return counts
 }
 
-function loadWebQQStoredState(): WebQQStoredState {
+function createEmptyWebQQStoredState(): WebQQStoredState {
+  return {
+    conversationSummaries: {},
+    conversationUnreadCounts: {},
+  }
+}
+
+function createWebQQStoredState(): WebQQStoredState {
+  return {
+    conversationSummaries: conversationSummaries.value,
+    conversationUnreadCounts: conversationUnreadCounts.value,
+  }
+}
+
+function applyWebQQStoredState(stored: WebQQStoredState) {
+  conversationSummaries.value = stored.conversationSummaries
+  conversationUnreadCounts.value = stored.conversationUnreadCounts
+}
+
+function normalizeWebQQStoredState(value: unknown): WebQQStoredState {
+  if (!value || typeof value !== 'object') return createEmptyWebQQStoredState()
+  return {
+    conversationSummaries: readStoredConversationSummaries(Reflect.get(value, 'conversationSummaries')),
+    conversationUnreadCounts: readStoredUnreadCounts(Reflect.get(value, 'conversationUnreadCounts')),
+  }
+}
+
+function loadBrowserWebQQStoredState(): WebQQStoredState {
   const empty = {
     conversationSummaries: {},
     conversationUnreadCounts: {},
   }
+  if (webQQStorageBackend.value !== 'browser') return empty
   if (typeof localStorage === 'undefined') return empty
   try {
     const raw = localStorage.getItem(webQQStorageKey)
@@ -554,13 +585,46 @@ function loadWebQQStoredState(): WebQQStoredState {
 }
 
 function persistWebQQState() {
+  if (webQQStorageBackend.value !== 'browser') {
+    send('chat-capsule/webqq/storage/save', createWebQQStoredState()).catch(() => {})
+    return
+  }
   if (typeof localStorage === 'undefined') return
   try {
-    localStorage.setItem(webQQStorageKey, JSON.stringify({
-      conversationSummaries: conversationSummaries.value,
-      conversationUnreadCounts: conversationUnreadCounts.value,
-    }))
+    localStorage.setItem(webQQStorageKey, JSON.stringify(createWebQQStoredState()))
   } catch {}
+}
+
+async function loadRemoteWebQQStoredState() {
+  if (webQQStorageBackend.value === 'browser') return
+  try {
+    const stored = normalizeWebQQStoredState(await send('chat-capsule/webqq/storage/load'))
+    applyWebQQStoredState(stored)
+  } catch {}
+}
+
+function normalizeCachedWebQQMessages(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return value.filter((message) => message && typeof message === 'object') as WebQQMessage[]
+}
+
+async function loadCachedWebQQMessages(type: ChatSelection['type'], peerId: string) {
+  if (webQQStorageBackend.value === 'koishi') {
+    try {
+      return normalizeCachedWebQQMessages(await send('chat-capsule/webqq/messages/cache/load', { type, peerId }))
+    } catch {
+      return []
+    }
+  }
+  return loadBrowserWebQQMessages(type, peerId)
+}
+
+async function saveCachedWebQQMessages(type: ChatSelection['type'], peerId: string, messages: WebQQMessage[]) {
+  if (webQQStorageBackend.value === 'koishi') {
+    await send('chat-capsule/webqq/messages/cache/save', { type, peerId, messages }).catch(() => {})
+    return
+  }
+  await saveBrowserWebQQMessages(type, peerId, messages)
 }
 
 function normalizeAccentColor(color: string) {
@@ -794,6 +858,16 @@ function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
 
+function mergeWebQQMessage(current: WebQQMessage | undefined, next: WebQQMessage) {
+  if (!current) return next
+  if (!next.thinking && !current.thinking) return { ...current, ...next }
+  return {
+    ...current,
+    ...next,
+    thinking: next.thinking || current.thinking,
+  }
+}
+
 function rememberMessageSenderMetadata(type: ChatSelection['type'], peerId: string, nextMessages: WebQQMessage[]) {
   senderMetadataCache.value = rememberWebQQSenderMetadata(senderMetadataCache.value, type, peerId, nextMessages)
 }
@@ -841,8 +915,12 @@ function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMess
   if (isSameOutgoingClusterMessage(message, visibleMessages.value[index + 1])) return
   for (let cursor = index; cursor >= 0; cursor--) {
     const candidate = visibleMessages.value[cursor]
+    if (!candidate) break
     if (!isSameOutgoingClusterMessage(message, candidate)) break
-    if (candidate.thinking?.content) return candidate as WebQQThinkingMessage
+    if (candidate.thinking?.content) return {
+      ...candidate,
+      thinking: candidate.thinking,
+    }
   }
 }
 
@@ -969,7 +1047,8 @@ function appendMessage(message: WebQQMessage) {
 function mergeMessages(currentMessages: WebQQMessage[], nextMessages: WebQQMessage[]) {
   const merged = new Map(currentMessages.map((item) => [getMessageKey(item), item]))
   for (const message of nextMessages) {
-    merged.set(getMessageKey(message), message)
+    const key = getMessageKey(message)
+    merged.set(key, mergeWebQQMessage(merged.get(key), message))
   }
   return [...merged.values()].sort((a, b) => a.time - b.time)
 }
@@ -1037,11 +1116,29 @@ function returnMessagesToBottom() {
   scrollMessagesToBottom('smooth')
 }
 
+function waitWebQQContactsRetry() {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, webQQContactsRetryDelayMs)
+  })
+}
+
+async function requestWebQQContacts() {
+  return await send('chat-capsule/webqq/contacts') as WebQQContacts || { friends: [], groups: [] }
+}
+
 async function loadContacts() {
   loading.value = true
   errorText.value = ''
   try {
-    contacts.value = await send('chat-capsule/webqq/contacts') as WebQQContacts || { friends: [], groups: [] }
+    for (let attempt = 1; attempt <= webQQContactsRetryLimit; attempt++) {
+      try {
+        contacts.value = await requestWebQQContacts()
+        return
+      } catch (error) {
+        if (attempt === webQQContactsRetryLimit) throw error
+        await waitWebQQContactsRetry()
+      }
+    }
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载联系人失败'
   } finally {
@@ -1102,12 +1199,16 @@ async function loadMessages() {
   loading.value = true
   errorText.value = ''
   try {
+    const cachedMessages = await loadCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId)
+    messages.value = cachedMessages
     messages.value = await send('chat-capsule/webqq/messages', {
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
     }) as WebQQMessage[] || []
+    messages.value = mergeMessages(cachedMessages, messages.value)
     rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)
     updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
+    await saveCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId, messages.value)
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
   } finally {
@@ -1141,6 +1242,7 @@ async function loadOlderMessages() {
     rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, olderMessages)
     messages.value = mergeMessages(olderMessages, messages.value)
     updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
+    await saveCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId, messages.value)
     historyExhausted.value = messages.value.length === previousCount
     await nextTick()
     if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
@@ -1277,6 +1379,11 @@ function getSenderAuthorityClass(message: WebQQMessage) {
   return 'is-title'
 }
 
+async function saveLiveWebQQMessage(payload: WebQQLiveMessage) {
+  const cachedMessages = await loadCachedWebQQMessages(payload.type, payload.peerId)
+  await saveCachedWebQQMessages(payload.type, payload.peerId, mergeMessages(cachedMessages, [payload.message]))
+}
+
 receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
   rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
   updateConversationSummary(payload.type, payload.peerId, payload.message)
@@ -1285,6 +1392,7 @@ receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
     currentChat.value.peerId !== payload.peerId
   ) {
     if (payload.message.direction === 'incoming') increaseUnreadCount(payload.type, payload.peerId)
+    saveLiveWebQQMessage(payload).catch(() => {})
     return
   }
   if (
@@ -1292,6 +1400,7 @@ receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
     (!props.visible || !trackingMessages.value)
   ) increaseUnreadCount(payload.type, payload.peerId)
   appendMessage(payload.message)
+  saveCachedWebQQMessages(payload.type, payload.peerId, messages.value).catch(() => {})
 })
 
 watch(() => props.visible, (visible) => {
@@ -1318,5 +1427,8 @@ watch(() => currentChat.value?.peerId, () => {
   if (groupInfoOpen.value) loadGroupInfo()
 })
 
-onMounted(loadContacts)
+onMounted(async () => {
+  await loadRemoteWebQQStoredState()
+  await loadContacts()
+})
 </script>

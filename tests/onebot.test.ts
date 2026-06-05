@@ -156,6 +156,43 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('skips connecting OneBot bots when loading contacts', async () => {
+    const connectingBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 2,
+      internal: {
+        get_friend_list: vi.fn(async () => [{
+          user_id: 30000,
+          nickname: 'Connecting Bot Friend',
+        }]),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const onlineBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => [{
+          user_id: 30001,
+          nickname: 'Online Bot Friend',
+        }]),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [connectingBot, onlineBot] })
+
+    await expect(service.loadContacts()).resolves.toMatchObject({
+      friends: [{
+        userId: '30001',
+        name: 'Online Bot Friend',
+      }],
+    })
+    expect(connectingBot.internal.get_friend_list).not.toHaveBeenCalled()
+    expect(onlineBot.internal.get_friend_list).toHaveBeenCalled()
+  })
+
   it('loads group info with announcements and members', async () => {
     const request = vi.fn(async (action: string) => {
       if (action === 'get_group_member_list') return [{
