@@ -46,6 +46,7 @@ export interface Config {
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
   hideWebQQGroupLevel?: boolean
+  showWebQQCapsuleUnread?: boolean
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -68,6 +69,7 @@ export const Config: Schema<Config> = Schema.object({
   webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
   useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
   hideWebQQGroupLevel: Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标'),
+  showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
 })
 
 declare module '@koishijs/console' {
@@ -954,6 +956,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
         useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
         hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? false,
+        showWebQQCapsuleUnread: config.showWebQQCapsuleUnread ?? true,
       }
     })
     console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)

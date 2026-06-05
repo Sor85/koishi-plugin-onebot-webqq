@@ -4,7 +4,7 @@
       <button
         class="chat-capsule__avatar-button"
         type="button"
-        aria-label="打开 WebQQ 观察窗"
+        :aria-label="capsuleButtonLabel"
         :aria-expanded="webqqOpen"
         @click="toggleWebQQ"
       >
@@ -12,6 +12,7 @@
           <img v-if="displayBotAvatar" :src="withProxy(displayBotAvatar)" :alt="displayBotName">
           <k-icon v-else name="robot" />
           <span :class="['chat-capsule__status', statusClass]"></span>
+          <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="chat-capsule__avatar-unread">{{ capsuleUnreadText }}</span>
         </span>
       </button>
       <Transition name="chat-capsule-avatar-guide">
@@ -35,20 +36,19 @@
         </div>
       </div>
     </div>
-    <WebQQObserver v-if="webqqMounted" v-show="webqqOpen" :visible="webqqOpen" />
+    <WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
-import { capsule } from './state'
+import { capsule, showWebQQCapsuleUnread, webQQTotalUnread } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
 const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'
 const webQQAvatarGuideStorageKey = 'chat-capsule:webqq-avatar-guide:v1'
 const webqqOpen = ref(false)
-const webqqMounted = ref(false)
 const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
@@ -58,6 +58,12 @@ const isLoggedIn = computed(() => !activities.login || ('user' in store && !!sto
 const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)
 const displayBotName = computed(() => capsule.value?.bot.name || cachedBotProfile.value.name || '空闲')
 const displayBotAvatar = computed(() => capsule.value?.bot.avatar || cachedBotProfile.value.avatar || '')
+const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))
+const capsuleButtonLabel = computed(() => {
+  return showWebQQCapsuleUnread.value && webQQTotalUnread.value
+    ? `打开 WebQQ 观察窗，${capsuleUnreadText.value} 条未读消息`
+    : '打开 WebQQ 观察窗'
+})
 const activityText = computed(() => capsule.value?.conversation.activityText || '')
 const isThinking = computed(() => activityText.value === '正在思考')
 const titleStatusText = computed(() => isThinking.value ? activityText.value : '')
@@ -81,6 +87,10 @@ const statusClass = computed(() => {
       return 'is-offline'
   }
 })
+
+function getCapsuleUnreadText(count: number) {
+  return count > 99999 ? '99999+' : String(count)
+}
 
 function loadCachedBotProfile() {
   if (typeof localStorage === 'undefined') return {}
@@ -149,7 +159,6 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
 function toggleWebQQ() {
   webqqOpen.value = !webqqOpen.value
   if (webqqOpen.value) {
-    webqqMounted.value = true
     rememberWebQQAvatarGuide()
     hideWebQQAvatarGuide()
   }

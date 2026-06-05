@@ -4,6 +4,24 @@ import { describe, expect, it } from 'vitest'
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
 const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
+function sourceBetween(source: string, start: string, end: string) {
+  const startIndex = source.indexOf(start)
+  if (startIndex < 0) return ''
+  const endIndex = source.indexOf(end, startIndex + start.length)
+  return endIndex < 0 ? source.slice(startIndex) : source.slice(startIndex, endIndex)
+}
+
+function runGetCapsuleUnreadText(count: number) {
+  const unreadTextSource = sourceBetween(
+    capsuleView,
+    'function getCapsuleUnreadText(count: number)',
+    'function loadCachedBotProfile',
+  )
+  const returnExpression = unreadTextSource.match(/return\s+([^\n]+)/)?.[1]
+  if (!returnExpression) throw new Error('getCapsuleUnreadText return expression not found')
+  return Function('count', `return ${returnExpression}`)(count)
+}
+
 describe('chat capsule view', () => {
   it('hides the capsule on the logger page', () => {
     expect(capsuleView).toContain("import { Universal, activities, router, store, withProxy } from '@koishijs/client'")
@@ -53,9 +71,9 @@ describe('chat capsule view', () => {
       capsuleView.includes('const webQQAvatarGuideVisible = ref(false)')
         ? ''
         : '缺少头像引导显示状态',
-      capsuleView.includes("import { capsule } from './state'")
+      /import \{[^}]*\bcapsule\b[^}]*\} from '\.\/state'/.test(capsuleView)
         ? ''
-        : '头像图形引导应只读取胶囊状态',
+        : '头像图形引导应读取胶囊共享状态',
       capsuleView.includes('webQQAvatarGuideStyle') || capsuleView.includes('webQQAvatarAccentColor')
         ? '头像图形引导不应读取 bot 头像主题色状态'
         : '',
@@ -126,16 +144,34 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('{{ displayBotName }}')
   })
 
+  it('renders total WebQQ unread count on the bot avatar when enabled', () => {
+    expect(capsuleView).toContain("import { capsule, showWebQQCapsuleUnread, webQQTotalUnread } from './state'")
+    expect(capsuleView).toContain('class="chat-capsule__avatar-unread"')
+    expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
+    expect(capsuleView).toContain('{{ capsuleUnreadText }}')
+    expect(capsuleView).toContain('const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))')
+  })
+
+  it('caps the capsule total unread badge at 99999+ only above 99999', () => {
+    expect([
+      runGetCapsuleUnreadText(9999),
+      runGetCapsuleUnreadText(99999),
+      runGetCapsuleUnreadText(100000),
+    ]).toEqual(['9999', '99999', '99999+'])
+  })
+
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQCapsuleUnread, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
+    expect(clientEntry).toContain('showWebQQCapsuleUnread?: boolean')
     expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
     expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'")
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false')
+    expect(clientEntry).toContain('showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true')
   })
 
   it('checks and caches bot avatar theme colors in the browser', () => {

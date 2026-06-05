@@ -22,6 +22,16 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule__avatar').match(/img\s*{[\s\S]*border-radius:\s*inherit/)).toBeTruthy()
   })
 
+  it('places the capsule total unread badge on the bot avatar corner', () => {
+    const unreadBody = ruleBody('.chat-capsule__avatar-unread')
+    expect(ruleBody('.chat-capsule__avatar')).toContain('position: relative')
+    expect(unreadBody).toContain('position: absolute')
+    expect(unreadBody).toContain('top: -5px')
+    expect(unreadBody).toContain('right: -10px')
+    expect(unreadBody).toContain('min-width: 18px')
+    expect(unreadBody).toContain('background: #ef4444')
+  })
+
   it('styles the WebQQ avatar guide as an elegant theme-colored halo', () => {
     const guideBody = ruleBody('.chat-capsule__avatar-guide')
     const ringBody = ruleBody('.chat-capsule__avatar-guide-ring')

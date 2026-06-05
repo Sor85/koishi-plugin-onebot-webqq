@@ -1,7 +1,7 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
 import Capsule from './Capsule.vue'
-import { capsule, debug, hideWebQQGroupLevel, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'
+import { capsule, debug, hideWebQQGroupLevel, showWebQQCapsuleUnread, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQTheme } from './state'
 import './style.scss'
 
 interface ClientData {
@@ -12,6 +12,7 @@ interface ClientData {
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
   hideWebQQGroupLevel?: boolean
+  showWebQQCapsuleUnread?: boolean
 }
 
 const webQQAvatarThemeStorageKey = 'chat-capsule:webqq-avatar-theme:v1'
@@ -113,6 +114,7 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'
   useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false
   hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false
+  showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true
   updateWebQQAvatarThemeColor(capsule.value)
 
   if (debug.value) {

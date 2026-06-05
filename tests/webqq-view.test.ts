@@ -30,14 +30,13 @@ describe('webqq observer view', () => {
     expect(capsuleView).toContain('import WebQQObserver from')
     expect(capsuleView).toContain('const webqqOpen = ref(false)')
     expect(capsuleView).toContain('@click="toggleWebQQ"')
-    expect(capsuleView).toContain('<WebQQObserver v-if="webqqMounted" v-show="webqqOpen" :visible="webqqOpen" />')
+    expect(capsuleView).toContain('<WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />')
   })
 
-  it('keeps WebQQ mounted after first open to preserve its last state', () => {
-    expect(capsuleView).toContain('const webqqMounted = ref(false)')
-    expect(capsuleView).toContain('function toggleWebQQ()')
-    expect(capsuleView).toContain('if (webqqOpen.value)')
-    expect(capsuleView).toContain('webqqMounted.value = true')
+  it('keeps WebQQ mounted while hidden so unread counts can update the capsule', () => {
+    expect(capsuleView).toContain('<WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />')
+    expect(capsuleView).not.toContain('v-if="webqqMounted"')
+    expect(capsuleView).not.toContain('const webqqMounted')
   })
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
@@ -472,6 +471,7 @@ describe('webqq observer view', () => {
 
   it('shows unread counts for conversations the user is not viewing', () => {
     expect(webqqView).toContain('conversationUnreadCounts')
+    expect(webqqView).toContain('webQQTotalUnread')
     expect(webqqView).toContain('class="chat-capsule-webqq__contact-avatar"')
     expect(webqqView).toContain('class="chat-capsule-webqq__contact-unread"')
     expect(webqqView).toContain('getUnreadCount(item.type, item.peerId)')
@@ -480,6 +480,14 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('!trackingMessages.value')
     expect(webqqView).toContain('increaseUnreadCount(payload.type, payload.peerId)')
     expect(webqqView).toContain('clearUnreadCount(currentChat.value.type, currentChat.value.peerId)')
+  })
+
+  it('shares the summed WebQQ unread count with the capsule state', () => {
+    expect(webqqView).toContain("import { capsule, hideWebQQGroupLevel, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, webQQTotalUnread } from './state'")
+    expect(webqqView).toContain('const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))')
+    expect(webqqView).toContain('watch(totalUnreadCount, (count) => {')
+    expect(webqqView).toContain('webQQTotalUnread.value = count')
+    expect(webqqView).toContain('{ immediate: true }')
   })
 
   it('caps WebQQ unread badge text at 9999+ only above 9999', () => {

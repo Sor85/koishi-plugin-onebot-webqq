@@ -452,7 +452,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { capsule, hideWebQQGroupLevel, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme } from './state'
+import { capsule, hideWebQQGroupLevel, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'
 
@@ -642,6 +642,7 @@ const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
 const currentSubtitle = computed(() => currentChat.value ? getChatSubtitle(currentChat.value) : '好友 / 群聊')
 const currentAvatar = computed(() => currentChat.value?.avatar || '')
+const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))
 const filteredNotices = computed(() => {
   return sortPendingNotices(notices.value.filter((notice) => {
     return noticeMenuTab.value === 'friends'
@@ -1298,6 +1299,10 @@ watch(() => props.visible, (visible) => {
   clearCurrentUnreadCount()
   if (trackingMessages.value) scrollMessagesToBottom()
 })
+
+watch(totalUnreadCount, (count) => {
+  webQQTotalUnread.value = count
+}, { immediate: true })
 
 watch(() => botThinkingMessage.value, (message) => {
   if (message && currentChat.value) rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, [message])

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, type WebQQGroupMember } from '../client/state'
+import { showWebQQCapsuleUnread, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQTheme, webQQTotalUnread, type WebQQGroupMember } from '../client/state'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -18,6 +18,8 @@ describe('webqq group members', () => {
     expect(webQQAccentColor.value).toBe('#2563eb')
     expect(webQQAvatarAccentColor.value).toBe('')
     expect(useBotAvatarThemeColor.value).toBe(false)
+    expect(showWebQQCapsuleUnread.value).toBe(true)
+    expect(webQQTotalUnread.value).toBe(0)
   })
 
   it('sorts owner first, then admins and members by A-Z display name', () => {
