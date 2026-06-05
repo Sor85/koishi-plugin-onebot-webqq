@@ -295,6 +295,20 @@
               </template>
             </template>
           </div>
+          <Transition name="webqq-scroll-bottom">
+            <button
+              v-if="!trackingMessages && visibleMessages.length"
+              class="chat-capsule-webqq__scroll-bottom"
+              type="button"
+              aria-label="返回底部"
+              @click="returnMessagesToBottom"
+            >
+              <svg class="chat-capsule-webqq__scroll-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14"></path>
+                <path d="m7 14 5 5 5-5"></path>
+              </svg>
+            </button>
+          </Transition>
         </div>
       </div>
       <aside v-if="groupInfoOpen && currentChat?.type === 'group'" class="chat-capsule-webqq__group-info">
@@ -481,6 +495,7 @@ const imagePreview = ref<HTMLElement>()
 const imagePreviewUrl = ref('')
 const forwardDialog = ref<WebQQMessageElement>()
 const trackingMessages = ref(true)
+const returningMessagesToBottom = ref(false)
 const expandedThinkingMessageIds = ref(new Set<string>())
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
@@ -965,7 +980,14 @@ function isMessagePaneAtBottom() {
 }
 
 function updateMessageTracking() {
-  trackingMessages.value = isMessagePaneAtBottom()
+  const atBottom = isMessagePaneAtBottom()
+  if (returningMessagesToBottom.value) {
+    trackingMessages.value = true
+    if (atBottom) returningMessagesToBottom.value = false
+    if (atBottom) clearCurrentUnreadCount()
+    return
+  }
+  trackingMessages.value = atBottom
   if (trackingMessages.value) clearCurrentUnreadCount()
   if (shouldLoadOlderMessages()) loadOlderMessages()
 }
@@ -998,11 +1020,20 @@ function closeImagePreview() {
   imagePreviewUrl.value = ''
 }
 
-async function scrollMessagesToBottom() {
+async function scrollMessagesToBottom(behavior: ScrollBehavior = 'auto') {
   await nextTick()
   const pane = messagePane.value
   if (!pane) return
-  pane.scrollTop = pane.scrollHeight
+  pane.scrollTo({
+    top: pane.scrollHeight,
+    behavior,
+  })
+}
+
+function returnMessagesToBottom() {
+  returningMessagesToBottom.value = true
+  trackingMessages.value = true
+  scrollMessagesToBottom('smooth')
 }
 
 async function loadContacts() {

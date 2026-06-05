@@ -51,6 +51,52 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__messages')).toContain('overflow-y: auto')
   })
 
+  it('styles the WebQQ return-to-bottom button as a clickable bottom overlay', () => {
+    const scrollBottomBody = ruleBody('.chat-capsule-webqq__scroll-bottom')
+    const missingRequirements = [
+      scrollBottomBody ? '' : '缺少 .chat-capsule-webqq__scroll-bottom 样式',
+      /position:\s*(absolute|fixed)\s*;/.test(scrollBottomBody)
+        ? ''
+        : '返回底部按钮没有固定或绝对定位',
+      /bottom:\s*[^;]+;/.test(scrollBottomBody) ? '' : '返回底部按钮没有定位到聊天主体底部附近',
+      scrollBottomBody.includes('cursor: pointer') ? '' : '返回底部按钮缺少可点击控件样式',
+      /display:\s*(inline-flex|flex)\s*;/.test(scrollBottomBody)
+        ? ''
+        : '返回底部按钮没有使用 flex 对齐按钮内容',
+      /z-index:\s*[^;]+;/.test(scrollBottomBody) ? '' : '返回底部按钮缺少覆盖在消息区域上的层级',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('animates the WebQQ return-to-bottom button without ignoring reduced motion', () => {
+    const transitionBody = ruleBody(`.webqq-scroll-bottom-enter-active,
+.webqq-scroll-bottom-leave-active`)
+    const hiddenBody = ruleBody(`.webqq-scroll-bottom-enter-from,
+.webqq-scroll-bottom-leave-to`)
+    const reducedMotionBody = ruleBody('@media (prefers-reduced-motion: reduce)')
+    const missingRequirements = [
+      transitionBody ? '' : '缺少返回底部按钮 enter/leave active 过渡样式',
+      transitionBody.includes('transition: opacity')
+        ? ''
+        : '返回底部按钮过渡没有包含 opacity',
+      transitionBody.includes('transform')
+        ? ''
+        : '返回底部按钮过渡没有包含 transform',
+      hiddenBody.includes('opacity: 0') ? '' : '返回底部按钮进入/离开状态没有淡入淡出',
+      /translateY\([^)]*px\)/.test(hiddenBody)
+        ? ''
+        : '返回底部按钮进入/离开状态没有纵向位移',
+      reducedMotionBody.includes('.webqq-scroll-bottom-enter-active')
+        && reducedMotionBody.includes('.webqq-scroll-bottom-leave-active')
+        && reducedMotionBody.includes('transition: none')
+        ? ''
+        : '返回底部按钮过渡没有在 prefers-reduced-motion 下关闭',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('sizes WebQQ message avatars beside bubbles', () => {
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('display: flex')
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')

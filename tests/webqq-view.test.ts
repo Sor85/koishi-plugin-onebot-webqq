@@ -495,8 +495,110 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('@scroll="updateMessageTracking"')
     expect(webqqView).toContain('const trackingMessages = ref(true)')
     expect(webqqView).toContain('function updateMessageTracking()')
-    expect(webqqView).toContain('function scrollMessagesToBottom()')
+    expect(webqqView).toContain('function scrollMessagesToBottom')
     expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
+  })
+
+  it('shows a WebQQ return-to-bottom button only when message tracking is paused', () => {
+    const scrollBottomButton = webqqView.match(/<button[\s\S]*?chat-capsule-webqq__scroll-bottom[\s\S]*?>/)?.[0] ?? ''
+    const missingRequirements = [
+      scrollBottomButton ? '' : '缺少返回底部按钮',
+      /v-if="!\s*trackingMessages\s*&&\s*visibleMessages\.length"/.test(scrollBottomButton)
+        ? ''
+        : '返回底部按钮没有只在 !trackingMessages && visibleMessages.length 时显示',
+      scrollBottomButton.includes('type="button"') ? '' : '返回底部按钮不是明确的 button 控件',
+      scrollBottomButton.includes('aria-label="返回底部"') ? '' : '返回底部按钮缺少 aria-label="返回底部"',
+      scrollBottomButton.includes('@click="returnMessagesToBottom"') ? '' : '返回底部按钮没有调用 returnMessagesToBottom',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('wraps the WebQQ return-to-bottom button in a named transition', () => {
+    const scrollBottomTransition = webqqView.match(/<Transition\s+name="webqq-scroll-bottom">[\s\S]*?<\/Transition>/)?.[0] ?? ''
+    const missingRequirements = [
+      scrollBottomTransition ? '' : '缺少返回底部按钮过渡容器',
+      scrollBottomTransition.includes('class="chat-capsule-webqq__scroll-bottom"')
+        ? ''
+        : '返回底部按钮没有放在过渡容器内',
+      /v-if="!\s*trackingMessages\s*&&\s*visibleMessages\.length"/.test(scrollBottomTransition)
+        ? ''
+        : '过渡容器内的返回底部按钮没有保留显示条件',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('returns WebQQ messages to the bottom by resuming tracking before scrolling', () => {
+    const returnMessagesToBottomSource = webqqView.match(/(?:async\s+)?function returnMessagesToBottom\(\)\s*{[\s\S]*?^}/m)?.[0] ?? ''
+    const missingRequirements = [
+      returnMessagesToBottomSource ? '' : '缺少 returnMessagesToBottom 函数',
+      returnMessagesToBottomSource.includes('trackingMessages.value = true')
+        ? ''
+        : 'returnMessagesToBottom 没有先恢复 trackingMessages',
+      returnMessagesToBottomSource.includes('returningMessagesToBottom.value = true')
+        ? ''
+        : 'returnMessagesToBottom 没有标记正在平滑返回底部',
+      /scrollMessagesToBottom\(['"]smooth['"]\)/.test(returnMessagesToBottomSource)
+        ? ''
+        : 'returnMessagesToBottom 没有以 smooth 行为复用 scrollMessagesToBottom',
+      returnMessagesToBottomSource.includes('loadOlderMessages')
+        ? 'returnMessagesToBottom 不应改动历史加载逻辑'
+        : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('keeps the WebQQ return-to-bottom button hidden while smooth scrolling back', () => {
+    const updateTrackingSource = sourceBetween(
+      webqqView,
+      'function updateMessageTracking()',
+      'function handleMessageImageLoad',
+    )
+    const missingRequirements = [
+      webqqView.includes('const returningMessagesToBottom = ref(false)')
+        ? ''
+        : '缺少返回底部中的状态标记',
+      updateTrackingSource.includes('const atBottom = isMessagePaneAtBottom()')
+        ? ''
+        : 'updateMessageTracking 没有复用单次 atBottom 判断',
+      updateTrackingSource.includes('if (returningMessagesToBottom.value)')
+        ? ''
+        : 'updateMessageTracking 没有识别正在返回底部的滚动过程',
+      updateTrackingSource.includes('trackingMessages.value = true')
+        ? ''
+        : '返回底部过程中 trackingMessages 没有保持为 true',
+      updateTrackingSource.includes('if (atBottom) returningMessagesToBottom.value = false')
+        ? ''
+        : '到达底部后没有清理返回底部状态标记',
+      updateTrackingSource.includes('trackingMessages.value = atBottom')
+        ? ''
+        : '非返回底部滚动没有继续按 atBottom 更新 trackingMessages',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('lets WebQQ bottom scrolling choose instant or smooth behavior', () => {
+    const scrollMessagesToBottomSource = webqqView.match(/async function scrollMessagesToBottom\([\s\S]*?^}/m)?.[0] ?? ''
+    const missingRequirements = [
+      scrollMessagesToBottomSource ? '' : '缺少 scrollMessagesToBottom 函数',
+      /behavior:\s*ScrollBehavior\s*=\s*['"]auto['"]/.test(scrollMessagesToBottomSource)
+        ? ''
+        : 'scrollMessagesToBottom 没有保留默认即时滚动',
+      scrollMessagesToBottomSource.includes('pane.scrollTo({')
+        ? ''
+        : 'scrollMessagesToBottom 没有使用支持 behavior 的 scrollTo',
+      scrollMessagesToBottomSource.includes('top: pane.scrollHeight')
+        ? ''
+        : 'scrollMessagesToBottom 没有滚动到消息底部',
+      scrollMessagesToBottomSource.includes('behavior,')
+        ? ''
+        : 'scrollMessagesToBottom 没有把 behavior 传给 scrollTo',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('scrolls to the latest message after the loading placeholder is hidden', () => {
