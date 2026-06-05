@@ -1085,6 +1085,71 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('renders live json card elements before broadcasting WebQQ updates', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'card-1',
+          elements: [{
+            type: 'json',
+            attrs: {
+              data: JSON.stringify({
+                meta: {
+                  music: {
+                    title: '春日影',
+                    desc: 'MyGO!!!!!',
+                    preview: 'https://example.com/cover.jpg',
+                    jumpUrl: 'https://example.com/song',
+                    tag: 'QQ音乐',
+                  },
+                },
+              }),
+            },
+          }],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'card-1',
+        summary: '春日影',
+        elements: [{
+          type: 'card',
+          title: '春日影',
+          text: 'MyGO!!!!!',
+          url: 'https://example.com/song',
+          imageUrl: 'https://example.com/cover.jpg',
+          source: 'QQ音乐',
+        }],
+      }),
+    }, { authority: 1 })
+  })
+
   it('passes enabled debug config to console entry data', () => {
     const { ctx, addEntry } = createFakeContext()
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { debug?: boolean }) => void

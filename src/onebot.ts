@@ -31,10 +31,12 @@ export interface WebQQForwardItem {
 
 // WebQQ 只读面板使用的消息片段。
 export interface WebQQMessageElement {
-  type: 'text' | 'image' | 'quote' | 'forward' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  type: 'text' | 'image' | 'quote' | 'forward' | 'card' | 'face' | 'file' | 'record' | 'video' | 'unknown'
   title?: string
   text?: string
   url?: string
+  imageUrl?: string
+  source?: string
   items?: WebQQForwardItem[]
 }
 
@@ -203,6 +205,51 @@ function getTextValue(value: unknown): string {
     if (text) return text
   }
   return ''
+}
+
+function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
+  if (isRecord(value)) return value
+  if (typeof value !== 'string') return
+  try {
+    const parsed = JSON.parse(value)
+    return isRecord(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function getCardMeta(payload: Record<string, unknown>) {
+  const meta = isRecord(payload.meta) ? payload.meta : undefined
+  if (!meta) return undefined
+  const view = getStringField(payload, ['view'])
+  if (view && isRecord(meta[view])) return meta[view]
+  return Object.values(meta).find(isRecord)
+}
+
+function normalizeCardElement(data: Record<string, unknown>): WebQQMessageElement {
+  const payload = parseJsonRecord(data.data) ||
+    parseJsonRecord(data.content) ||
+    parseJsonRecord(data.json) ||
+    parseJsonRecord(data)
+  const meta = payload ? getCardMeta(payload) : undefined
+  const card = meta ?? payload ?? data
+  const title = getStringField(card, ['title']) ||
+    (payload ? getStringField(payload, ['title', 'prompt']) : '') ||
+    '卡片消息'
+  const text = getStringField(card, ['desc', 'summary', 'content']) ||
+    (payload ? getStringField(payload, ['desc', 'prompt']) : '') ||
+    '[卡片消息]'
+  const url = getStringField(card, ['jumpUrl', 'jump_url', 'url', 'source_url'])
+  const imageUrl = getStringField(card, ['preview', 'image', 'imageUrl', 'image_url', 'picUrl', 'pic_url', 'icon', 'source_icon'])
+  const source = getStringField(card, ['tag', 'source', 'app'])
+  return {
+    type: 'card',
+    title,
+    text,
+    ...(url ? { url } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(source ? { source } : {}),
+  }
 }
 
 function normalizeGroupRole(role: string) {
@@ -549,6 +596,7 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
       return { type: 'forward', title: '合并转发', text: '[合并转发]' }
     }
   }
+  if (type === 'json' || type === 'lightapp' || type === 'xml') return normalizeCardElement(data)
   if (type === 'file') return { type: 'file', text: getStringField(data, ['name', 'file']) || '[文件]' }
   if (type === 'record') return { type: 'record', text: '[语音]' }
   if (type === 'video') return { type: 'video', text: '[视频]' }
@@ -567,6 +615,7 @@ function summarizeElements(elements: WebQQMessageElement[]) {
     if (element.type === 'image') return '[图片]'
     if (element.type === 'quote') return ''
     if (element.type === 'forward') return '[合并转发]'
+    if (element.type === 'card') return element.title && element.title !== '卡片消息' ? element.title : element.text || '[卡片消息]'
     if (element.type === 'face') return element.text || '[表情]'
     return element.text || '[消息]'
   }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()

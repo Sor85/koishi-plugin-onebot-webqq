@@ -54,10 +54,12 @@ export interface WebQQForwardItem {
 }
 
 export interface WebQQMessageElement {
-  type: 'text' | 'image' | 'quote' | 'forward' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  type: 'text' | 'image' | 'quote' | 'forward' | 'card' | 'face' | 'file' | 'record' | 'video' | 'unknown'
   title?: string
   text?: string
   url?: string
+  imageUrl?: string
+  source?: string
   items?: WebQQForwardItem[]
 }
 

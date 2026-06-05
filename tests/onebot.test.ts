@@ -610,6 +610,81 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('renders json card segments from history messages', async () => {
+    const cardPayload = JSON.stringify({
+      prompt: '[分享] 春日影',
+      meta: {
+        music: {
+          title: '春日影',
+          desc: 'MyGO!!!!!',
+          preview: 'https://example.com/cover.jpg',
+          jumpUrl: 'https://example.com/song',
+          tag: 'QQ音乐',
+        },
+      },
+    })
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 9,
+            message_seq: 19,
+            time: 1710000008,
+            sender: { user_id: 30000, nickname: 'Alice' },
+            message: [{ type: 'json', data: { data: cardPayload } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '春日影',
+        elements: [{
+          type: 'card',
+          title: '春日影',
+          text: 'MyGO!!!!!',
+          url: 'https://example.com/song',
+          imageUrl: 'https://example.com/cover.jpg',
+          source: 'QQ音乐',
+        }],
+      }),
+    ])
+  })
+
+  it('falls back xml card segments to a readable card message', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 10,
+            message_seq: 20,
+            time: 1710000009,
+            sender: { user_id: 30000, nickname: 'Alice' },
+            message: [{ type: 'xml', data: { data: '<msg serviceID="1" />' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '[卡片消息]',
+        elements: [{ type: 'card', title: '卡片消息', text: '[卡片消息]' }],
+      }),
+    ])
+  })
+
   it('adds LLBot history ordering parameter only for the LLBot protocol', async () => {
     const bot = {
       platform: 'onebot',

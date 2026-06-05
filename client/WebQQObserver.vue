@@ -227,6 +227,17 @@
                             <strong class="chat-capsule-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
                             <span>{{ run.element.text || '[合并转发]' }}</span>
                           </button>
+                          <div
+                            v-else-if="run.element.type === 'card'"
+                            class="chat-capsule-webqq__card"
+                          >
+                            <img v-if="run.element.imageUrl" class="chat-capsule-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
+                            <span class="chat-capsule-webqq__card-content">
+                              <strong class="chat-capsule-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
+                              <span v-if="run.element.text" class="chat-capsule-webqq__card-desc">{{ run.element.text }}</span>
+                              <span v-if="run.element.source" class="chat-capsule-webqq__card-source">{{ run.element.source }}</span>
+                            </span>
+                          </div>
                           <button v-else-if="run.element.type === 'image' && run.element.url" class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(run.element.url)">
                             <img :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
                           </button>
@@ -372,6 +383,17 @@
                       <strong class="chat-capsule-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
                       <span>{{ run.element.text || '[合并转发]' }}</span>
                     </button>
+                    <div
+                      v-else-if="run.element.type === 'card'"
+                      class="chat-capsule-webqq__card"
+                    >
+                      <img v-if="run.element.imageUrl" class="chat-capsule-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
+                      <span class="chat-capsule-webqq__card-content">
+                        <strong class="chat-capsule-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
+                        <span v-if="run.element.text" class="chat-capsule-webqq__card-desc">{{ run.element.text }}</span>
+                        <span v-if="run.element.source" class="chat-capsule-webqq__card-source">{{ run.element.source }}</span>
+                      </span>
+                    </div>
                     <button v-else-if="run.element.type === 'image' && run.element.url" class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(run.element.url)">
                       <img :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
                     </button>
@@ -812,7 +834,7 @@ function isImageOnlyMessage(message: WebQQMessage) {
 }
 
 function isInlineWebQQElement(element: WebQQMessageElement) {
-  return element.type !== 'quote' && element.type !== 'image' && element.type !== 'forward'
+  return element.type !== 'quote' && element.type !== 'image' && element.type !== 'forward' && element.type !== 'card'
 }
 
 function getWebQQElementRuns(elements: WebQQMessageElement[]) {

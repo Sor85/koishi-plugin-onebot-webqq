@@ -284,6 +284,17 @@ describe('chat capsule styles', () => {
     expect(style).not.toContain('chat-capsule-webqq__forward-page')
   })
 
+  it('styles WebQQ card message previews as compact block cards', () => {
+    expect(ruleBody('.chat-capsule-webqq__card')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__card')).toContain('border-radius: 8px')
+    expect(ruleBody('.chat-capsule-webqq__card')).toContain('text-decoration: none')
+    expect(ruleBody('.chat-capsule-webqq__card-cover')).toContain('width: 42px')
+    expect(ruleBody('.chat-capsule-webqq__card-cover')).toContain('object-fit: cover')
+    expect(ruleBody('.chat-capsule-webqq__card-title')).toContain('font-weight: 600')
+    expect(ruleBody('.chat-capsule-webqq__card-desc')).toContain('overflow-wrap: anywhere')
+    expect(ruleBody('.chat-capsule-webqq__card-source')).toContain('font-size: 11px')
+  })
+
   it('keeps the WebQQ thinking indicator compact with six-pixel dots', () => {
     expect(ruleBody('.chat-capsule-webqq__thinking-dots')).not.toContain('min-width: 58px')
     expect(ruleBody('.chat-capsule-webqq__thinking-dots')).toMatch(/(?:min-)?width:\s*4[24]px/)

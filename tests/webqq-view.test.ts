@@ -533,6 +533,33 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("element.type !== 'forward'")
   })
 
+  it('renders card message elements as block previews inside WebQQ bubbles', () => {
+    const backendMessageSource = sourceBetween(
+      onebotSource,
+      'export interface WebQQMessageElement {',
+      'export interface WebQQMessage {',
+    )
+    const clientMessageSource = sourceBetween(
+      clientState,
+      'export interface WebQQMessageElement {',
+      'export interface WebQQMessage {',
+    )
+
+    expect(backendMessageSource).toContain("'card'")
+    expect(clientMessageSource).toContain("'card'")
+    expect(backendMessageSource).toContain('imageUrl?:')
+    expect(clientMessageSource).toContain('imageUrl?:')
+    expect(backendMessageSource).toContain('source?:')
+    expect(clientMessageSource).toContain('source?:')
+    expect(webqqView).toContain("run.element.type === 'card'")
+    expect(webqqView).toContain('chat-capsule-webqq__card')
+    expect(webqqView).toContain("element.type !== 'card'")
+    expect(webqqView).not.toContain(`:is="run.element.url ? 'a' : 'div'"`)
+    expect(webqqView).not.toContain(':href="run.element.url || undefined"')
+    expect(webqqView).not.toContain(':target=')
+    expect(webqqView).not.toContain(':rel=')
+  })
+
   it('opens forward message elements in an LLBot-style modal using the current WebQQ message style', () => {
     expect(webqqView).toContain('const forwardDialog = ref<WebQQMessageElement>()')
     expect(webqqView).toContain('const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])')

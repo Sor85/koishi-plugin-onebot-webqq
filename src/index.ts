@@ -226,6 +226,51 @@ function readStructuredText(value: unknown): string {
   return ''
 }
 
+function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
+  if (isRecord(value)) return value
+  if (typeof value !== 'string') return
+  try {
+    const parsed = JSON.parse(value)
+    return isRecord(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function readCardMeta(payload: Record<string, unknown>) {
+  const meta = isRecord(payload.meta) ? payload.meta : undefined
+  if (!meta) return undefined
+  const view = readRecordText(payload, ['view'])
+  if (view && isRecord(meta[view])) return meta[view]
+  return Object.values(meta).find(isRecord)
+}
+
+function normalizeCardElement(attrs: Record<string, unknown>): WebQQMessageElement {
+  const payload = parseJsonRecord(attrs.data) ||
+    parseJsonRecord(attrs.content) ||
+    parseJsonRecord(attrs.json) ||
+    parseJsonRecord(attrs)
+  const meta = payload ? readCardMeta(payload) : undefined
+  const card = meta ?? payload ?? attrs
+  const title = readRecordText(card, ['title']) ||
+    (payload ? readRecordText(payload, ['title', 'prompt']) : '') ||
+    '卡片消息'
+  const text = readRecordText(card, ['desc', 'summary', 'content']) ||
+    (payload ? readRecordText(payload, ['desc', 'prompt']) : '') ||
+    '[卡片消息]'
+  const url = readRecordText(card, ['jumpUrl', 'jump_url', 'url', 'source_url'])
+  const imageUrl = readRecordText(card, ['preview', 'image', 'imageUrl', 'image_url', 'picUrl', 'pic_url', 'icon', 'source_icon'])
+  const source = readRecordText(card, ['tag', 'source', 'app'])
+  return {
+    type: 'card',
+    title,
+    text,
+    ...(url ? { url } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(source ? { source } : {}),
+  }
+}
+
 function isAssistantMessageSnapshot(value: unknown) {
   if (!isRecord(value)) return false
   const role = String(value.role ?? value.type ?? '').trim().toLowerCase()
@@ -482,6 +527,7 @@ async function normalizeLiveElement(
     }
     return { type: 'forward', title: '合并转发', text: '[合并转发]' }
   }
+  if (type === 'json' || type === 'lightapp' || type === 'xml') return normalizeCardElement(attrs)
   if (type === 'face') return { type: 'face', text: `[表情 ${readElementText(attrs.id)}]` }
   if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
   if (type === 'audio' || type === 'record') return { type: 'record', text: '[语音]' }
@@ -509,6 +555,7 @@ function summarizeWebQQElements(elements: WebQQMessageElement[]) {
     if (element.type === 'image') return '[图片]'
     if (element.type === 'quote') return ''
     if (element.type === 'forward') return '[合并转发]'
+    if (element.type === 'card') return element.title && element.title !== '卡片消息' ? element.title : element.text || '[卡片消息]'
     if (element.type === 'face') return element.text || '[表情]'
     return element.text || '[消息]'
   }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
