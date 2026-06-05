@@ -1019,6 +1019,72 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('reads live forward elements before broadcasting WebQQ updates', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_forward_msg: vi.fn(async () => ({
+          message: [{
+            type: 'node',
+            data: {
+              user_id: 30000,
+              nickname: 'Alice',
+              content: [{ type: 'text', data: { text: '第一条' } }],
+            },
+          }],
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'forward-1',
+          elements: [{ type: 'forward', attrs: { id: 'forward-detail-1' } }],
+        },
+      },
+    }))
+
+    expect(bot.internal.get_forward_msg).toHaveBeenCalledWith({
+      id: 'forward-detail-1',
+    })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'forward-1',
+        summary: '[合并转发]',
+        elements: [{
+          type: 'forward',
+          title: '合并转发',
+          text: 'Alice：第一条',
+          items: [{
+            title: 'Alice',
+            senderId: '30000',
+            senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+            elements: [{ type: 'text', text: '第一条' }],
+          }],
+        }],
+      }),
+    }, { authority: 1 })
+  })
+
   it('passes enabled debug config to console entry data', () => {
     const { ctx, addEntry } = createFakeContext()
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { debug?: boolean }) => void

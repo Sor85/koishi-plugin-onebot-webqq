@@ -263,6 +263,27 @@ describe('chat capsule styles', () => {
     }`)
   })
 
+  it('keeps WebQQ forward message previews readable across multiple lines', () => {
+    expect(ruleBody('.chat-capsule-webqq__forward span')).toContain('white-space: pre-line')
+  })
+
+  it('styles WebQQ forward message details as an LLBot-style centered modal', () => {
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('position: fixed')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('inset: 0')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-backdrop')).toContain('align-items: center')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal')).toContain('width: min(480px, calc(100vw - 32px))')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal')).toContain('max-height: min(80vh, 620px)')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).not.toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).not.toContain('flex-direction: column')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).not.toContain('align-items: flex-start')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal-body')).toContain('overflow-y: auto')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message')).toContain('max-width: 74%')
+    expect(ruleBody('.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message')).not.toContain('margin-bottom')
+    expect(style).not.toContain('.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message.is-merged')
+    expect(style).not.toContain('chat-capsule-webqq__forward-popover')
+    expect(style).not.toContain('chat-capsule-webqq__forward-page')
+  })
+
   it('keeps the WebQQ thinking indicator compact with six-pixel dots', () => {
     expect(ruleBody('.chat-capsule-webqq__thinking-dots')).not.toContain('min-width: 58px')
     expect(ruleBody('.chat-capsule-webqq__thinking-dots')).toMatch(/(?:min-)?width:\s*4[24]px/)

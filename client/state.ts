@@ -46,6 +46,21 @@ export interface WebQQGroup {
   avatar: string
 }
 
+export interface WebQQForwardItem {
+  title?: string
+  senderId?: string
+  senderAvatar?: string
+  elements: WebQQMessageElement[]
+}
+
+export interface WebQQMessageElement {
+  type: 'text' | 'image' | 'quote' | 'forward' | 'face' | 'file' | 'record' | 'video' | 'unknown'
+  title?: string
+  text?: string
+  url?: string
+  items?: WebQQForwardItem[]
+}
+
 export interface WebQQMessage {
   id: string
   sequence: string
@@ -66,12 +81,7 @@ export interface WebQQMessage {
       outputTokens: number
     }
   }
-  elements: {
-    type: 'text' | 'image' | 'quote' | 'face' | 'file' | 'record' | 'video' | 'unknown'
-    title?: string
-    text?: string
-    url?: string
-  }[]
+  elements: WebQQMessageElement[]
 }
 
 export interface WebQQLiveMessage {

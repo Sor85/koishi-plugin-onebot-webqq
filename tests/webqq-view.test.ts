@@ -315,7 +315,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('v-if="imagePreviewUrl"')
     expect(webqqView).toContain('ref="imagePreview"')
     expect(webqqView).toContain('class="chat-capsule-webqq__image-preview"')
-    expect(webqqView).toContain('@click.self="closeImagePreview"')
+    expect(webqqView).toContain('@click.stop.self="closeImagePreview"')
     expect(webqqView).toContain('@keydown.esc="closeImagePreview"')
     expect(webqqView).toContain(':src="imagePreviewUrl"')
     expect(webqqView).toContain('aria-label="关闭图片预览"')
@@ -494,6 +494,73 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('element.type === \'quote\'')
     expect(webqqView).toContain('chat-capsule-webqq__quote')
     expect(webqqView).toContain('chat-capsule-webqq__quote-title')
+  })
+
+  it('renders forward message elements as block previews inside WebQQ bubbles', () => {
+    const backendForwardItemSource = sourceBetween(
+      onebotSource,
+      'export interface WebQQForwardItem {',
+      'export interface WebQQMessageElement {',
+    )
+    const clientForwardItemSource = sourceBetween(
+      clientState,
+      'export interface WebQQForwardItem {',
+      'export interface WebQQMessageElement {',
+    )
+    const backendMessageSource = sourceBetween(
+      onebotSource,
+      'export interface WebQQMessageElement {',
+      'export interface WebQQMessage {',
+    )
+    const clientMessageSource = sourceBetween(
+      clientState,
+      'export interface WebQQMessageElement {',
+      'export interface WebQQMessage {',
+    )
+
+    expect(backendMessageSource).toContain("'forward'")
+    expect(clientMessageSource).toContain("'forward'")
+    expect(backendMessageSource).toContain('items?:')
+    expect(clientMessageSource).toContain('items?:')
+    expect(backendForwardItemSource).toContain('senderId?: string')
+    expect(backendForwardItemSource).toContain('senderAvatar?: string')
+    expect(clientForwardItemSource).toContain('senderId?: string')
+    expect(clientForwardItemSource).toContain('senderAvatar?: string')
+    expect(webqqView).toContain("run.element.type === 'forward'")
+    expect(webqqView).toContain('chat-capsule-webqq__forward')
+    expect(webqqView).toContain("run.element.title || '合并转发'")
+    expect(webqqView).toContain("run.element.text || '[合并转发]'")
+    expect(webqqView).toContain("element.type !== 'forward'")
+  })
+
+  it('opens forward message elements in an LLBot-style modal using the current WebQQ message style', () => {
+    expect(webqqView).toContain('const forwardDialog = ref<WebQQMessageElement>()')
+    expect(webqqView).toContain('const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])')
+    expect(webqqView).toContain('function openForwardDialog(element: WebQQMessageElement)')
+    expect(webqqView).toContain('function closeForwardDialog()')
+    expect(webqqView).toContain('@click.stop="openForwardDialog(run.element)"')
+    expect(webqqView).toContain(':disabled="!run.element.items?.length"')
+    expect(webqqView).toContain('v-if="forwardDialog"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__forward-modal-backdrop"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__forward-modal"')
+    expect(webqqView).toContain('@click.self="closeForwardDialog"')
+    expect(webqqView).toContain("{{ forwardDialog.title || '合并转发' }}")
+    expect(webqqView).toContain('v-for="(item, itemIndex) in forwardDialogItems"')
+    expect(webqqView).toContain(':class="[\'chat-capsule-webqq__message\', \'is-incoming\', getForwardItemClusterClass(itemIndex), { \'is-merged\': isMergedForwardItem(itemIndex) }]"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-avatar"')
+    expect(webqqView).toContain(':src="withProxy(getForwardItemAvatar(item))"')
+    expect(webqqView).toContain(':alt="getForwardItemName(item)"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-content"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-body"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__bubble"')
+    expect(webqqView).toContain('getWebQQElementRuns(item.elements)')
+    expect(webqqView).toContain('function getForwardItemName(item: WebQQForwardItem)')
+    expect(webqqView).toContain('function getForwardItemAvatar(item: WebQQForwardItem)')
+    expect(webqqView).toContain('function isMergedForwardItem(index: number)')
+    expect(webqqView).toContain('function getForwardItemClusterClass(index: number)')
+    expect(webqqView).toContain('@click="closeForwardDialog"')
+    expect(webqqView).not.toContain('chat-capsule-webqq__forward-popover')
+    expect(webqqView).not.toContain('chat-capsule-webqq__forward-page')
   })
 
   it('loads earlier WebQQ messages when scrolling to the top', () => {

@@ -540,6 +540,76 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('reads forward segments from history messages through get_forward_msg', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 8,
+            message_seq: 18,
+            time: 1710000007,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'forward', data: { id: 'forward-1' } }],
+          }],
+        })),
+        get_forward_msg: vi.fn(async () => ({
+          message: [{
+            type: 'node',
+            data: {
+              user_id: 30000,
+              nickname: 'Alice',
+              content: [{ type: 'text', data: { text: '第一条' } }],
+            },
+          }, {
+            type: 'node',
+            data: {
+              nickname: 'Bob',
+              content: [
+                { type: 'image', data: { url: 'https://example.com/forward.jpg' } },
+                { type: 'text', data: { text: '第二条' } },
+              ],
+            },
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '[合并转发]',
+        elements: [{
+          type: 'forward',
+          title: '合并转发',
+          text: 'Alice：第一条\nBob：[图片]第二条',
+          items: [{
+            title: 'Alice',
+            senderId: '30000',
+            senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+            elements: [{ type: 'text', text: '第一条' }],
+          }, {
+            title: 'Bob',
+            senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=0&s=640',
+            elements: [
+              { type: 'image', url: 'https://example.com/forward.jpg' },
+              { type: 'text', text: '第二条' },
+            ],
+          }],
+        }],
+      }),
+    ])
+    expect(bot.internal.get_forward_msg).toHaveBeenCalledWith({
+      id: 'forward-1',
+    })
+  })
+
   it('adds LLBot history ordering parameter only for the LLBot protocol', async () => {
     const bot = {
       platform: 'onebot',

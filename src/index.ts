@@ -342,6 +342,7 @@ type WebQQResolvedImage = {
 type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQResolvedImage>
 type WebQQImageUrlResolver = (file: string) => string
 type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
+type WebQQForwardResolver = (id: string) => Promise<WebQQMessageElement>
 
 function isRemoteImageSource(file: string) {
   return /^https?:\/\//.test(file)
@@ -411,7 +412,12 @@ function resolveConsoleSnapshot(snapshot: CapsuleSnapshot | undefined, imageUrlR
   }
 }
 
-async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement | undefined> {
+async function normalizeLiveElement(
+  raw: unknown,
+  resolveImage?: WebQQImageResolver,
+  resolveQuote?: WebQQQuoteResolver,
+  resolveForward?: WebQQForwardResolver,
+): Promise<WebQQMessageElement | undefined> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return undefined
   const type = readElementText(raw.type)
@@ -464,6 +470,18 @@ async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResol
       return { type: 'image' }
     }
   }
+  if (type === 'forward') {
+    const id = readElementText(attrs.id || attrs.messageId || attrs.message_id || attrs.resid)
+    if (!id) return { type: 'forward', title: '合并转发', text: '[合并转发]' }
+    if (resolveForward) {
+      try {
+        return await resolveForward(id)
+      } catch {
+        return { type: 'forward', title: '合并转发', text: '[合并转发]' }
+      }
+    }
+    return { type: 'forward', title: '合并转发', text: '[合并转发]' }
+  }
   if (type === 'face') return { type: 'face', text: `[表情 ${readElementText(attrs.id)}]` }
   if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
   if (type === 'audio' || type === 'record') return { type: 'record', text: '[语音]' }
@@ -471,9 +489,14 @@ async function normalizeLiveElement(raw: unknown, resolveImage?: WebQQImageResol
   return { type: 'unknown', text: '[消息]' }
 }
 
-async function normalizeLiveElements(session: Session, resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement[]> {
+async function normalizeLiveElements(
+  session: Session,
+  resolveImage?: WebQQImageResolver,
+  resolveQuote?: WebQQQuoteResolver,
+  resolveForward?: WebQQForwardResolver,
+): Promise<WebQQMessageElement[]> {
   const elements = (await Promise.all((session.elements ?? session.event.message?.elements ?? [])
-    .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote))))
+    .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote, resolveForward))))
     .filter((element): element is WebQQMessageElement => !!element)
   if (elements.length) return elements
   const content = session.content?.trim()
@@ -485,6 +508,7 @@ function summarizeWebQQElements(elements: WebQQMessageElement[]) {
     if (element.type === 'text') return element.text
     if (element.type === 'image') return '[图片]'
     if (element.type === 'quote') return ''
+    if (element.type === 'forward') return '[合并转发]'
     if (element.type === 'face') return element.text || '[表情]'
     return element.text || '[消息]'
   }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
@@ -596,13 +620,19 @@ function createWebQQGroupLeaveNotice(session: Session): WebQQNotice | undefined 
   }
 }
 
-async function createWebQQLiveMessage(session: Session, direction: WebQQMessage['direction'], resolveImage?: WebQQImageResolver, resolveQuote?: WebQQQuoteResolver): Promise<WebQQLiveMessage | undefined> {
+async function createWebQQLiveMessage(
+  session: Session,
+  direction: WebQQMessage['direction'],
+  resolveImage?: WebQQImageResolver,
+  resolveQuote?: WebQQQuoteResolver,
+  resolveForward?: WebQQForwardResolver,
+): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
   if (!peer) return
   if (!(session.elements ?? session.event.message?.elements)?.length && !session.content?.trim()) return
   const bot = readBotProfile(session)
-  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote)
+  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote, resolveForward)
   const senderId = direction === 'outgoing'
     ? bot.selfId
     : session.userId || session.event.user?.id || 'unknown'
@@ -729,6 +759,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         return image
       },
       async (id) => webqq.resolveQuote(id),
+      async (id) => webqq.resolveForward(id),
     )
     if (!payload) return
     payload = attachPendingWebQQThinking({
