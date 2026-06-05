@@ -14,6 +14,17 @@ function sourceBetween(source: string, start: string, end: string) {
   return endIndex < 0 ? source.slice(startIndex) : source.slice(startIndex, endIndex)
 }
 
+function runGetUnreadText(count: number) {
+  const unreadTextSource = sourceBetween(
+    webqqView,
+    'function getUnreadText(count: number)',
+    'function increaseUnreadCount',
+  )
+  const returnExpression = unreadTextSource.match(/return\s+([^\n]+)/)?.[1]
+  if (!returnExpression) throw new Error('getUnreadText return expression not found')
+  return Function('count', `return ${returnExpression}`)(count)
+}
+
 describe('webqq observer view', () => {
   it('opens a read-only WebQQ panel from the capsule avatar', () => {
     expect(capsuleView).toContain('import WebQQObserver from')
@@ -468,6 +479,15 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('!trackingMessages.value')
     expect(webqqView).toContain('increaseUnreadCount(payload.type, payload.peerId)')
     expect(webqqView).toContain('clearUnreadCount(currentChat.value.type, currentChat.value.peerId)')
+  })
+
+  it('caps WebQQ unread badge text at 9999+ only above 9999', () => {
+    expect([
+      runGetUnreadText(999),
+      runGetUnreadText(1000),
+      runGetUnreadText(9999),
+      runGetUnreadText(10000),
+    ]).toEqual(['999', '1000', '9999', '9999+'])
   })
 
   it('tracks new WebQQ messages only while the message pane is at the bottom', () => {

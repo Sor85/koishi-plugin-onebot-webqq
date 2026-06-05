@@ -748,7 +748,7 @@ function getUnreadCount(type: ChatSelection['type'], peerId: string) {
 }
 
 function getUnreadText(count: number) {
-  return count > 99 ? '99+' : String(count)
+  return count > 9999 ? '9999+' : String(count)
 }
 
 function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
