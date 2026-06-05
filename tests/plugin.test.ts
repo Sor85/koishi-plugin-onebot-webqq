@@ -237,7 +237,7 @@ describe('chat capsule plugin wiring', () => {
 
     applyWithConfig(ctx, { webQQStorageBackend: 'koishi' })
 
-    expect(modelExtend).toHaveBeenCalledWith('chat_capsule_webqq_storage', {
+    expect(modelExtend).toHaveBeenCalledWith('onebot_webqq_storage', {
       id: 'string(128)',
       payload: 'object',
       updatedAt: 'timestamp',
@@ -252,14 +252,14 @@ describe('chat capsule plugin wiring', () => {
     await expect(loadMessageCache?.({ type: 'friend', peerId: '10001' })).resolves.toEqual(cachedMessages)
     await saveMessageCache?.({ type: 'friend', peerId: '10001', messages: cachedMessages })
 
-    expect(database.get).toHaveBeenCalledWith('chat_capsule_webqq_storage', { id: 'state:webqq' })
-    expect(database.get).toHaveBeenCalledWith('chat_capsule_webqq_storage', { id: 'messages:friend:10001' })
-    expect(database.upsert).toHaveBeenCalledWith('chat_capsule_webqq_storage', [{
+    expect(database.get).toHaveBeenCalledWith('onebot_webqq_storage', { id: 'state:webqq' })
+    expect(database.get).toHaveBeenCalledWith('onebot_webqq_storage', { id: 'messages:friend:10001' })
+    expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [{
       id: 'state:webqq',
       payload: storedState,
       updatedAt: expect.any(Date),
     }])
-    expect(database.upsert).toHaveBeenCalledWith('chat_capsule_webqq_storage', [{
+    expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [{
       id: 'messages:friend:10001',
       payload: { messages: cachedMessages },
       updatedAt: expect.any(Date),

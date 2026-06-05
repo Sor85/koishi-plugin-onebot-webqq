@@ -95,7 +95,7 @@ declare module '@koishijs/console' {
 
 declare module 'koishi' {
   interface Tables {
-    chat_capsule_webqq_storage: ChatCapsuleStorageRow
+    onebot_webqq_storage: ChatCapsuleStorageRow
   }
 }
 
@@ -195,7 +195,7 @@ interface ChatCapsuleStorageRow {
 }
 
 const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
-const chatCapsuleStorageTable = 'chat_capsule_webqq_storage'
+const chatCapsuleStorageTable = 'onebot_webqq_storage'
 const webQQStateStorageId = 'state:webqq'
 
 function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
