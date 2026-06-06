@@ -478,6 +478,7 @@ import {
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
+import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
 import {
   formatListTime,
@@ -510,7 +511,6 @@ import {
   canHandleNotice,
   formatNoticeComment,
   getHandledNoticeStatusText,
-  sortPendingNotices,
 } from './utils/webqq-notice-view'
 import {
   createFriendChatSelection,
@@ -555,19 +555,38 @@ const stored = loadBrowserWebQQStoredState(webQQStorageBackend.value)
 conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
-const notices = ref<WebQQNotice[]>([])
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const forwardDialog = ref<WebQQMessageElement>()
 const expandedThinkingMessageIds = ref(new Set<string>())
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
-const noticeOpen = ref(false)
-const noticeMenuTab = ref<'friends' | 'groups'>('friends')
-const noticeLoading = ref(false)
-const handlingNoticeId = ref('')
 const loading = ref(false)
-const noticeErrorText = ref('')
 const errorText = ref('')
+
+async function requestNotices() {
+  return await send('chat-capsule/webqq/notices') as WebQQNotice[] || []
+}
+
+async function approveNotice(notice: WebQQNotice, approve: boolean) {
+  await send('chat-capsule/webqq/notice-action', {
+    id: notice.id,
+    type: notice.type,
+    flag: notice.flag,
+    subType: notice.subType,
+    approve,
+  })
+}
+
+const {
+  noticeOpen,
+  noticeMenuTab,
+  noticeLoading,
+  handlingNoticeId,
+  noticeErrorText,
+  filteredNotices,
+  openNotices,
+  handleNotice,
+} = useWebQQNotices({ requestNotices, approveNotice })
 
 async function requestGroupInfo() {
   if (currentChat.value?.type !== 'group') return { announcements: [], members: [] }
@@ -632,13 +651,6 @@ const currentTitle = computed(() => getCurrentChatTitle(currentChat.value))
 const currentSubtitle = computed(() => getCurrentChatSubtitle(currentChat.value, contacts.value))
 const currentAvatar = computed(() => getCurrentChatAvatar(currentChat.value))
 const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))
-const filteredNotices = computed(() => {
-  return sortPendingNotices(notices.value.filter((notice) => {
-    return noticeMenuTab.value === 'friends'
-      ? notice.type === 'friend-request'
-      : notice.type === 'group-notice'
-  }))
-})
 const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(capsule.value, currentChat.value, messages.value))
 const visibleMessages = computed(() => {
   const cachedMessages = messages.value.map(applyMessageSenderMetadata)
@@ -794,23 +806,6 @@ async function loadContacts() {
   }
 }
 
-async function loadNotices() {
-  noticeLoading.value = true
-  noticeErrorText.value = ''
-  try {
-    notices.value = await send('chat-capsule/webqq/notices') as WebQQNotice[] || []
-  } catch (error) {
-    noticeErrorText.value = error instanceof Error ? error.message : '加载通知失败'
-  } finally {
-    noticeLoading.value = false
-  }
-}
-
-function openNotices() {
-  noticeOpen.value = !noticeOpen.value
-  if (noticeOpen.value) loadNotices()
-}
-
 function closeNoticeMenu() {
   noticeOpen.value = false
   closeForwardDialog()
@@ -898,26 +893,6 @@ function selectRecent(item: RecentItem) {
   currentChat.value = createRecentChatSelection(item)
   clearCurrentUnreadCount()
   loadMessages()
-}
-
-async function handleNotice(notice: WebQQNotice, approve: boolean) {
-  if (!notice.flag) return
-  handlingNoticeId.value = notice.id
-  noticeErrorText.value = ''
-  try {
-    await send('chat-capsule/webqq/notice-action', {
-      id: notice.id,
-      type: notice.type,
-      flag: notice.flag,
-      subType: notice.subType,
-      approve,
-    })
-    await loadNotices()
-  } catch (error) {
-    noticeErrorText.value = error instanceof Error ? error.message : '处理通知失败'
-  } finally {
-    handlingNoticeId.value = ''
-  }
 }
 
 async function saveLiveWebQQMessage(payload: WebQQLiveMessage) {

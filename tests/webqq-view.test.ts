@@ -5,6 +5,7 @@ import type { CapsuleData, WebQQMessage } from '../client/state'
 import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
 import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
+import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
@@ -21,6 +22,7 @@ const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
+const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts', import.meta.url), 'utf8')
@@ -518,8 +520,12 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("@click=\"noticeMenuTab = 'friends'\"")
     expect(webqqView).toContain("@click=\"noticeMenuTab = 'groups'\"")
     expect(webqqNoticeView).toContain('function sortPendingNotices(items: WebQQNotice[])')
+    expect(webqqView).toContain('useWebQQNotices({ requestNotices, approveNotice })')
     expect(webqqView).toContain("send('chat-capsule/webqq/notices')")
     expect(webqqView).toContain("send('chat-capsule/webqq/notice-action'")
+    expect(webqqNoticesStore).toContain('requestNotices: () => Promise<WebQQNotice[]>')
+    expect(webqqNoticesStore).toContain('approveNotice: (notice: WebQQNotice, approve: boolean) => Promise<void>')
+    expect(webqqNoticesStore).toContain('const filteredNotices = computed')
     expect(webqqView).toContain('v-for="notice in filteredNotices"')
     expect(webqqView).toContain('chat-capsule-webqq__notice-card')
     expect(webqqView).toContain(':src="withProxy(notice.avatar)"')
@@ -542,6 +548,52 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain("return timestamp ? formatListTime(timestamp) : '未知'")
     expect(webqqView).not.toContain('<small class="chat-capsule-webqq__notice-time"')
     expect(webqqView).not.toContain('<div v-if="noticeOpen" class="chat-capsule-webqq__chat-title">')
+  })
+
+  it('keeps WebQQ notification menu state inside a composable', async () => {
+    const events: string[] = []
+    const notices = useWebQQNotices({
+      requestNotices: async () => {
+        events.push('load')
+        return [
+          {
+            id: 'friend:1',
+            type: 'friend-request',
+            title: '好友申请',
+            subtitle: 'Alice',
+            avatar: '',
+            status: 'pending',
+            time: 2,
+            flag: 'friend-flag',
+          },
+          {
+            id: 'group:1',
+            type: 'group-notice',
+            title: '群通知',
+            subtitle: 'Bob',
+            avatar: '',
+            status: 'approved',
+            time: 1,
+          },
+        ]
+      },
+      approveNotice: async (notice, approve) => {
+        events.push(`${notice.id}:${approve}`)
+      },
+    })
+
+    expect(notices.noticeOpen.value).toBe(false)
+    notices.openNotices()
+    await Promise.resolve()
+    expect(notices.noticeOpen.value).toBe(true)
+    expect(events).toEqual(['load'])
+    expect(notices.filteredNotices.value.map((notice) => notice.id)).toEqual(['friend:1'])
+
+    notices.noticeMenuTab.value = 'groups'
+    expect(notices.filteredNotices.value.map((notice) => notice.id)).toEqual(['group:1'])
+
+    await notices.handleNotice(notices.notices.value[0], true)
+    expect(events).toEqual(['load', 'friend:1:true', 'load'])
   })
 
   it('closes the WebQQ notification dropdown when clicking elsewhere in the panel', () => {
