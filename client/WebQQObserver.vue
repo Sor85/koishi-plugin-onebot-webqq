@@ -34,38 +34,17 @@
               <path d="M19 16H5c1.4-1.4 2-3.2 2-5.5a5 5 0 0 1 10 0c0 2.3.6 4.1 2 5.5Z"></path>
             </svg>
           </button>
-          <div v-if="noticeOpen" class="chat-capsule-webqq__notice-menu">
-            <div class="chat-capsule-webqq__notice-tabs">
-              <button :class="{ 'is-active': noticeMenuTab === 'friends' }" type="button" @click="noticeMenuTab = 'friends'">好友申请</button>
-              <button :class="{ 'is-active': noticeMenuTab === 'groups' }" type="button" @click="noticeMenuTab = 'groups'">群通知</button>
-            </div>
-            <div class="chat-capsule-webqq__notice-menu-body">
-              <div v-if="noticeLoading" class="chat-capsule-webqq__notice-empty">加载中</div>
-              <div v-else-if="noticeErrorText" class="chat-capsule-webqq__notice-empty is-error">{{ noticeErrorText }}</div>
-              <div v-else-if="!filteredNotices.length" class="chat-capsule-webqq__notice-empty">暂无通知</div>
-              <div v-else class="chat-capsule-webqq__notices">
-                <article v-for="notice in filteredNotices" :key="notice.id" class="chat-capsule-webqq__notice-card">
-                  <img v-if="notice.avatar" class="chat-capsule-webqq__notice-avatar" :src="withProxy(notice.avatar)" :alt="notice.title">
-                  <span v-else class="chat-capsule-webqq__notice-avatar"></span>
-                  <div class="chat-capsule-webqq__notice-main">
-                    <strong class="chat-capsule-webqq__notice-title">{{ notice.title }}</strong>
-                    <span>{{ notice.subtitle }}</span>
-                    <template v-if="notice.comment">
-                      <small v-for="line in formatNoticeComment(notice.comment)" :key="line" class="chat-capsule-webqq__notice-comment">{{ line }}</small>
-                    </template>
-                  </div>
-                  <div class="chat-capsule-webqq__notice-side">
-                    <span v-if="canHandleNotice(notice)" class="chat-capsule-webqq__notice-actions">
-                      <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, true)">同意</button>
-                      <button type="button" :disabled="handlingNoticeId === notice.id" @click="handleNotice(notice, false)">拒绝</button>
-                    </span>
-                    <span v-else-if="getHandledNoticeStatusText(notice)" :class="['chat-capsule-webqq__notice-result', `is-${notice.status}`]">{{ getHandledNoticeStatusText(notice) }}</span>
-                    <time v-if="notice.time" class="chat-capsule-webqq__notice-time">{{ formatNoticeTime(notice.time) }}</time>
-                  </div>
-                </article>
-              </div>
-            </div>
-          </div>
+          <WebQQNoticeMenu
+            v-if="noticeOpen"
+            v-model:tab="noticeMenuTab"
+            :loading="noticeLoading"
+            :error-text="noticeErrorText"
+            :notices="filteredNotices"
+            :handling-notice-id="handlingNoticeId"
+            :with-proxy="withProxy"
+            :format-notice-time="formatNoticeTime"
+            @handle="handleNotice"
+          />
         </span>
       </div>
       <div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">
@@ -437,6 +416,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import WebQQGroupInfoPanel from './WebQQGroupInfoPanel.vue'
+import WebQQNoticeMenu from './WebQQNoticeMenu.vue'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
@@ -468,11 +448,6 @@ import {
   mergeMessages,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
-import {
-  canHandleNotice,
-  formatNoticeComment,
-  getHandledNoticeStatusText,
-} from './utils/webqq-notice-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq-theme-view'
 

@@ -59,6 +59,8 @@
 - `client/utils/webqq-notice-view.ts`：WebQQ 通知展示纯函数，负责通知排序、申请备注拆行、已处理状态文案和可处理状态判断
 - `client/utils/webqq-theme-view.ts`：WebQQ 主题色展示纯函数，负责 accent 颜色校验、头像主题色优先级和 CSS 变量对象生成
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
+- `client/WebQQGroupInfoPanel.vue`：WebQQ 群信息面板展示组件
+- `client/WebQQNoticeMenu.vue`：WebQQ 好友申请和群通知菜单展示组件
 - `client/WebQQObserver.vue`：WebQQ 主界面，当前包含联系人、聊天记录、通知、群信息、缓存、滚动、图片预览和面板编排
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
 - `client/webqq-sender-metadata.ts`：前端群成员身份缓存补齐
@@ -92,7 +94,7 @@
 - `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
-- `client/components/`：后续拆出的 Vue 展示组件
+- `client/*.vue`：前端入口和 WebQQ 展示组件，状态与请求编排继续留在 stores 或主界面组件
 - `client/stores/`：后续拆出的前端响应式状态或 composable
 - `client/utils/`：前端纯函数和浏览器小工具
 - `client/types.ts`：后续如果前端类型继续增长，再从 `client/state.ts` 拆出
