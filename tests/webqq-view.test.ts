@@ -24,6 +24,7 @@ const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot-types.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
+const webqqContactList = await readFile(new URL('../client/WebQQContactList.vue', import.meta.url), 'utf8')
 const webqqForwardModal = await readFile(new URL('../client/WebQQForwardModal.vue', import.meta.url), 'utf8')
 const webqqGroupInfoPanel = await readFile(new URL('../client/WebQQGroupInfoPanel.vue', import.meta.url), 'utf8')
 const webqqImagePreviewView = await readFile(new URL('../client/WebQQImagePreview.vue', import.meta.url), 'utf8')
@@ -557,11 +558,12 @@ describe('webqq observer view', () => {
   })
 
   it('renders WebQQ friends under backend categories', () => {
-    expect(webqqView).toContain('visibleFriendCategories')
-    expect(webqqView).toContain('v-for="category in visibleFriendCategories"')
-    expect(webqqView).toContain('class="chat-capsule-webqq__friend-category"')
-    expect(webqqView).toContain('class="chat-capsule-webqq__friend-category-title"')
-    expect(webqqView).toContain('v-for="friend in category.friends"')
+    expect(webqqView).toContain('<WebQQContactList')
+    expect(webqqView).toContain(':visible-friend-categories="visibleFriendCategories"')
+    expect(webqqContactList).toContain('v-for="category in visibleFriendCategories"')
+    expect(webqqContactList).toContain('class="chat-capsule-webqq__friend-category"')
+    expect(webqqContactList).toContain('class="chat-capsule-webqq__friend-category-title"')
+    expect(webqqContactList).toContain('v-for="friend in category.friends"')
   })
 
   it('opens a WebQQ notification dropdown menu from the bell button', () => {
@@ -980,10 +982,13 @@ describe('webqq observer view', () => {
   })
 
   it('shows latest message summary and time in the WebQQ contact list', () => {
-    expect(webqqView).toContain('getContactSubtitle')
-    expect(webqqView).toContain('getContactTime')
-    expect(webqqView).toContain('formatListTime')
-    expect(webqqView).toContain('chat-capsule-webqq__contact-time')
+    expect(webqqView).toContain(':get-contact-subtitle="getContactSubtitle"')
+    expect(webqqView).toContain(':get-contact-time="getContactTime"')
+    expect(webqqView).toContain(':format-list-time="formatListTime"')
+    expect(webqqContactList).toContain('getContactSubtitle')
+    expect(webqqContactList).toContain('getContactTime')
+    expect(webqqContactList).toContain('formatListTime')
+    expect(webqqContactList).toContain('chat-capsule-webqq__contact-time')
     expect(webqqStateStore).toContain('function setConversationSummary')
     expect(webqqConversationStateStore).toContain('setConversationSummary(conversationSummaries.value, type, peerId, message)')
   })
@@ -991,10 +996,10 @@ describe('webqq observer view', () => {
   it('shows unread counts for conversations the user is not viewing', () => {
     expect(webqqConversationStateStore).toContain('conversationUnreadCounts')
     expect(webqqView).toContain('webQQTotalUnread')
-    expect(webqqView).toContain('class="chat-capsule-webqq__contact-avatar"')
-    expect(webqqView).toContain('class="chat-capsule-webqq__contact-unread"')
-    expect(webqqView).toContain('getUnreadCount(item.type, item.peerId)')
-    expect(webqqView).toContain('getUnreadText')
+    expect(webqqContactList).toContain('class="chat-capsule-webqq__contact-avatar"')
+    expect(webqqContactList).toContain('class="chat-capsule-webqq__contact-unread"')
+    expect(webqqContactList).toContain('getUnreadCount(item.type, item.peerId)')
+    expect(webqqContactList).toContain('getUnreadText')
     expect(webqqView).toContain("payload.message.direction === 'incoming'")
     expect(webqqView).toContain('!trackingMessages.value')
     expect(webqqView).toContain('increaseUnreadCount(payload.type, payload.peerId)')
@@ -1370,7 +1375,7 @@ describe('webqq observer view', () => {
 
     const sidebarIndex = webqqView.indexOf('class="chat-capsule-webqq__sidebar"')
     const tabsIndex = webqqView.indexOf('class="chat-capsule-webqq__tabs-row"')
-    const listIndex = webqqView.indexOf('class="chat-capsule-webqq__list"')
+    const listIndex = webqqView.indexOf('<WebQQContactList')
 
     expect(tabsIndex).toBeGreaterThan(sidebarIndex)
     expect(tabsIndex).toBeLessThan(listIndex)
