@@ -16,6 +16,7 @@
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知、图片、引用和合并转发的读取与标准化
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换 helper
+- `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取 helper
 - `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
 - `src/chatluna-message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
 - `src/structured-text.ts`：通用结构化文本读取 helper，用于从 LangChain 消息、Koishi 元素和对象字段中提取文本
@@ -59,6 +60,7 @@
 - `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换
+- `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
 - `src/webqq-event-notices.ts`：后端 WebQQ session 事件通知 payload 构造
 - `src/webqq-group-sender-metadata.ts`：后端 WebQQ 群成员身份 metadata 查询
