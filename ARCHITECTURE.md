@@ -22,6 +22,7 @@
 - `src/webqq-event-notices.ts`：WebQQ 事件通知构造 helper，负责把 Koishi 好友申请和群成员退出事件转换为 WebQQNotice
 - `src/webqq-group-sender-metadata.ts`：WebQQ 群成员身份 metadata 查询 helper，负责 OneBot 群成员信息 action 调用和返回值整理
 - `src/webqq-image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/chat-capsule/webqq/image/:id` 代理路由并生成缓存 URL
+- `src/webqq-live-cache.ts`：WebQQ live 消息缓存纯 helper，负责会话 key、消息去重合并、排序和 limit 裁剪
 - `src/webqq-live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
 - `src/webqq-live-message.ts`：WebQQ live message payload 构造 helper，负责把 Koishi session 和标准化元素组装为 WebQQ live 消息
 - `src/webqq-sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
@@ -58,6 +59,7 @@
 - `src/webqq-event-notices.ts`：后端 WebQQ session 事件通知 payload 构造
 - `src/webqq-group-sender-metadata.ts`：后端 WebQQ 群成员身份 metadata 查询
 - `src/webqq-image-url-resolver.ts`：后端 WebQQ 图片代理 URL 注册和解析
+- `src/webqq-live-cache.ts`：后端 WebQQ live 消息缓存 key 和合并纯 helper
 - `src/webqq-live-message.ts`：后端 WebQQ live 消息 payload 构造
 - `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
 - `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper

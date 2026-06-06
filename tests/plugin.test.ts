@@ -26,10 +26,15 @@ import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
 } from '../src/webqq-event-notices'
+import {
+  getWebQQLiveMessageKey,
+  mergeWebQQLiveMessages,
+} from '../src/webqq-live-cache'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
+const webqqLiveCacheSource = await readFile(new URL('../src/webqq-live-cache.ts', import.meta.url), 'utf8')
 const webqqLiveMessageSource = await readFile(new URL('../src/webqq-live-message.ts', import.meta.url), 'utf8')
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq-image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-metadata.ts', import.meta.url), 'utf8')
@@ -345,6 +350,44 @@ describe('chat capsule plugin wiring', () => {
       requesterName: 'Alice',
       subType: 'leave',
     })
+  })
+
+  it('keeps WebQQ live cache helpers outside the plugin entry', () => {
+    const oldMessage: WebQQMessage = {
+      id: 'same',
+      sequence: 'old',
+      time: 1710000001000,
+      senderId: '30000',
+      senderName: 'Alice',
+      senderAvatar: 'https://example.com/avatar.png',
+      direction: 'incoming',
+      summary: 'old',
+      elements: [{ type: 'text', text: 'old' }],
+    }
+    const liveMessage: WebQQMessage = {
+      ...oldMessage,
+      sequence: 'new',
+      time: 1710000003000,
+      summary: 'new',
+      elements: [{ type: 'text', text: 'new' }],
+    }
+    const otherMessage: WebQQMessage = {
+      ...oldMessage,
+      id: 'other',
+      sequence: 'other',
+      time: 1710000002000,
+      summary: 'other',
+      elements: [{ type: 'text', text: 'other' }],
+    }
+
+    expect(pluginSource).toContain("from './webqq-live-cache'")
+    expect(pluginSource).not.toContain('function mergeWebQQMessages(')
+    expect(webqqLiveCacheSource).toContain('export function mergeWebQQLiveMessages')
+    expect(getWebQQLiveMessageKey({ type: 'group', peerId: '20000' })).toBe('group:20000')
+    expect(mergeWebQQLiveMessages([oldMessage, otherMessage], [liveMessage], 2)).toEqual([
+      otherMessage,
+      liveMessage,
+    ])
   })
 
   it('exports a Config schema for backend options', () => {

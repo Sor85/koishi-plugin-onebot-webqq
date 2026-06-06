@@ -58,6 +58,10 @@ import {
   createWebQQGroupLeaveNotice,
 } from './webqq-event-notices'
 import {
+  getWebQQLiveMessageKey,
+  mergeWebQQLiveMessages,
+} from './webqq-live-cache'
+import {
   fillWebQQMessageSenderMetadata,
   hasWebQQSenderMetadata,
   isSameWebQQSenderMetadata,
@@ -180,19 +184,6 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
   }
 }
 
-function getMessageKey(message: WebQQMessage) {
-  return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
-}
-
-function mergeWebQQMessages(history: WebQQMessage[], live: WebQQMessage[] = [], limit?: number) {
-  const messages = new Map<string, WebQQMessage>()
-  for (const message of [...history, ...live]) {
-    messages.set(getMessageKey(message), message)
-  }
-  const merged = [...messages.values()].sort((a, b) => a.time - b.time)
-  return limit ? merged.slice(-limit) : merged
-}
-
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const state = createCapsuleState()
@@ -223,7 +214,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     primary: 'id',
   })
 
-  const getLiveMessageKey = (query: WebQQMessageQuery) => `${query.type}:${query.peerId}`
   const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
   const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
     return type === 'group' ? liveSenderMetadata.get(getLiveSenderMetadataKey(peerId, userId)) : undefined
@@ -238,14 +228,14 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   }
   // 写入 live 消息缓存并推送给 WebQQ 前端。
   const broadcastWebQQLivePayload = (payload: WebQQLiveMessage) => {
-    const key = getLiveMessageKey(payload)
-    const messages = mergeWebQQMessages(liveMessages.get(key) ?? [], [payload.message], 100)
+    const key = getWebQQLiveMessageKey(payload)
+    const messages = mergeWebQQLiveMessages(liveMessages.get(key) ?? [], [payload.message], 100)
     liveMessages.set(key, messages)
     ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
   }
   const attachPendingWebQQThinking = (payload: WebQQLiveMessage): WebQQLiveMessage => {
     if (payload.message.direction !== 'outgoing') return payload
-    const key = getLiveMessageKey(payload)
+    const key = getWebQQLiveMessageKey(payload)
     const thinking = pendingWebQQThinking.get(key)
     if (!thinking) return payload
     pendingWebQQThinking.delete(key)
@@ -344,7 +334,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     if (!content) return
     const peer = readWebQQPeer(payload.session)
     if (!peer) return
-    const key = getLiveMessageKey(peer)
+    const key = getWebQQLiveMessageKey(peer)
     const usage = state.snapshot()?.conversation.usage
     const thinking = {
       content,
@@ -458,7 +448,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
         limit: query.limit ?? historyLimit,
       }
       const history = await webqq.loadMessages(nextQuery)
-      return attachWebQQAffinityBadges(inner, config, mergeWebQQMessages(history, liveMessages.get(getLiveMessageKey(nextQuery)), nextQuery.limit), logger)
+      return attachWebQQAffinityBadges(inner, config, mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit), logger)
     }, consoleAuthOptions)
     console.addListener('chat-capsule/webqq/group-info', (query: WebQQGroupInfoQuery) => {
       return webqq.loadGroupInfo(query)
