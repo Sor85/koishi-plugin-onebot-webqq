@@ -22,6 +22,7 @@
 - `src/onebot-display.ts`：OneBot WebQQ 展示字段派生 helper，负责头像 URL、群角色和群副标题
 - `src/onebot-group-info.ts`：OneBot 群成员和群公告标准化 helper
 - `src/onebot-images.ts`：OneBot 图片元素和 `get_image` 结果解析 helper
+- `src/onebot-message-elements.ts`：OneBot 表情元素和消息元素摘要 helper
 - `src/onebot-notices.ts`：OneBot 群系统通知标准化 helper
 - `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取 helper
 - `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
@@ -73,6 +74,7 @@
 - `src/onebot-display.ts`：OneBot WebQQ 展示字段派生
 - `src/onebot-group-info.ts`：OneBot 群成员和群公告标准化
 - `src/onebot-images.ts`：OneBot 图片元素和 `get_image` 结果解析
+- `src/onebot-message-elements.ts`：OneBot 表情元素和消息元素摘要
 - `src/onebot-notices.ts`：OneBot 群系统通知标准化
 - `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐

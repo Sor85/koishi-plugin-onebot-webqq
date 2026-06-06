@@ -34,6 +34,10 @@ import {
   normalizeImageElement,
   resolveOneBotImage,
 } from './onebot-images'
+import {
+  normalizeFaceElement,
+  summarizeElements,
+} from './onebot-message-elements'
 
 export type WebQQChatType = 'friend' | 'group'
 
@@ -197,13 +201,6 @@ export interface OneBotWebQQOptions {
 
 function toStringId(value: unknown) {
   return value == null ? '' : String(value)
-}
-
-function normalizeFaceElement(data: Record<string, unknown>) {
-  const summary = getStringField(data, ['summary', 'text', 'name'])
-  if (summary) return { type: 'face' as const, text: summary }
-  const id = getStringField(data, ['emoji_id', 'emojiId', 'id'])
-  return { type: 'face' as const, text: id ? `[表情 ${id}]` : '[表情]' }
 }
 
 function getRecentPeerType(raw: Record<string, unknown>, peerId: string, friends: WebQQFriend[], groups: WebQQGroup[]): WebQQChatType {
@@ -373,19 +370,6 @@ async function normalizeMessageElements(message: unknown, bot: OneBotBot, imageU
   if (typeof message === 'string') return [{ type: 'text' as const, text: normalizeMentionMarkupText(message) }]
   if (Array.isArray(message)) return Promise.all(message.map((segment) => normalizeSegment(segment, bot, imageUrlResolver)))
   return [{ type: 'unknown' as const, text: '[消息]' }]
-}
-
-function summarizeElements(elements: WebQQMessageElement[]) {
-  const summary = elements.map((element) => {
-    if (element.type === 'text') return element.text
-    if (element.type === 'image') return '[图片]'
-    if (element.type === 'quote') return ''
-    if (element.type === 'forward') return '[合并转发]'
-    if (element.type === 'card') return element.title && element.title !== '卡片消息' ? element.title : element.text || '[卡片消息]'
-    if (element.type === 'face') return element.text || '[表情]'
-    return element.text || '[消息]'
-  }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
-  return summary || '[消息]'
 }
 
 async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlResolver?: (file: string) => string): Promise<WebQQMessage> {
