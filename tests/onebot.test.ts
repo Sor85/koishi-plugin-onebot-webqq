@@ -5,6 +5,7 @@ import { createOneBotWebQQService } from '../src/onebot'
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const onebotDataSource = await readFile(new URL('../src/onebot-data.ts', import.meta.url), 'utf8')
 const onebotTextSource = await readFile(new URL('../src/onebot-text.ts', import.meta.url), 'utf8')
+const onebotCardSource = await readFile(new URL('../src/onebot-card.ts', import.meta.url), 'utf8')
 
 describe('onebot webqq adapter', () => {
   it('keeps OneBot data field helpers outside the adapter entry', () => {
@@ -21,6 +22,12 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).not.toContain('function getTextValue(')
     expect(onebotTextSource).toContain('export function normalizeMentionMarkupText')
     expect(onebotTextSource).toContain('export function getTextValue')
+  })
+
+  it('keeps OneBot card payload helpers outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './onebot-card'")
+    expect(onebotSource).not.toContain('function normalizeCardElement(')
+    expect(onebotCardSource).toContain('export function normalizeCardElement')
   })
 
   it('loads friends and groups through the OneBot request API', async () => {
