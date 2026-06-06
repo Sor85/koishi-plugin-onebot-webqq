@@ -315,81 +315,19 @@
         :get-group-member-name="getGroupMemberName"
       />
     </section>
-    <div
+    <WebQQForwardModal
       v-if="forwardDialog"
-      class="chat-capsule-webqq__forward-modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-label="合并转发消息"
-      tabindex="0"
-      @click.self="closeForwardDialog"
-      @keydown.esc="closeForwardDialog"
-    >
-      <div class="chat-capsule-webqq__forward-modal" @click.stop>
-        <header class="chat-capsule-webqq__forward-modal-header">
-          <strong>{{ forwardDialog.title || '合并转发' }}</strong>
-          <button type="button" aria-label="关闭合并转发消息" @click="closeForwardDialog">
-            <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12"></path>
-              <path d="M18 6L6 18"></path>
-            </svg>
-          </button>
-        </header>
-        <div class="chat-capsule-webqq__forward-modal-body">
-          <article v-for="(item, itemIndex) in forwardDialogItems" :key="`forward:${itemIndex}`" :class="['chat-capsule-webqq__message', 'is-incoming', getForwardItemClusterClass(itemIndex), { 'is-merged': isMergedForwardItem(itemIndex) }]">
-            <img class="chat-capsule-webqq__message-avatar" :src="withProxy(getForwardItemAvatar(item))" :alt="getForwardItemName(item)">
-            <div class="chat-capsule-webqq__message-content">
-              <div v-if="!isMergedForwardItem(itemIndex)" class="chat-capsule-webqq__sender-line">
-                <span class="chat-capsule-webqq__message-name">{{ getForwardItemName(item) }}</span>
-              </div>
-              <div class="chat-capsule-webqq__message-body">
-                <div class="chat-capsule-webqq__bubble">
-                  <template v-for="(run, runIndex) in getWebQQElementRuns(item.elements)" :key="`forward:${itemIndex}:run:${runIndex}`">
-                    <span v-if="run.type === 'inline'" class="chat-capsule-webqq__inline-run">
-                      <template v-for="element in run.elements" :key="`forward:${itemIndex}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
-                        <span v-if="element.type === 'text'">{{ element.text }}</span>
-                        <span v-else>{{ element.text || '[消息]' }}</span>
-                      </template>
-                    </span>
-                    <div v-else-if="run.element.type === 'quote'" class="chat-capsule-webqq__quote">
-                      <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
-                      <span>{{ run.element.text || '[引用消息]' }}</span>
-                    </div>
-                    <button
-                      v-else-if="run.element.type === 'forward'"
-                      class="chat-capsule-webqq__quote chat-capsule-webqq__forward"
-                      type="button"
-                      :disabled="!run.element.items?.length"
-                      aria-label="查看合并转发消息"
-                      @click.stop="openForwardDialog(run.element)"
-                    >
-                      <strong class="chat-capsule-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
-                      <span>{{ run.element.text || '[合并转发]' }}</span>
-                    </button>
-                    <div
-                      v-else-if="run.element.type === 'card'"
-                      class="chat-capsule-webqq__card"
-                    >
-                      <img v-if="run.element.imageUrl" class="chat-capsule-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
-                      <span class="chat-capsule-webqq__card-content">
-                        <strong class="chat-capsule-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
-                        <span v-if="run.element.text" class="chat-capsule-webqq__card-desc">{{ run.element.text }}</span>
-                        <span v-if="run.element.source" class="chat-capsule-webqq__card-source">{{ run.element.source }}</span>
-                      </span>
-                    </div>
-                    <button v-else-if="run.element.type === 'image' && run.element.url" class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(run.element.url)">
-                      <img :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
-                    </button>
-                    <span v-else>{{ run.element.text || '[消息]' }}</span>
-                  </template>
-                </div>
-              </div>
-            </div>
-          </article>
-          <div v-if="!forwardDialogItems.length" class="chat-capsule-webqq__forward-modal-empty">暂无消息</div>
-        </div>
-      </div>
-    </div>
+      :dialog="forwardDialog"
+      :items="forwardDialogItems"
+      :with-proxy="withProxy"
+      :get-forward-item-avatar="getForwardItemAvatar"
+      :get-forward-item-cluster-class="getForwardItemClusterClass"
+      :is-merged-forward-item="isMergedForwardItem"
+      @close="closeForwardDialog"
+      @open-forward="openForwardDialog"
+      @open-image="openImagePreview"
+      @image-load="handleMessageImageLoad"
+    />
     <div
       v-if="imagePreviewUrl"
       ref="imagePreview"
@@ -415,6 +353,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
+import WebQQForwardModal from './WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './WebQQGroupInfoPanel.vue'
 import WebQQNoticeMenu from './WebQQNoticeMenu.vue'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
