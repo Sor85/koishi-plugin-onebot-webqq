@@ -324,40 +324,17 @@
           </Transition>
         </div>
       </div>
-      <aside v-if="groupInfoOpen && currentChat?.type === 'group'" class="chat-capsule-webqq__group-info">
-        <header class="chat-capsule-webqq__group-info-header">
-          <strong>群信息</strong>
-        </header>
-        <div class="chat-capsule-webqq__group-info-body">
-          <section class="chat-capsule-webqq__group-announcements">
-            <h3>群公告</h3>
-            <div v-if="groupInfoLoading" class="chat-capsule-webqq__group-empty">加载中</div>
-            <div v-else-if="groupInfoErrorText" class="chat-capsule-webqq__group-empty is-error">{{ groupInfoErrorText }}</div>
-            <div v-else-if="!groupInfo.announcements.length" class="chat-capsule-webqq__group-empty">暂无群公告</div>
-            <article v-for="announcement in groupInfo.announcements" v-else :key="announcement.id" class="chat-capsule-webqq__group-announcement">
-              <p>{{ announcement.content }}</p>
-              <time v-if="announcement.time">{{ formatNoticeTime(announcement.time) }}</time>
-            </article>
-          </section>
-          <section class="chat-capsule-webqq__group-members">
-            <h3>群成员</h3>
-            <input v-model="groupInfoSearchQuery" type="text" placeholder="搜索群昵称或 QQ 号">
-            <div v-if="groupInfoLoading" class="chat-capsule-webqq__group-empty">加载中</div>
-            <div v-else-if="groupInfoErrorText" class="chat-capsule-webqq__group-empty is-error">{{ groupInfoErrorText }}</div>
-            <div v-else-if="!visibleGroupMembers.length" class="chat-capsule-webqq__group-empty">暂无群成员</div>
-            <div v-else class="chat-capsule-webqq__group-member-list">
-              <article v-for="member in visibleGroupMembers" :key="member.userId" class="chat-capsule-webqq__group-member">
-                <img :src="withProxy(member.avatar)" :alt="getGroupMemberName(member)">
-                <span>
-                  <strong>{{ getGroupMemberName(member) }}</strong>
-                  <small>{{ member.userId }}</small>
-                </span>
-                <em v-if="member.role">{{ member.role }}</em>
-              </article>
-            </div>
-          </section>
-        </div>
-      </aside>
+      <WebQQGroupInfoPanel
+        v-if="groupInfoOpen && currentChat?.type === 'group'"
+        v-model:search-query="groupInfoSearchQuery"
+        :loading="groupInfoLoading"
+        :error-text="groupInfoErrorText"
+        :group-info="groupInfo"
+        :visible-members="visibleGroupMembers"
+        :with-proxy="withProxy"
+        :format-notice-time="formatNoticeTime"
+        :get-group-member-name="getGroupMemberName"
+      />
     </section>
     <div
       v-if="forwardDialog"
@@ -459,6 +436,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
+import WebQQGroupInfoPanel from './WebQQGroupInfoPanel.vue'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
