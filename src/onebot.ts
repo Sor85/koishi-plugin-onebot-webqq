@@ -1,3 +1,14 @@
+import {
+  getActionData,
+  getBooleanField,
+  getNumberField,
+  getStringField,
+  isRecord,
+  toArrayResult,
+  toOneBotId,
+  toTimestampMs,
+} from './onebot-data'
+
 export type WebQQChatType = 'friend' | 'group'
 
 // WebQQ 只读面板支持的 OneBot 实现协议。
@@ -175,29 +186,8 @@ interface OneBotInternal extends Record<string, unknown> {
 
 const oneBotOnlineStatus = 1
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
-
 function toStringId(value: unknown) {
   return value == null ? '' : String(value)
-}
-
-function toOneBotId(value: string) {
-  return /^\d+$/.test(value) ? Number(value) : value
-}
-
-function toTimestampMs(value: unknown) {
-  const time = Number(value) || 0
-  return time > 100000000000 ? time : time * 1000
-}
-
-function getStringField(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = source[key]
-    if (value != null && String(value).trim()) return String(value)
-  }
-  return ''
 }
 
 const mentionAttributeKeys = ['name', 'nickname', 'nick', 'card', 'text', 'display', 'qq', 'id', 'user_id', 'uin']
@@ -339,37 +329,6 @@ function normalizeGroupRole(role: string) {
   if (role === 'owner') return '群主'
   if (role === 'admin' || role === 'administrator') return '管理员'
   return ''
-}
-
-function getNumberField(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = Number(source[key])
-    if (Number.isFinite(value)) return value
-  }
-  return 0
-}
-
-function getBooleanField(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = source[key]
-    if (value === true || value === 'true' || value === 1) return true
-    if (value === false || value === 'false' || value === 0) return false
-  }
-  return undefined
-}
-
-function toArrayResult(result: unknown, key: string) {
-  if (Array.isArray(result)) return result
-  if (!isRecord(result)) return []
-  if (Array.isArray(result[key])) return result[key]
-  if (isRecord(result.data) && Array.isArray(result.data[key])) return result.data[key]
-  if (Array.isArray(result.data)) return result.data
-  return []
-}
-
-function getActionData(result: unknown) {
-  const item = isRecord(result) ? result : {}
-  return isRecord(item.data) ? item.data : item
 }
 
 function getOneBotBots(ctx: OneBotContext) {

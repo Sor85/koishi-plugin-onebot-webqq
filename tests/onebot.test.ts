@@ -1,7 +1,19 @@
+import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { createOneBotWebQQService } from '../src/onebot'
 
+const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
+const onebotDataSource = await readFile(new URL('../src/onebot-data.ts', import.meta.url), 'utf8')
+
 describe('onebot webqq adapter', () => {
+  it('keeps OneBot data field helpers outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './onebot-data'")
+    expect(onebotSource).not.toContain('function toArrayResult(')
+    expect(onebotSource).not.toContain('function getActionData(')
+    expect(onebotDataSource).toContain('export function toArrayResult')
+    expect(onebotDataSource).toContain('export function getActionData')
+  })
+
   it('loads friends and groups through the OneBot request API', async () => {
     const request = vi.fn(async (action: string) => {
       if (action === 'get_friend_list') return [{
