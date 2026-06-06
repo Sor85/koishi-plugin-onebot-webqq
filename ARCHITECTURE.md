@@ -19,6 +19,7 @@
 - `src/structured-text.ts`：通用结构化文本读取 helper，用于从 LangChain 消息、Koishi 元素和对象字段中提取文本
 - `src/chatluna-thinking.ts`：ChatLuna character 回复解析，负责读取 after-chat 文本并提取 `<think>` 内容
 - `src/webqq-affinity.ts`：ChatLuna 好感度记录读取和 WebQQ 消息徽标补齐
+- `src/webqq-image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/chat-capsule/webqq/image/:id` 代理路由并生成缓存 URL
 - `src/webqq-live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
 - `src/webqq-sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
 - `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
@@ -50,6 +51,7 @@
 - `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
+- `src/webqq-image-url-resolver.ts`：后端 WebQQ 图片代理 URL 注册和解析
 - `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录

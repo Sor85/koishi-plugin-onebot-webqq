@@ -1,7 +1,5 @@
 import type { Session } from 'koishi'
 import { resolve } from 'path'
-import { createReadStream } from 'fs'
-import { randomUUID } from 'crypto'
 import type { Entry } from '@koishijs/console'
 import type { Config as PluginConfig } from './config'
 import {
@@ -46,14 +44,13 @@ import type {
 import { attachWebQQAffinityBadges } from './webqq-affinity'
 import { isRecord, readRecordText } from './structured-text'
 import {
-  getImageContentType,
-  isRemoteImageSource,
   normalizeLiveElements,
   summarizeWebQQElements,
   type WebQQForwardResolver,
   type WebQQImageResolver,
   type WebQQQuoteResolver,
 } from './webqq-live-elements'
+import { createWebQQImageUrlResolver, type WebQQImageServer } from './webqq-image-url-resolver'
 import {
   fillWebQQMessageSenderMetadata,
   hasWebQQSenderMetadata,
@@ -112,17 +109,6 @@ interface DatabaseService {
 
 interface DebugLogger {
   info(format: string, ...param: unknown[]): unknown
-}
-
-interface WebQQImageContext {
-  params: Record<string, string>
-  status?: number
-  body?: unknown
-  set(name: string, value: string): unknown
-}
-
-interface WebQQImageServer {
-  get(path: string, callback: (ctx: WebQQImageContext) => unknown): unknown
 }
 
 interface ChatLunaMessage {
@@ -215,38 +201,6 @@ function toOneBotId(value: string) {
 function getActionData(result: unknown) {
   const item = isRecord(result) ? result : {}
   return isRecord(item.data) ? item.data : item
-}
-
-function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogger) {
-  const files = new Map<string, string>()
-  const ids = new Map<string, string>()
-  ctx.server?.get('/chat-capsule/webqq/image/:id', async (routerCtx) => {
-    const file = files.get(routerCtx.params.id)
-    if (!file) {
-      routerCtx.status = 404
-      return
-    }
-    logger?.info('webqq image proxy %s', JSON.stringify({ id: routerCtx.params.id, file }))
-    if (isRemoteImageSource(file)) {
-      const response = await fetch(file)
-      routerCtx.status = response.status
-      if (!response.ok) return
-      routerCtx.set('content-type', response.headers.get('content-type') || getImageContentType(file))
-      routerCtx.body = Buffer.from(await response.arrayBuffer())
-      return
-    }
-    routerCtx.set('content-type', getImageContentType(file))
-    routerCtx.body = createReadStream(file)
-  })
-  return (file: string) => {
-    if (!ctx.server) return ''
-    const cached = ids.get(file)
-    if (cached) return `/chat-capsule/webqq/image/${cached}`
-    const id = randomUUID()
-    files.set(id, file)
-    ids.set(file, id)
-    return `/chat-capsule/webqq/image/${id}`
-  }
 }
 
 function getWebQQUserAvatar(userId: string) {
