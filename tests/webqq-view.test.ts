@@ -10,6 +10,7 @@ const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
+const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -217,7 +218,8 @@ describe('webqq observer view', () => {
   })
 
   it('uses backend recent contacts instead of the first contacts in each list', () => {
-    expect(webqqView).toContain('contacts.value.recent')
+    expect(webqqView).toContain('getRecentItems(contacts.value, conversationSummaries.value)')
+    expect(webqqContactView).toContain('contacts.recent')
     expect(webqqView).toContain('conversationSummaries.value')
     expect(webqqView).not.toContain('contacts.value.friends.slice(0, 4)')
     expect(webqqView).not.toContain('contacts.value.groups.slice(0, 4)')
@@ -523,7 +525,7 @@ describe('webqq observer view', () => {
   it('shows group avatar, group id, and member count in the chat header', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__chat-avatar"')
     expect(webqqView).toContain(':src="withProxy(currentAvatar)"')
-    expect(webqqView).toContain('function getGroupSubtitle')
+    expect(webqqContactView).toContain('function getGroupSubtitle')
     expect(webqqView).toContain('currentSubtitle = computed')
   })
 

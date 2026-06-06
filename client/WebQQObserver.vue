@@ -499,12 +499,19 @@ import {
   getHandledNoticeStatusText,
   sortPendingNotices,
 } from './utils/webqq-notice-view'
+import {
+  getChatKey,
+  getContactSubtitle as getContactSubtitleFromView,
+  getContactTime as getContactTimeFromView,
+  getGroupSubtitle,
+  getRecentItems,
+  getUnreadCount as getUnreadCountFromView,
+  type WebQQChatSelection,
+  type WebQQRecentItem,
+} from './utils/webqq-contact-view'
 
-type ChatSelection =
-  | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
-  | { type: 'group'; peerId: string; name: string; subtitle: string; avatar: string }
-
-type RecentItem = ChatSelection & { summary?: string; time?: number }
+type ChatSelection = WebQQChatSelection
+type RecentItem = WebQQRecentItem
 type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
 type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
 
@@ -636,22 +643,7 @@ const visibleFriendCategories = computed<FriendCategoryView[]>(() => {
     }),
   })).filter((category) => category.friends.length)
 })
-const recentItems = computed<RecentItem[]>(() => {
-  const items = new Map<string, RecentItem>()
-  for (const item of contacts.value.recent ?? []) {
-    items.set(getChatKey(item.type, item.peerId), item)
-  }
-  for (const [key, summary] of Object.entries(conversationSummaries.value)) {
-    const item = findContactByKey(key)
-    if (!item) continue
-    items.set(key, {
-      ...item,
-      summary: summary.summary,
-      time: summary.time,
-    })
-  }
-  return [...items.values()].sort((left, right) => (right.time || 0) - (left.time || 0))
-})
+const recentItems = computed<RecentItem[]>(() => getRecentItems(contacts.value, conversationSummaries.value))
 const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
 const currentSubtitle = computed(() => currentChat.value ? getChatSubtitle(currentChat.value) : '好友 / 群聊')
@@ -704,10 +696,6 @@ const visibleMessages = computed(() => {
 })
 const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])
 
-function getGroupSubtitle(group: WebQQGroup) {
-  return `群聊 ${group.groupId} · ${group.memberCount} 人`
-}
-
 function selectTab(tab: 'recent' | 'friends' | 'groups') {
   activeTab.value = tab
   noticeOpen.value = false
@@ -717,36 +705,6 @@ function getChatSubtitle(chat: ChatSelection) {
   if (chat.type !== 'group') return chat.subtitle
   const group = contacts.value.groups.find((item) => item.groupId === chat.peerId)
   return group ? getGroupSubtitle(group) : chat.subtitle
-}
-
-function getChatKey(type: ChatSelection['type'], peerId: string) {
-  return `${type}:${peerId}`
-}
-
-function findContactByKey(key: string): RecentItem | undefined {
-  const [type, peerId] = key.split(':', 2)
-  if (type === 'friend') {
-    const friend = contacts.value.friends.find((item) => item.userId === peerId)
-    if (!friend) return
-    return {
-      type: 'friend',
-      peerId: friend.userId,
-      name: friend.name,
-      subtitle: friend.nickname,
-      avatar: friend.avatar,
-    }
-  }
-  if (type === 'group') {
-    const group = contacts.value.groups.find((item) => item.groupId === peerId)
-    if (!group) return
-    return {
-      type: 'group',
-      peerId: group.groupId,
-      name: group.name,
-      subtitle: getGroupSubtitle(group),
-      avatar: group.avatar,
-    }
-  }
 }
 
 function updateConversationSummary(type: ChatSelection['type'], peerId: string, message?: WebQQMessage) {
@@ -761,20 +719,16 @@ function updateConversationSummary(type: ChatSelection['type'], peerId: string, 
   persistWebQQState()
 }
 
-function getContactSummary(type: ChatSelection['type'], peerId: string) {
-  return conversationSummaries.value[getChatKey(type, peerId)]
-}
-
 function getContactSubtitle(type: ChatSelection['type'], peerId: string, fallback: string) {
-  return getContactSummary(type, peerId)?.summary || fallback
+  return getContactSubtitleFromView(conversationSummaries.value, type, peerId, fallback)
 }
 
 function getContactTime(type: ChatSelection['type'], peerId: string, fallback = 0) {
-  return getContactSummary(type, peerId)?.time || fallback
+  return getContactTimeFromView(conversationSummaries.value, type, peerId, fallback)
 }
 
 function getUnreadCount(type: ChatSelection['type'], peerId: string) {
-  return conversationUnreadCounts.value[getChatKey(type, peerId)] || 0
+  return getUnreadCountFromView(conversationUnreadCounts.value, type, peerId)
 }
 
 function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
