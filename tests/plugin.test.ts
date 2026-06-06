@@ -1381,7 +1381,7 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
-  it('proxies bot avatars in console snapshots when server is available', () => {
+  it('keeps bot avatar URLs stable in console entry data when server image proxy exists', () => {
     const { ctx, listeners, addEntry, broadcast } = createFakeContext({ server: true })
 
     plugin.apply(ctx)
@@ -1389,20 +1389,19 @@ describe('chat capsule plugin wiring', () => {
 
     const data = addEntry.mock.calls[0][1]
     const entryData = data?.()
-    const broadcastData = broadcast.mock.calls[0][1] as CapsuleSnapshot
     expect(entryData).toEqual(expect.objectContaining({
       capsule: expect.objectContaining({
         bot: expect.objectContaining({
-          avatar: expect.stringMatching(/^\/chat-capsule\/webqq\/image\//),
+          avatar: 'https://example.com/avatar.png',
         }),
       }),
     }))
+    expect(entryData?.capsule?.bot.avatar).not.toMatch(/^\/chat-capsule\/webqq\/image\//)
     expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', expect.objectContaining({
       bot: expect.objectContaining({
-        avatar: expect.stringMatching(/^\/chat-capsule\/webqq\/image\//),
+        avatar: 'https://example.com/avatar.png',
       }),
     }), { authority: 1 })
-    expect(entryData?.capsule?.bot.avatar).toBe(broadcastData.bot.avatar)
   })
 
   it('increments sent counter from before send and broadcasts the latest snapshot', async () => {

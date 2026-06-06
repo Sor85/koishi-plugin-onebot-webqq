@@ -625,20 +625,6 @@ function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogg
   }
 }
 
-function resolveConsoleSnapshot(snapshot: CapsuleSnapshot | undefined, imageUrlResolver: WebQQImageUrlResolver) {
-  const avatar = snapshot?.bot.avatar
-  if (!snapshot || !avatar) return snapshot
-  const proxiedAvatar = imageUrlResolver(avatar)
-  if (!proxiedAvatar) return snapshot
-  return {
-    ...snapshot,
-    bot: {
-      ...snapshot.bot,
-      avatar: proxiedAvatar,
-    },
-  }
-}
-
 async function normalizeLiveElement(
   raw: unknown,
   resolveImage?: WebQQImageResolver,
@@ -915,8 +901,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
   })
   const consoleAuthOptions = { authority: 1 }
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
-  const getConsoleSnapshot = () => resolveConsoleSnapshot(state.snapshot(), imageUrlResolver)
-  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', getConsoleSnapshot(), consoleAuthOptions)
+  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
   const liveMessages = new Map<string, WebQQMessage[]>()
   const pendingWebQQThinking = new Map<string, NonNullable<WebQQMessage['thinking']>>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
@@ -1141,7 +1126,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
     }, () => {
       logSnapshot('entry')
       return {
-        capsule: getConsoleSnapshot(),
+        capsule: state.snapshot(),
         debug,
         webQQTheme: config.webQQTheme ?? 'fresh',
         webQQChatStyle: config.webQQChatStyle ?? 'qq',
