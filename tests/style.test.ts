@@ -322,9 +322,9 @@ describe('chat capsule styles', () => {
 
   it('centers the WebQQ notice menu under the bell button', () => {
     expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('position: relative')
-    expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('z-index: 2')
+    expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('z-index: 4')
     expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('left: 50%')
-    expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('z-index: 3')
+    expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('z-index: 5')
     expect(ruleBody('.chat-capsule-webqq__notice-menu')).toContain('transform: translateX(-50%)')
   })
 
