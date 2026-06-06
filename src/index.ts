@@ -6,6 +6,11 @@ import { extname } from 'path'
 import type { Entry } from '@koishijs/console'
 import type { Config as PluginConfig } from './config'
 import {
+  parseThinkContent,
+  readCharacterAfterChatText,
+  type ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload,
+} from './chatluna-thinking'
+import {
   CapsuleSnapshot,
   clearConversationActivity,
   createCapsuleState,
@@ -41,6 +46,7 @@ import type {
   WebQQStoredState,
 } from './webqq-storage'
 import { attachWebQQAffinityBadges } from './webqq-affinity'
+import { isRecord, readRecordText, readStructuredText } from './structured-text'
 
 export { Config } from './config'
 
@@ -124,12 +130,7 @@ interface ChatLunaModelUsage {
   }
 }
 
-interface ChatLunaCharacterAfterChatPayload {
-  session?: Session
-  lastResponseMessage?: unknown
-  completionMessages?: unknown
-  text?: unknown
-}
+type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
 
 interface WebQQSenderMetadata {
   senderRole?: string
@@ -197,35 +198,8 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
-
 function readElementText(value: unknown) {
   return value == null ? '' : String(value)
-}
-
-function readRecordText(source: unknown, keys: string[]) {
-  if (!isRecord(source)) return ''
-  for (const key of keys) {
-    const value = source[key]
-    if (value != null && String(value).trim()) return String(value)
-  }
-  return ''
-}
-
-function readStructuredText(value: unknown): string {
-  if (typeof value === 'string' || typeof value === 'number') return String(value)
-  if (value == null) return ''
-  if (Array.isArray(value)) return value.map(readStructuredText).join('')
-  if (!isRecord(value)) return ''
-  if (value.content !== undefined && value.content !== value) return readStructuredText(value.content)
-  if (value.text !== undefined) return readStructuredText(value.text)
-  if (Array.isArray(value.children)) return readStructuredText(value.children)
-  if (isRecord(value.attrs)) return readRecordText(value.attrs, ['content', 'text'])
-  if (isRecord(value.kwargs)) return readStructuredText(value.kwargs)
-  if (isRecord(value.lc_kwargs)) return readStructuredText(value.lc_kwargs)
-  return ''
 }
 
 function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
@@ -303,39 +277,6 @@ async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolve
   } catch {
     return { type: 'image' }
   }
-}
-
-function isAssistantMessageSnapshot(value: unknown) {
-  if (!isRecord(value)) return false
-  const role = String(value.role ?? value.type ?? '').trim().toLowerCase()
-  if (role === 'assistant' || role === 'ai') return true
-  const id = Array.isArray(value.id) ? value.id.map(String).join(':').toLowerCase() : ''
-  return id.includes('aimessage') || id.includes('assistantmessage')
-}
-
-function readCompletionMessagesText(value: unknown) {
-  if (!Array.isArray(value)) return ''
-  for (let index = value.length - 1; index >= 0; index--) {
-    const message = value[index]
-    if (!isAssistantMessageSnapshot(message)) continue
-    const text = readStructuredText(message)
-    if (text) return text
-  }
-  return ''
-}
-
-function readCharacterAfterChatText(payload: ChatLunaCharacterAfterChatPayload) {
-  return readStructuredText(payload.lastResponseMessage)
-    || readStructuredText(payload.text)
-    || readCompletionMessagesText(payload.completionMessages)
-}
-
-// 提取 character 回复中的 <think> 标签内容，用于展示已完成的角色思考。
-function parseThinkContent(text: string) {
-  const thoughts = Array.from(text.matchAll(/<think\b[^>]*>([\s\S]*?)<\/think\s*>/gi))
-    .map((match) => (match[1] ?? '').trim())
-    .filter(Boolean)
-  return thoughts.join('\n\n')
 }
 
 function normalizeGroupRole(role: string) {
