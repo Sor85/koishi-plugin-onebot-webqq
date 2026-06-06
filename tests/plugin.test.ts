@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import type { Session } from 'koishi'
 import { describe, expect, it, vi } from 'vitest'
 import * as plugin from '../src'
 import type { ChatCapsuleContext } from '../src'
@@ -7,6 +8,13 @@ import type { CapsuleSnapshot } from '../src/state'
 import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
 import { getImageContentType, summarizeWebQQElements } from '../src/webqq-live-elements'
 import { createWebQQImageUrlResolver } from '../src/webqq-image-url-resolver'
+import {
+  getWebQQUserAvatar,
+  readBotProfile,
+  readUserName,
+  readWebQQPeer,
+  readWebQQLiveDirection,
+} from '../src/webqq-session'
 import {
   fillWebQQMessageSenderMetadata,
   readWebQQSenderMetadata,
@@ -18,6 +26,7 @@ const configSource = await readFile(new URL('../src/config.ts', import.meta.url)
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq-image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-metadata.ts', import.meta.url), 'utf8')
+const webqqSessionSource = await readFile(new URL('../src/webqq-session.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
 type TestLogger = {
@@ -167,6 +176,23 @@ describe('chat capsule plugin wiring', () => {
     }
     await handler(missingCtx)
     expect(missingCtx.status).toBe(404)
+  })
+
+  it('keeps WebQQ session display helpers outside the plugin entry', () => {
+    const session = createSession() as unknown as Session
+
+    expect(pluginSource).toContain("from './webqq-session'")
+    expect(pluginSource).not.toContain('function readWebQQPeer(')
+    expect(webqqSessionSource).toContain('export function readWebQQPeer')
+    expect(readBotProfile(session)).toMatchObject({
+      platform: 'onebot',
+      selfId: '10000',
+      name: 'Capsule Bot',
+    })
+    expect(readUserName(session)).toBe('Event Alice')
+    expect(readWebQQPeer(session)).toEqual({ type: 'group', peerId: '20000' })
+    expect(readWebQQLiveDirection(createSession({ userId: '10000' }) as unknown as Session)).toBe('outgoing')
+    expect(getWebQQUserAvatar('30000')).toBe('https://q1.qlogo.cn/g?b=qq&nk=30000&s=640')
   })
 
   it('keeps WebQQ live sender metadata helpers outside the plugin entry', () => {

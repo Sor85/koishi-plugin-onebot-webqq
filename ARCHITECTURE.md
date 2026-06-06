@@ -22,6 +22,7 @@
 - `src/webqq-image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/chat-capsule/webqq/image/:id` 代理路由并生成缓存 URL
 - `src/webqq-live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
 - `src/webqq-sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
+- `src/webqq-session.ts`：WebQQ session 展示信息 helper，负责 bot/profile、用户昵称、头像、peer 和 live 方向等纯读取逻辑
 - `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
@@ -53,6 +54,7 @@
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
 - `src/webqq-image-url-resolver.ts`：后端 WebQQ 图片代理 URL 注册和解析
 - `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
+- `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
 - `client/components/`：后续拆出的 Vue 展示组件

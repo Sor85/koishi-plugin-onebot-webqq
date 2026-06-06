@@ -52,6 +52,16 @@ import {
 } from './webqq-live-elements'
 import { createWebQQImageUrlResolver, type WebQQImageServer } from './webqq-image-url-resolver'
 import {
+  getWebQQGroupAvatar,
+  getWebQQUserAvatar,
+  readBotProfile,
+  readChannelName,
+  readMemberName,
+  readUserName,
+  readWebQQPeer,
+  readWebQQLiveDirection,
+} from './webqq-session'
+import {
   fillWebQQMessageSenderMetadata,
   hasWebQQSenderMetadata,
   isSameWebQQSenderMetadata,
@@ -154,29 +164,6 @@ export interface ChatCapsuleContext {
   inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
 }
 
-function readBotProfile(session: Session) {
-  const user = session.bot.toJSON?.().user
-  return {
-    platform: session.bot.platform || session.platform || 'unknown',
-    selfId: session.bot.selfId,
-    status: session.bot.status,
-    name: user?.name,
-    avatar: user?.avatar,
-  }
-}
-
-function readChannelName(session: Session) {
-  return session.event.guild?.name || session.event.channel?.name
-}
-
-function readMemberName(session: Session) {
-  return session.event.member?.name || session.event.member?.nick
-}
-
-function readUserName(session: Session) {
-  return readMemberName(session) || session.event.user?.name || session.username
-}
-
 function createMessageInput(session: Session, message?: ChatLunaMessage) {
   const senderMetadata = readWebQQLiveSenderMetadata(session)
   return {
@@ -201,31 +188,6 @@ function toOneBotId(value: string) {
 function getActionData(result: unknown) {
   const item = isRecord(result) ? result : {}
   return isRecord(item.data) ? item.data : item
-}
-
-function getWebQQUserAvatar(userId: string) {
-  return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640` : ''
-}
-
-function getWebQQGroupAvatar(groupId: string) {
-  return groupId ? `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/` : ''
-}
-
-function readWebQQPeer(session: Session) {
-  const isGroup = !!(session.guildId || session.event.guild)
-  const peerId = isGroup
-    ? session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
-    : session.userId || session.event.user?.id || session.channelId || session.event.channel?.id
-  if (!peerId) return
-  return {
-    type: isGroup ? 'group' as const : 'friend' as const,
-    peerId,
-  }
-}
-
-function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
-  const senderId = session.userId || session.event.user?.id
-  return senderId && senderId === session.bot.selfId ? 'outgoing' : 'incoming'
 }
 
 function readWebQQLiveSenderMetadata(session: Session) {
