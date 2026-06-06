@@ -6,8 +6,60 @@ export type WebQQElementRun =
   | { type: 'inline'; elements: WebQQMessageElement[] }
   | { type: 'block'; element: WebQQMessageElement }
 
+export type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
+
 export function getUnreadText(count: number) {
   return count > 9999 ? '9999+' : String(count)
+}
+
+export function getMessageKey(message: WebQQMessage) {
+  return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
+}
+
+export function mergeWebQQMessage(current: WebQQMessage | undefined, next: WebQQMessage) {
+  if (!current) return next
+  if (!next.thinking && !current.thinking) return { ...current, ...next }
+  return {
+    ...current,
+    ...next,
+    thinking: next.thinking || current.thinking,
+  }
+}
+
+export function mergeMessages(currentMessages: WebQQMessage[], nextMessages: WebQQMessage[]) {
+  const merged = new Map(currentMessages.map((item) => [getMessageKey(item), item]))
+  for (const message of nextMessages) {
+    const key = getMessageKey(message)
+    merged.set(key, mergeWebQQMessage(merged.get(key), message))
+  }
+  return [...merged.values()].sort((a, b) => a.time - b.time)
+}
+
+export function isSameOutgoingClusterMessage(left: WebQQMessage | undefined, right: WebQQMessage | undefined) {
+  return !!left &&
+    !!right &&
+    left.direction === 'outgoing' &&
+    right.direction === 'outgoing' &&
+    left.senderId === right.senderId
+}
+
+export function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], index: number): WebQQThinkingMessage | undefined {
+  const message = messages[index]
+  if (!message || message.direction !== 'outgoing') return
+  if (isSameOutgoingClusterMessage(message, messages[index + 1])) return
+  for (let cursor = index; cursor >= 0; cursor--) {
+    const candidate = messages[cursor]
+    if (!candidate) break
+    if (!isSameOutgoingClusterMessage(message, candidate)) break
+    if (candidate.thinking?.content) return {
+      ...candidate,
+      thinking: candidate.thinking,
+    }
+  }
+}
+
+export function hasOutgoingMessageAfter(messages: WebQQMessage[], timestamp: number) {
+  return messages.some((message) => message.direction === 'outgoing' && message.time >= timestamp)
 }
 
 export function formatThinkingDuration(durationMs: number) {

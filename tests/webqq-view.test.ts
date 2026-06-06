@@ -156,7 +156,8 @@ describe('webqq observer view', () => {
 
   it('hides the temporary bot thinking bubble after a real outgoing WebQQ message reaches the same conversation', () => {
     expect(webqqView).toContain('function hasOutgoingMessageAfter(timestamp: number)')
-    expect(webqqView).toContain("messages.value.some((message) => message.direction === 'outgoing' && message.time >= timestamp)")
+    expect(webqqView).toContain('hasOutgoingMessageAfterFromView(messages.value, timestamp)')
+    expect(webqqMessageView).toContain("messages.some((message) => message.direction === 'outgoing' && message.time >= timestamp)")
     expect(webqqView).toContain('if (hasOutgoingMessageAfter(conversation.timestamp)) return')
   })
 
@@ -280,8 +281,8 @@ describe('webqq observer view', () => {
   })
 
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
-    expect(webqqView).toContain('function mergeWebQQMessage')
-    expect(webqqView).toContain('thinking: next.thinking || current.thinking')
+    expect(webqqMessageView).toContain('function mergeWebQQMessage')
+    expect(webqqMessageView).toContain('thinking: next.thinking || current.thinking')
     expect(webqqView).toContain('messages.value = mergeMessages(cachedMessages, messages.value)')
     expect(webqqView).toContain('saveCachedWebQQMessages')
   })
@@ -438,7 +439,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('function isThinkingExpanded(message: WebQQMessage)')
     expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
     expect(webqqView).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
-    expect(webqqView).toContain('candidate.thinking?.content')
+    expect(webqqMessageView).toContain('function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], index: number)')
+    expect(webqqMessageView).toContain('candidate.thinking?.content')
     expect(webqqView).toContain('class="chat-capsule-webqq__thinking-row"')
     expect(webqqView).toContain('class="chat-capsule-webqq__thinking-toggle"')
     expect(webqqView).toContain('@click="toggleThinking(getLastOutgoingClusterThinkingMessage(index))"')

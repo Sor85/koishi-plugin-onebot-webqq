@@ -482,16 +482,21 @@ import {
   getForwardItemName,
   getForwardPreviewItems as getForwardPreviewItemsFromView,
   getForwardPreviewText,
+  getLastOutgoingClusterThinkingMessage as getLastOutgoingClusterThinkingMessageFromView,
   getGroupMemberName,
   getMessageClusterClass as getMessageClusterClassFromView,
+  getMessageKey,
   getSenderAuthorityClass,
   getSenderAuthorityText,
   getUnreadText,
   getWebQQElementRuns,
+  hasOutgoingMessageAfter as hasOutgoingMessageAfterFromView,
   isImageOnlyMessage,
   isMergedForwardItem as isMergedForwardItemFromView,
   isMergedMessage as isMergedMessageFromView,
+  mergeMessages,
   type WebQQMessageElement,
+  type WebQQThinkingMessage,
 } from './utils/webqq-message-view'
 import {
   canHandleNotice,
@@ -518,7 +523,6 @@ import {
 type ChatSelection = WebQQChatSelection
 type RecentItem = WebQQRecentItem
 type FriendCategoryView = WebQQFriendCategoryView
-type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
 
 const props = defineProps<{ visible: boolean }>()
 const webQQContactsRetryLimit = 10
@@ -722,20 +726,6 @@ function clearCurrentUnreadCount() {
   clearUnreadCount(currentChat.value.type, currentChat.value.peerId)
 }
 
-function getMessageKey(message: WebQQMessage) {
-  return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
-}
-
-function mergeWebQQMessage(current: WebQQMessage | undefined, next: WebQQMessage) {
-  if (!current) return next
-  if (!next.thinking && !current.thinking) return { ...current, ...next }
-  return {
-    ...current,
-    ...next,
-    thinking: next.thinking || current.thinking,
-  }
-}
-
 function rememberMessageSenderMetadata(type: ChatSelection['type'], peerId: string, nextMessages: WebQQMessage[]) {
   senderMetadataCache.value = rememberWebQQSenderMetadata(senderMetadataCache.value, type, peerId, nextMessages)
 }
@@ -764,31 +754,12 @@ function toggleThinking(message: WebQQMessage) {
   expandedThinkingMessageIds.value = next
 }
 
-function isSameOutgoingClusterMessage(left: WebQQMessage | undefined, right: WebQQMessage | undefined) {
-  return !!left &&
-    !!right &&
-    left.direction === 'outgoing' &&
-    right.direction === 'outgoing' &&
-    left.senderId === right.senderId
-}
-
 function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMessage | undefined {
-  const message = visibleMessages.value[index]
-  if (!message || message.direction !== 'outgoing') return
-  if (isSameOutgoingClusterMessage(message, visibleMessages.value[index + 1])) return
-  for (let cursor = index; cursor >= 0; cursor--) {
-    const candidate = visibleMessages.value[cursor]
-    if (!candidate) break
-    if (!isSameOutgoingClusterMessage(message, candidate)) break
-    if (candidate.thinking?.content) return {
-      ...candidate,
-      thinking: candidate.thinking,
-    }
-  }
+  return getLastOutgoingClusterThinkingMessageFromView(visibleMessages.value, index)
 }
 
 function hasOutgoingMessageAfter(timestamp: number) {
-  return messages.value.some((message) => message.direction === 'outgoing' && message.time >= timestamp)
+  return hasOutgoingMessageAfterFromView(messages.value, timestamp)
 }
 
 function getForwardItemAvatar(item: WebQQForwardItem) {
@@ -818,15 +789,6 @@ function getMessageClusterClass(index: number) {
 function appendMessage(message: WebQQMessage) {
   messages.value = mergeMessages(messages.value, [message])
   if (trackingMessages.value) scrollMessagesToBottom()
-}
-
-function mergeMessages(currentMessages: WebQQMessage[], nextMessages: WebQQMessage[]) {
-  const merged = new Map(currentMessages.map((item) => [getMessageKey(item), item]))
-  for (const message of nextMessages) {
-    const key = getMessageKey(message)
-    merged.set(key, mergeWebQQMessage(merged.get(key), message))
-  }
-  return [...merged.values()].sort((a, b) => a.time - b.time)
 }
 
 function isMessagePaneAtBottom() {
