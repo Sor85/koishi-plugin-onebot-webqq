@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
+import { useWebQQContacts } from '../client/stores/webqq-contacts'
 import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
 import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
@@ -9,7 +10,7 @@ import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
-import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
+import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary, type ConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage, type WebQQMessageElement } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
@@ -21,6 +22,7 @@ const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqContactsStore = await readFile(new URL('../client/stores/webqq-contacts.ts', import.meta.url), 'utf8')
 const webqqConversationStateStore = await readFile(new URL('../client/stores/webqq-conversation-state.ts', import.meta.url), 'utf8')
 const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
@@ -367,17 +369,21 @@ describe('webqq observer view', () => {
   })
 
   it('uses backend recent contacts instead of the first contacts in each list', () => {
-    expect(webqqView).toContain('getRecentItems(contacts.value, conversationSummaries.value)')
+    expect(webqqView).toContain('useWebQQContacts(conversationSummaries)')
+    expect(webqqContactsStore).toContain('getRecentItems(contacts.value, conversationSummaries.value)')
     expect(webqqContactView).toContain('contacts.recent')
-    expect(webqqView).toContain('conversationSummaries.value')
+    expect(webqqContactsStore).toContain('conversationSummaries.value')
     expect(webqqView).not.toContain('contacts.value.friends.slice(0, 4)')
     expect(webqqView).not.toContain('contacts.value.groups.slice(0, 4)')
   })
 
   it('creates current WebQQ chat selections from contacts and recent items', () => {
-    expect(webqqView).toContain('createFriendChatSelection(friend)')
-    expect(webqqView).toContain('createGroupChatSelection(group)')
-    expect(webqqView).toContain('createRecentChatSelection(item)')
+    expect(webqqView).toContain('selectWebQQFriend(friend)')
+    expect(webqqView).toContain('selectWebQQGroup(group)')
+    expect(webqqView).toContain('selectWebQQRecent(item)')
+    expect(webqqContactsStore).toContain('createFriendChatSelection(friend)')
+    expect(webqqContactsStore).toContain('createGroupChatSelection(group)')
+    expect(webqqContactsStore).toContain('createRecentChatSelection(item)')
     expect(webqqContactView).toContain('function createFriendChatSelection')
     expect(webqqContactView).toContain('function createGroupChatSelection')
     expect(webqqContactView).toContain('function createRecentChatSelection')
@@ -423,9 +429,9 @@ describe('webqq observer view', () => {
   })
 
   it('formats the current WebQQ chat header from contact data', () => {
-    expect(webqqView).toContain('getCurrentChatTitle(currentChat.value)')
-    expect(webqqView).toContain('getCurrentChatSubtitle(currentChat.value, contacts.value)')
-    expect(webqqView).toContain('getCurrentChatAvatar(currentChat.value)')
+    expect(webqqContactsStore).toContain('getCurrentChatTitle(currentChat.value)')
+    expect(webqqContactsStore).toContain('getCurrentChatSubtitle(currentChat.value, contacts.value)')
+    expect(webqqContactsStore).toContain('getCurrentChatAvatar(currentChat.value)')
     expect(webqqContactView).toContain('function getCurrentChatTitle')
     expect(webqqContactView).toContain('function getCurrentChatSubtitle')
     expect(webqqContactView).toContain('function getCurrentChatAvatar')
@@ -441,6 +447,37 @@ describe('webqq observer view', () => {
         avatar: '',
       }],
     })).toBe('群聊 20000 · 42 人')
+  })
+
+  it('keeps WebQQ contact selection and header state in a focused store', () => {
+    const conversationSummaries = ref<Record<string, ConversationSummary>>({
+      'friend:10000': { summary: '最近消息', time: 2 },
+    })
+    const store = useWebQQContacts(conversationSummaries)
+
+    store.contacts.value = {
+      friends: [{ userId: '10000', name: 'Alice', nickname: 'alice', avatar: 'friend.png' }],
+      groups: [{ groupId: '20000', name: '群聊', memberCount: 42, avatar: 'group.png' }],
+    }
+    expect(store.recentItems.value[0]).toMatchObject({
+      type: 'friend',
+      peerId: '10000',
+      summary: '最近消息',
+    })
+
+    store.searchQuery.value = 'alice'
+    expect(store.visibleFriends.value).toHaveLength(1)
+    expect(store.visibleGroups.value).toHaveLength(0)
+
+    store.selectFriend(store.contacts.value.friends[0])
+    expect(store.currentTitle.value).toBe('Alice')
+    expect(store.currentSubtitle.value).toBe('alice')
+    expect(store.currentAvatar.value).toBe('friend.png')
+    store.selectTab('groups')
+    expect(store.activeTab.value).toBe('groups')
+    store.selectGroup(store.contacts.value.groups[0])
+    expect(store.currentPeerId.value).toBe('20000')
+    expect(store.currentSubtitle.value).toBe('群聊 20000 · 42 人')
   })
 
   it('retries WebQQ contacts while Koishi and OneBot are still starting', () => {
@@ -817,7 +854,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain(':src="withProxy(currentAvatar)"')
     expect(webqqContactView).toContain('function getGroupSubtitle')
     expect(webqqContactView).toContain('function getCurrentChatSubtitle')
-    expect(webqqView).toContain('currentSubtitle = computed')
+    expect(webqqContactsStore).toContain('currentSubtitle = computed')
   })
 
   it('opens a group-only WebQQ info panel with announcements and searchable members', () => {

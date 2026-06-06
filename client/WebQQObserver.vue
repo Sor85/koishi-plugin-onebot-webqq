@@ -465,6 +465,7 @@ import {
   loadCachedWebQQMessages as loadStoredWebQQMessages,
   saveCachedWebQQMessages as saveStoredWebQQMessages,
 } from './stores/webqq-storage'
+import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
@@ -500,37 +501,16 @@ import {
   formatNoticeComment,
   getHandledNoticeStatusText,
 } from './utils/webqq-notice-view'
-import {
-  createFriendChatSelection,
-  createGroupChatSelection,
-  createRecentChatSelection,
-  getCurrentChatAvatar,
-  getCurrentChatSubtitle,
-  getCurrentChatTitle,
-  getGroupSubtitle,
-  getRecentItems,
-  getVisibleFriendCategories,
-  getVisibleFriends,
-  getVisibleGroups,
-  type WebQQFriendCategoryView,
-  type WebQQChatSelection,
-  type WebQQRecentItem,
-} from './utils/webqq-contact-view'
+import { getGroupSubtitle, type WebQQChatSelection, type WebQQRecentItem } from './utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq-theme-view'
 
 type ChatSelection = WebQQChatSelection
 type RecentItem = WebQQRecentItem
-type FriendCategoryView = WebQQFriendCategoryView
 
 const props = defineProps<{ visible: boolean }>()
 const webQQContactsRetryLimit = 10
 const webQQContactsRetryDelayMs = 800
 
-const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
-const searchQuery = ref('')
-const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
-const currentChat = ref<ChatSelection>()
-const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const {
   conversationSummaries,
   totalUnreadCount,
@@ -542,6 +522,25 @@ const {
   increaseUnreadCount,
   clearUnreadCount,
 } = useWebQQConversationState(webQQStorageBackend)
+const {
+  activeTab,
+  searchQuery,
+  contacts,
+  currentChat,
+  visibleFriends,
+  visibleGroups,
+  visibleFriendCategories,
+  recentItems,
+  currentPeerId,
+  currentTitle,
+  currentSubtitle,
+  currentAvatar,
+  selectTab: selectWebQQTab,
+  selectFriend: selectWebQQFriend,
+  selectGroup: selectWebQQGroup,
+  selectRecent: selectWebQQRecent,
+} = useWebQQContacts(conversationSummaries)
+const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const messages = ref<WebQQMessage[]>([])
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
@@ -608,14 +607,6 @@ const webQQEffectiveAccentColor = computed(() => getWebQQEffectiveAccentColor(
 ))
 const webQQAccentStyle = computed(() => getWebQQAccentStyle(webQQEffectiveAccentColor.value))
 
-const visibleFriends = computed(() => getVisibleFriends(contacts.value, searchQuery.value))
-const visibleGroups = computed(() => getVisibleGroups(contacts.value, searchQuery.value))
-const visibleFriendCategories = computed<FriendCategoryView[]>(() => getVisibleFriendCategories(contacts.value, searchQuery.value))
-const recentItems = computed<RecentItem[]>(() => getRecentItems(contacts.value, conversationSummaries.value))
-const currentPeerId = computed(() => currentChat.value?.peerId)
-const currentTitle = computed(() => getCurrentChatTitle(currentChat.value))
-const currentSubtitle = computed(() => getCurrentChatSubtitle(currentChat.value, contacts.value))
-const currentAvatar = computed(() => getCurrentChatAvatar(currentChat.value))
 const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(capsule.value, currentChat.value, messages.value))
 const visibleMessages = computed(() => {
   const cachedMessages = messages.value.map(applyMessageSenderMetadata)
@@ -633,7 +624,7 @@ const {
 } = useWebQQForwardDialog(webQQChatStyle)
 
 function selectTab(tab: 'recent' | 'friends' | 'groups') {
-  activeTab.value = tab
+  selectWebQQTab(tab)
   noticeOpen.value = false
 }
 
@@ -781,14 +772,14 @@ async function loadOlderMessages() {
 function selectFriend(friend: WebQQFriend) {
   noticeOpen.value = false
   groupInfoOpen.value = false
-  currentChat.value = createFriendChatSelection(friend)
+  selectWebQQFriend(friend)
   clearCurrentUnreadCount()
   loadMessages()
 }
 
 function selectGroup(group: WebQQGroup) {
   noticeOpen.value = false
-  currentChat.value = createGroupChatSelection(group)
+  selectWebQQGroup(group)
   clearCurrentUnreadCount()
   loadMessages()
 }
@@ -796,7 +787,7 @@ function selectGroup(group: WebQQGroup) {
 function selectRecent(item: RecentItem) {
   noticeOpen.value = false
   if (item.type !== 'group') groupInfoOpen.value = false
-  currentChat.value = createRecentChatSelection(item)
+  selectWebQQRecent(item)
   clearCurrentUnreadCount()
   loadMessages()
 }
