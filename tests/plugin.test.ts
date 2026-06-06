@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import * as plugin from '../src'
 import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
+import type { WebQQMessageElement } from '../src/onebot'
+import { getImageContentType, summarizeWebQQElements } from '../src/webqq-live-elements'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
+const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
 type TestLogger = {
@@ -104,6 +107,22 @@ describe('chat capsule plugin wiring', () => {
     expect(plugin.inject).toEqual({
       optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
     })
+  })
+
+  it('keeps WebQQ live element normalization outside the plugin entry', () => {
+    const elements: WebQQMessageElement[] = [
+      { type: 'quote', text: '引用内容' },
+      { type: 'image', url: 'cover.png' },
+      { type: 'card', title: '春日影', text: 'MyGO!!!!!' },
+    ]
+
+    expect(pluginSource).toContain("from './webqq-live-elements'")
+    expect(pluginSource).not.toContain('function normalizeLiveElement(')
+    expect(webqqLiveElementsSource).toContain('async function normalizeLiveElement(')
+    expect(webqqLiveElementsSource).toContain('export async function normalizeLiveElements(')
+    expect(webqqLiveElementsSource).toContain('export function summarizeWebQQElements')
+    expect(summarizeWebQQElements(elements)).toBe('[图片]春日影')
+    expect(getImageContentType('cover.webp')).toBe('image/webp')
   })
 
   it('exports a Config schema for backend options', () => {
