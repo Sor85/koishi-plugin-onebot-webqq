@@ -45,13 +45,9 @@ import { attachWebQQAffinityBadges } from './webqq-affinity'
 import { createWebQQLiveMessage } from './webqq-live-message'
 import { createWebQQImageUrlResolver, type WebQQImageServer } from './webqq-image-url-resolver'
 import {
-  readBotProfile,
-  readChannelName,
   readMemberName,
-  readUserName,
   readWebQQPeer,
   readWebQQLiveDirection,
-  readWebQQLiveSenderMetadata,
 } from './webqq-session'
 import {
   createWebQQFriendRequestNotice,
@@ -73,6 +69,7 @@ import {
   readWebQQBotGroupSenderMetadata,
   readWebQQGroupSenderMetadata,
 } from './webqq-group-sender-metadata'
+import { createMessageInput, type ChatLunaMessage } from './chatluna-message-input'
 
 export { Config } from './config'
 
@@ -124,11 +121,6 @@ interface DebugLogger {
   info(format: string, ...param: unknown[]): unknown
 }
 
-interface ChatLunaMessage {
-  id?: string
-  name?: string
-}
-
 interface ChatLunaCharacterService {
   acquireResponseLock(session: Session, message: ChatLunaMessage): Promise<boolean>
   releaseResponseLock(session: Session): Promise<void>
@@ -165,23 +157,6 @@ export interface ChatCapsuleContext {
   on(event: string, listener: (...args: any[]) => void): unknown
   before(event: 'send', listener: (session?: Session) => unknown): unknown
   inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
-}
-
-function createMessageInput(session: Session, message?: ChatLunaMessage) {
-  const senderMetadata = readWebQQLiveSenderMetadata(session)
-  return {
-    bot: readBotProfile(session),
-    channel: {
-      id: session.channelId || session.event.channel?.id || 'unknown',
-      name: readChannelName(session),
-    },
-    user: {
-      id: message?.id || session.userId || session.event.user?.id || 'unknown',
-      name: message?.name || readUserName(session),
-      ...senderMetadata,
-    },
-    timestamp: session.timestamp,
-  }
 }
 
 // 注册聊天胶囊的状态监听和控制台前端入口。

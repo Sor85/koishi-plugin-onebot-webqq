@@ -30,9 +30,11 @@ import {
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
 } from '../src/webqq-live-cache'
+import { createMessageInput } from '../src/chatluna-message-input'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
+const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna-message-input.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
 const webqqLiveCacheSource = await readFile(new URL('../src/webqq-live-cache.ts', import.meta.url), 'utf8')
 const webqqLiveMessageSource = await readFile(new URL('../src/webqq-live-message.ts', import.meta.url), 'utf8')
@@ -388,6 +390,50 @@ describe('chat capsule plugin wiring', () => {
       otherMessage,
       liveMessage,
     ])
+  })
+
+  it('keeps ChatLuna message input building outside the plugin entry', () => {
+    const session = createSession({
+      event: {
+        guild: {
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Channel Name',
+        },
+        member: {
+          name: '群昵称',
+          role: 'admin',
+          level: '100',
+          title: '闪亮头衔',
+        },
+        user: {
+          id: '30000',
+          name: 'Event Alice',
+        },
+      },
+    }) as unknown as Session
+
+    expect(pluginSource).toContain("from './chatluna-message-input'")
+    expect(pluginSource).not.toContain('function createMessageInput(')
+    expect(chatlunaMessageInputSource).toContain('export function createMessageInput')
+    expect(createMessageInput(session, {
+      id: '40000',
+      name: 'Message Alice',
+    })).toMatchObject({
+      channel: {
+        id: '20000',
+        name: 'Guild Name',
+      },
+      user: {
+        id: '40000',
+        name: 'Message Alice',
+        senderRole: '管理员',
+        senderLevel: '100',
+        senderTitle: '闪亮头衔',
+      },
+    })
   })
 
   it('exports a Config schema for backend options', () => {
