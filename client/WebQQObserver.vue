@@ -314,12 +314,6 @@
       <aside v-if="groupInfoOpen && currentChat?.type === 'group'" class="chat-capsule-webqq__group-info">
         <header class="chat-capsule-webqq__group-info-header">
           <strong>群信息</strong>
-          <button type="button" aria-label="关闭群信息" @click="closeGroupInfo">
-            <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12"></path>
-              <path d="M18 6L6 18"></path>
-            </svg>
-          </button>
         </header>
         <div class="chat-capsule-webqq__group-info-body">
           <section class="chat-capsule-webqq__group-announcements">
@@ -1186,10 +1180,6 @@ async function loadGroupInfo() {
 function toggleGroupInfo() {
   groupInfoOpen.value = !groupInfoOpen.value
   if (groupInfoOpen.value) loadGroupInfo()
-}
-
-function closeGroupInfo() {
-  groupInfoOpen.value = false
 }
 
 async function loadMessages() {

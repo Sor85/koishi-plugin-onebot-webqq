@@ -631,10 +631,38 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__group-info')).toContain('width: 260px')
     expect(ruleBody('.chat-capsule-webqq__group-info')).toContain('border-left: 1px solid rgba(229, 231, 235, 0.58)')
     expect(ruleBody('.chat-capsule-webqq__group-info')).not.toContain('position: absolute')
-    expect(ruleBody('.chat-capsule-webqq__group-info-header')).toContain('justify-content: space-between')
+    expect(ruleBody('.chat-capsule-webqq__group-info-header')).not.toContain('justify-content: space-between')
     expect(ruleBody('.chat-capsule-webqq__group-announcements')).toContain('flex: 0 0 25%')
     expect(ruleBody('.chat-capsule-webqq__group-announcements')).toContain('gap: 12px')
     expect(ruleBody('.chat-capsule-webqq__group-members')).toContain('flex: 1')
     expect(ruleBody('.chat-capsule-webqq__group-member-list')).toContain('overflow-y: auto')
+  })
+
+  it('renders the group info toggle as a bare SVG icon button', () => {
+    const headerButtonBody = ruleBodyIncluding('button', ruleBody('.chat-capsule-webqq__chat-header'))
+    const freshHeaderButtonBody = ruleBodyIncluding('.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header button')
+    const frostedHeaderButtonBody = ruleBodyIncluding('.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat-header button')
+    const darkHeaderButtonBody = ruleBodyIncluding('.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header button')
+    const missingRequirements = [
+      headerButtonBody.includes('background: transparent')
+        ? ''
+        : '群信息按钮默认不应有卡片背景',
+      headerButtonBody.includes('border-radius: 0')
+        ? ''
+        : '群信息按钮不应保留卡片圆角',
+      /&\.is-active\s*\{[\s\S]*background:\s*transparent/.test(headerButtonBody)
+        ? ''
+        : '群信息按钮激活时不应有卡片背景',
+      freshHeaderButtonBody ? '清爽主题不应给群信息按钮加卡片背景' : '',
+      frostedHeaderButtonBody ? '毛玻璃主题不应给群信息按钮加卡片背景' : '',
+      darkHeaderButtonBody.includes('background')
+        ? '暗色主题不应给群信息按钮加卡片背景'
+        : '',
+      style.includes('.chat-capsule-webqq__header-icon::before') || style.includes('.chat-capsule-webqq__header-icon::after')
+        ? '群信息图标不应使用 CSS 伪元素绘制'
+        : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 })

@@ -668,13 +668,13 @@
     min-height: 32px;
     padding: 0;
     color: var(--chat-capsule-webqq-accent);
-    background: var(--chat-capsule-webqq-accent-soft);
+    background: transparent;
     border: 0;
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
 
     &.is-active {
-      background: var(--chat-capsule-webqq-accent-hover);
+      background: transparent;
     }
   }
 }
@@ -777,7 +777,6 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 0 18px;
   border-bottom: 1px solid rgba(229, 231, 235, 0.58);
@@ -786,17 +785,6 @@
     color: #1f2937;
     font-size: 15px;
     line-height: 21px;
-  }
-
-  button {
-    width: 32px;
-    min-height: 32px;
-    padding: 0;
-    color: #64748b;
-    background: rgba(255, 255, 255, 0.46);
-    border: 0;
-    border-radius: 8px;
-    cursor: pointer;
   }
 }
 
@@ -1773,13 +1761,11 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header button,
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-actions button {
   color: var(--chat-capsule-webqq-accent);
   background: #e8f0ff;
 }
 
-.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat-header button,
 .chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-actions button {
   color: var(--chat-capsule-webqq-accent);
   background: rgba(232, 240, 255, 0.78);
@@ -1848,7 +1834,6 @@
 .chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-tabs button.is-active,
 .chat-capsule-webqq.is-color-dark .chat-capsule-webqq__contact:hover,
 .chat-capsule-webqq.is-color-dark .chat-capsule-webqq__contact.is-active,
-.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header button,
 .chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-actions button {
   color: #dbeafe;
   background: rgba(37, 99, 235, 0.26);
@@ -1964,7 +1949,6 @@
   .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-tabs button.is-active,
   .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__contact:hover,
   .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__contact.is-active,
-  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header button,
   .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-actions button {
     color: #dbeafe;
     background: rgba(37, 99, 235, 0.26);

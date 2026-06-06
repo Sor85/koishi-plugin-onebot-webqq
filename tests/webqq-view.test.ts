@@ -509,8 +509,9 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('v-if="currentChat?.type === \'group\'"')
     expect(webqqView).toContain('aria-label="更多群信息"')
     expect(webqqView).toContain('@click="toggleGroupInfo"')
-    expect(webqqView).toContain('aria-label="关闭群信息"')
-    expect(webqqView).toContain('@click="closeGroupInfo"')
+    expect(webqqView).not.toContain('aria-label="关闭群信息"')
+    expect(webqqView).not.toContain('@click="closeGroupInfo"')
+    expect(webqqView).not.toContain('function closeGroupInfo()')
     expect(webqqView).toContain("send('chat-capsule/webqq/group-info'")
     expect(webqqView).toContain('chat-capsule-webqq__chat-main')
     expect(webqqView).toContain('chat-capsule-webqq__group-info')
@@ -525,6 +526,16 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('member.card.toLowerCase().includes(query)')
     expect(webqqView).toContain('member.userId.includes(groupInfoSearchQuery.value)')
     expect(webqqView).not.toContain('<button type="button" @click="loadContacts">刷新</button>')
+  })
+
+  it('uses an inline SVG three-dot button as the only group info toggle', () => {
+    const buttonSource = webqqView.match(/<button v-if="currentChat\?\.type === 'group'"[\s\S]*?<\/button>/)?.[0] ?? ''
+    expect(buttonSource).toContain('aria-label="更多群信息"')
+    expect(buttonSource).toContain('@click="toggleGroupInfo"')
+    expect(buttonSource).toContain('class="chat-capsule-webqq__header-icon"')
+    expect(buttonSource.match(/<circle /g)).toHaveLength(3)
+    expect(buttonSource).not.toContain('::before')
+    expect(buttonSource).not.toContain('::after')
   })
 
   it('shows latest message summary and time in the WebQQ contact list', () => {
