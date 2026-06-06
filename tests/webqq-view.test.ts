@@ -7,6 +7,7 @@ const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -234,12 +235,12 @@ describe('webqq observer view', () => {
   })
 
   it('persists WebQQ recent message summaries and unread counts in browser storage by default', () => {
-    expect(webqqView).toContain("const webQQStorageKey = 'chat-capsule:webqq:v1'")
-    expect(webqqView).toContain('function loadBrowserWebQQStoredState()')
+    expect(webqqStorage).toContain("const webQQStorageKey = 'chat-capsule:webqq:v1'")
+    expect(webqqStorage).toContain('function loadBrowserWebQQStoredState')
     expect(webqqView).toContain('function persistWebQQState()')
-    expect(webqqView).toContain("if (webQQStorageBackend.value !== 'browser') return empty")
-    expect(webqqView).toContain('localStorage.getItem(webQQStorageKey)')
-    expect(webqqView).toContain('localStorage.setItem(webQQStorageKey')
+    expect(webqqStorage).toContain("if (storageBackend !== 'browser') return empty")
+    expect(webqqStorage).toContain('localStorage.getItem(webQQStorageKey)')
+    expect(webqqStorage).toContain('localStorage.setItem(webQQStorageKey')
     expect(webqqView).toContain('conversationSummaries.value = stored.conversationSummaries')
     expect(webqqView).toContain('conversationUnreadCounts.value = stored.conversationUnreadCounts')
     expect(webqqView).toContain('persistWebQQState()')
@@ -250,16 +251,17 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('webQQStorageBackend')
     expect(webqqView).toContain('function createWebQQStoredState()')
     expect(webqqView).toContain('async function loadRemoteWebQQStoredState()')
-    expect(webqqView).toContain("if (webQQStorageBackend.value === 'browser') return")
-    expect(webqqView).toContain("send('chat-capsule/webqq/storage/load')")
+    expect(webqqStorage).toContain("if (storageBackend === 'browser') return")
+    expect(webqqStorage).toContain("send('chat-capsule/webqq/storage/load')")
     expect(webqqView).toContain('applyWebQQStoredState(stored)')
-    expect(webqqView).toContain("send('chat-capsule/webqq/storage/save', createWebQQStoredState())")
+    expect(webqqStorage).toContain("send('chat-capsule/webqq/storage/save', state)")
+    expect(webqqView).toContain('persistWebQQStoredState(webQQStorageBackend.value, createWebQQStoredState())')
     expect(webqqView).toContain('loadRemoteWebQQStoredState()')
   })
 
   it('caches full WebQQ messages in IndexedDB for the browser backend', () => {
-    expect(webqqView).toContain('loadBrowserWebQQMessages')
-    expect(webqqView).toContain('saveBrowserWebQQMessages')
+    expect(webqqStorage).toContain('loadBrowserWebQQMessages')
+    expect(webqqStorage).toContain('saveBrowserWebQQMessages')
     expect(webqqMessageCache).toContain('const webQQMessageCacheLimit = 100')
     expect(webqqMessageCache).toContain("indexedDB.open('chat-capsule-webqq'")
     expect(webqqMessageCache).toContain("database.createObjectStore('messages', { keyPath: 'id' })")
@@ -267,13 +269,15 @@ describe('webqq observer view', () => {
   })
 
   it('uses Koishi DB message cache listeners for the koishi backend', () => {
-    expect(webqqView).toContain('async function loadCachedWebQQMessages')
-    expect(webqqView).toContain('async function saveCachedWebQQMessages')
-    expect(webqqView).toContain("if (webQQStorageBackend.value === 'koishi')")
-    expect(webqqView).toContain("send('chat-capsule/webqq/messages/cache/load'")
-    expect(webqqView).toContain("send('chat-capsule/webqq/messages/cache/save'")
-    expect(webqqView).toContain('loadBrowserWebQQMessages(type, peerId)')
-    expect(webqqView).toContain('saveBrowserWebQQMessages(type, peerId, messages)')
+    expect(webqqStorage).toContain('async function loadCachedWebQQMessages')
+    expect(webqqStorage).toContain('async function saveCachedWebQQMessages')
+    expect(webqqStorage).toContain("if (storageBackend === 'koishi')")
+    expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/load'")
+    expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/save'")
+    expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId)')
+    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, messages)')
+    expect(webqqView).toContain('loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)')
+    expect(webqqView).toContain('saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value)')
   })
 
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {

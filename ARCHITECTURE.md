@@ -20,6 +20,7 @@
 - `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
+- `client/stores/webqq-storage.ts`：WebQQ 最近会话、未读数和消息缓存的前端存储分支
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
 - `client/WebQQObserver.vue`：WebQQ 主界面，当前包含联系人、聊天记录、通知、群信息、缓存、滚动、图片预览和合并转发弹窗
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存

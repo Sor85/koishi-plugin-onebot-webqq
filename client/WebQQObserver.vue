@@ -461,19 +461,22 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
-import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from './webqq-message-cache'
 import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'
+import {
+  loadBrowserWebQQStoredState,
+  loadCachedWebQQMessages as loadStoredWebQQMessages,
+  loadRemoteWebQQStoredState as loadRemoteWebQQStoredStateFromBackend,
+  persistWebQQStoredState,
+  saveCachedWebQQMessages as saveStoredWebQQMessages,
+  type ConversationSummary,
+  type WebQQStoredState,
+} from './stores/webqq-storage'
 
 type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
   | { type: 'group'; peerId: string; name: string; subtitle: string; avatar: string }
 
 type RecentItem = ChatSelection & { summary?: string; time?: number }
-type ConversationSummary = { summary: string; time: number }
-type WebQQStoredState = {
-  conversationSummaries: Record<string, ConversationSummary>
-  conversationUnreadCounts: Record<string, number>
-}
 type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
 type WebQQMessageElement = WebQQMessage['elements'][number]
 type WebQQElementRun =
@@ -482,7 +485,6 @@ type WebQQElementRun =
 type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
 
 const props = defineProps<{ visible: boolean }>()
-const webQQStorageKey = 'chat-capsule:webqq:v1'
 const webQQContactsRetryLimit = 10
 const webQQContactsRetryDelayMs = 800
 const defaultWebQQForwardAvatar = 'https://q1.qlogo.cn/g?b=qq&nk=0&s=640'
@@ -495,7 +497,7 @@ const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const conversationUnreadCounts = ref<Record<string, number>>({})
 const senderMetadataCache = ref<WebQQSenderMetadataCache>({})
-const stored = loadBrowserWebQQStoredState()
+const stored = loadBrowserWebQQStoredState(webQQStorageBackend.value)
 conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
@@ -522,34 +524,6 @@ const groupInfoErrorText = ref('')
 const groupInfoSearchQuery = ref('')
 const groupInfo = ref<WebQQGroupInfo>({ announcements: [], members: [] })
 
-function readStoredConversationSummaries(value: unknown) {
-  const summaries: Record<string, ConversationSummary> = {}
-  if (!value || typeof value !== 'object') return summaries
-  for (const [key, raw] of Object.entries(value)) {
-    if (!raw || typeof raw !== 'object') continue
-    const summary = Reflect.get(raw, 'summary')
-    const time = Reflect.get(raw, 'time')
-    if (typeof summary === 'string' && typeof time === 'number') summaries[key] = { summary, time }
-  }
-  return summaries
-}
-
-function readStoredUnreadCounts(value: unknown) {
-  const counts: Record<string, number> = {}
-  if (!value || typeof value !== 'object') return counts
-  for (const [key, count] of Object.entries(value)) {
-    if (typeof count === 'number' && count > 0) counts[key] = count
-  }
-  return counts
-}
-
-function createEmptyWebQQStoredState(): WebQQStoredState {
-  return {
-    conversationSummaries: {},
-    conversationUnreadCounts: {},
-  }
-}
-
 function createWebQQStoredState(): WebQQStoredState {
   return {
     conversationSummaries: conversationSummaries.value,
@@ -562,76 +536,21 @@ function applyWebQQStoredState(stored: WebQQStoredState) {
   conversationUnreadCounts.value = stored.conversationUnreadCounts
 }
 
-function normalizeWebQQStoredState(value: unknown): WebQQStoredState {
-  if (!value || typeof value !== 'object') return createEmptyWebQQStoredState()
-  return {
-    conversationSummaries: readStoredConversationSummaries(Reflect.get(value, 'conversationSummaries')),
-    conversationUnreadCounts: readStoredUnreadCounts(Reflect.get(value, 'conversationUnreadCounts')),
-  }
-}
-
-function loadBrowserWebQQStoredState(): WebQQStoredState {
-  const empty = {
-    conversationSummaries: {},
-    conversationUnreadCounts: {},
-  }
-  if (webQQStorageBackend.value !== 'browser') return empty
-  if (typeof localStorage === 'undefined') return empty
-  try {
-    const raw = localStorage.getItem(webQQStorageKey)
-    if (!raw) return empty
-    const data = JSON.parse(raw)
-    if (!data || typeof data !== 'object') return empty
-    return {
-      conversationSummaries: readStoredConversationSummaries(Reflect.get(data, 'conversationSummaries')),
-      conversationUnreadCounts: readStoredUnreadCounts(Reflect.get(data, 'conversationUnreadCounts')),
-    }
-  } catch {
-    return empty
-  }
-}
-
 function persistWebQQState() {
-  if (webQQStorageBackend.value !== 'browser') {
-    send('chat-capsule/webqq/storage/save', createWebQQStoredState()).catch(() => {})
-    return
-  }
-  if (typeof localStorage === 'undefined') return
-  try {
-    localStorage.setItem(webQQStorageKey, JSON.stringify(createWebQQStoredState()))
-  } catch {}
+  persistWebQQStoredState(webQQStorageBackend.value, createWebQQStoredState())
 }
 
 async function loadRemoteWebQQStoredState() {
-  if (webQQStorageBackend.value === 'browser') return
-  try {
-    const stored = normalizeWebQQStoredState(await send('chat-capsule/webqq/storage/load'))
-    applyWebQQStoredState(stored)
-  } catch {}
-}
-
-function normalizeCachedWebQQMessages(value: unknown) {
-  if (!Array.isArray(value)) return []
-  return value.filter((message) => message && typeof message === 'object') as WebQQMessage[]
+  const stored = await loadRemoteWebQQStoredStateFromBackend(webQQStorageBackend.value)
+  if (stored) applyWebQQStoredState(stored)
 }
 
 async function loadCachedWebQQMessages(type: ChatSelection['type'], peerId: string) {
-  if (webQQStorageBackend.value === 'koishi') {
-    try {
-      return normalizeCachedWebQQMessages(await send('chat-capsule/webqq/messages/cache/load', { type, peerId }))
-    } catch {
-      return []
-    }
-  }
-  return loadBrowserWebQQMessages(type, peerId)
+  return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)
 }
 
 async function saveCachedWebQQMessages(type: ChatSelection['type'], peerId: string, messages: WebQQMessage[]) {
-  if (webQQStorageBackend.value === 'koishi') {
-    await send('chat-capsule/webqq/messages/cache/save', { type, peerId, messages }).catch(() => {})
-    return
-  }
-  await saveBrowserWebQQMessages(type, peerId, messages)
+  await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value)
 }
 
 function normalizeAccentColor(color: string) {
