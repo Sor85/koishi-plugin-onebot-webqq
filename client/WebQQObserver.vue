@@ -328,25 +328,11 @@
       @open-image="openImagePreview"
       @image-load="handleMessageImageLoad"
     />
-    <div
+    <WebQQImagePreview
       v-if="imagePreviewUrl"
-      ref="imagePreview"
-      class="chat-capsule-webqq__image-preview"
-      role="dialog"
-      aria-modal="true"
-      aria-label="图片预览"
-      tabindex="0"
-      @click.stop.self="closeImagePreview"
-      @keydown.esc="closeImagePreview"
-    >
-      <button class="chat-capsule-webqq__image-preview-close" type="button" aria-label="关闭图片预览" @click="closeImagePreview">
-        <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 6l12 12"></path>
-          <path d="M18 6L6 18"></path>
-        </svg>
-      </button>
-      <img :src="imagePreviewUrl" alt="图片预览">
-    </div>
+      :url="imagePreviewUrl"
+      @close="closeImagePreview"
+    />
   </div>
 </template>
 
@@ -355,6 +341,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import WebQQForwardModal from './WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './WebQQGroupInfoPanel.vue'
+import WebQQImagePreview from './WebQQImagePreview.vue'
 import WebQQNoticeMenu from './WebQQNoticeMenu.vue'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
@@ -425,7 +412,7 @@ const {
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend)
-const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
+const { imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const historyLoading = ref(false)
 const historyExhausted = ref(false)

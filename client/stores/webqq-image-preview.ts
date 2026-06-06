@@ -1,13 +1,10 @@
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 
 export function useWebQQImagePreview(withProxy: (url: string) => string) {
-  const imagePreview = ref<HTMLElement>()
   const imagePreviewUrl = ref('')
 
-  async function openImagePreview(url: string) {
+  function openImagePreview(url: string) {
     imagePreviewUrl.value = withProxy(url)
-    await nextTick()
-    imagePreview.value?.focus()
   }
 
   function closeImagePreview() {
@@ -15,7 +12,6 @@ export function useWebQQImagePreview(withProxy: (url: string) => string) {
   }
 
   return {
-    imagePreview,
     imagePreviewUrl,
     openImagePreview,
     closeImagePreview,
