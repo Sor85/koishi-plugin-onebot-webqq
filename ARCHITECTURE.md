@@ -42,6 +42,7 @@
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-state.ts`：WebQQ 最近会话和未读数的前端状态类型与纯更新 helper
+- `client/stores/webqq-forward-dialog.ts`：WebQQ 合并转发弹窗状态 composable，负责弹窗内容、预览条数、默认头像和当前聊天样式下的聚合 class
 - `client/stores/webqq-group-info.ts`：WebQQ 群信息面板状态 composable，负责群公告、群成员、搜索、加载状态和打开切换
 - `client/stores/webqq-image-preview.ts`：WebQQ 图片预览状态 composable，负责预览 URL、遮罩 ref、打开和关闭
 - `client/stores/webqq-message-scroll.ts`：WebQQ 消息滚动状态 composable，负责消息面板 ref、底部跟随、返回底部和图片加载后的滚动
@@ -54,7 +55,7 @@
 - `client/utils/webqq-notice-view.ts`：WebQQ 通知展示纯函数，负责通知排序、申请备注拆行、已处理状态文案和可处理状态判断
 - `client/utils/webqq-theme-view.ts`：WebQQ 主题色展示纯函数，负责 accent 颜色校验、头像主题色优先级和 CSS 变量对象生成
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
-- `client/WebQQObserver.vue`：WebQQ 主界面，当前包含联系人、聊天记录、通知、群信息、缓存、滚动、图片预览和合并转发弹窗
+- `client/WebQQObserver.vue`：WebQQ 主界面，当前包含联系人、聊天记录、通知、群信息、缓存、滚动、图片预览和面板编排
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
 - `client/webqq-sender-metadata.ts`：前端群成员身份缓存补齐
 - `client/style.scss`：胶囊和 WebQQ 面板全部样式
@@ -104,7 +105,7 @@
 ## 当前高风险区域
 
 - `src/index.ts` 同时承担插件入口、console RPC、live 消息标准化、ChatLuna 状态、数据库存储和好感度读取
-- `client/WebQQObserver.vue` 同时承担视图、请求、缓存、滚动、未读数、通知和弹窗状态
+- `client/WebQQObserver.vue` 同时承担视图、请求、缓存、滚动、未读数、通知和多块面板编排
 - `client/style.scss` 体量过大，且强绑定 `Capsule.vue` 和 `WebQQObserver.vue` 的 class 结构
 - `src/index.ts` 和 `src/onebot.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

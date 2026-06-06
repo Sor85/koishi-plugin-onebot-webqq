@@ -460,7 +460,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
-import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
+import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import {
   loadBrowserWebQQStoredState,
   loadCachedWebQQMessages as loadStoredWebQQMessages,
@@ -477,6 +477,7 @@ import {
 } from './stores/webqq-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
+import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
@@ -488,10 +489,7 @@ import {
   formatThinkingDuration,
   formatTime,
   createBotThinkingMessage,
-  getForwardItemAvatar as getForwardItemAvatarFromView,
-  getForwardItemClusterClass as getForwardItemClusterClassFromView,
   getForwardItemName,
-  getForwardPreviewItems as getForwardPreviewItemsFromView,
   getForwardPreviewText,
   getLastOutgoingClusterThinkingMessage as getLastOutgoingClusterThinkingMessageFromView,
   getGroupMemberName,
@@ -501,7 +499,6 @@ import {
   getUnreadText,
   getWebQQElementRuns,
   isImageOnlyMessage,
-  isMergedForwardItem as isMergedForwardItemFromView,
   isMergedMessage as isMergedMessageFromView,
   mergeMessages,
   type WebQQMessageElement,
@@ -541,8 +538,6 @@ type FriendCategoryView = WebQQFriendCategoryView
 const props = defineProps<{ visible: boolean }>()
 const webQQContactsRetryLimit = 10
 const webQQContactsRetryDelayMs = 800
-const defaultWebQQForwardAvatar = 'https://q1.qlogo.cn/g?b=qq&nk=0&s=640'
-const webQQForwardPreviewLimit = 4
 
 const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
 const searchQuery = ref('')
@@ -556,7 +551,6 @@ conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
-const forwardDialog = ref<WebQQMessageElement>()
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
@@ -656,7 +650,16 @@ const visibleMessages = computed(() => {
   const cachedMessages = messages.value.map(applyMessageSenderMetadata)
   return botThinkingMessage.value ? [...cachedMessages, applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages
 })
-const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])
+const {
+  forwardDialog,
+  forwardDialogItems,
+  getForwardItemAvatar,
+  getForwardPreviewItems,
+  isMergedForwardItem,
+  getForwardItemClusterClass,
+  openForwardDialog: openWebQQForwardDialog,
+  closeForwardDialog,
+} = useWebQQForwardDialog(webQQChatStyle)
 
 function selectTab(tab: 'recent' | 'friends' | 'groups') {
   activeTab.value = tab
@@ -720,22 +723,6 @@ function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMess
   return getLastOutgoingClusterThinkingMessageFromView(visibleMessages.value, index)
 }
 
-function getForwardItemAvatar(item: WebQQForwardItem) {
-  return getForwardItemAvatarFromView(item, defaultWebQQForwardAvatar)
-}
-
-function getForwardPreviewItems(element: WebQQMessageElement) {
-  return getForwardPreviewItemsFromView(element, webQQForwardPreviewLimit)
-}
-
-function isMergedForwardItem(index: number) {
-  return isMergedForwardItemFromView(forwardDialogItems.value, index, webQQChatStyle.value)
-}
-
-function getForwardItemClusterClass(index: number) {
-  return getForwardItemClusterClassFromView(forwardDialogItems.value, index, webQQChatStyle.value)
-}
-
 function isMergedMessage(index: number) {
   return isMergedMessageFromView(messages.value, index, webQQChatStyle.value)
 }
@@ -751,14 +738,8 @@ function appendMessage(message: WebQQMessage) {
 
 // 打开结构化合并转发浮层，按 LLBot 的 modal 方式展示详情。
 function openForwardDialog(element: WebQQMessageElement) {
-  if (!element.items?.length) return
+  if (!openWebQQForwardDialog(element)) return
   noticeOpen.value = false
-  forwardDialog.value = element
-}
-
-// 清空合并转发浮层，恢复当前聊天面板。
-function closeForwardDialog() {
-  forwardDialog.value = undefined
 }
 
 function waitWebQQContactsRetry() {

@@ -3,13 +3,14 @@ import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
 import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
+import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
 import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
-import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
+import { createBotThinkingMessage, type WebQQMessageElement } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
@@ -20,6 +21,7 @@ const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
@@ -1151,7 +1153,7 @@ describe('webqq observer view', () => {
       'v-else-if="run.element.type === \'forward\'"',
       '</button>',
     )
-    const hasFixedPreviewLimit = /(?:const\s+[\w_]*forward[\w_]*preview[\w_]*(?:limit|count|items)[\w_]*\s*=\s*4|\.slice\(0,\s*4\)|\.slice\(0,\s*[\w_]*forward[\w_]*preview[\w_]*(?:limit|count|items)[\w_]*\))/i.test(webqqView)
+    const hasFixedPreviewLimit = /(?:const\s+[\w_]*forward[\w_]*preview[\w_]*(?:limit|count|items)[\w_]*\s*=\s*4|\.slice\(0,\s*4\)|\.slice\(0,\s*[\w_]*forward[\w_]*preview[\w_]*(?:limit|count|items)[\w_]*\))/i.test(`${webqqView}\n${webqqForwardDialogStore}`)
     const hasPreviewItemsLoop = /v-for="[^"]*(?:run\.element\.items|forward[\w_]*preview|get[\w_]*forward[\w_]*preview)[^"]*"/is.test(forwardBubbleSource)
     const hasPreviewItemSummary = /(?:item\.elements|(?:get|format)[\w_]*forward[\w_]*(?:summary|previewtext|previewText)[\w_]*\(item\))/i.test(forwardBubbleSource)
     const hasTotalEntryInBubble = /(?:查看[\s\S]{0,120}条转发消息|(?:get|format)[\w_]*forward[\w_]*(?:count|total|entry)[\w_]*\(run\.element\))/i.test(forwardBubbleSource)
@@ -1197,10 +1199,12 @@ describe('webqq observer view', () => {
   })
 
   it('opens forward message elements in an LLBot-style modal using the current WebQQ message style', () => {
-    expect(webqqView).toContain('const forwardDialog = ref<WebQQMessageElement>()')
-    expect(webqqView).toContain('const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])')
+    expect(webqqView).toContain("from './stores/webqq-forward-dialog'")
+    expect(webqqForwardDialogStore).toContain('const forwardDialog = ref<WebQQMessageElement>()')
+    expect(webqqForwardDialogStore).toContain('const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])')
     expect(webqqView).toContain('function openForwardDialog(element: WebQQMessageElement)')
-    expect(webqqView).toContain('function closeForwardDialog()')
+    expect(webqqView).toContain('openWebQQForwardDialog(element)')
+    expect(webqqForwardDialogStore).toContain('function closeForwardDialog()')
     expect(webqqView).toContain('@click.stop="openForwardDialog(run.element)"')
     expect(webqqView).toContain(':disabled="!run.element.items?.length"')
     expect(webqqView).toContain('v-if="forwardDialog"')
@@ -1219,13 +1223,42 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('getWebQQElementRuns(item.elements)')
     expect(webqqMessageView).toContain('function getForwardItemName(item: WebQQForwardItem)')
     expect(webqqMessageView).toContain('function getForwardItemAvatar(item: WebQQForwardItem, defaultAvatar: string)')
-    expect(webqqView).toContain('function isMergedForwardItem(index: number)')
-    expect(webqqView).toContain('isMergedForwardItemFromView(forwardDialogItems.value, index, webQQChatStyle.value)')
-    expect(webqqView).toContain('function getForwardItemClusterClass(index: number)')
-    expect(webqqView).toContain('getForwardItemClusterClassFromView(forwardDialogItems.value, index, webQQChatStyle.value)')
+    expect(webqqForwardDialogStore).toContain('function isMergedForwardItem(index: number)')
+    expect(webqqForwardDialogStore).toContain('isMergedForwardItemFromView(forwardDialogItems.value, index, chatStyle.value)')
+    expect(webqqForwardDialogStore).toContain('function getForwardItemClusterClass(index: number)')
+    expect(webqqForwardDialogStore).toContain('getForwardItemClusterClassFromView(forwardDialogItems.value, index, chatStyle.value)')
     expect(webqqView).toContain('@click="closeForwardDialog"')
     expect(webqqView).not.toContain('chat-capsule-webqq__forward-popover')
     expect(webqqView).not.toContain('chat-capsule-webqq__forward-page')
+  })
+
+  it('keeps forward modal state and style-aware grouping in a focused store', () => {
+    const chatStyle = ref('telegram')
+    const store = useWebQQForwardDialog(chatStyle)
+    const forwardElement: WebQQMessageElement = {
+      type: 'forward',
+      items: [
+        { title: 'Alice', senderId: '10001', elements: [{ type: 'text', text: 'one' }] },
+        { title: 'Alice', senderId: '10001', elements: [{ type: 'text', text: 'two' }] },
+        { title: 'Bob', senderId: '10002', elements: [{ type: 'text', text: 'three' }] },
+        { title: 'Carol', senderId: '10003', elements: [{ type: 'text', text: 'four' }] },
+        { title: 'Dave', senderId: '10004', elements: [{ type: 'text', text: 'five' }] },
+      ],
+    }
+
+    expect(store.openForwardDialog({ type: 'forward' })).toBe(false)
+    expect(store.forwardDialog.value).toBeUndefined()
+    expect(store.openForwardDialog(forwardElement)).toBe(true)
+    expect(store.forwardDialogItems.value).toHaveLength(5)
+    expect(store.getForwardPreviewItems(forwardElement)).toHaveLength(4)
+    expect(store.getForwardItemAvatar(store.forwardDialogItems.value[0])).toContain('nk=0')
+    expect(store.isMergedForwardItem(1)).toBe(true)
+    expect(store.getForwardItemClusterClass(0)).toBe('is-cluster-first')
+    chatStyle.value = 'default'
+    expect(store.isMergedForwardItem(1)).toBe(false)
+    expect(store.getForwardItemClusterClass(0)).toBe('')
+    store.closeForwardDialog()
+    expect(store.forwardDialog.value).toBeUndefined()
   })
 
   it('loads earlier WebQQ messages when scrolling to the top', () => {
