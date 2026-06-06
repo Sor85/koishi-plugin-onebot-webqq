@@ -1,6 +1,5 @@
 import {
   getActionData,
-  getNumberField,
   getStringField,
   isRecord,
   toArrayResult,
@@ -20,6 +19,11 @@ import {
   normalizeGroupAnnouncement,
   normalizeGroupMember,
 } from './onebot-group-info'
+import {
+  normalizeFriend,
+  normalizeFriendCategory,
+  normalizeGroup,
+} from './onebot-contacts'
 
 export type WebQQChatType = 'friend' | 'group'
 
@@ -258,39 +262,6 @@ async function callAction(bot: OneBotBot, action: string, params?: Record<string
   const method = bot.internal[action]
   if (typeof method !== 'function') throw new Error(`当前 OneBot 实现不支持 ${action}`)
   return method.call(bot.internal, params)
-}
-
-function normalizeFriend(raw: unknown, category?: { id: string; name: string }): WebQQFriend {
-  const item = isRecord(raw) ? raw : {}
-  const userId = getStringField(item, ['user_id', 'uin', 'uid'])
-  const nickname = getStringField(item, ['nickname', 'nick', 'name']) || userId
-  const remark = getStringField(item, ['remark', 'card'])
-  return {
-    userId,
-    name: remark || nickname,
-    nickname,
-    avatar: getUserAvatar(userId),
-    ...(category ? { categoryId: category.id, categoryName: category.name } : {}),
-  }
-}
-
-function normalizeFriendCategory(raw: unknown, index: number): WebQQFriendCategory {
-  const item = isRecord(raw) ? raw : {}
-  const id = getStringField(item, ['categoryId', 'category_id', 'id']) || String(index)
-  const name = getStringField(item, ['categoryName', 'category_name', 'name']) || '未分组'
-  const friends = toArrayResult(item, 'buddyList').map((friend) => normalizeFriend(friend, { id, name }))
-  return { id, name, friends }
-}
-
-function normalizeGroup(raw: unknown): WebQQGroup {
-  const item = isRecord(raw) ? raw : {}
-  const groupId = getStringField(item, ['group_id', 'groupCode', 'group_id_str'])
-  return {
-    groupId,
-    name: getStringField(item, ['group_name', 'groupName', 'name']) || groupId,
-    memberCount: getNumberField(item, ['member_count', 'memberCount']),
-    avatar: getGroupAvatar(groupId),
-  }
 }
 
 function getRecentPeerType(raw: Record<string, unknown>, peerId: string, friends: WebQQFriend[], groups: WebQQGroup[]): WebQQChatType {

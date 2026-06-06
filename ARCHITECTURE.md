@@ -16,6 +16,7 @@
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知、图片、引用和合并转发的读取与标准化
 - `src/onebot-card.ts`：OneBot JSON/XML/lightapp 卡片消息解析 helper
+- `src/onebot-contacts.ts`：OneBot 好友、好友分组和群列表标准化 helper
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换 helper
 - `src/onebot-display.ts`：OneBot WebQQ 展示字段派生 helper，负责头像 URL、群角色和群副标题
 - `src/onebot-group-info.ts`：OneBot 群成员和群公告标准化 helper
@@ -64,6 +65,7 @@
 - `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
 - `src/onebot-card.ts`：OneBot JSON/XML/lightapp 卡片消息解析
+- `src/onebot-contacts.ts`：OneBot 好友、好友分组和群列表标准化
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换
 - `src/onebot-display.ts`：OneBot WebQQ 展示字段派生
 - `src/onebot-group-info.ts`：OneBot 群成员和群公告标准化
