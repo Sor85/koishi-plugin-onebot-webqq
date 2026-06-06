@@ -1,5 +1,6 @@
 import type { Session } from 'koishi'
 import type { WebQQMessage } from './onebot'
+import { readWebQQSenderMetadata } from './webqq-sender-metadata'
 
 export function readBotProfile(session: Session) {
   const user = session.bot.toJSON?.().user
@@ -47,4 +48,8 @@ export function readWebQQPeer(session: Session) {
 export function readWebQQLiveDirection(session: Session): WebQQMessage['direction'] {
   const senderId = session.userId || session.event.user?.id
   return senderId && senderId === session.bot.selfId ? 'outgoing' : 'incoming'
+}
+
+export function readWebQQLiveSenderMetadata(session: Session) {
+  return readWebQQSenderMetadata(session.event.member)
 }

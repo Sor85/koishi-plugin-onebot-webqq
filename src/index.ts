@@ -43,13 +43,7 @@ import type {
 } from './webqq-storage'
 import { attachWebQQAffinityBadges } from './webqq-affinity'
 import { isRecord, readRecordText } from './structured-text'
-import {
-  normalizeLiveElements,
-  summarizeWebQQElements,
-  type WebQQForwardResolver,
-  type WebQQImageResolver,
-  type WebQQQuoteResolver,
-} from './webqq-live-elements'
+import { createWebQQLiveMessage } from './webqq-live-message'
 import { createWebQQImageUrlResolver, type WebQQImageServer } from './webqq-image-url-resolver'
 import {
   getWebQQGroupAvatar,
@@ -60,6 +54,7 @@ import {
   readUserName,
   readWebQQPeer,
   readWebQQLiveDirection,
+  readWebQQLiveSenderMetadata,
 } from './webqq-session'
 import {
   fillWebQQMessageSenderMetadata,
@@ -190,10 +185,6 @@ function getActionData(result: unknown) {
   return isRecord(item.data) ? item.data : item
 }
 
-function readWebQQLiveSenderMetadata(session: Session) {
-  return readWebQQSenderMetadata(session.event.member)
-}
-
 async function readWebQQGroupSenderMetadata(session: Session, userId: string, noCache: boolean): Promise<WebQQSenderMetadata | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
@@ -267,43 +258,6 @@ function createWebQQGroupLeaveNotice(session: Session): WebQQNotice | undefined 
     ...(groupName ? { groupName } : {}),
     ...(requesterId ? { requesterId } : {}),
     ...(requesterName ? { requesterName } : {}),
-  }
-}
-
-async function createWebQQLiveMessage(
-  session: Session,
-  direction: WebQQMessage['direction'],
-  resolveImage?: WebQQImageResolver,
-  resolveQuote?: WebQQQuoteResolver,
-  resolveForward?: WebQQForwardResolver,
-): Promise<WebQQLiveMessage | undefined> {
-  if ((session.bot.platform || session.platform) !== 'onebot') return
-  const peer = readWebQQPeer(session)
-  if (!peer) return
-  if (!(session.elements ?? session.event.message?.elements)?.length && !session.quote && !session.event.message?.quote && !session.content?.trim()) return
-  const bot = readBotProfile(session)
-  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote, resolveForward)
-  const senderId = direction === 'outgoing'
-    ? bot.selfId
-    : session.userId || session.event.user?.id || 'unknown'
-  const senderName = direction === 'outgoing'
-    ? readMemberName(session) || bot.name || '机器人'
-    : readUserName(session) || senderId
-  const id = session.messageId || session.event.message?.id || `${direction}:${peer.type}:${peer.peerId}:${session.timestamp}`
-  return {
-    ...peer,
-    message: {
-      id,
-      sequence: session.messageId || session.event.message?.id || String(session.timestamp),
-      time: session.timestamp,
-      senderId,
-      senderName,
-      senderAvatar: getWebQQUserAvatar(senderId),
-      ...readWebQQLiveSenderMetadata(session),
-      direction,
-      summary: summarizeWebQQElements(elements),
-      elements,
-    },
   }
 }
 

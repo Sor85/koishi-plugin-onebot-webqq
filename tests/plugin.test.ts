@@ -7,6 +7,7 @@ import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
 import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
 import { getImageContentType, summarizeWebQQElements } from '../src/webqq-live-elements'
+import { createWebQQLiveMessage } from '../src/webqq-live-message'
 import { createWebQQImageUrlResolver } from '../src/webqq-image-url-resolver'
 import {
   getWebQQUserAvatar,
@@ -24,6 +25,7 @@ import {
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
+const webqqLiveMessageSource = await readFile(new URL('../src/webqq-live-message.ts', import.meta.url), 'utf8')
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq-image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqSessionSource = await readFile(new URL('../src/webqq-session.ts', import.meta.url), 'utf8')
@@ -134,13 +136,35 @@ describe('chat capsule plugin wiring', () => {
       { type: 'card', title: '春日影', text: 'MyGO!!!!!' },
     ]
 
-    expect(pluginSource).toContain("from './webqq-live-elements'")
+    expect(pluginSource).not.toContain("from './webqq-live-elements'")
+    expect(webqqLiveMessageSource).toContain("from './webqq-live-elements'")
     expect(pluginSource).not.toContain('function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('async function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('export async function normalizeLiveElements(')
     expect(webqqLiveElementsSource).toContain('export function summarizeWebQQElements')
     expect(summarizeWebQQElements(elements)).toBe('[图片]春日影')
     expect(getImageContentType('cover.webp')).toBe('image/webp')
+  })
+
+  it('keeps WebQQ live message payload building outside the plugin entry', async () => {
+    const payload = await createWebQQLiveMessage(createSession({
+      content: 'hello',
+    }) as unknown as Session, 'incoming')
+
+    expect(pluginSource).toContain("from './webqq-live-message'")
+    expect(pluginSource).not.toContain('async function createWebQQLiveMessage(')
+    expect(webqqLiveMessageSource).toContain('export async function createWebQQLiveMessage')
+    expect(payload).toMatchObject({
+      type: 'group',
+      peerId: '20000',
+      message: {
+        senderId: '30000',
+        senderName: 'Event Alice',
+        direction: 'incoming',
+        summary: 'hello',
+        elements: [{ type: 'text', text: 'hello' }],
+      },
+    })
   })
 
   it('keeps WebQQ image URL proxy helper outside the plugin entry', async () => {
