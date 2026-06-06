@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
+import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
 const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
@@ -11,6 +12,7 @@ const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts',
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
 const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
+const webqqThemeView = await readFile(new URL('../client/utils/webqq-theme-view.ts', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -78,13 +80,33 @@ describe('webqq observer view', () => {
 
   it('uses bot avatar accent color ahead of the manual WebQQ accent color', () => {
     expect(webqqView).toContain('const webQQEffectiveAccentColor = computed')
-    expect(webqqView).toContain('if (useBotAvatarThemeColor.value)')
-    expect(webqqView).toContain('return normalizeAccentColor(webQQAvatarAccentColor.value)')
-    expect(webqqView).toContain("return '#2563eb'")
-    expect(webqqView).toContain('return normalizeAccentColor(webQQAccentColor.value)')
+    expect(webqqView).toContain('getWebQQEffectiveAccentColor(')
+    expect(webqqView).toContain('useBotAvatarThemeColor.value')
+    expect(webqqView).toContain('webQQAvatarAccentColor.value')
+    expect(webqqView).toContain('webQQAccentColor.value')
+    expect(webqqThemeView).toContain('function normalizeAccentColor(color: string)')
+    expect(webqqThemeView).toContain('if (useBotAvatarColor)')
+    expect(webqqThemeView).toContain('return normalizeAccentColor(avatarAccentColor)')
+    expect(webqqThemeView).toContain('return defaultWebQQAccentColor')
+    expect(webqqThemeView).toContain('return normalizeAccentColor(accentColor)')
     expect(webqqView).toContain('const webQQAccentStyle = computed')
-    expect(webqqView).toContain("'--chat-capsule-webqq-accent': webQQEffectiveAccentColor.value")
-    expect(webqqView).toContain("'--chat-capsule-webqq-accent-soft': hexToRgba(webQQEffectiveAccentColor.value, 0.14)")
+    expect(webqqView).toContain('getWebQQAccentStyle(webQQEffectiveAccentColor.value)')
+    expect(webqqThemeView).toContain("'--chat-capsule-webqq-accent': accentColor")
+    expect(webqqThemeView).toContain("'--chat-capsule-webqq-accent-soft': hexToRgba(accentColor, 0.14)")
+  })
+
+  it('formats WebQQ accent colors for CSS variables', () => {
+    expect(normalizeAccentColor('#123abc')).toBe('#123abc')
+    expect(normalizeAccentColor('123abc')).toBe('#2563eb')
+    expect(getWebQQEffectiveAccentColor(true, '#abcdef', '#123456')).toBe('#abcdef')
+    expect(getWebQQEffectiveAccentColor(true, '', '#123456')).toBe('#2563eb')
+    expect(getWebQQEffectiveAccentColor(false, '#abcdef', '#123456')).toBe('#123456')
+    expect(getWebQQAccentStyle('#336699')).toEqual({
+      '--chat-capsule-webqq-accent': '#336699',
+      '--chat-capsule-webqq-accent-soft': 'rgba(51, 102, 153, 0.14)',
+      '--chat-capsule-webqq-accent-hover': 'rgba(51, 102, 153, 0.18)',
+      '--chat-capsule-webqq-accent-shadow': 'rgba(51, 102, 153, 0.24)',
+    })
   })
 
   it('passes panel visibility to the WebQQ observer', () => {

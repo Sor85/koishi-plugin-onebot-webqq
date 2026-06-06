@@ -519,6 +519,7 @@ import {
   type WebQQChatSelection,
   type WebQQRecentItem,
 } from './utils/webqq-contact-view'
+import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq-theme-view'
 
 type ChatSelection = WebQQChatSelection
 type RecentItem = WebQQRecentItem
@@ -593,32 +594,12 @@ async function saveCachedWebQQMessages(type: ChatSelection['type'], peerId: stri
   await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value)
 }
 
-function normalizeAccentColor(color: string) {
-  return /^#[0-9a-f]{6}$/i.test(color) ? color : '#2563eb'
-}
-
-function hexToRgba(color: string, opacity: number) {
-  const normalized = normalizeAccentColor(color)
-  const red = Number.parseInt(normalized.slice(1, 3), 16)
-  const green = Number.parseInt(normalized.slice(3, 5), 16)
-  const blue = Number.parseInt(normalized.slice(5, 7), 16)
-  return `rgba(${red}, ${green}, ${blue}, ${opacity})`
-}
-
-const webQQEffectiveAccentColor = computed(() => {
-  if (useBotAvatarThemeColor.value) {
-    if (webQQAvatarAccentColor.value) return normalizeAccentColor(webQQAvatarAccentColor.value)
-    return '#2563eb'
-  }
-  return normalizeAccentColor(webQQAccentColor.value)
-})
-
-const webQQAccentStyle = computed(() => ({
-  '--chat-capsule-webqq-accent': webQQEffectiveAccentColor.value,
-  '--chat-capsule-webqq-accent-soft': hexToRgba(webQQEffectiveAccentColor.value, 0.14),
-  '--chat-capsule-webqq-accent-hover': hexToRgba(webQQEffectiveAccentColor.value, 0.18),
-  '--chat-capsule-webqq-accent-shadow': hexToRgba(webQQEffectiveAccentColor.value, 0.24),
-}))
+const webQQEffectiveAccentColor = computed(() => getWebQQEffectiveAccentColor(
+  useBotAvatarThemeColor.value,
+  webQQAvatarAccentColor.value,
+  webQQAccentColor.value,
+))
+const webQQAccentStyle = computed(() => getWebQQAccentStyle(webQQEffectiveAccentColor.value))
 
 const visibleFriends = computed(() => getVisibleFriends(contacts.value, searchQuery.value))
 const visibleGroups = computed(() => getVisibleGroups(contacts.value, searchQuery.value))

@@ -1,0 +1,30 @@
+const defaultWebQQAccentColor = '#2563eb'
+
+export function normalizeAccentColor(color: string) {
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : defaultWebQQAccentColor
+}
+
+function hexToRgba(color: string, opacity: number) {
+  const normalized = normalizeAccentColor(color)
+  const red = Number.parseInt(normalized.slice(1, 3), 16)
+  const green = Number.parseInt(normalized.slice(3, 5), 16)
+  const blue = Number.parseInt(normalized.slice(5, 7), 16)
+  return `rgba(${red}, ${green}, ${blue}, ${opacity})`
+}
+
+export function getWebQQEffectiveAccentColor(useBotAvatarColor: boolean, avatarAccentColor: string, accentColor: string) {
+  if (useBotAvatarColor) {
+    if (avatarAccentColor) return normalizeAccentColor(avatarAccentColor)
+    return defaultWebQQAccentColor
+  }
+  return normalizeAccentColor(accentColor)
+}
+
+export function getWebQQAccentStyle(accentColor: string) {
+  return {
+    '--chat-capsule-webqq-accent': accentColor,
+    '--chat-capsule-webqq-accent-soft': hexToRgba(accentColor, 0.14),
+    '--chat-capsule-webqq-accent-hover': hexToRgba(accentColor, 0.18),
+    '--chat-capsule-webqq-accent-shadow': hexToRgba(accentColor, 0.24),
+  }
+}
