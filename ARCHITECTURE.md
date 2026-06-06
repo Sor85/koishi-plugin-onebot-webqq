@@ -17,6 +17,7 @@
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知、图片、引用和合并转发的读取与标准化
 - `src/onebot-card.ts`：OneBot JSON/XML/lightapp 卡片消息解析 helper
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换 helper
+- `src/onebot-display.ts`：OneBot WebQQ 展示字段派生 helper，负责头像 URL、群角色和群副标题
 - `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取 helper
 - `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
 - `src/chatluna-message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
@@ -62,6 +63,7 @@
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
 - `src/onebot-card.ts`：OneBot JSON/XML/lightapp 卡片消息解析
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换
+- `src/onebot-display.ts`：OneBot WebQQ 展示字段派生
 - `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
 - `src/webqq-event-notices.ts`：后端 WebQQ session 事件通知 payload 构造

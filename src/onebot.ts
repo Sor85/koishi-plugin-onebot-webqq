@@ -10,6 +10,12 @@ import {
 } from './onebot-data'
 import { getTextValue, normalizeMentionMarkupText } from './onebot-text'
 import { normalizeCardElement } from './onebot-card'
+import {
+  getGroupAvatar,
+  getGroupSubtitle,
+  getUserAvatar,
+  normalizeGroupRole,
+} from './onebot-display'
 
 export type WebQQChatType = 'friend' | 'group'
 
@@ -212,12 +218,6 @@ async function normalizeImageElement(data: Record<string, unknown>, bot: OneBotB
   }
 }
 
-function normalizeGroupRole(role: string) {
-  if (role === 'owner') return '群主'
-  if (role === 'admin' || role === 'administrator') return '管理员'
-  return ''
-}
-
 function getOneBotBots(ctx: OneBotContext) {
   return (ctx.bots ?? []).filter((bot): bot is OneBotBot => {
     return isRecord(bot) && isRecord(bot.internal)
@@ -254,14 +254,6 @@ async function callAction(bot: OneBotBot, action: string, params?: Record<string
   const method = bot.internal[action]
   if (typeof method !== 'function') throw new Error(`当前 OneBot 实现不支持 ${action}`)
   return method.call(bot.internal, params)
-}
-
-function getUserAvatar(userId: string) {
-  return `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640`
-}
-
-function getGroupAvatar(groupId: string) {
-  return `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/`
 }
 
 function normalizeFriend(raw: unknown, category?: { id: string; name: string }): WebQQFriend {
@@ -326,10 +318,6 @@ async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: Web
     summary,
     time,
   }
-}
-
-function getGroupSubtitle(group: WebQQGroup) {
-  return `群聊 ${group.groupId} · ${group.memberCount} 人`
 }
 
 function normalizeGroupMember(raw: unknown): WebQQGroupMember {
