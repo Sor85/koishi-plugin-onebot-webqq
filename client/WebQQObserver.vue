@@ -461,6 +461,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
+import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
@@ -500,8 +501,6 @@ import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq
 type RecentItem = WebQQRecentItem
 
 const props = defineProps<{ visible: boolean }>()
-const webQQContactsRetryLimit = 10
-const webQQContactsRetryDelayMs = 800
 
 const {
   conversationSummaries,
@@ -649,12 +648,6 @@ function openForwardDialog(element: WebQQMessageElement) {
   noticeOpen.value = false
 }
 
-function waitWebQQContactsRetry() {
-  return new Promise<void>((resolve) => {
-    window.setTimeout(resolve, webQQContactsRetryDelayMs)
-  })
-}
-
 async function requestWebQQContacts() {
   return await send('chat-capsule/webqq/contacts') as WebQQContacts || { friends: [], groups: [] }
 }
@@ -663,15 +656,7 @@ async function loadContacts() {
   loading.value = true
   errorText.value = ''
   try {
-    for (let attempt = 1; attempt <= webQQContactsRetryLimit; attempt++) {
-      try {
-        contacts.value = await requestWebQQContacts()
-        return
-      } catch (error) {
-        if (attempt === webQQContactsRetryLimit) throw error
-        await waitWebQQContactsRetry()
-      }
-    }
+    contacts.value = await requestWebQQContactsWithRetry(requestWebQQContacts)
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '加载联系人失败'
   } finally {

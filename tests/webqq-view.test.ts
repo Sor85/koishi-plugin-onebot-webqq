@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
 import { useWebQQContacts } from '../client/stores/webqq-contacts'
 import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
+import { requestWebQQContactsWithRetry } from '../client/stores/webqq-contact-loader'
 import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
 import { useWebQQMessageList } from '../client/stores/webqq-message-list'
@@ -39,6 +40,7 @@ const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts'
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
 const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
+const webqqContactLoader = await readFile(new URL('../client/stores/webqq-contact-loader.ts', import.meta.url), 'utf8')
 const webqqThemeView = await readFile(new URL('../client/utils/webqq-theme-view.ts', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
@@ -485,11 +487,13 @@ describe('webqq observer view', () => {
   })
 
   it('retries WebQQ contacts while Koishi and OneBot are still starting', () => {
-    expect(webqqView).toContain('const webQQContactsRetryLimit')
-    expect(webqqView).toContain('function waitWebQQContactsRetry()')
-    expect(webqqView).toContain('for (let attempt = 1; attempt <= webQQContactsRetryLimit; attempt++)')
-    expect(webqqView).toContain('if (attempt === webQQContactsRetryLimit) throw error')
-    expect(webqqView).toContain('await waitWebQQContactsRetry()')
+    expect(webqqView).toContain('requestWebQQContactsWithRetry(requestWebQQContacts)')
+    expect(webqqContactLoader).toContain('const webQQContactsRetryLimit = 10')
+    expect(webqqContactLoader).toContain('function waitWebQQContactsRetry()')
+    expect(webqqContactLoader).toContain('for (let attempt = 1; ; attempt++)')
+    expect(webqqContactLoader).toContain('if (attempt >= webQQContactsRetryLimit) throw error')
+    expect(webqqContactLoader).toContain('await waitWebQQContactsRetry()')
+    expect(requestWebQQContactsWithRetry).toBeTypeOf('function')
   })
 
   it('persists WebQQ recent message summaries and unread counts in browser storage by default', () => {
