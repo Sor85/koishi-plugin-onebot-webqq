@@ -183,6 +183,7 @@ export interface WebQQContacts {
 
 export type WebQQTheme = 'fresh' | 'frosted' | 'glass'
 export type WebQQChatStyle = 'qq' | 'telegram'
+export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
 export const capsule = ref<CapsuleData>()
@@ -194,5 +195,6 @@ export const webQQTotalUnread = ref(0)
 export const webQQAccentColor = ref('#2563eb')
 export const webQQAvatarAccentColor = ref('')
 export const webQQChatStyle = ref<WebQQChatStyle>('qq')
+export const webQQColorMode = ref<WebQQColorMode>('auto')
 export const webQQStorageBackend = ref<WebQQStorageBackend>('browser')
 export const webQQTheme = ref<WebQQTheme>('fresh')
