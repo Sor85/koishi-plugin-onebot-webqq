@@ -11,6 +11,7 @@ const onebotNoticesSource = await readFile(new URL('../src/onebot-notices.ts', i
 const onebotGroupInfoSource = await readFile(new URL('../src/onebot-group-info.ts', import.meta.url), 'utf8')
 const onebotContactsSource = await readFile(new URL('../src/onebot-contacts.ts', import.meta.url), 'utf8')
 const onebotActionsSource = await readFile(new URL('../src/onebot-actions.ts', import.meta.url), 'utf8')
+const onebotImagesSource = await readFile(new URL('../src/onebot-images.ts', import.meta.url), 'utf8')
 
 describe('onebot webqq adapter', () => {
   it('keeps OneBot data field helpers outside the adapter entry', () => {
@@ -72,6 +73,14 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).not.toContain('async function callAction(')
     expect(onebotActionsSource).toContain('export function selectBot')
     expect(onebotActionsSource).toContain('export async function callAction')
+  })
+
+  it('keeps OneBot image resolving outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './onebot-images'")
+    expect(onebotSource).not.toContain('async function normalizeImageElement(')
+    expect(onebotSource).not.toContain('async function resolveOneBotImage(')
+    expect(onebotImagesSource).toContain('export async function normalizeImageElement')
+    expect(onebotImagesSource).toContain('export async function resolveOneBotImage')
   })
 
   it('loads friends and groups through the OneBot request API', async () => {
