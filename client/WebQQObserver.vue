@@ -508,6 +508,9 @@ import {
   getChatKey,
   getContactSubtitle as getContactSubtitleFromView,
   getContactTime as getContactTimeFromView,
+  getCurrentChatAvatar,
+  getCurrentChatSubtitle,
+  getCurrentChatTitle,
   getGroupSubtitle,
   getRecentItems,
   getUnreadCount as getUnreadCountFromView,
@@ -606,9 +609,9 @@ const visibleGroups = computed(() => getVisibleGroups(contacts.value, searchQuer
 const visibleFriendCategories = computed<FriendCategoryView[]>(() => getVisibleFriendCategories(contacts.value, searchQuery.value))
 const recentItems = computed<RecentItem[]>(() => getRecentItems(contacts.value, conversationSummaries.value))
 const currentPeerId = computed(() => currentChat.value?.peerId)
-const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
-const currentSubtitle = computed(() => currentChat.value ? getChatSubtitle(currentChat.value) : '好友 / 群聊')
-const currentAvatar = computed(() => currentChat.value?.avatar || '')
+const currentTitle = computed(() => getCurrentChatTitle(currentChat.value))
+const currentSubtitle = computed(() => getCurrentChatSubtitle(currentChat.value, contacts.value))
+const currentAvatar = computed(() => getCurrentChatAvatar(currentChat.value))
 const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))
 const filteredNotices = computed(() => {
   return sortPendingNotices(notices.value.filter((notice) => {
@@ -628,12 +631,6 @@ const forwardDialogItems = computed(() => forwardDialog.value?.items ?? [])
 function selectTab(tab: 'recent' | 'friends' | 'groups') {
   activeTab.value = tab
   noticeOpen.value = false
-}
-
-function getChatSubtitle(chat: ChatSelection) {
-  if (chat.type !== 'group') return chat.subtitle
-  const group = contacts.value.groups.find((item) => item.groupId === chat.peerId)
-  return group ? getGroupSubtitle(group) : chat.subtitle
 }
 
 function updateConversationSummary(type: ChatSelection['type'], peerId: string, message?: WebQQMessage) {

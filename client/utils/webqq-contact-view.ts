@@ -32,6 +32,21 @@ export function getGroupSubtitle(group: WebQQGroup) {
   return `群聊 ${group.groupId} · ${group.memberCount} 人`
 }
 
+export function getCurrentChatTitle(chat: WebQQChatSelection | undefined) {
+  return chat?.name || 'WebQQ'
+}
+
+export function getCurrentChatSubtitle(chat: WebQQChatSelection | undefined, contacts: WebQQContacts) {
+  if (!chat) return '好友 / 群聊'
+  if (chat.type !== 'group') return chat.subtitle
+  const group = contacts.groups.find((item) => item.groupId === chat.peerId)
+  return group ? getGroupSubtitle(group) : chat.subtitle
+}
+
+export function getCurrentChatAvatar(chat: WebQQChatSelection | undefined) {
+  return chat?.avatar || ''
+}
+
 export function getChatKey(type: WebQQChatSelection['type'], peerId: string) {
   return `${type}:${peerId}`
 }

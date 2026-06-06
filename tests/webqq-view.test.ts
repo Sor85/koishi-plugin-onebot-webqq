@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
+import { getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
@@ -330,6 +331,27 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('contacts.value.groups.slice(0, 4)')
   })
 
+  it('formats the current WebQQ chat header from contact data', () => {
+    expect(webqqView).toContain('getCurrentChatTitle(currentChat.value)')
+    expect(webqqView).toContain('getCurrentChatSubtitle(currentChat.value, contacts.value)')
+    expect(webqqView).toContain('getCurrentChatAvatar(currentChat.value)')
+    expect(webqqContactView).toContain('function getCurrentChatTitle')
+    expect(webqqContactView).toContain('function getCurrentChatSubtitle')
+    expect(webqqContactView).toContain('function getCurrentChatAvatar')
+    expect(getCurrentChatTitle(undefined)).toBe('WebQQ')
+    expect(getCurrentChatSubtitle(undefined, { friends: [], groups: [] })).toBe('好友 / 群聊')
+    expect(getCurrentChatAvatar(undefined)).toBe('')
+    expect(getCurrentChatSubtitle(createGroupChatSelection({ subtitle: '旧群信息' }), {
+      friends: [],
+      groups: [{
+        groupId: '20000',
+        name: '群聊',
+        memberCount: 42,
+        avatar: '',
+      }],
+    })).toBe('群聊 20000 · 42 人')
+  })
+
   it('retries WebQQ contacts while Koishi and OneBot are still starting', () => {
     expect(webqqView).toContain('const webQQContactsRetryLimit')
     expect(webqqView).toContain('function waitWebQQContactsRetry()')
@@ -632,6 +654,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('class="chat-capsule-webqq__chat-avatar"')
     expect(webqqView).toContain(':src="withProxy(currentAvatar)"')
     expect(webqqContactView).toContain('function getGroupSubtitle')
+    expect(webqqContactView).toContain('function getCurrentChatSubtitle')
     expect(webqqView).toContain('currentSubtitle = computed')
   })
 
