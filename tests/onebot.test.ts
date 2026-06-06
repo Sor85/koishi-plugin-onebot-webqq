@@ -711,6 +711,51 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('renders xml at mentions inside quoted messages as readable text', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 7,
+            message_seq: 17,
+            time: 1710000006,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [
+              { type: 'reply', data: { id: 'quoted-xml-1' } },
+              { type: 'text', data: { text: '收到' } },
+            ],
+          }],
+        })),
+        get_msg: vi.fn(async () => ({
+          message_id: 'quoted-xml-1',
+          sender: {
+            user_id: 40000,
+            nickname: '彩虹猫',
+          },
+          message: '<msg><at qq="10000" name="宁宁"/>摸摸头</msg>',
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '收到',
+        elements: [
+          { type: 'quote', title: '彩虹猫', text: '@宁宁摸摸头' },
+          { type: 'text', text: '收到' },
+        ],
+      }),
+    ])
+  })
+
   it('reads forward segments from history messages through get_forward_msg', async () => {
     const bot = {
       platform: 'onebot',
