@@ -6,6 +6,12 @@ import {
   toOneBotId,
   toTimestampMs,
 } from './onebot-data'
+import {
+  callAction,
+  selectBot,
+  type OneBotBot,
+  type OneBotContext,
+} from './onebot-actions'
 import { getTextValue, normalizeMentionMarkupText } from './onebot-text'
 import { normalizeCardElement } from './onebot-card'
 import {
@@ -185,23 +191,6 @@ export interface OneBotWebQQOptions {
   imageUrlResolver?: (file: string) => string
 }
 
-interface OneBotContext {
-  bots?: unknown[]
-}
-
-interface OneBotBot {
-  platform?: string
-  selfId?: string
-  status?: number
-  internal: OneBotInternal
-}
-
-interface OneBotInternal extends Record<string, unknown> {
-  _request?: (action: string, params: Record<string, unknown>) => Promise<unknown>
-}
-
-const oneBotOnlineStatus = 1
-
 function toStringId(value: unknown) {
   return value == null ? '' : String(value)
 }
@@ -224,44 +213,6 @@ async function normalizeImageElement(data: Record<string, unknown>, bot: OneBotB
   } catch {
     return { type: 'image' }
   }
-}
-
-function getOneBotBots(ctx: OneBotContext) {
-  return (ctx.bots ?? []).filter((bot): bot is OneBotBot => {
-    return isRecord(bot) && isRecord(bot.internal)
-  })
-}
-
-function supportsOneBotAction(bot: OneBotBot) {
-  return typeof bot.internal._request === 'function' ||
-    typeof bot.internal.get_friend_list === 'function' ||
-    typeof bot.internal.get_group_list === 'function' ||
-    typeof bot.internal.get_group_member_list === 'function' ||
-    typeof bot.internal.get_group_system_msg === 'function' ||
-    typeof bot.internal.set_friend_add_request === 'function' ||
-    typeof bot.internal.set_group_add_request === 'function'
-}
-
-function isOneBotReady(bot: OneBotBot) {
-  return (typeof bot.status !== 'number' || bot.status === oneBotOnlineStatus) && supportsOneBotAction(bot)
-}
-
-function selectBot(ctx: OneBotContext, options: OneBotWebQQOptions) {
-  const bots = getOneBotBots(ctx)
-  const selected = options.selfId
-    ? bots.find((bot) => bot.selfId === options.selfId && isOneBotReady(bot))
-    : bots.find(isOneBotReady)
-  if (!selected) throw new Error(options.selfId ? `未找到 selfId 为 ${options.selfId} 的 OneBot 机器人` : '未找到可用的 OneBot 机器人')
-  return selected
-}
-
-async function callAction(bot: OneBotBot, action: string, params?: Record<string, unknown>) {
-  if (typeof bot.internal._request === 'function') {
-    return bot.internal._request(action, params ?? {})
-  }
-  const method = bot.internal[action]
-  if (typeof method !== 'function') throw new Error(`当前 OneBot 实现不支持 ${action}`)
-  return method.call(bot.internal, params)
 }
 
 function getRecentPeerType(raw: Record<string, unknown>, peerId: string, friends: WebQQFriend[], groups: WebQQGroup[]): WebQQChatType {
