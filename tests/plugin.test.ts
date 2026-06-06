@@ -22,6 +22,10 @@ import {
   replaceWebQQMessageSenderMetadata,
 } from '../src/webqq-sender-metadata'
 import { readWebQQGroupSenderMetadata } from '../src/webqq-group-sender-metadata'
+import {
+  createWebQQFriendRequestNotice,
+  createWebQQGroupLeaveNotice,
+} from '../src/webqq-event-notices'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
@@ -30,6 +34,7 @@ const webqqLiveMessageSource = await readFile(new URL('../src/webqq-live-message
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq-image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq-group-sender-metadata.ts', import.meta.url), 'utf8')
+const webqqEventNoticesSource = await readFile(new URL('../src/webqq-event-notices.ts', import.meta.url), 'utf8')
 const webqqSessionSource = await readFile(new URL('../src/webqq-session.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
@@ -286,6 +291,59 @@ describe('chat capsule plugin wiring', () => {
       group_id: 20000,
       user_id: 30000,
       no_cache: true,
+    })
+  })
+
+  it('keeps WebQQ event notice builders outside the plugin entry', () => {
+    const friendSession = createSession({
+      userId: '30000',
+      event: {
+        _data: {
+          flag: 'flag-1',
+          comment: '请通过',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+      },
+    }) as unknown as Session
+    const groupSession = createSession({
+      userId: '30000',
+      event: {
+        guild: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+      },
+    }) as unknown as Session
+
+    expect(pluginSource).toContain("from './webqq-event-notices'")
+    expect(pluginSource).not.toContain('function createWebQQFriendRequestNotice(')
+    expect(webqqEventNoticesSource).toContain('export function createWebQQFriendRequestNotice')
+    expect(createWebQQFriendRequestNotice(friendSession)).toMatchObject({
+      id: 'friend:flag-1',
+      type: 'friend-request',
+      title: 'Alice',
+      requesterId: '30000',
+      requesterName: 'Alice',
+      comment: '请通过',
+    })
+    expect(createWebQQGroupLeaveNotice(groupSession)).toMatchObject({
+      id: 'group:leave:20000:30000:1710000000000',
+      type: 'group-notice',
+      title: 'Guild Name',
+      requesterId: '30000',
+      requesterName: 'Alice',
+      subType: 'leave',
     })
   })
 
