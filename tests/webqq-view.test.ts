@@ -9,6 +9,7 @@ const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.m
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
+const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -303,7 +304,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("noticeMenuTab === 'groups'")
     expect(webqqView).toContain("@click=\"noticeMenuTab = 'friends'\"")
     expect(webqqView).toContain("@click=\"noticeMenuTab = 'groups'\"")
-    expect(webqqView).toContain('sortPendingNotices')
+    expect(webqqNoticeView).toContain('function sortPendingNotices(items: WebQQNotice[])')
     expect(webqqView).toContain("send('chat-capsule/webqq/notices')")
     expect(webqqView).toContain("send('chat-capsule/webqq/notice-action'")
     expect(webqqView).toContain('v-for="notice in filteredNotices"')
@@ -344,10 +345,10 @@ describe('webqq observer view', () => {
   })
 
   it('splits WebQQ notice question and answer comments into separate lines', () => {
-    expect(webqqView).toContain('function formatNoticeComment(comment: string)')
-    expect(webqqView).toContain('问题[:：]')
-    expect(webqqView).toContain('答案[:：]')
-    expect(webqqView).toContain('return match ? [match[1], match[2]] : [comment]')
+    expect(webqqNoticeView).toContain('function formatNoticeComment(comment: string)')
+    expect(webqqNoticeView).toContain('问题[:：]')
+    expect(webqqNoticeView).toContain('答案[:：]')
+    expect(webqqNoticeView).toContain('return match ? [match[1], match[2]] : [comment]')
   })
 
   it('renders sender avatars for WebQQ messages', () => {
