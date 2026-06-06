@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
+import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
@@ -13,6 +14,7 @@ const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts', import.meta.url), 'utf8')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
@@ -570,13 +572,14 @@ describe('webqq observer view', () => {
   })
 
   it('opens WebQQ message images in a full-size preview overlay', () => {
-    expect(webqqView).toContain('const imagePreviewUrl = ref(\'\')')
-    expect(webqqView).toContain('const imagePreview = ref<HTMLElement>()')
-    expect(webqqView).toContain('function openImagePreview(url: string)')
-    expect(webqqView).toContain('imagePreviewUrl.value = withProxy(url)')
-    expect(webqqView).toContain('imagePreview.value?.focus()')
-    expect(webqqView).toContain('function closeImagePreview()')
-    expect(webqqView).toContain('imagePreviewUrl.value = \'\'')
+    expect(webqqView).toContain('useWebQQImagePreview(withProxy)')
+    expect(webqqImagePreview).toContain('const imagePreviewUrl = ref(\'\')')
+    expect(webqqImagePreview).toContain('const imagePreview = ref<HTMLElement>()')
+    expect(webqqImagePreview).toContain('async function openImagePreview(url: string)')
+    expect(webqqImagePreview).toContain('imagePreviewUrl.value = withProxy(url)')
+    expect(webqqImagePreview).toContain('imagePreview.value?.focus()')
+    expect(webqqImagePreview).toContain('function closeImagePreview()')
+    expect(webqqImagePreview).toContain('imagePreviewUrl.value = \'\'')
     expect(webqqView).toContain('@click="openImagePreview(message.elements[0].url)"')
     expect(webqqView).toContain('@click="openImagePreview(run.element.url)"')
     expect(webqqView).toContain('v-if="imagePreviewUrl"')
@@ -586,6 +589,14 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('@keydown.esc="closeImagePreview"')
     expect(webqqView).toContain(':src="imagePreviewUrl"')
     expect(webqqView).toContain('aria-label="关闭图片预览"')
+  })
+
+  it('keeps WebQQ image preview state in a small composable', async () => {
+    const preview = useWebQQImagePreview((url) => `proxy:${url}`)
+    await preview.openImagePreview('image.png')
+    expect(preview.imagePreviewUrl.value).toBe('proxy:image.png')
+    preview.closeImagePreview()
+    expect(preview.imagePreviewUrl.value).toBe('')
   })
 
   it('declares optional completed thinking data on backend and client WebQQ messages', () => {

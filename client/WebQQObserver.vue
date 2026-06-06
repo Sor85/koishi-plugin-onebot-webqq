@@ -476,6 +476,7 @@ import {
   setConversationSummary,
   type WebQQStoredState,
 } from './stores/webqq-state'
+import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import {
   formatListTime,
   formatNoticeTime,
@@ -555,8 +556,7 @@ conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
 const notices = ref<WebQQNotice[]>([])
 const messagePane = ref<HTMLElement>()
-const imagePreview = ref<HTMLElement>()
-const imagePreviewUrl = ref('')
+const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const forwardDialog = ref<WebQQMessageElement>()
 const trackingMessages = ref(true)
 const returningMessagesToBottom = ref(false)
@@ -771,18 +771,6 @@ function openForwardDialog(element: WebQQMessageElement) {
 // 清空合并转发浮层，恢复当前聊天面板。
 function closeForwardDialog() {
   forwardDialog.value = undefined
-}
-
-// 打开图片预览并把焦点移到遮罩，便于使用 Esc 关闭。
-async function openImagePreview(url: string) {
-  imagePreviewUrl.value = withProxy(url)
-  await nextTick()
-  imagePreview.value?.focus()
-}
-
-// 清空当前预览图，恢复聊天窗口交互。
-function closeImagePreview() {
-  imagePreviewUrl.value = ''
 }
 
 async function scrollMessagesToBottom(behavior: ScrollBehavior = 'auto') {
