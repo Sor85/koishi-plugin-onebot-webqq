@@ -475,6 +475,7 @@ import {
   setConversationSummary,
   type WebQQStoredState,
 } from './stores/webqq-state'
+import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
@@ -526,7 +527,6 @@ import {
   getUnreadCount as getUnreadCountFromView,
   getVisibleFriendCategories,
   getVisibleFriends,
-  getVisibleGroupMembers,
   getVisibleGroups,
   type WebQQFriendCategoryView,
   type WebQQChatSelection,
@@ -568,11 +568,24 @@ const handlingNoticeId = ref('')
 const loading = ref(false)
 const noticeErrorText = ref('')
 const errorText = ref('')
-const groupInfoOpen = ref(false)
-const groupInfoLoading = ref(false)
-const groupInfoErrorText = ref('')
-const groupInfoSearchQuery = ref('')
-const groupInfo = ref<WebQQGroupInfo>({ announcements: [], members: [] })
+
+async function requestGroupInfo() {
+  if (currentChat.value?.type !== 'group') return { announcements: [], members: [] }
+  return await send('chat-capsule/webqq/group-info', {
+    groupId: currentChat.value.peerId,
+  }) as WebQQGroupInfo || { announcements: [], members: [] }
+}
+
+const {
+  groupInfoOpen,
+  groupInfoLoading,
+  groupInfoErrorText,
+  groupInfoSearchQuery,
+  groupInfo,
+  visibleGroupMembers,
+  loadGroupInfo,
+  toggleGroupInfo,
+} = useWebQQGroupInfo(currentChat, { requestGroupInfo })
 
 function createWebQQStoredState(): WebQQStoredState {
   return {
@@ -626,7 +639,6 @@ const filteredNotices = computed(() => {
       : notice.type === 'group-notice'
   }))
 })
-const visibleGroupMembers = computed(() => getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value))
 const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(capsule.value, currentChat.value, messages.value))
 const visibleMessages = computed(() => {
   const cachedMessages = messages.value.map(applyMessageSenderMetadata)
@@ -802,26 +814,6 @@ function openNotices() {
 function closeNoticeMenu() {
   noticeOpen.value = false
   closeForwardDialog()
-}
-
-async function loadGroupInfo() {
-  if (currentChat.value?.type !== 'group') return
-  groupInfoLoading.value = true
-  groupInfoErrorText.value = ''
-  try {
-    groupInfo.value = await send('chat-capsule/webqq/group-info', {
-      groupId: currentChat.value.peerId,
-    }) as WebQQGroupInfo || { announcements: [], members: [] }
-  } catch (error) {
-    groupInfoErrorText.value = error instanceof Error ? error.message : '加载群信息失败'
-  } finally {
-    groupInfoLoading.value = false
-  }
-}
-
-function toggleGroupInfo() {
-  groupInfoOpen.value = !groupInfoOpen.value
-  if (groupInfoOpen.value) loadGroupInfo()
 }
 
 async function loadMessages() {

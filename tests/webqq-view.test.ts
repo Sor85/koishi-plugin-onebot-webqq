@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
+import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
+import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
 import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
@@ -16,6 +18,7 @@ const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
@@ -755,7 +758,9 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('aria-label="关闭群信息"')
     expect(webqqView).not.toContain('@click="closeGroupInfo"')
     expect(webqqView).not.toContain('function closeGroupInfo()')
+    expect(webqqView).toContain('useWebQQGroupInfo(currentChat, { requestGroupInfo })')
     expect(webqqView).toContain("send('chat-capsule/webqq/group-info'")
+    expect(webqqGroupInfoStore).toContain('requestGroupInfo: () => Promise<WebQQGroupInfo>')
     expect(webqqView).toContain('chat-capsule-webqq__chat-main')
     expect(webqqView).toContain('chat-capsule-webqq__group-info')
     expect(webqqView).toContain('chat-capsule-webqq__group-announcements')
@@ -764,12 +769,43 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('<strong>{{ announcement.title }}</strong>')
     expect(webqqView).toContain('v-for="member in visibleGroupMembers"')
     expect(webqqView).toContain('v-model="groupInfoSearchQuery"')
-    expect(webqqView).toContain('const visibleGroupMembers = computed')
-    expect(webqqView).toContain('getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value)')
+    expect(webqqGroupInfoStore).toContain('const visibleGroupMembers = computed')
+    expect(webqqGroupInfoStore).toContain('getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value)')
     expect(webqqContactView).toContain('sortWebQQGroupMembers(visibleMembers)')
     expect(webqqContactView).toContain('member.card.toLowerCase().includes(query)')
     expect(webqqContactView).toContain('member.userId.includes(rawQuery)')
     expect(webqqView).not.toContain('<button type="button" @click="loadContacts">刷新</button>')
+  })
+
+  it('keeps WebQQ group info panel state inside a composable', async () => {
+    const currentChat = ref<WebQQChatSelection>()
+    const requests: string[] = []
+    const groupInfo = useWebQQGroupInfo(currentChat, {
+      requestGroupInfo: async () => {
+        requests.push('load')
+        return {
+          announcements: [],
+          members: [
+            { userId: '2', nickname: 'Beta', card: '', avatar: '' },
+            { userId: '1', nickname: 'Alice', card: 'Alice', avatar: '', role: '群主' },
+          ],
+        }
+      },
+    })
+    expect(groupInfo.groupInfoOpen.value).toBe(false)
+    expect(groupInfo.groupInfoLoading.value).toBe(false)
+    expect(groupInfo.groupInfoErrorText.value).toBe('')
+    expect(groupInfo.groupInfoSearchQuery.value).toBe('')
+    expect(groupInfo.groupInfo.value).toEqual({ announcements: [], members: [] })
+
+    await groupInfo.loadGroupInfo()
+    expect(requests).toEqual([])
+
+    currentChat.value = createGroupChatSelection()
+    await groupInfo.loadGroupInfo()
+    expect(requests).toEqual(['load'])
+    groupInfo.groupInfoSearchQuery.value = '1'
+    expect(groupInfo.visibleGroupMembers.value.map((member) => member.userId)).toEqual(['1'])
   })
 
   it('uses an inline SVG three-dot button as the only group info toggle', () => {

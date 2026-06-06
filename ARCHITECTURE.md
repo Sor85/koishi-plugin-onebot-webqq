@@ -23,6 +23,7 @@
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-state.ts`：WebQQ 最近会话和未读数的前端状态类型与纯更新 helper
+- `client/stores/webqq-group-info.ts`：WebQQ 群信息面板状态 composable，负责群公告、群成员、搜索、加载状态和打开切换
 - `client/stores/webqq-image-preview.ts`：WebQQ 图片预览状态 composable，负责预览 URL、遮罩 ref、打开和关闭
 - `client/stores/webqq-message-scroll.ts`：WebQQ 消息滚动状态 composable，负责消息面板 ref、底部跟随、返回底部和图片加载后的滚动
 - `client/stores/webqq-sender-metadata.ts`：WebQQ 发送者身份缓存 composable，负责当前会话上下文下的缓存写入和消息补齐
