@@ -1,6 +1,5 @@
 import type { Session } from 'koishi'
 import { resolve } from 'path'
-import type { Entry } from '@koishijs/console'
 import type { Config as PluginConfig } from './config'
 import {
   parseThinkContent,
@@ -43,7 +42,7 @@ import type {
 } from './webqq-storage'
 import { attachWebQQAffinityBadges } from './webqq-affinity'
 import { createWebQQLiveMessage } from './webqq-live-message'
-import { createWebQQImageUrlResolver, type WebQQImageServer } from './webqq-image-url-resolver'
+import { createWebQQImageUrlResolver } from './webqq-image-url-resolver'
 import {
   readMemberName,
   readWebQQPeer,
@@ -70,8 +69,13 @@ import {
   readWebQQGroupSenderMetadata,
 } from './webqq-group-sender-metadata'
 import { createMessageInput, type ChatLunaMessage } from './chatluna-message-input'
+import type {
+  ChatCapsuleContext,
+  ChatLunaModelUsage,
+} from './plugin-context'
 
 export { Config } from './config'
+export type { ChatCapsuleContext } from './plugin-context'
 
 export const name = 'onebot-webqq'
 
@@ -102,61 +106,12 @@ declare module 'koishi' {
   }
 }
 
-interface ConsoleService {
-  addEntry(files: Entry.Files, data?: () => unknown): unknown
-  addListener(event: string, callback: (...args: any[]) => unknown, options?: { authority?: number }): unknown
-  broadcast(type: string, body: unknown, options?: { authority?: number }): unknown
-}
-
-interface ModelService {
-  extend(table: string, fields: Record<string, string>, options?: { primary?: string }): unknown
-}
-
-interface DatabaseService {
-  get(table: string, query: Record<string, unknown>): Promise<unknown[]>
-  upsert(table: string, rows: unknown[]): Promise<unknown>
-}
-
-interface DebugLogger {
-  info(format: string, ...param: unknown[]): unknown
-}
-
-interface ChatLunaCharacterService {
-  acquireResponseLock(session: Session, message: ChatLunaMessage): Promise<boolean>
-  releaseResponseLock(session: Session): Promise<void>
-}
-
-interface ChatLunaModelUsage {
-  source?: string
-  context?: {
-    conversationId?: string
-  }
-  usageMetadata?: {
-    input_tokens?: number
-    output_tokens?: number
-  }
-}
-
 type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
 
 const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
 
 function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
   return visibleUsageSources.has(usage.source || '')
-}
-
-// 描述插件运行所需的最小 Koishi 上下文能力。
-export interface ChatCapsuleContext {
-  console?: ConsoleService
-  server?: WebQQImageServer
-  database?: DatabaseService
-  model?: ModelService
-  chatluna_character?: ChatLunaCharacterService
-  bots?: unknown[]
-  logger?(name: string): DebugLogger
-  on(event: string, listener: (...args: any[]) => void): unknown
-  before(event: 'send', listener: (session?: Session) => unknown): unknown
-  inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
 }
 
 // 注册聊天胶囊的状态监听和控制台前端入口。

@@ -43,6 +43,7 @@ const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-me
 const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq-group-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqEventNoticesSource = await readFile(new URL('../src/webqq-event-notices.ts', import.meta.url), 'utf8')
 const webqqSessionSource = await readFile(new URL('../src/webqq-session.ts', import.meta.url), 'utf8')
+const pluginContextSource = await readFile(new URL('../src/plugin-context.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
 type TestLogger = {
@@ -141,6 +142,14 @@ describe('chat capsule plugin wiring', () => {
     expect(plugin.inject).toEqual({
       optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
     })
+  })
+
+  it('keeps Koishi context service types outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './plugin-context'")
+    expect(pluginSource).not.toContain('interface ConsoleService')
+    expect(pluginSource).not.toContain('interface ChatCapsuleContext')
+    expect(pluginContextSource).toContain('export interface ChatCapsuleContext')
+    expect(pluginContextSource).toContain('export interface ChatLunaModelUsage')
   })
 
   it('keeps WebQQ live element normalization outside the plugin entry', () => {
