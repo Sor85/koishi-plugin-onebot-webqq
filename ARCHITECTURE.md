@@ -24,7 +24,7 @@
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-state.ts`：WebQQ 最近会话和未读数的前端状态类型与纯更新 helper
 - `client/stores/webqq-storage.ts`：WebQQ 最近会话、未读数和消息缓存的前端存储分支
-- `client/utils/webqq-contact-view.ts`：WebQQ 联系人和最近会话展示纯函数，负责会话 key、当前聊天头部、群聊副标题、联系人搜索过滤、最近会话列表、摘要时间和未读数读取
+- `client/utils/webqq-contact-view.ts`：WebQQ 联系人和最近会话展示纯函数，负责会话 key、聊天选择构造、当前聊天头部、群聊副标题、联系人搜索过滤、最近会话列表、摘要时间和未读数读取
 - `client/utils/webqq-message-view.ts`：WebQQ 消息展示纯函数，负责消息 key、消息合并、未读数、时间、临时思考消息构造、思考耗时、completed thinking 聚合、消息元素分组、合并转发预览文案、消息聚类 class、群成员名称和发送者徽标判断
 - `client/utils/webqq-notice-view.ts`：WebQQ 通知展示纯函数，负责通知排序、申请备注拆行、已处理状态文案和可处理状态判断
 - `client/utils/webqq-theme-view.ts`：WebQQ 主题色展示纯函数，负责 accent 颜色校验、头像主题色优先级和 CSS 变量对象生成

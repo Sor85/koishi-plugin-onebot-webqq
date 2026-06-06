@@ -510,6 +510,9 @@ import {
   sortPendingNotices,
 } from './utils/webqq-notice-view'
 import {
+  createFriendChatSelection,
+  createGroupChatSelection,
+  createRecentChatSelection,
   getChatKey,
   getContactSubtitle as getContactSubtitleFromView,
   getContactTime as getContactTimeFromView,
@@ -934,26 +937,14 @@ async function loadOlderMessages() {
 function selectFriend(friend: WebQQFriend) {
   noticeOpen.value = false
   groupInfoOpen.value = false
-  currentChat.value = {
-    type: 'friend',
-    peerId: friend.userId,
-    name: friend.name,
-    subtitle: friend.nickname,
-    avatar: friend.avatar,
-  }
+  currentChat.value = createFriendChatSelection(friend)
   clearCurrentUnreadCount()
   loadMessages()
 }
 
 function selectGroup(group: WebQQGroup) {
   noticeOpen.value = false
-  currentChat.value = {
-    type: 'group',
-    peerId: group.groupId,
-    name: group.name,
-    subtitle: getGroupSubtitle(group),
-    avatar: group.avatar,
-  }
+  currentChat.value = createGroupChatSelection(group)
   clearCurrentUnreadCount()
   loadMessages()
 }
@@ -961,13 +952,7 @@ function selectGroup(group: WebQQGroup) {
 function selectRecent(item: RecentItem) {
   noticeOpen.value = false
   if (item.type !== 'group') groupInfoOpen.value = false
-  currentChat.value = {
-    type: item.type,
-    peerId: item.peerId,
-    name: item.name,
-    subtitle: item.subtitle,
-    avatar: item.avatar,
-  }
+  currentChat.value = createRecentChatSelection(item)
   clearCurrentUnreadCount()
   loadMessages()
 }

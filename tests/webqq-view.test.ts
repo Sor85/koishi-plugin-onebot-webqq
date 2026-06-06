@@ -4,7 +4,7 @@ import type { CapsuleData, WebQQMessage } from '../client/state'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
-import { getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
+import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
@@ -331,6 +331,54 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('conversationSummaries.value')
     expect(webqqView).not.toContain('contacts.value.friends.slice(0, 4)')
     expect(webqqView).not.toContain('contacts.value.groups.slice(0, 4)')
+  })
+
+  it('creates current WebQQ chat selections from contacts and recent items', () => {
+    expect(webqqView).toContain('createFriendChatSelection(friend)')
+    expect(webqqView).toContain('createGroupChatSelection(group)')
+    expect(webqqView).toContain('createRecentChatSelection(item)')
+    expect(webqqContactView).toContain('function createFriendChatSelection')
+    expect(webqqContactView).toContain('function createGroupChatSelection')
+    expect(webqqContactView).toContain('function createRecentChatSelection')
+    expect(createFriendChatSelection({
+      userId: '10000',
+      name: 'Alice',
+      nickname: 'alice',
+      avatar: 'friend.png',
+    })).toEqual({
+      type: 'friend',
+      peerId: '10000',
+      name: 'Alice',
+      subtitle: 'alice',
+      avatar: 'friend.png',
+    })
+    expect(createGroupChatSelectionFromContact({
+      groupId: '20000',
+      name: '群聊',
+      memberCount: 42,
+      avatar: 'group.png',
+    })).toEqual({
+      type: 'group',
+      peerId: '20000',
+      name: '群聊',
+      subtitle: '群聊 20000 · 42 人',
+      avatar: 'group.png',
+    })
+    expect(createRecentChatSelection({
+      type: 'friend',
+      peerId: '10000',
+      name: 'Alice',
+      subtitle: 'recent',
+      avatar: 'friend.png',
+      summary: '最近消息',
+      time: 1,
+    })).toEqual({
+      type: 'friend',
+      peerId: '10000',
+      name: 'Alice',
+      subtitle: 'recent',
+      avatar: 'friend.png',
+    })
   })
 
   it('formats the current WebQQ chat header from contact data', () => {

@@ -47,6 +47,36 @@ export function getCurrentChatAvatar(chat: WebQQChatSelection | undefined) {
   return chat?.avatar || ''
 }
 
+export function createFriendChatSelection(friend: WebQQFriend): WebQQChatSelection {
+  return {
+    type: 'friend',
+    peerId: friend.userId,
+    name: friend.name,
+    subtitle: friend.nickname,
+    avatar: friend.avatar,
+  }
+}
+
+export function createGroupChatSelection(group: WebQQGroup): WebQQChatSelection {
+  return {
+    type: 'group',
+    peerId: group.groupId,
+    name: group.name,
+    subtitle: getGroupSubtitle(group),
+    avatar: group.avatar,
+  }
+}
+
+export function createRecentChatSelection(item: WebQQRecentItem): WebQQChatSelection {
+  return {
+    type: item.type,
+    peerId: item.peerId,
+    name: item.name,
+    subtitle: item.subtitle,
+    avatar: item.avatar,
+  }
+}
+
 export function getChatKey(type: WebQQChatSelection['type'], peerId: string) {
   return `${type}:${peerId}`
 }
