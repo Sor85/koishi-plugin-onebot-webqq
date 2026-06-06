@@ -51,6 +51,8 @@ export interface WebQQMessage {
   senderRole?: string
   senderLevel?: string
   senderTitle?: string
+  senderAffinity?: number
+  senderRelationship?: string
   direction: 'incoming' | 'outgoing'
   summary: string
   thinking?: {

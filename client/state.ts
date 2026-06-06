@@ -73,6 +73,8 @@ export interface WebQQMessage {
   senderRole?: string
   senderLevel?: string
   senderTitle?: string
+  senderAffinity?: number
+  senderRelationship?: string
   direction: 'incoming' | 'outgoing'
   summary: string
   thinking?: {
@@ -189,7 +191,9 @@ export type WebQQStorageBackend = 'browser' | 'koishi'
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)
 export const hideWebQQGroupLevel = ref(false)
+export const showWebQQAffinity = ref(false)
 export const showWebQQCapsuleUnread = ref(true)
+export const showWebQQRelationship = ref(false)
 export const useBotAvatarThemeColor = ref(false)
 export const webQQTotalUnread = ref(0)
 export const webQQAccentColor = ref('#2563eb')

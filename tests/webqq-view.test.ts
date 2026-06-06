@@ -50,6 +50,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('webQQChatStyle')
     expect(webqqView).toContain('webQQTheme')
     expect(webqqView).toContain('hideWebQQGroupLevel')
+    expect(webqqView).toContain('showWebQQAffinity')
+    expect(webqqView).toContain('showWebQQRelationship')
     expect(webqqView).toContain("['chat-capsule-webqq'")
     expect(webqqView).toContain('`is-theme-${webQQTheme}`')
     expect(webqqView).toContain('`is-chat-style-${webQQChatStyle}`')
@@ -169,6 +171,13 @@ describe('webqq observer view', () => {
     expect(capsuleConversationSource).toContain('senderRole?: string')
     expect(capsuleConversationSource).toContain('senderLevel?: string')
     expect(capsuleConversationSource).toContain('senderTitle?: string')
+  })
+
+  it('lets WebQQ messages carry ChatLuna affinity badges', () => {
+    expect(clientState).toContain('senderAffinity?: number')
+    expect(clientState).toContain('senderRelationship?: string')
+    expect(onebotSource).toContain('senderAffinity?: number')
+    expect(onebotSource).toContain('senderRelationship?: string')
   })
 
   it('uses capsule conversation group sender metadata on the temporary bot thinking message', () => {
@@ -496,6 +505,14 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('getSenderAuthorityText')
     expect(webqqView).toContain('getSenderAuthorityClass')
     expect(webqqView).toContain('formatSenderLevel')
+    expect(webqqView).toContain('message.senderAffinity != null && showWebQQAffinity')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-avatar-wrap"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-affinity"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-affinity-icon"')
+    expect(webqqView).toContain('{{ message.senderAffinity }}')
+    expect(webqqView).not.toContain('function formatSenderAffinity')
+    expect(webqqView).not.toContain('chat-capsule-webqq__sender-badge is-affinity')
+    expect(webqqView).toContain('message.senderRelationship && showWebQQRelationship')
   })
 
   it('shows group avatar, group id, and member count in the chat header', () => {
