@@ -61,9 +61,11 @@ describe('onebot webqq adapter', () => {
 
   it('keeps OneBot contact normalization outside the adapter entry', () => {
     expect(onebotSource).toContain("from './onebot-contacts'")
+    expect(onebotSource).not.toContain('function getRecentPeerType(')
     expect(onebotSource).not.toContain('function normalizeFriend(')
     expect(onebotSource).not.toContain('function normalizeFriendCategory(')
     expect(onebotSource).not.toContain('function normalizeGroup(')
+    expect(onebotContactsSource).toContain('export function getRecentPeerType')
     expect(onebotContactsSource).toContain('export function normalizeFriend')
     expect(onebotContactsSource).toContain('export function normalizeGroup')
   })

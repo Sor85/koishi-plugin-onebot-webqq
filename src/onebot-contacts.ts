@@ -1,4 +1,4 @@
-import type { WebQQFriend, WebQQFriendCategory, WebQQGroup } from './onebot'
+import type { WebQQChatType, WebQQFriend, WebQQFriendCategory, WebQQGroup } from './onebot'
 import {
   getNumberField,
   getStringField,
@@ -38,4 +38,12 @@ export function normalizeGroup(raw: unknown): WebQQGroup {
     memberCount: getNumberField(item, ['member_count', 'memberCount']),
     avatar: getGroupAvatar(groupId),
   }
+}
+
+export function getRecentPeerType(raw: Record<string, unknown>, peerId: string, friends: WebQQFriend[], groups: WebQQGroup[]): WebQQChatType {
+  const chatType = getStringField(raw, ['chatType', 'chat_type', 'type'])
+  if (chatType === '2' || chatType === 'group') return 'group'
+  if (chatType === '1' || chatType === 'friend' || chatType === 'private') return 'friend'
+  if (groups.some((group) => group.groupId === peerId)) return 'group'
+  return 'friend'
 }
