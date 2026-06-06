@@ -1,6 +1,6 @@
 <template>
   <div v-if="shouldShowCapsule" ref="capsuleHost" class="chat-capsule-host">
-    <div class="chat-capsule" aria-live="polite">
+    <div :class="['chat-capsule', `is-color-${webQQColorMode}`]" aria-live="polite">
       <button
         class="chat-capsule__avatar-button"
         type="button"
@@ -43,7 +43,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
-import { capsule, showWebQQCapsuleUnread, webQQTotalUnread } from './state'
+import { capsule, showWebQQCapsuleUnread, webQQColorMode, webQQTotalUnread } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
 const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'

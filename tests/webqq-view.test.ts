@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
 const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
+const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
@@ -49,12 +50,29 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('webQQChatStyle')
     expect(webqqView).toContain('webQQTheme')
     expect(webqqView).toContain('hideWebQQGroupLevel')
-    expect(webqqView).toContain(":class=\"['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`]\"")
+    expect(webqqView).toContain("['chat-capsule-webqq'")
+    expect(webqqView).toContain('`is-theme-${webQQTheme}`')
+    expect(webqqView).toContain('`is-chat-style-${webQQChatStyle}`')
+    expect(webqqView).toContain('`is-color-${webQQColorMode}`')
     expect(webqqView).toContain(':style="webQQAccentStyle"')
     expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
     expect(webqqView).not.toContain('aria-label="WebQQ 主题"')
     expect(webqqView).not.toContain('v-model="webQQTheme"')
     expect(webqqView).not.toContain('webQQThemeOptions')
+  })
+
+  it('uses the configured WebQQ color mode without rendering an in-panel switcher', () => {
+    expect(clientState).toContain("export type WebQQColorMode = 'auto' | 'light' | 'dark'")
+    expect(clientState).toContain("export const webQQColorMode = ref<WebQQColorMode>('auto')")
+    expect(clientIndex).toContain('webQQColorMode')
+    expect(clientIndex).toContain('type WebQQColorMode')
+    expect(clientIndex).toMatch(/webQQColorMode\?:\s*WebQQColorMode/)
+    expect(clientIndex).toMatch(/webQQColorMode\.value\s*=\s*data\?\.value\?\.webQQColorMode\s*(?:\?\?|\|\|)\s*'auto'/)
+    expect(webqqView).toContain('webQQColorMode')
+    expect(webqqView).toContain('`is-color-${webQQColorMode}`')
+    expect(webqqView).not.toContain('v-model="webQQColorMode"')
+    expect(webqqView).not.toContain('webQQColorModeOptions')
+    expect(webqqView).not.toContain('aria-label="WebQQ 颜色模式"')
   })
 
   it('uses bot avatar accent color ahead of the manual WebQQ accent color', () => {

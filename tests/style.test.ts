@@ -16,6 +16,30 @@ function ruleBody(selector: string) {
   return ''
 }
 
+function ruleBodyIncluding(selector: string, source = style) {
+  let searchFrom = 0
+  while (searchFrom < source.length) {
+    const selectorIndex = source.indexOf(selector, searchFrom)
+    if (selectorIndex < 0) return ''
+    const bodyStart = source.indexOf('{', selectorIndex)
+    if (bodyStart < 0) return ''
+    const preludeStart = Math.max(source.lastIndexOf('}', selectorIndex), source.lastIndexOf('{', selectorIndex)) + 1
+    const prelude = source.slice(preludeStart, bodyStart)
+    const selectors = prelude.split(',').map((item) => item.trim())
+    if (selectors.includes(selector)) {
+      let depth = 1
+      for (let index = bodyStart + 1; index < source.length; index++) {
+        if (source[index] === '{') depth++
+        if (source[index] === '}') depth--
+        if (depth === 0) return source.slice(bodyStart + 1, index)
+      }
+      return ''
+    }
+    searchFrom = selectorIndex + selector.length
+  }
+  return ''
+}
+
 describe('chat capsule styles', () => {
   it('keeps the status dot visible outside the avatar curve', () => {
     expect(ruleBody('.chat-capsule__avatar')).not.toContain('overflow: hidden')
@@ -347,6 +371,78 @@ describe('chat capsule styles', () => {
     expect(style).toContain('color: var(--chat-capsule-webqq-accent)')
     expect(style).toContain('background: var(--chat-capsule-webqq-accent-soft)')
     expect(ruleBody('.chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble')).toContain('background: var(--chat-capsule-webqq-accent)')
+  })
+
+  it('adds dark WebQQ color mode overrides for forced dark and automatic dark panels', () => {
+    const forcedRootBody = ruleBody('.chat-capsule-webqq.is-color-dark')
+    const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
+    const forcedSelectors = [
+      '.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat',
+      '.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__search input',
+      '.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notify',
+      '.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-menu',
+      '.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__bubble',
+      '.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble',
+    ]
+    const autoSelectors = forcedSelectors.map((selector) => selector.replace('is-color-dark', 'is-color-auto'))
+    const missingRequirements = [
+      forcedRootBody ? '' : '缺少强制暗色根选择器 .chat-capsule-webqq.is-color-dark',
+      forcedRootBody.includes('background:')
+        ? ''
+        : '强制暗色根选择器没有覆盖面板背景',
+      forcedRootBody.includes('color:')
+        ? ''
+        : '强制暗色根选择器没有覆盖面板文本',
+      ...forcedSelectors.map((selector) => style.includes(selector) ? '' : `缺少强制暗色关键选择器 ${selector}`),
+      autoDarkBody ? '' : '缺少 prefers-color-scheme: dark 自动暗色媒体查询',
+      autoDarkBody.includes('.chat-capsule-webqq.is-color-auto')
+        ? ''
+        : '自动暗色媒体查询没有限制到 .chat-capsule-webqq.is-color-auto',
+      ...autoSelectors.map((selector) => autoDarkBody.includes(selector) ? '' : `缺少自动暗色关键选择器 ${selector}`),
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('adds dark color mode overrides for the main capsule and WebQQ chat header', () => {
+    const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
+    const forcedCapsuleBody = ruleBodyIncluding('.chat-capsule.is-color-dark')
+    const autoCapsuleBody = ruleBodyIncluding('.chat-capsule.is-color-auto', autoDarkBody)
+    const forcedHeaderBody = ruleBodyIncluding('.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header')
+    const autoHeaderBody = ruleBodyIncluding('.chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header', autoDarkBody)
+    const missingRequirements = [
+      forcedCapsuleBody ? '' : '缺少强制暗色主胶囊选择器 .chat-capsule.is-color-dark',
+      forcedCapsuleBody.includes('background:')
+        ? ''
+        : '强制暗色主胶囊没有覆盖背景',
+      forcedCapsuleBody.includes('color:')
+        ? ''
+        : '强制暗色主胶囊没有覆盖文本',
+      forcedCapsuleBody.includes('border')
+        ? ''
+        : '强制暗色主胶囊没有覆盖边框',
+      autoDarkBody ? '' : '缺少 prefers-color-scheme: dark 自动暗色媒体查询',
+      autoCapsuleBody ? '' : '自动暗色媒体查询缺少 .chat-capsule.is-color-auto 覆盖',
+      autoCapsuleBody.includes('background:')
+        ? ''
+        : '自动暗色主胶囊没有覆盖背景',
+      autoCapsuleBody.includes('color:')
+        ? ''
+        : '自动暗色主胶囊没有覆盖文本',
+      autoCapsuleBody.includes('border')
+        ? ''
+        : '自动暗色主胶囊没有覆盖边框',
+      forcedHeaderBody ? '' : '缺少强制暗色聊天顶栏选择器 .chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header',
+      forcedHeaderBody.includes('background:')
+        ? ''
+        : '强制暗色聊天顶栏没有覆盖背景，会被 fresh 主题浅色背景保留',
+      autoHeaderBody ? '' : '自动暗色媒体查询缺少 .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header 覆盖',
+      autoHeaderBody.includes('background:')
+        ? ''
+        : '自动暗色聊天顶栏没有覆盖背景，会被 fresh 主题浅色背景保留',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('keeps quoted text readable inside dark outgoing WebQQ bubbles', () => {

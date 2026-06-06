@@ -117,6 +117,8 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("Schema.const('qq').description('传统 QQ')")
     expect(pluginSource).toContain("Schema.const('telegram').description('Telegram')")
     expect(pluginSource).toContain("description('WebQQ 聊天页面样式')")
+    expect(pluginSource).toMatch(/webQQColorMode\?:\s*'auto'\s*\|\s*'light'\s*\|\s*'dark'/)
+    expect(pluginSource).toMatch(/webQQColorMode:\s*Schema\.union\(\[[\s\S]*Schema\.const\('auto'\)\.description\('自动'\)[\s\S]*Schema\.const\('light'\)\.description\('明亮'\)[\s\S]*Schema\.const\('dark'\)\.description\('暗色'\)[\s\S]*\]\)\.default\('auto'\)\.role\('radio'\)/)
     expect(pluginSource).toContain("webQQAccentColor?:")
     expect(pluginSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色')")
     expect(pluginSource).toContain("useBotAvatarThemeColor?: boolean")
@@ -152,6 +154,7 @@ describe('chat capsule plugin wiring', () => {
       debug: false,
       webQQTheme: 'fresh',
       webQQChatStyle: 'qq',
+      webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: false,
@@ -1406,6 +1409,7 @@ describe('chat capsule plugin wiring', () => {
       debug: true,
       webQQTheme: 'fresh',
       webQQChatStyle: 'qq',
+      webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: false,
@@ -1419,6 +1423,7 @@ describe('chat capsule plugin wiring', () => {
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
       webQQTheme?: 'fresh' | 'frosted' | 'glass'
       webQQChatStyle?: 'qq' | 'telegram'
+      webQQColorMode?: 'auto' | 'light' | 'dark'
       webQQAccentColor?: string
       useBotAvatarThemeColor?: boolean
       hideWebQQGroupLevel?: boolean
@@ -1430,6 +1435,7 @@ describe('chat capsule plugin wiring', () => {
     applyWithConfig(ctx, {
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
+      webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: true,
@@ -1443,6 +1449,7 @@ describe('chat capsule plugin wiring', () => {
       debug: false,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
+      webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: true,

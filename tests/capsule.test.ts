@@ -145,11 +145,27 @@ describe('chat capsule view', () => {
   })
 
   it('renders total WebQQ unread count on the bot avatar when enabled', () => {
-    expect(capsuleView).toContain("import { capsule, showWebQQCapsuleUnread, webQQTotalUnread } from './state'")
+    expect(capsuleView).toContain("import { capsule, showWebQQCapsuleUnread, webQQColorMode, webQQTotalUnread } from './state'")
     expect(capsuleView).toContain('class="chat-capsule__avatar-unread"')
     expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
     expect(capsuleView).toContain('{{ capsuleUnreadText }}')
     expect(capsuleView).toContain('const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))')
+  })
+
+  it('applies the configured WebQQ color mode to the main capsule', () => {
+    const missingRequirements = [
+      /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\/state'/.test(capsuleView)
+        ? ''
+        : '主胶囊没有从 state 读取 webQQColorMode',
+      capsuleView.includes("['chat-capsule'") && capsuleView.includes('`is-color-${webQQColorMode}`')
+        ? ''
+        : '主胶囊根节点没有输出 is-color-${webQQColorMode} 类名',
+      capsuleView.includes('class="chat-capsule"')
+        ? '主胶囊仍是静态 class，无法随颜色模式切换'
+        : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('caps the capsule total unread badge at 99999+ only above 99999', () => {
@@ -161,14 +177,16 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQCapsuleUnread, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQCapsuleUnread, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
+    expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')
     expect(clientEntry).toContain('webQQStorageBackend?: WebQQStorageBackend')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain('showWebQQCapsuleUnread?: boolean')
     expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
     expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'")
+    expect(clientEntry).toContain("webQQColorMode.value = data?.value?.webQQColorMode || 'auto'")
     expect(clientEntry).toContain("webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'browser'")
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')

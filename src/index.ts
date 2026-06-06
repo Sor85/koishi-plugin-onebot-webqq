@@ -43,6 +43,7 @@ export interface Config {
   historyLimit?: number
   webQQTheme?: 'fresh' | 'frosted' | 'glass'
   webQQChatStyle?: 'qq' | 'telegram'
+  webQQColorMode?: 'auto' | 'light' | 'dark'
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
   hideWebQQGroupLevel?: boolean
@@ -67,6 +68,11 @@ export const Config: Schema<Config> = Schema.object({
     Schema.const('qq').description('传统 QQ'),
     Schema.const('telegram').description('Telegram'),
   ]).default('qq').role('radio').description('WebQQ 聊天页面样式'),
+  webQQColorMode: Schema.union([
+    Schema.const('auto').description('自动'),
+    Schema.const('light').description('明亮'),
+    Schema.const('dark').description('暗色'),
+  ]).default('auto').role('radio').description('WebQQ 颜色模式'),
   webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
   useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
   hideWebQQGroupLevel: Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标'),
@@ -1143,6 +1149,7 @@ export function apply(ctx: ChatCapsuleContext, config: Config = {}) {
         debug,
         webQQTheme: config.webQQTheme ?? 'fresh',
         webQQChatStyle: config.webQQChatStyle ?? 'qq',
+        webQQColorMode: config.webQQColorMode ?? 'auto',
         webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
         useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
         hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? false,
