@@ -506,9 +506,12 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('getSenderAuthorityClass')
     expect(webqqView).toContain('formatSenderLevel')
     expect(webqqView).toContain('message.senderAffinity != null && showWebQQAffinity')
-    expect(webqqView).toContain('class="chat-capsule-webqq__sender-heart"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-avatar-wrap"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-affinity"')
+    expect(webqqView).toContain('class="chat-capsule-webqq__message-affinity-icon"')
     expect(webqqView).toContain('{{ message.senderAffinity }}')
     expect(webqqView).not.toContain('function formatSenderAffinity')
+    expect(webqqView).not.toContain('chat-capsule-webqq__sender-badge is-affinity')
     expect(webqqView).toContain('message.senderRelationship && showWebQQRelationship')
   })
 

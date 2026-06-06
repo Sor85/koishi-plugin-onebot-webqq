@@ -209,8 +209,19 @@ describe('chat capsule styles', () => {
 
   it('sizes WebQQ message avatars beside bubbles', () => {
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('position: relative')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('width: 32px')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('height: 32px')
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
     expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('position: absolute')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('top: -10px')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('right: -12px')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('min-width: 15px')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('height: 15px')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('background: #ec4899')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('box-shadow: 0 2px 6px rgba(190, 24, 93, 0.24)')
+    expect(ruleBody('.chat-capsule-webqq__message-affinity-icon')).toContain('fill: currentColor')
   })
 
   it('stacks WebQQ rich message elements vertically inside the bubble', () => {
@@ -263,9 +274,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-admin')).toContain('background: #e9f8ef')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-level')).toContain('background: rgba(148, 163, 184, 0.24)')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-title')).toContain('background: rgba(18, 183, 245, 0.1)')
-    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-affinity')).toContain('background: rgba(244, 114, 182, 0.12)')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-relationship')).toContain('background: rgba(99, 102, 241, 0.12)')
-    expect(ruleBody('.chat-capsule-webqq__sender-heart')).toContain('fill: currentColor')
   })
 
   it('keeps WebQQ sender metadata away from the first message bubble', () => {
@@ -274,7 +283,7 @@ describe('chat capsule styles', () => {
 
   it('hides repeated avatars on merged Telegram-style WebQQ messages', () => {
     expect(ruleBody('.chat-capsule-webqq__message.is-merged')).toContain('margin-top: -14px')
-    expect(ruleBody('.chat-capsule-webqq__message.is-merged .chat-capsule-webqq__message-avatar')).toContain('visibility: hidden')
+    expect(ruleBody('.chat-capsule-webqq__message.is-merged .chat-capsule-webqq__message-avatar-wrap')).toContain('visibility: hidden')
   })
 
   it('rounds Telegram-style WebQQ message clusters like stacked capsules', () => {
