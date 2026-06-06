@@ -255,6 +255,26 @@ function normalizeCardElement(data: Record<string, unknown>): WebQQMessageElemen
   }
 }
 
+function normalizeFaceElement(data: Record<string, unknown>) {
+  const summary = getStringField(data, ['summary', 'text', 'name'])
+  if (summary) return { type: 'face' as const, text: summary }
+  const id = getStringField(data, ['emoji_id', 'emojiId', 'id'])
+  return { type: 'face' as const, text: id ? `[表情 ${id}]` : '[表情]' }
+}
+
+async function normalizeImageElement(data: Record<string, unknown>, bot: OneBotBot, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
+  const url = getStringField(data, ['url', 'src'])
+  if (url) return { type: 'image', url: imageUrlResolver?.(url) || url }
+  const file = getStringField(data, ['file', 'file_id'])
+  if (!file) return { type: 'image' }
+  if (isRemoteUrl(file)) return { type: 'image', url: imageUrlResolver?.(file) || file }
+  try {
+    return { type: 'image', url: (await resolveOneBotImage(bot, file, imageUrlResolver)).url }
+  } catch {
+    return { type: 'image' }
+  }
+}
+
 function normalizeGroupRole(role: string) {
   if (role === 'owner') return '群主'
   if (role === 'admin' || role === 'administrator') return '管理员'
@@ -562,19 +582,12 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
     const target = getStringField(data, ['name', 'nickname', 'card', 'text', 'qq', 'id', 'user_id', 'uin'])
     return target ? { type: 'text', text: `@${target}` } : { type: 'unknown', text: '[消息]' }
   }
-  if (type === 'image') {
-    const url = getStringField(data, ['url'])
-    if (url) return { type: 'image', url: imageUrlResolver?.(url) || url }
-    const file = getStringField(data, ['file', 'file_id'])
-    if (!file) return { type: 'image' }
-    if (isRemoteUrl(file)) return { type: 'image', url: imageUrlResolver?.(file) || file }
-    try {
-      return { type: 'image', url: (await resolveOneBotImage(bot, file, imageUrlResolver)).url }
-    } catch {
-      return { type: 'image' }
-    }
+  if (type === 'image') return normalizeImageElement(data, bot, imageUrlResolver)
+  if (type === 'mface') {
+    if (getStringField(data, ['url', 'src', 'file', 'file_id'])) return normalizeImageElement(data, bot, imageUrlResolver)
+    return normalizeFaceElement(data)
   }
-  if (type === 'face') return { type: 'face', text: `[表情 ${getStringField(data, ['id'])}]` }
+  if (type === 'face') return normalizeFaceElement(data)
   if (type === 'reply' || type === 'quote') {
     const id = getStringField(data, ['id', 'message_id', 'messageId'])
     if (id) {

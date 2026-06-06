@@ -412,6 +412,140 @@ describe('onebot webqq adapter', () => {
     ])
   })
 
+  it('renders mface segments from history messages as readable face elements', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 5,
+            message_seq: 15,
+            time: 1710000004,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'mface', data: { summary: '[开心]', emoji_id: '123' } }],
+          }, {
+            message_id: 6,
+            message_seq: 16,
+            time: 1710000005,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'mface', data: { emoji_id: '456' } }],
+          }, {
+            message_id: 7,
+            message_seq: 17,
+            time: 1710000006,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'mface', data: { id: '789' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '[开心]',
+        elements: [{ type: 'face', text: '[开心]' }],
+      }),
+      expect.objectContaining({
+        summary: '[表情 456]',
+        elements: [{ type: 'face', text: '[表情 456]' }],
+      }),
+      expect.objectContaining({
+        summary: '[表情 789]',
+        elements: [{ type: 'face', text: '[表情 789]' }],
+      }),
+    ])
+  })
+
+  it('renders history mface segments with URLs as image elements', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 8,
+            message_seq: 18,
+            time: 1710000007,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'mface', data: { summary: '[开心]', url: 'https://example.com/mface.gif', emoji_id: '123' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        elements: [{ type: 'image', url: 'https://example.com/mface.gif' }],
+      }),
+    ])
+  })
+
+  it('resolves history mface file ids through get_image', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 9,
+            message_seq: 19,
+            time: 1710000008,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'mface', data: { file: 'mface-file.image' } }],
+          }, {
+            message_id: 10,
+            message_seq: 20,
+            time: 1710000009,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'mface', data: { file_id: 'mface-file-id.image' } }],
+          }],
+        })),
+        get_image: vi.fn(async ({ file }: { file: string }) => ({
+          url: `https://example.com/${file}.jpg`,
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        elements: [{ type: 'image', url: 'https://example.com/mface-file.image.jpg' }],
+      }),
+      expect.objectContaining({
+        elements: [{ type: 'image', url: 'https://example.com/mface-file-id.image.jpg' }],
+      }),
+    ])
+    expect(bot.internal.get_image).toHaveBeenCalledWith({ file: 'mface-file.image' })
+    expect(bot.internal.get_image).toHaveBeenCalledWith({ file: 'mface-file-id.image' })
+  })
+
   it('resolves image file ids from history messages through get_image', async () => {
     const bot = {
       platform: 'onebot',

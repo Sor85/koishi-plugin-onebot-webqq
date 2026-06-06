@@ -429,6 +429,38 @@ function normalizeCardElement(attrs: Record<string, unknown>): WebQQMessageEleme
   }
 }
 
+function normalizeLiveFaceElement(attrs: Record<string, unknown>) {
+  const summary = readRecordText(attrs, ['summary', 'text', 'name'])
+  if (summary) return { type: 'face' as const, text: summary }
+  const id = readRecordText(attrs, ['emoji_id', 'emojiId', 'id'])
+  return { type: 'face' as const, text: id ? `[表情 ${id}]` : '[表情]' }
+}
+
+async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement> {
+  const url = readElementText(attrs.src || attrs.url)
+  if (url) {
+    try {
+      return { type: 'image', url: resolveImage ? (await resolveImage(url, 'url')).url : url }
+    } catch {
+      return { type: 'image', url }
+    }
+  }
+  const file = readElementText(attrs.file || attrs.file_id)
+  if (!file) return { type: 'image' }
+  if (isRemoteImageSource(file)) {
+    try {
+      return { type: 'image', url: resolveImage ? (await resolveImage(file, 'url')).url : file }
+    } catch {
+      return { type: 'image', url: file }
+    }
+  }
+  try {
+    return { type: 'image', url: resolveImage ? (await resolveImage(file)).url : '' }
+  } catch {
+    return { type: 'image' }
+  }
+}
+
 function isAssistantMessageSnapshot(value: unknown) {
   if (!isRecord(value)) return false
   const role = String(value.role ?? value.type ?? '').trim().toLowerCase()
@@ -659,30 +691,7 @@ async function normalizeLiveElement(
       text: text || '[引用消息]',
     }
   }
-  if (type === 'img' || type === 'image') {
-    const url = readElementText(attrs.src || attrs.url)
-    if (url) {
-      try {
-        return { type: 'image', url: resolveImage ? (await resolveImage(url, 'url')).url : url }
-      } catch {
-        return { type: 'image', url }
-      }
-    }
-    const file = readElementText(attrs.file || attrs.file_id)
-    if (!file) return { type: 'image' }
-    if (isRemoteImageSource(file)) {
-      try {
-        return { type: 'image', url: resolveImage ? (await resolveImage(file, 'url')).url : file }
-      } catch {
-        return { type: 'image', url: file }
-      }
-    }
-    try {
-      return { type: 'image', url: resolveImage ? (await resolveImage(file)).url : '' }
-    } catch {
-      return { type: 'image' }
-    }
-  }
+  if (type === 'img' || type === 'image') return normalizeLiveImageElement(attrs, resolveImage)
   if (type === 'forward') {
     const id = readElementText(attrs.id || attrs.messageId || attrs.message_id || attrs.resid)
     if (!id) return { type: 'forward', title: '合并转发', text: '[合并转发]' }
@@ -696,7 +705,11 @@ async function normalizeLiveElement(
     return { type: 'forward', title: '合并转发', text: '[合并转发]' }
   }
   if (type === 'json' || type === 'lightapp' || type === 'xml') return normalizeCardElement(attrs)
-  if (type === 'face') return { type: 'face', text: `[表情 ${readElementText(attrs.id)}]` }
+  if (type === 'mface') {
+    if (readRecordText(attrs, ['src', 'url', 'file', 'file_id'])) return normalizeLiveImageElement(attrs, resolveImage)
+    return normalizeLiveFaceElement(attrs)
+  }
+  if (type === 'face') return normalizeLiveFaceElement(attrs)
   if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
   if (type === 'audio' || type === 'record') return { type: 'record', text: '[语音]' }
   if (type === 'video') return { type: 'video', text: '[视频]' }

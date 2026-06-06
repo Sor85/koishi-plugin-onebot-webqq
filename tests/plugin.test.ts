@@ -772,6 +772,122 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('broadcasts live mface segments as readable WebQQ face elements', async () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      event: {
+        guild: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+        message: {
+          id: 'mface-1',
+          elements: [{ type: 'mface', attrs: { summary: '[开心]', emoji_id: '123' } }],
+        },
+      },
+    }))
+    await listeners.message[0](createSession({
+      event: {
+        guild: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+        message: {
+          id: 'mface-2',
+          elements: [{ type: 'mface', attrs: { id: '456' } }],
+        },
+      },
+    }))
+
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    expect(webQQCalls).toHaveLength(2)
+    expect(webQQCalls[0]).toEqual([
+      'chat-capsule/webqq/message',
+      {
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'mface-1',
+          summary: '[开心]',
+          elements: [{ type: 'face', text: '[开心]' }],
+        }),
+      },
+      { authority: 1 },
+    ])
+    expect(webQQCalls[1]).toEqual([
+      'chat-capsule/webqq/message',
+      {
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'mface-2',
+          summary: '[表情 456]',
+          elements: [{ type: 'face', text: '[表情 456]' }],
+        }),
+      },
+      { authority: 1 },
+    ])
+  })
+
+  it('broadcasts live mface URL segments as WebQQ image elements', async () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      event: {
+        guild: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        channel: {
+          id: '20000',
+          name: 'Guild Name',
+        },
+        user: {
+          id: '30000',
+          name: 'Alice',
+        },
+        message: {
+          id: 'mface-url-1',
+          elements: [{
+            type: 'mface',
+            attrs: {
+              summary: '[开心]',
+              url: 'https://example.com/mface.gif',
+            },
+          }],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'mface-url-1',
+        elements: [{ type: 'image', url: 'https://example.com/mface.gif' }],
+      }),
+    }, { authority: 1 })
+  })
+
   it('records OneBot self message echoes as outgoing WebQQ messages', async () => {
     const bot = {
       platform: 'onebot',
