@@ -477,9 +477,17 @@ import {
   formatSenderLevel,
   formatThinkingDuration,
   formatTime,
+  getForwardItemAvatar as getForwardItemAvatarFromView,
+  getForwardItemClusterClass as getForwardItemClusterClassFromView,
+  getForwardItemName,
+  getForwardPreviewItems as getForwardPreviewItemsFromView,
   getForwardPreviewText,
+  getMessageClusterClass as getMessageClusterClassFromView,
   getUnreadText,
   getWebQQElementRuns,
+  isImageOnlyMessage,
+  isMergedForwardItem as isMergedForwardItemFromView,
+  isMergedMessage as isMergedMessageFromView,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import {
@@ -858,82 +866,28 @@ function hasOutgoingMessageAfter(timestamp: number) {
   return messages.value.some((message) => message.direction === 'outgoing' && message.time >= timestamp)
 }
 
-function isImageOnlyMessage(message: WebQQMessage) {
-  return message.elements.length === 1 &&
-    message.elements[0].type === 'image' &&
-    !!message.elements[0].url
-}
-
-function getForwardItemName(item: WebQQForwardItem) {
-  return item.title || item.senderId || 'QQ 用户'
-}
-
 function getForwardItemAvatar(item: WebQQForwardItem) {
-  return item.senderAvatar || defaultWebQQForwardAvatar
+  return getForwardItemAvatarFromView(item, defaultWebQQForwardAvatar)
 }
 
 function getForwardPreviewItems(element: WebQQMessageElement) {
-  return element.items?.slice(0, webQQForwardPreviewLimit) ?? []
-}
-
-function getForwardItemSenderKey(item: WebQQForwardItem | undefined) {
-  return item ? item.senderId || item.title || '' : ''
-}
-
-function isSameForwardItemSender(left: WebQQForwardItem | undefined, right: WebQQForwardItem | undefined) {
-  const leftKey = getForwardItemSenderKey(left)
-  return !!leftKey && leftKey === getForwardItemSenderKey(right)
+  return getForwardPreviewItemsFromView(element, webQQForwardPreviewLimit)
 }
 
 function isMergedForwardItem(index: number) {
-  return webQQChatStyle.value === 'telegram' &&
-    isSameForwardItemSender(forwardDialogItems.value[index - 1], forwardDialogItems.value[index])
+  return isMergedForwardItemFromView(forwardDialogItems.value, index, webQQChatStyle.value)
 }
 
 function getForwardItemClusterClass(index: number) {
-  if (webQQChatStyle.value !== 'telegram') return ''
-  const hasPrevious = isSameForwardItemSender(forwardDialogItems.value[index - 1], forwardDialogItems.value[index])
-  const hasNext = isSameForwardItemSender(forwardDialogItems.value[index], forwardDialogItems.value[index + 1])
-  if (hasPrevious && hasNext) return 'is-cluster-middle'
-  if (hasNext) return 'is-cluster-first'
-  if (hasPrevious) return 'is-cluster-last'
-  return ''
-}
-
-function getClusterBubbleMessage(index: number, step: 1 | -1) {
-  const message = messages.value[index]
-  if (!message) return
-  for (let cursor = index + step; cursor >= 0 && cursor < messages.value.length; cursor += step) {
-    const candidate = messages.value[cursor]
-    if (
-      !candidate ||
-      candidate.senderId !== message.senderId ||
-      candidate.direction !== message.direction
-    ) return
-    if (!isImageOnlyMessage(candidate)) return candidate
-  }
+  return getForwardItemClusterClassFromView(forwardDialogItems.value, index, webQQChatStyle.value)
 }
 
 function isMergedMessage(index: number) {
-  if (webQQChatStyle.value !== 'telegram') return false
-  const message = messages.value[index]
-  const previous = messages.value[index - 1]
-  return !!message &&
-    !!previous &&
-    previous.senderId === message.senderId &&
-    previous.direction === message.direction
+  return isMergedMessageFromView(messages.value, index, webQQChatStyle.value)
 }
 
 function getMessageClusterClass(index: number) {
-  if (webQQChatStyle.value !== 'telegram') return ''
-  const message = messages.value[index]
-  if (!message) return ''
-  const hasPrevious = !!getClusterBubbleMessage(index, -1)
-  const hasNext = !!getClusterBubbleMessage(index, 1)
-  if (hasPrevious && hasNext) return 'is-cluster-middle'
-  if (hasNext) return 'is-cluster-first'
-  if (hasPrevious) return 'is-cluster-last'
-  return ''
+  return getMessageClusterClassFromView(messages.value, index, webQQChatStyle.value)
 }
 
 function appendMessage(message: WebQQMessage) {

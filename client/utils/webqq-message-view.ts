@@ -48,6 +48,84 @@ export function getForwardPreviewText(item: WebQQForwardItem) {
   }).filter(Boolean).join('') || '[消息]'
 }
 
+export function isImageOnlyMessage(message: WebQQMessage) {
+  return message.elements.length === 1 &&
+    message.elements[0].type === 'image' &&
+    !!message.elements[0].url
+}
+
+export function getForwardItemName(item: WebQQForwardItem) {
+  return item.title || item.senderId || 'QQ 用户'
+}
+
+export function getForwardItemAvatar(item: WebQQForwardItem, defaultAvatar: string) {
+  return item.senderAvatar || defaultAvatar
+}
+
+export function getForwardPreviewItems(element: WebQQMessageElement, limit: number) {
+  return element.items?.slice(0, limit) ?? []
+}
+
+function getForwardItemSenderKey(item: WebQQForwardItem | undefined) {
+  return item ? item.senderId || item.title || '' : ''
+}
+
+function isSameForwardItemSender(left: WebQQForwardItem | undefined, right: WebQQForwardItem | undefined) {
+  const leftKey = getForwardItemSenderKey(left)
+  return !!leftKey && leftKey === getForwardItemSenderKey(right)
+}
+
+export function isMergedForwardItem(items: WebQQForwardItem[], index: number, chatStyle: string) {
+  return chatStyle === 'telegram' &&
+    isSameForwardItemSender(items[index - 1], items[index])
+}
+
+export function getForwardItemClusterClass(items: WebQQForwardItem[], index: number, chatStyle: string) {
+  if (chatStyle !== 'telegram') return ''
+  const hasPrevious = isSameForwardItemSender(items[index - 1], items[index])
+  const hasNext = isSameForwardItemSender(items[index], items[index + 1])
+  if (hasPrevious && hasNext) return 'is-cluster-middle'
+  if (hasNext) return 'is-cluster-first'
+  if (hasPrevious) return 'is-cluster-last'
+  return ''
+}
+
+function getClusterBubbleMessage(messages: WebQQMessage[], index: number, step: 1 | -1) {
+  const message = messages[index]
+  if (!message) return
+  for (let cursor = index + step; cursor >= 0 && cursor < messages.length; cursor += step) {
+    const candidate = messages[cursor]
+    if (
+      !candidate ||
+      candidate.senderId !== message.senderId ||
+      candidate.direction !== message.direction
+    ) return
+    if (!isImageOnlyMessage(candidate)) return candidate
+  }
+}
+
+export function isMergedMessage(messages: WebQQMessage[], index: number, chatStyle: string) {
+  if (chatStyle !== 'telegram') return false
+  const message = messages[index]
+  const previous = messages[index - 1]
+  return !!message &&
+    !!previous &&
+    previous.senderId === message.senderId &&
+    previous.direction === message.direction
+}
+
+export function getMessageClusterClass(messages: WebQQMessage[], index: number, chatStyle: string) {
+  if (chatStyle !== 'telegram') return ''
+  const message = messages[index]
+  if (!message) return ''
+  const hasPrevious = !!getClusterBubbleMessage(messages, index, -1)
+  const hasNext = !!getClusterBubbleMessage(messages, index, 1)
+  if (hasPrevious && hasNext) return 'is-cluster-middle'
+  if (hasNext) return 'is-cluster-first'
+  if (hasPrevious) return 'is-cluster-last'
+  return ''
+}
+
 export function formatTime(timestamp: number) {
   return new Date(timestamp).toLocaleTimeString([], {
     hour: '2-digit',
