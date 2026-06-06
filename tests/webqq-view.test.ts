@@ -22,6 +22,7 @@ const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.
 const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
 const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
+const onebotTypesSource = await readFile(new URL('../src/onebot-types.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqContactsStore = await readFile(new URL('../client/stores/webqq-contacts.ts', import.meta.url), 'utf8')
@@ -279,8 +280,8 @@ describe('webqq observer view', () => {
   it('lets WebQQ messages carry ChatLuna affinity badges', () => {
     expect(clientState).toContain('senderAffinity?: number')
     expect(clientState).toContain('senderRelationship?: string')
-    expect(onebotSource).toContain('senderAffinity?: number')
-    expect(onebotSource).toContain('senderRelationship?: string')
+    expect(onebotTypesSource).toContain('senderAffinity?: number')
+    expect(onebotTypesSource).toContain('senderRelationship?: string')
   })
 
   it('uses capsule conversation group sender metadata on the temporary bot thinking message', () => {
@@ -737,7 +738,7 @@ describe('webqq observer view', () => {
 
   it('declares optional completed thinking data on backend and client WebQQ messages', () => {
     const backendMessageSource = sourceBetween(
-      onebotSource,
+      onebotTypesSource,
       'export interface WebQQMessage {',
       'export interface WebQQLiveMessage',
     )
@@ -1179,7 +1180,7 @@ describe('webqq observer view', () => {
 
   it('renders forward message elements as block previews inside WebQQ bubbles', () => {
     const backendForwardItemSource = sourceBetween(
-      onebotSource,
+      onebotTypesSource,
       'export interface WebQQForwardItem {',
       'export interface WebQQMessageElement {',
     )
@@ -1189,7 +1190,7 @@ describe('webqq observer view', () => {
       'export interface WebQQMessageElement {',
     )
     const backendMessageSource = sourceBetween(
-      onebotSource,
+      onebotTypesSource,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessage {',
     )
@@ -1240,7 +1241,7 @@ describe('webqq observer view', () => {
 
   it('renders card message elements as block previews inside WebQQ bubbles', () => {
     const backendMessageSource = sourceBetween(
-      onebotSource,
+      onebotTypesSource,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessage {',
     )

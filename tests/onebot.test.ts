@@ -13,8 +13,17 @@ const onebotContactsSource = await readFile(new URL('../src/onebot-contacts.ts',
 const onebotActionsSource = await readFile(new URL('../src/onebot-actions.ts', import.meta.url), 'utf8')
 const onebotImagesSource = await readFile(new URL('../src/onebot-images.ts', import.meta.url), 'utf8')
 const onebotMessageElementsSource = await readFile(new URL('../src/onebot-message-elements.ts', import.meta.url), 'utf8')
+const onebotTypesSource = await readFile(new URL('../src/onebot-types.ts', import.meta.url), 'utf8')
 
 describe('onebot webqq adapter', () => {
+  it('keeps OneBot WebQQ public types outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './onebot-types'")
+    expect(onebotSource).not.toContain('export interface WebQQMessage {')
+    expect(onebotSource).not.toContain('export interface WebQQContacts {')
+    expect(onebotTypesSource).toContain('export interface WebQQMessage')
+    expect(onebotTypesSource).toContain('export interface WebQQContacts')
+  })
+
   it('keeps OneBot data field helpers outside the adapter entry', () => {
     expect(onebotSource).toContain("from './onebot-data'")
     expect(onebotSource).not.toContain('function toArrayResult(')
