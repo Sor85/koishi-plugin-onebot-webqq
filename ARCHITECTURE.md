@@ -21,6 +21,7 @@
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-storage.ts`：WebQQ 最近会话、未读数和消息缓存的前端存储分支
+- `client/utils/webqq-message-view.ts`：WebQQ 消息展示纯函数，负责未读数、时间、思考耗时、消息元素分组和合并转发预览文案
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
 - `client/WebQQObserver.vue`：WebQQ 主界面，当前包含联系人、聊天记录、通知、群信息、缓存、滚动、图片预览和合并转发弹窗
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
@@ -37,7 +38,7 @@
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
 - `client/components/`：后续拆出的 Vue 展示组件
 - `client/stores/`：后续拆出的前端响应式状态或 composable
-- `client/utils/`：后续拆出的纯函数和浏览器小工具
+- `client/utils/`：前端纯函数和浏览器小工具
 - `client/types.ts`：后续如果前端类型继续增长，再从 `client/state.ts` 拆出
 
 ## 重构原则

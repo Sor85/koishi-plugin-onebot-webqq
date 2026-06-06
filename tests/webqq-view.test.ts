@@ -8,6 +8,7 @@ const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url)
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
+const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const style = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -18,12 +19,7 @@ function sourceBetween(source: string, start: string, end: string) {
 }
 
 function runGetUnreadText(count: number) {
-  const unreadTextSource = sourceBetween(
-    webqqView,
-    'function getUnreadText(count: number)',
-    'function increaseUnreadCount',
-  )
-  const returnExpression = unreadTextSource.match(/return\s+([^\n]+)/)?.[1]
+  const returnExpression = webqqMessageView.match(/function getUnreadText\(count: number\)[\s\S]*?return\s+([^\n]+)/)?.[1]
   if (!returnExpression) throw new Error('getUnreadText return expression not found')
   return Function('count', `return ${returnExpression}`)(count)
 }
@@ -340,11 +336,11 @@ describe('webqq observer view', () => {
   })
 
   it('formats WebQQ notice times as month/day plus clock time', () => {
-    expect(webqqView).toContain('function padNoticeTimePart(value: number)')
-    expect(webqqView).toContain('date.getMonth() + 1')
-    expect(webqqView).toContain('date.getDate()')
-    expect(webqqView).toContain('date.getHours()')
-    expect(webqqView).toContain('date.getMinutes()')
+    expect(webqqMessageView).toContain('function padNoticeTimePart(value: number)')
+    expect(webqqMessageView).toContain('date.getMonth() + 1')
+    expect(webqqMessageView).toContain('date.getDate()')
+    expect(webqqMessageView).toContain('date.getHours()')
+    expect(webqqMessageView).toContain('date.getMinutes()')
   })
 
   it('splits WebQQ notice question and answer comments into separate lines', () => {
@@ -431,9 +427,9 @@ describe('webqq observer view', () => {
 
   it('renders completed thinking below WebQQ messages as a collapsible disclosure', () => {
     expect(webqqView).toContain('const expandedThinkingMessageIds = ref')
-    expect(webqqView).toContain('function formatThinkingDuration(durationMs: number)')
-    expect(webqqView).toContain('Math.round(durationMs / 1000)')
-    expect(webqqView).toContain('return `已思考 ${seconds}s`')
+    expect(webqqMessageView).toContain('function formatThinkingDuration(durationMs: number)')
+    expect(webqqMessageView).toContain('Math.round(durationMs / 1000)')
+    expect(webqqMessageView).toContain('return `已思考 ${seconds}s`')
     expect(webqqView).toContain('function isThinkingExpanded(message: WebQQMessage)')
     expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
     expect(webqqView).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
@@ -482,7 +478,7 @@ describe('webqq observer view', () => {
     expect(thinkingToggleSource.indexOf('class="chat-capsule-webqq__thinking-usage"')).toBeLessThan(
       thinkingToggleSource.indexOf('formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs)'),
     )
-    expect(webqqView).toContain('function formatThinkingDuration(durationMs: number)')
+    expect(webqqMessageView).toContain('function formatThinkingDuration(durationMs: number)')
     expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
   })
 
@@ -766,7 +762,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('chat-capsule-webqq__forward')
     expect(webqqView).toContain("run.element.title || '合并转发'")
     expect(webqqView).toContain("run.element.text || '[合并转发]'")
-    expect(webqqView).toContain("element.type !== 'forward'")
+    expect(webqqMessageView).toContain("element.type !== 'forward'")
   })
 
   it('limits WebQQ forward bubble previews to the first four items and shows a total entry', () => {
@@ -813,7 +809,7 @@ describe('webqq observer view', () => {
     expect(clientMessageSource).toContain('source?:')
     expect(webqqView).toContain("run.element.type === 'card'")
     expect(webqqView).toContain('chat-capsule-webqq__card')
-    expect(webqqView).toContain("element.type !== 'card'")
+    expect(webqqMessageView).toContain("element.type !== 'card'")
     expect(webqqView).not.toContain(`:is="run.element.url ? 'a' : 'div'"`)
     expect(webqqView).not.toContain(':href="run.element.url || undefined"')
     expect(webqqView).not.toContain(':target=')

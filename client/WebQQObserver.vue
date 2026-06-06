@@ -471,6 +471,17 @@ import {
   type ConversationSummary,
   type WebQQStoredState,
 } from './stores/webqq-storage'
+import {
+  formatListTime,
+  formatNoticeTime,
+  formatSenderLevel,
+  formatThinkingDuration,
+  formatTime,
+  getForwardPreviewText,
+  getUnreadText,
+  getWebQQElementRuns,
+  type WebQQMessageElement,
+} from './utils/webqq-message-view'
 
 type ChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
@@ -478,10 +489,6 @@ type ChatSelection =
 
 type RecentItem = ChatSelection & { summary?: string; time?: number }
 type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
-type WebQQMessageElement = WebQQMessage['elements'][number]
-type WebQQElementRun =
-  | { type: 'inline'; elements: WebQQMessageElement[] }
-  | { type: 'block'; element: WebQQMessageElement }
 type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
 
 const props = defineProps<{ visible: boolean }>()
@@ -753,10 +760,6 @@ function getUnreadCount(type: ChatSelection['type'], peerId: string) {
   return conversationUnreadCounts.value[getChatKey(type, peerId)] || 0
 }
 
-function getUnreadText(count: number) {
-  return count > 9999 ? '9999+' : String(count)
-}
-
 function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
   const key = getChatKey(type, peerId)
   conversationUnreadCounts.value = {
@@ -807,11 +810,6 @@ function isBotThinkingMessage(message: WebQQMessage) {
   return message.id === botThinkingMessage.value?.id
 }
 
-function formatThinkingDuration(durationMs: number) {
-  const seconds = Math.max(0, Math.round(durationMs / 1000))
-  return `已思考 ${seconds}s`
-}
-
 function isThinkingExpanded(message: WebQQMessage) {
   return expandedThinkingMessageIds.value.has(getMessageKey(message))
 }
@@ -860,27 +858,6 @@ function isImageOnlyMessage(message: WebQQMessage) {
     !!message.elements[0].url
 }
 
-function isInlineWebQQElement(element: WebQQMessageElement) {
-  return element.type !== 'quote' && element.type !== 'image' && element.type !== 'forward' && element.type !== 'card'
-}
-
-function getWebQQElementRuns(elements: WebQQMessageElement[]) {
-  const runs: WebQQElementRun[] = []
-  for (const element of elements) {
-    if (!isInlineWebQQElement(element)) {
-      runs.push({ type: 'block', element })
-      continue
-    }
-    const last = runs.at(-1)
-    if (last?.type === 'inline') {
-      last.elements.push(element)
-    } else {
-      runs.push({ type: 'inline', elements: [element] })
-    }
-  }
-  return runs
-}
-
 function getForwardItemName(item: WebQQForwardItem) {
   return item.title || item.senderId || 'QQ 用户'
 }
@@ -891,18 +868,6 @@ function getForwardItemAvatar(item: WebQQForwardItem) {
 
 function getForwardPreviewItems(element: WebQQMessageElement) {
   return element.items?.slice(0, webQQForwardPreviewLimit) ?? []
-}
-
-function getForwardPreviewText(item: WebQQForwardItem) {
-  return item.elements.map((element) => {
-    if (element.type === 'text') return element.text
-    if (element.type === 'image') return '[图片]'
-    if (element.type === 'quote') return element.text || '[引用消息]'
-    if (element.type === 'forward') return '[合并转发]'
-    if (element.type === 'card') return element.title || element.text || '[卡片消息]'
-    if (element.type === 'face') return element.text || '[表情]'
-    return element.text || '[消息]'
-  }).filter(Boolean).join('') || '[消息]'
 }
 
 function getForwardItemSenderKey(item: WebQQForwardItem | undefined) {
@@ -1216,30 +1181,6 @@ function selectRecent(item: RecentItem) {
   loadMessages()
 }
 
-function formatTime(timestamp: number) {
-  return new Date(timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatListTime(timestamp: number) {
-  return formatTime(timestamp)
-}
-
-function padNoticeTimePart(value: number) {
-  return String(value).padStart(2, '0')
-}
-
-function formatNoticeTime(timestamp: number) {
-  const date = new Date(timestamp)
-  const month = padNoticeTimePart(date.getMonth() + 1)
-  const day = padNoticeTimePart(date.getDate())
-  const hour = padNoticeTimePart(date.getHours())
-  const minute = padNoticeTimePart(date.getMinutes())
-  return `${month}/${day} ${hour}:${minute}`
-}
-
 function getGroupMemberName(member: WebQQGroupMember) {
   return member.card || member.nickname || member.userId
 }
@@ -1285,10 +1226,6 @@ async function handleNotice(notice: WebQQNotice, approve: boolean) {
   } finally {
     handlingNoticeId.value = ''
   }
-}
-
-function formatSenderLevel(level: string) {
-  return level.startsWith('Lv.') ? level : `Lv.${level}`
 }
 
 function getSenderAuthorityText(message: WebQQMessage) {
