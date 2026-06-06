@@ -191,9 +191,23 @@
                         <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
                         <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
                         <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                        <span v-if="message.senderAffinity != null && showWebQQAffinity" class="chat-capsule-webqq__sender-badge is-affinity">
+                          <svg class="chat-capsule-webqq__sender-heart" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                          </svg>
+                          {{ message.senderAffinity }}
+                        </span>
+                        <span v-if="message.senderRelationship && showWebQQRelationship" class="chat-capsule-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
                       </template>
                       <template v-if="message.direction === 'incoming'">
                         <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
+                        <span v-if="message.senderAffinity != null && showWebQQAffinity" class="chat-capsule-webqq__sender-badge is-affinity">
+                          <svg class="chat-capsule-webqq__sender-heart" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                          </svg>
+                          {{ message.senderAffinity }}
+                        </span>
+                        <span v-if="message.senderRelationship && showWebQQRelationship" class="chat-capsule-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
                         <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
                         <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
                       </template>
@@ -449,7 +463,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { capsule, hideWebQQGroupLevel, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
+import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from './webqq-message-cache'
 import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'

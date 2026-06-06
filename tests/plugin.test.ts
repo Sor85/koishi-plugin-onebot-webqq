@@ -125,6 +125,12 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效')")
     expect(pluginSource).toContain("hideWebQQGroupLevel?: boolean")
     expect(pluginSource).toContain("Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标')")
+    expect(pluginSource).toContain("showWebQQAffinity?: boolean")
+    expect(pluginSource).toContain("Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度')")
+    expect(pluginSource).toContain("showWebQQRelationship?: boolean")
+    expect(pluginSource).toContain("Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 关系')")
+    expect(pluginSource).toContain("webQQAffinityScopeId?: string")
+    expect(pluginSource).toContain("Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用')")
     expect(pluginSource).toContain("showWebQQCapsuleUnread?: boolean")
     expect(pluginSource).toContain("Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数')")
     expect(pluginSource).toContain("webQQStorageBackend?: 'browser' | 'koishi'")
@@ -158,6 +164,8 @@ describe('chat capsule plugin wiring', () => {
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: false,
+      showWebQQAffinity: false,
+      showWebQQRelationship: false,
       showWebQQCapsuleUnread: true,
       webQQStorageBackend: 'browser',
     })
@@ -508,6 +516,176 @@ describe('chat capsule plugin wiring', () => {
       expect.objectContaining({
         id: 'new-1',
         summary: 'new message',
+      }),
+    ])
+  })
+
+  it('attaches ChatLuna affinity data to WebQQ message history when enabled', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 'old-1',
+            message_seq: 10,
+            time: 1710000000,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: 'old message',
+          }],
+        })),
+      },
+    }
+    const database = {
+      get: vi.fn(async (table: string) => {
+        if (table === 'chatluna_affinity_v2') {
+          return [{
+            scopeId: 'cat',
+            userId: '30000',
+            affinity: 88,
+            relation: '熟悉',
+            specialRelation: null,
+          }]
+        }
+        return []
+      }),
+      upsert: vi.fn(async () => {}),
+    }
+    const { ctx, addListener } = createFakeContext({ bots: [bot], database })
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
+      showWebQQAffinity?: boolean
+      showWebQQRelationship?: boolean
+      webQQAffinityScopeId?: string
+    }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, {
+      showWebQQAffinity: true,
+      showWebQQRelationship: true,
+      webQQAffinityScopeId: 'cat',
+    })
+
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'old-1',
+        senderAffinity: 88,
+        senderRelationship: '熟悉',
+      }),
+    ])
+    expect(database.get).toHaveBeenCalledWith('chatluna_affinity_v2', {
+      scopeId: 'cat',
+      userId: { $in: ['30000'] },
+    })
+  })
+
+  it('uses the only ChatLuna affinity scope when no WebQQ affinity scope is configured', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 'old-1',
+            message_seq: 10,
+            time: 1710000000,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: 'old message',
+          }],
+        })),
+      },
+    }
+    const database = {
+      get: vi.fn(async (table: string) => {
+        if (table === 'chatluna_affinity_v2') {
+          return [{
+            scopeId: 'cat',
+            userId: '30000',
+            affinity: 88,
+            relation: '熟悉',
+            specialRelation: null,
+          }]
+        }
+        return []
+      }),
+      upsert: vi.fn(async () => {}),
+    }
+    const { ctx, addListener } = createFakeContext({ bots: [bot], database })
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
+      showWebQQAffinity?: boolean
+      showWebQQRelationship?: boolean
+    }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, {
+      showWebQQAffinity: true,
+      showWebQQRelationship: true,
+    })
+
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'old-1',
+        senderAffinity: 88,
+        senderRelationship: '熟悉',
+      }),
+    ])
+    expect(database.get).toHaveBeenCalledWith('chatluna_affinity_v2', {})
+  })
+
+  it('does not guess a ChatLuna affinity scope when multiple scopes exist', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 'old-1',
+            message_seq: 10,
+            time: 1710000000,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: 'old message',
+          }],
+        })),
+      },
+    }
+    const database = {
+      get: vi.fn(async (table: string) => {
+        if (table === 'chatluna_affinity_v2') {
+          return [
+            { scopeId: 'cat', userId: '30000', affinity: 88, relation: '熟悉' },
+            { scopeId: 'dog', userId: '30000', affinity: 20, relation: '陌生' },
+          ]
+        }
+        return []
+      }),
+      upsert: vi.fn(async () => {}),
+    }
+    const { ctx, addListener } = createFakeContext({ bots: [bot], database })
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { showWebQQAffinity?: boolean }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, { showWebQQAffinity: true })
+
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.not.objectContaining({
+        senderAffinity: expect.any(Number),
       }),
     ])
   })
@@ -1413,6 +1591,8 @@ describe('chat capsule plugin wiring', () => {
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: false,
+      showWebQQAffinity: false,
+      showWebQQRelationship: false,
       showWebQQCapsuleUnread: true,
       webQQStorageBackend: 'browser',
     })
@@ -1427,6 +1607,9 @@ describe('chat capsule plugin wiring', () => {
       webQQAccentColor?: string
       useBotAvatarThemeColor?: boolean
       hideWebQQGroupLevel?: boolean
+      showWebQQAffinity?: boolean
+      showWebQQRelationship?: boolean
+      webQQAffinityScopeId?: string
       showWebQQCapsuleUnread?: boolean
       webQQStorageBackend?: 'browser' | 'koishi'
     }) => void
@@ -1439,6 +1622,9 @@ describe('chat capsule plugin wiring', () => {
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: true,
+      showWebQQAffinity: true,
+      showWebQQRelationship: true,
+      webQQAffinityScopeId: 'cat',
       showWebQQCapsuleUnread: false,
       webQQStorageBackend: 'koishi',
     })
@@ -1453,6 +1639,8 @@ describe('chat capsule plugin wiring', () => {
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
       hideWebQQGroupLevel: true,
+      showWebQQAffinity: true,
+      showWebQQRelationship: true,
       showWebQQCapsuleUnread: false,
       webQQStorageBackend: 'koishi',
     })

@@ -263,6 +263,9 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-admin')).toContain('background: #e9f8ef')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-level')).toContain('background: rgba(148, 163, 184, 0.24)')
     expect(ruleBody('.chat-capsule-webqq__sender-badge.is-title')).toContain('background: rgba(18, 183, 245, 0.1)')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-affinity')).toContain('background: rgba(244, 114, 182, 0.12)')
+    expect(ruleBody('.chat-capsule-webqq__sender-badge.is-relationship')).toContain('background: rgba(99, 102, 241, 0.12)')
+    expect(ruleBody('.chat-capsule-webqq__sender-heart')).toContain('fill: currentColor')
   })
 
   it('keeps WebQQ sender metadata away from the first message bubble', () => {

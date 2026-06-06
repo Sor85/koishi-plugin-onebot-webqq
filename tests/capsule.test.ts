@@ -177,12 +177,14 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQCapsuleUnread, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')
     expect(clientEntry).toContain('webQQStorageBackend?: WebQQStorageBackend')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
+    expect(clientEntry).toContain('showWebQQAffinity?: boolean')
+    expect(clientEntry).toContain('showWebQQRelationship?: boolean')
     expect(clientEntry).toContain('showWebQQCapsuleUnread?: boolean')
     expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
     expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'")
@@ -191,6 +193,8 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false')
+    expect(clientEntry).toContain('showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false')
+    expect(clientEntry).toContain('showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false')
     expect(clientEntry).toContain('showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true')
   })
 
