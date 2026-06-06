@@ -29,6 +29,7 @@
 - `client/stores/webqq-notices.ts`：WebQQ 通知菜单状态 composable，负责通知列表、分类过滤、加载状态、打开切换和处理状态
 - `client/stores/webqq-sender-metadata.ts`：WebQQ 发送者身份缓存 composable，负责当前会话上下文下的缓存写入和消息补齐
 - `client/stores/webqq-storage.ts`：WebQQ 最近会话、未读数和消息缓存的前端存储分支
+- `client/stores/webqq-thinking-expansion.ts`：WebQQ 思考内容展开状态 composable，负责 completed thinking 的展开集合和切换
 - `client/utils/webqq-contact-view.ts`：WebQQ 联系人和最近会话展示纯函数，负责会话 key、聊天选择构造、当前聊天头部、群聊副标题、联系人搜索过滤、最近会话列表、摘要时间和未读数读取
 - `client/utils/webqq-message-view.ts`：WebQQ 消息展示纯函数，负责消息 key、消息合并、未读数、时间、临时思考消息构造、思考耗时、completed thinking 聚合、消息元素分组、合并转发预览文案、消息聚类 class、群成员名称和发送者徽标判断
 - `client/utils/webqq-notice-view.ts`：WebQQ 通知展示纯函数，负责通知排序、申请备注拆行、已处理状态文案和可处理状态判断

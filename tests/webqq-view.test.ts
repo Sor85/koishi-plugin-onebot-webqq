@@ -7,6 +7,7 @@ import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
 import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
+import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
@@ -24,6 +25,7 @@ const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-p
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
 const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
+const webqqThinkingExpansionStore = await readFile(new URL('../client/stores/webqq-thinking-expansion.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts', import.meta.url), 'utf8')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
@@ -703,12 +705,13 @@ describe('webqq observer view', () => {
   })
 
   it('renders completed thinking below WebQQ messages as a collapsible disclosure', () => {
-    expect(webqqView).toContain('const expandedThinkingMessageIds = ref')
+    expect(webqqView).toContain('useWebQQThinkingExpansion()')
+    expect(webqqThinkingExpansionStore).toContain('const expandedThinkingMessageIds = ref')
     expect(webqqMessageView).toContain('function formatThinkingDuration(durationMs: number)')
     expect(webqqMessageView).toContain('Math.round(durationMs / 1000)')
     expect(webqqMessageView).toContain('return `已思考 ${seconds}s`')
-    expect(webqqView).toContain('function isThinkingExpanded(message: WebQQMessage)')
-    expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
+    expect(webqqThinkingExpansionStore).toContain('function isThinkingExpanded(message: WebQQMessage)')
+    expect(webqqThinkingExpansionStore).toContain('function toggleThinking(message: WebQQMessage)')
     expect(webqqView).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
     expect(webqqMessageView).toContain('function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], index: number)')
     expect(webqqMessageView).toContain('candidate.thinking?.content')
@@ -718,6 +721,16 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs)')
     expect(webqqView).toContain('class="chat-capsule-webqq__thinking-content"')
     expect(webqqView).toContain('{{ getLastOutgoingClusterThinkingMessage(index).thinking.content }}')
+  })
+
+  it('keeps WebQQ thinking expansion state inside a composable', () => {
+    const expansion = useWebQQThinkingExpansion()
+    const message = createWebQQMessage({ id: 'thinking-1', sequence: 'thinking-1' })
+    expect(expansion.isThinkingExpanded(message)).toBe(false)
+    expansion.toggleThinking(message)
+    expect(expansion.isThinkingExpanded(message)).toBe(true)
+    expansion.toggleThinking(message)
+    expect(expansion.isThinkingExpanded(message)).toBe(false)
   })
 
   it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {
@@ -757,7 +770,7 @@ describe('webqq observer view', () => {
       thinkingToggleSource.indexOf('formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs)'),
     )
     expect(webqqMessageView).toContain('function formatThinkingDuration(durationMs: number)')
-    expect(webqqView).toContain('function toggleThinking(message: WebQQMessage)')
+    expect(webqqThinkingExpansionStore).toContain('function toggleThinking(message: WebQQMessage)')
   })
 
   it('renders consecutive inline WebQQ elements inside one inline container', () => {

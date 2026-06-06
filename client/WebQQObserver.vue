@@ -480,6 +480,7 @@ import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
+import { useWebQQThinkingExpansion } from './stores/webqq-thinking-expansion'
 import {
   formatListTime,
   formatNoticeTime,
@@ -495,7 +496,6 @@ import {
   getLastOutgoingClusterThinkingMessage as getLastOutgoingClusterThinkingMessageFromView,
   getGroupMemberName,
   getMessageClusterClass as getMessageClusterClassFromView,
-  getMessageKey,
   getSenderAuthorityClass,
   getSenderAuthorityText,
   getUnreadText,
@@ -557,7 +557,7 @@ conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const forwardDialog = ref<WebQQMessageElement>()
-const expandedThinkingMessageIds = ref(new Set<string>())
+const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
 const loading = ref(false)
@@ -714,21 +714,6 @@ const {
 
 function isBotThinkingMessage(message: WebQQMessage) {
   return message.id === botThinkingMessage.value?.id
-}
-
-function isThinkingExpanded(message: WebQQMessage) {
-  return expandedThinkingMessageIds.value.has(getMessageKey(message))
-}
-
-function toggleThinking(message: WebQQMessage) {
-  const key = getMessageKey(message)
-  const next = new Set(expandedThinkingMessageIds.value)
-  if (next.has(key)) {
-    next.delete(key)
-  } else {
-    next.add(key)
-  }
-  expandedThinkingMessageIds.value = next
 }
 
 function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMessage | undefined {
