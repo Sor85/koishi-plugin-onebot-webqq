@@ -42,6 +42,7 @@
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-state.ts`：WebQQ 最近会话和未读数的前端状态类型与纯更新 helper
+- `client/stores/webqq-conversation-state.ts`：WebQQ 最近会话摘要和未读数状态 composable，负责 hydrate/persist、摘要更新、未读计数和总未读派生
 - `client/stores/webqq-forward-dialog.ts`：WebQQ 合并转发弹窗状态 composable，负责弹窗内容、预览条数、默认头像和当前聊天样式下的聚合 class
 - `client/stores/webqq-group-info.ts`：WebQQ 群信息面板状态 composable，负责群公告、群成员、搜索、加载状态和打开切换
 - `client/stores/webqq-image-preview.ts`：WebQQ 图片预览状态 composable，负责预览 URL、遮罩 ref、打开和关闭
@@ -105,7 +106,7 @@
 ## 当前高风险区域
 
 - `src/index.ts` 同时承担插件入口、console RPC、live 消息标准化、ChatLuna 状态、数据库存储和好感度读取
-- `client/WebQQObserver.vue` 同时承担视图、请求、缓存、滚动、未读数、通知和多块面板编排
+- `client/WebQQObserver.vue` 同时承担视图、请求、缓存、滚动、通知和多块面板编排
 - `client/style.scss` 体量过大，且强绑定 `Capsule.vue` 和 `WebQQObserver.vue` 的 class 结构
 - `src/index.ts` 和 `src/onebot.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

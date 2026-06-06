@@ -462,19 +462,10 @@ import { receive, send, withProxy } from '@koishijs/client'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import {
-  loadBrowserWebQQStoredState,
   loadCachedWebQQMessages as loadStoredWebQQMessages,
-  loadRemoteWebQQStoredState as loadRemoteWebQQStoredStateFromBackend,
-  persistWebQQStoredState,
   saveCachedWebQQMessages as saveStoredWebQQMessages,
 } from './stores/webqq-storage'
-import {
-  clearConversationUnreadCount,
-  type ConversationSummary,
-  increaseConversationUnreadCount,
-  setConversationSummary,
-  type WebQQStoredState,
-} from './stores/webqq-state'
+import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
@@ -513,15 +504,11 @@ import {
   createFriendChatSelection,
   createGroupChatSelection,
   createRecentChatSelection,
-  getChatKey,
-  getContactSubtitle as getContactSubtitleFromView,
-  getContactTime as getContactTimeFromView,
   getCurrentChatAvatar,
   getCurrentChatSubtitle,
   getCurrentChatTitle,
   getGroupSubtitle,
   getRecentItems,
-  getUnreadCount as getUnreadCountFromView,
   getVisibleFriendCategories,
   getVisibleFriends,
   getVisibleGroups,
@@ -543,12 +530,18 @@ const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
 const searchQuery = ref('')
 const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
-const conversationSummaries = ref<Record<string, ConversationSummary>>({})
-const conversationUnreadCounts = ref<Record<string, number>>({})
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
-const stored = loadBrowserWebQQStoredState(webQQStorageBackend.value)
-conversationSummaries.value = stored.conversationSummaries
-conversationUnreadCounts.value = stored.conversationUnreadCounts
+const {
+  conversationSummaries,
+  totalUnreadCount,
+  loadRemoteWebQQStoredState,
+  updateConversationSummary,
+  getContactSubtitle,
+  getContactTime,
+  getUnreadCount,
+  increaseUnreadCount,
+  clearUnreadCount,
+} = useWebQQConversationState(webQQStorageBackend)
 const messages = ref<WebQQMessage[]>([])
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
@@ -600,27 +593,6 @@ const {
   toggleGroupInfo,
 } = useWebQQGroupInfo(currentChat, { requestGroupInfo })
 
-function createWebQQStoredState(): WebQQStoredState {
-  return {
-    conversationSummaries: conversationSummaries.value,
-    conversationUnreadCounts: conversationUnreadCounts.value,
-  }
-}
-
-function applyWebQQStoredState(stored: WebQQStoredState) {
-  conversationSummaries.value = stored.conversationSummaries
-  conversationUnreadCounts.value = stored.conversationUnreadCounts
-}
-
-function persistWebQQState() {
-  persistWebQQStoredState(webQQStorageBackend.value, createWebQQStoredState())
-}
-
-async function loadRemoteWebQQStoredState() {
-  const stored = await loadRemoteWebQQStoredStateFromBackend(webQQStorageBackend.value)
-  if (stored) applyWebQQStoredState(stored)
-}
-
 async function loadCachedWebQQMessages(type: ChatSelection['type'], peerId: string) {
   return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)
 }
@@ -644,7 +616,6 @@ const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => getCurrentChatTitle(currentChat.value))
 const currentSubtitle = computed(() => getCurrentChatSubtitle(currentChat.value, contacts.value))
 const currentAvatar = computed(() => getCurrentChatAvatar(currentChat.value))
-const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))
 const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(capsule.value, currentChat.value, messages.value))
 const visibleMessages = computed(() => {
   const cachedMessages = messages.value.map(applyMessageSenderMetadata)
@@ -664,37 +635,6 @@ const {
 function selectTab(tab: 'recent' | 'friends' | 'groups') {
   activeTab.value = tab
   noticeOpen.value = false
-}
-
-function updateConversationSummary(type: ChatSelection['type'], peerId: string, message?: WebQQMessage) {
-  const next = setConversationSummary(conversationSummaries.value, type, peerId, message)
-  if (next === conversationSummaries.value) return
-  conversationSummaries.value = next
-  persistWebQQState()
-}
-
-function getContactSubtitle(type: ChatSelection['type'], peerId: string, fallback: string) {
-  return getContactSubtitleFromView(conversationSummaries.value, type, peerId, fallback)
-}
-
-function getContactTime(type: ChatSelection['type'], peerId: string, fallback = 0) {
-  return getContactTimeFromView(conversationSummaries.value, type, peerId, fallback)
-}
-
-function getUnreadCount(type: ChatSelection['type'], peerId: string) {
-  return getUnreadCountFromView(conversationUnreadCounts.value, type, peerId)
-}
-
-function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
-  conversationUnreadCounts.value = increaseConversationUnreadCount(conversationUnreadCounts.value, type, peerId)
-  persistWebQQState()
-}
-
-function clearUnreadCount(type: ChatSelection['type'], peerId: string) {
-  const next = clearConversationUnreadCount(conversationUnreadCounts.value, type, peerId)
-  if (next === conversationUnreadCounts.value) return
-  conversationUnreadCounts.value = next
-  persistWebQQState()
 }
 
 function clearCurrentUnreadCount() {
