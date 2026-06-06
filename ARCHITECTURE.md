@@ -13,8 +13,10 @@
 ## 当前模块
 
 - `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、console 事件桥、ChatLuna 状态监听、WebQQ live 消息桥接和存储注册
+- `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知、图片、引用和合并转发的读取与标准化
 - `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
+- `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
@@ -28,6 +30,7 @@
 - `src/config.ts`：后端插件配置 schema 和配置类型
 - `src/state.ts`：后端内存状态机
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
+- `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
 - `client/components/`：后续拆出的 Vue 展示组件
 - `client/stores/`：后续拆出的前端响应式状态或 composable
