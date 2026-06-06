@@ -537,6 +537,30 @@ function readLiveQuoteText(raw: unknown): string {
   return readElementText(attrs.content || attrs.text)
 }
 
+async function normalizeLiveQuoteField(session: Session, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement | undefined> {
+  const quote = session.quote ?? session.event.message?.quote
+  if (!isRecord(quote)) return
+  const user = isRecord(quote.user) ? quote.user : undefined
+  const member = isRecord(quote.member) ? quote.member : undefined
+  const title = (member ? readRecordText(member, ['name', 'nick']) : '') ||
+    (user ? readRecordText(user, ['name', 'nick', 'id']) : '')
+  const text = readStructuredText(quote.content).trim() ||
+    (Array.isArray(quote.elements) ? quote.elements.map(readLiveQuoteText).join('').trim() : '')
+  const id = readRecordText(quote, ['id', 'messageId', 'message_id'])
+  if (!text && id && resolveQuote) {
+    try {
+      return await resolveQuote(id)
+    } catch {
+      return { type: 'quote', text: '[引用消息]' }
+    }
+  }
+  return {
+    type: 'quote',
+    ...(title ? { title } : {}),
+    text: text || '[引用消息]',
+  }
+}
+
 type WebQQResolvedImage = {
   url: string
   debug?: unknown
@@ -699,9 +723,11 @@ async function normalizeLiveElements(
   resolveQuote?: WebQQQuoteResolver,
   resolveForward?: WebQQForwardResolver,
 ): Promise<WebQQMessageElement[]> {
+  const quote = await normalizeLiveQuoteField(session, resolveQuote)
   const elements = (await Promise.all((session.elements ?? session.event.message?.elements ?? [])
     .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote, resolveForward))))
     .filter((element): element is WebQQMessageElement => !!element)
+  if (quote) elements.unshift(quote)
   if (elements.length) return elements
   const content = session.content?.trim()
   return content ? [{ type: 'text', text: content }] : [{ type: 'unknown', text: '[消息]' }]
@@ -835,7 +861,7 @@ async function createWebQQLiveMessage(
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
   if (!peer) return
-  if (!(session.elements ?? session.event.message?.elements)?.length && !session.content?.trim()) return
+  if (!(session.elements ?? session.event.message?.elements)?.length && !session.quote && !session.event.message?.quote && !session.content?.trim()) return
   const bot = readBotProfile(session)
   const elements = await normalizeLiveElements(session, resolveImage, resolveQuote, resolveForward)
   const senderId = direction === 'outgoing'

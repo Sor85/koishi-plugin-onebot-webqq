@@ -1047,6 +1047,43 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('renders live event message quote fields before the WebQQ message body', async () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'quote-field-1',
+          quote: {
+            id: 'quoted-field-1',
+            user: { id: '40000', name: '彩虹猫' },
+            content: '宁宁摸摸头',
+          },
+          elements: [
+            { type: 'text', attrs: { content: '这还差不多' } },
+          ],
+        },
+      },
+    }))
+
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'quote-field-1',
+        summary: '这还差不多',
+        elements: [
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'text', text: '这还差不多' },
+        ],
+      }),
+    }, { authority: 1 })
+  })
+
   it('resolves live reply ids before rendering WebQQ quote elements', async () => {
     const bot = {
       platform: 'onebot',
