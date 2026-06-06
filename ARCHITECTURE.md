@@ -47,6 +47,7 @@
 - `client/stores/webqq-forward-dialog.ts`：WebQQ 合并转发弹窗状态 composable，负责弹窗内容、预览条数、默认头像和当前聊天样式下的聚合 class
 - `client/stores/webqq-group-info.ts`：WebQQ 群信息面板状态 composable，负责群公告、群成员、搜索、加载状态和打开切换
 - `client/stores/webqq-image-preview.ts`：WebQQ 图片预览状态 composable，负责预览 URL、遮罩 ref、打开和关闭
+- `client/stores/webqq-message-list.ts`：WebQQ 消息列表展示状态 composable，负责消息 ref、临时思考消息、可见消息、消息聚类和 append 后的底部跟随
 - `client/stores/webqq-message-scroll.ts`：WebQQ 消息滚动状态 composable，负责消息面板 ref、底部跟随、返回底部和图片加载后的滚动
 - `client/stores/webqq-notices.ts`：WebQQ 通知菜单状态 composable，负责通知列表、分类过滤、加载状态、打开切换和处理状态
 - `client/stores/webqq-sender-metadata.ts`：WebQQ 发送者身份缓存 composable，负责当前会话上下文下的缓存写入和消息补齐

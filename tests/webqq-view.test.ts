@@ -6,6 +6,7 @@ import { useWebQQContacts } from '../client/stores/webqq-contacts'
 import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
 import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
+import { useWebQQMessageList } from '../client/stores/webqq-message-list'
 import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
@@ -27,6 +28,7 @@ const webqqConversationStateStore = await readFile(new URL('../client/stores/web
 const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
+const webqqMessageListStore = await readFile(new URL('../client/stores/webqq-message-list.ts', import.meta.url), 'utf8')
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
 const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
@@ -216,12 +218,13 @@ describe('webqq observer view', () => {
   })
 
   it('renders a transient outgoing bot thinking message after the real WebQQ messages', () => {
-    expect(webqqView).toContain('const visibleMessages = computed')
-    expect(webqqView).toContain('const cachedMessages = messages.value.map(applyMessageSenderMetadata)')
-    expect(webqqView).toContain('return botThinkingMessage.value ? [...cachedMessages, applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages')
+    expect(webqqView).toContain("from './stores/webqq-message-list'")
+    expect(webqqMessageListStore).toContain('const visibleMessages = computed')
+    expect(webqqMessageListStore).toContain('const cachedMessages = messages.value.map(options.applyMessageSenderMetadata)')
+    expect(webqqMessageListStore).toContain('return botThinkingMessage.value ? [...cachedMessages, options.applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages')
     expect(webqqView).toContain('v-for="(message, index) in visibleMessages"')
     expect(webqqView).toContain("'is-thinking': isBotThinkingMessage(message)")
-    expect(webqqView).toContain('function isBotThinkingMessage(message: WebQQMessage)')
+    expect(webqqMessageListStore).toContain('function isBotThinkingMessage(message: WebQQMessage)')
     expect(webqqView).not.toContain('chat-capsule-webqq__thinking-bubble')
     expect(style).not.toContain('chat-capsule-webqq__thinking-bubble')
     const messageBodySource = sourceBetween(
@@ -241,8 +244,8 @@ describe('webqq observer view', () => {
   })
 
   it('shows the temporary bot thinking bubble only for the capsule current WebQQ conversation', () => {
-    expect(webqqView).toContain('const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage')
-    expect(webqqView).toContain('createBotThinkingMessage(capsule.value, currentChat.value, messages.value)')
+    expect(webqqMessageListStore).toContain('const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage')
+    expect(webqqMessageListStore).toContain('createBotThinkingMessage(options.capsule.value, options.currentChat.value, messages.value)')
     expect(webqqMessageView).toContain('const conversation = capsule?.conversation')
     expect(webqqMessageView).toContain("conversation.activityText !== '正在思考'")
     expect(webqqMessageView).toContain('conversation.channelId')
@@ -323,9 +326,9 @@ describe('webqq observer view', () => {
 
   it('hydrates missing live WebQQ sender metadata from cached messages in the same conversation', () => {
     const visibleMessagesSource = sourceBetween(
-      webqqView,
+      webqqMessageListStore,
       'const visibleMessages = computed(() => {',
-      'function selectTab',
+      'function isBotThinkingMessage',
     )
     const receiveSource = sourceBetween(
       webqqView,
@@ -339,7 +342,7 @@ describe('webqq observer view', () => {
     expect(webqqSenderMetadataStore).toContain('const senderMetadataCache = ref')
     expect(webqqSenderMetadataStore).toContain('function rememberMessageSenderMetadata')
     expect(webqqSenderMetadataStore).toContain('function applyMessageSenderMetadata')
-    expect(visibleMessagesSource).toContain('messages.value.map(applyMessageSenderMetadata)')
+    expect(visibleMessagesSource).toContain('messages.value.map(options.applyMessageSenderMetadata)')
     expect(webqqView).toContain('rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)')
     expect(receiveSource).toContain('rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])')
   })
@@ -670,10 +673,10 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("'is-merged': isMergedMessage(index)")
     expect(webqqView).toContain('getMessageClusterClass(index)')
     expect(webqqView).toContain('v-if="!isMergedMessage(index)"')
-    expect(webqqView).toContain('function getMessageClusterClass(index: number)')
-    expect(webqqView).toContain('getMessageClusterClassFromView(messages.value, index, webQQChatStyle.value)')
-    expect(webqqView).toContain('function isMergedMessage(index: number)')
-    expect(webqqView).toContain('isMergedMessageFromView(messages.value, index, webQQChatStyle.value)')
+    expect(webqqMessageListStore).toContain('function getMessageClusterClass(index: number)')
+    expect(webqqMessageListStore).toContain('getMessageClusterClassFromView(messages.value, index, options.chatStyle.value)')
+    expect(webqqMessageListStore).toContain('function isMergedMessage(index: number)')
+    expect(webqqMessageListStore).toContain('isMergedMessageFromView(messages.value, index, options.chatStyle.value)')
     expect(webqqMessageView).toContain("chatStyle !== 'telegram'")
     expect(webqqMessageView).toContain("return 'is-cluster-middle'")
     expect(webqqMessageView).toContain("return 'is-cluster-first'")
@@ -753,7 +756,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageView).toContain('return `已思考 ${seconds}s`')
     expect(webqqThinkingExpansionStore).toContain('function isThinkingExpanded(message: WebQQMessage)')
     expect(webqqThinkingExpansionStore).toContain('function toggleThinking(message: WebQQMessage)')
-    expect(webqqView).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
+    expect(webqqMessageListStore).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
     expect(webqqMessageView).toContain('function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], index: number)')
     expect(webqqMessageView).toContain('candidate.thinking?.content')
     expect(webqqView).toContain('class="chat-capsule-webqq__thinking-row"')
@@ -772,6 +775,25 @@ describe('webqq observer view', () => {
     expect(expansion.isThinkingExpanded(message)).toBe(true)
     expansion.toggleThinking(message)
     expect(expansion.isThinkingExpanded(message)).toBe(false)
+  })
+
+  it('keeps WebQQ message list display state inside a composable', () => {
+    const scrollEvents: string[] = []
+    const list = useWebQQMessageList({
+      capsule: ref<CapsuleData | undefined>(createCapsuleData()),
+      currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
+      chatStyle: ref('telegram'),
+      applyMessageSenderMetadata: (message) => message,
+      shouldScrollToBottom: () => true,
+      scrollMessagesToBottom: () => scrollEvents.push('scroll'),
+    })
+
+    expect(list.botThinkingMessage.value?.id).toBe('thinking:group:20000:1710000000000')
+    expect(list.visibleMessages.value).toHaveLength(1)
+    list.appendMessage(createWebQQMessage({ id: 'message-2', sequence: 'message-2', time: 1710000000001 }))
+    expect(list.messages.value).toHaveLength(1)
+    expect(scrollEvents).toEqual(['scroll'])
+    expect(list.isBotThinkingMessage(list.visibleMessages.value[0])).toBe(false)
   })
 
   it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {

@@ -470,6 +470,7 @@ import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
+import { useWebQQMessageList } from './stores/webqq-message-list'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
@@ -480,21 +481,16 @@ import {
   formatSenderLevel,
   formatThinkingDuration,
   formatTime,
-  createBotThinkingMessage,
   getForwardItemName,
   getForwardPreviewText,
-  getLastOutgoingClusterThinkingMessage as getLastOutgoingClusterThinkingMessageFromView,
   getGroupMemberName,
-  getMessageClusterClass as getMessageClusterClassFromView,
   getSenderAuthorityClass,
   getSenderAuthorityText,
   getUnreadText,
   getWebQQElementRuns,
   isImageOnlyMessage,
-  isMergedMessage as isMergedMessageFromView,
   mergeMessages,
   type WebQQMessageElement,
-  type WebQQThinkingMessage,
 } from './utils/webqq-message-view'
 import {
   canHandleNotice,
@@ -541,7 +537,6 @@ const {
   selectRecent: selectWebQQRecent,
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
-const messages = ref<WebQQMessage[]>([])
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const historyLoading = ref(false)
@@ -607,11 +602,6 @@ const webQQEffectiveAccentColor = computed(() => getWebQQEffectiveAccentColor(
 ))
 const webQQAccentStyle = computed(() => getWebQQAccentStyle(webQQEffectiveAccentColor.value))
 
-const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(capsule.value, currentChat.value, messages.value))
-const visibleMessages = computed(() => {
-  const cachedMessages = messages.value.map(applyMessageSenderMetadata)
-  return botThinkingMessage.value ? [...cachedMessages, applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages
-})
 const {
   forwardDialog,
   forwardDialogItems,
@@ -646,26 +636,23 @@ const {
   loadOlderMessages,
 })
 
-function isBotThinkingMessage(message: WebQQMessage) {
-  return message.id === botThinkingMessage.value?.id
-}
-
-function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMessage | undefined {
-  return getLastOutgoingClusterThinkingMessageFromView(visibleMessages.value, index)
-}
-
-function isMergedMessage(index: number) {
-  return isMergedMessageFromView(messages.value, index, webQQChatStyle.value)
-}
-
-function getMessageClusterClass(index: number) {
-  return getMessageClusterClassFromView(messages.value, index, webQQChatStyle.value)
-}
-
-function appendMessage(message: WebQQMessage) {
-  messages.value = mergeMessages(messages.value, [message])
-  if (trackingMessages.value) scrollMessagesToBottom()
-}
+const {
+  messages,
+  botThinkingMessage,
+  visibleMessages,
+  isBotThinkingMessage,
+  getLastOutgoingClusterThinkingMessage,
+  isMergedMessage,
+  getMessageClusterClass,
+  appendMessage,
+} = useWebQQMessageList({
+  capsule,
+  currentChat,
+  chatStyle: webQQChatStyle,
+  applyMessageSenderMetadata,
+  shouldScrollToBottom: () => trackingMessages.value,
+  scrollMessagesToBottom,
+})
 
 // 打开结构化合并转发浮层，按 LLBot 的 modal 方式展示详情。
 function openForwardDialog(element: WebQQMessageElement) {
