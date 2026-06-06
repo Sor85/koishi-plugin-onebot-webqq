@@ -461,7 +461,6 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
-import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'
 import {
   loadBrowserWebQQStoredState,
   loadCachedWebQQMessages as loadStoredWebQQMessages,
@@ -477,6 +476,7 @@ import {
   type WebQQStoredState,
 } from './stores/webqq-state'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
+import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
 import {
   formatListTime,
   formatNoticeTime,
@@ -549,7 +549,7 @@ const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
 const currentChat = ref<ChatSelection>()
 const conversationSummaries = ref<Record<string, ConversationSummary>>({})
 const conversationUnreadCounts = ref<Record<string, number>>({})
-const senderMetadataCache = ref<WebQQSenderMetadataCache>({})
+const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const stored = loadBrowserWebQQStoredState(webQQStorageBackend.value)
 conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
@@ -675,15 +675,6 @@ function clearUnreadCount(type: ChatSelection['type'], peerId: string) {
 function clearCurrentUnreadCount() {
   if (!currentChat.value) return
   clearUnreadCount(currentChat.value.type, currentChat.value.peerId)
-}
-
-function rememberMessageSenderMetadata(type: ChatSelection['type'], peerId: string, nextMessages: WebQQMessage[]) {
-  senderMetadataCache.value = rememberWebQQSenderMetadata(senderMetadataCache.value, type, peerId, nextMessages)
-}
-
-function applyMessageSenderMetadata(message: WebQQMessage) {
-  if (!currentChat.value) return message
-  return applyCachedWebQQSenderMetadata(senderMetadataCache.value, currentChat.value.type, currentChat.value.peerId, message)
 }
 
 function isBotThinkingMessage(message: WebQQMessage) {

@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
+import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
@@ -15,6 +16,7 @@ const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url)
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
+const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts', import.meta.url), 'utf8')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
@@ -309,7 +311,7 @@ describe('webqq observer view', () => {
     const visibleMessagesSource = sourceBetween(
       webqqView,
       'const visibleMessages = computed(() => {',
-      'function getGroupSubtitle',
+      'function selectTab',
     )
     const receiveSource = sourceBetween(
       webqqView,
@@ -317,14 +319,39 @@ describe('webqq observer view', () => {
       "watch(() => props.visible",
     )
 
-    expect(webqqView).toContain('applyCachedWebQQSenderMetadata')
-    expect(webqqView).toContain('rememberWebQQSenderMetadata')
-    expect(webqqView).toContain('const senderMetadataCache = ref')
-    expect(webqqView).toContain('function rememberMessageSenderMetadata')
-    expect(webqqView).toContain('function applyMessageSenderMetadata')
+    expect(webqqView).toContain('useWebQQSenderMetadata(currentChat)')
+    expect(webqqSenderMetadataStore).toContain('applyCachedWebQQSenderMetadata')
+    expect(webqqSenderMetadataStore).toContain('rememberWebQQSenderMetadata')
+    expect(webqqSenderMetadataStore).toContain('const senderMetadataCache = ref')
+    expect(webqqSenderMetadataStore).toContain('function rememberMessageSenderMetadata')
+    expect(webqqSenderMetadataStore).toContain('function applyMessageSenderMetadata')
     expect(visibleMessagesSource).toContain('messages.value.map(applyMessageSenderMetadata)')
     expect(webqqView).toContain('rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)')
     expect(receiveSource).toContain('rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])')
+  })
+
+  it('keeps sender metadata cache state in a small composable', () => {
+    const currentChat = { value: createGroupChatSelection() }
+    const metadata = useWebQQSenderMetadata(currentChat)
+    metadata.rememberMessageSenderMetadata('group', '20000', [createWebQQMessage({
+      senderId: '30000',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '头衔',
+    })])
+
+    expect(metadata.applyMessageSenderMetadata(createWebQQMessage({
+      id: 'live-1',
+      senderId: '30000',
+    }))).toMatchObject({
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '头衔',
+    })
+
+    currentChat.value = undefined
+    const message = createWebQQMessage({ id: 'live-2', senderId: '30000' })
+    expect(metadata.applyMessageSenderMetadata(message)).toBe(message)
   })
 
   it('uses backend recent contacts instead of the first contacts in each list', () => {
