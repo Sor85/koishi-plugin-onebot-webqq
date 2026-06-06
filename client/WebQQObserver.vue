@@ -477,6 +477,7 @@ import {
   formatSenderLevel,
   formatThinkingDuration,
   formatTime,
+  createBotThinkingMessage,
   getForwardItemAvatar as getForwardItemAvatarFromView,
   getForwardItemClusterClass as getForwardItemClusterClassFromView,
   getForwardItemName,
@@ -490,7 +491,6 @@ import {
   getSenderAuthorityText,
   getUnreadText,
   getWebQQElementRuns,
-  hasOutgoingMessageAfter as hasOutgoingMessageAfterFromView,
   isImageOnlyMessage,
   isMergedForwardItem as isMergedForwardItemFromView,
   isMergedMessage as isMergedMessageFromView,
@@ -618,31 +618,7 @@ const filteredNotices = computed(() => {
   }))
 })
 const visibleGroupMembers = computed(() => getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value))
-const botThinkingMessage = computed<WebQQMessage | undefined>(() => {
-  const conversation = capsule.value?.conversation
-  const bot = capsule.value?.bot
-  if (!currentChat.value || !conversation || !bot || conversation.activityText !== '正在思考') return
-  const peerId = currentChat.value.type === 'group'
-    ? conversation.channelId
-    : conversation.userId || conversation.channelId
-  if (peerId !== currentChat.value.peerId) return
-  if (hasOutgoingMessageAfter(conversation.timestamp)) return
-  const targetName = conversation.userName || currentChat.value.name
-  return {
-    id: `thinking:${currentChat.value.type}:${currentChat.value.peerId}:${conversation.timestamp}`,
-    sequence: `thinking:${conversation.timestamp}`,
-    time: conversation.timestamp,
-    senderId: bot.selfId,
-    senderName: bot.name || '机器人',
-    senderAvatar: bot.avatar || (bot.selfId ? `https://q1.qlogo.cn/g?b=qq&nk=${bot.selfId}&s=640` : ''),
-    senderRole: conversation.senderRole,
-    senderLevel: conversation.senderLevel,
-    senderTitle: conversation.senderTitle,
-    direction: 'outgoing',
-    summary: targetName ? `正在回复 ${targetName}` : '正在思考',
-    elements: [{ type: 'unknown', text: '正在思考' }],
-  }
-})
+const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(capsule.value, currentChat.value, messages.value))
 const visibleMessages = computed(() => {
   const cachedMessages = messages.value.map(applyMessageSenderMetadata)
   return botThinkingMessage.value ? [...cachedMessages, applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages
@@ -737,10 +713,6 @@ function toggleThinking(message: WebQQMessage) {
 
 function getLastOutgoingClusterThinkingMessage(index: number): WebQQThinkingMessage | undefined {
   return getLastOutgoingClusterThinkingMessageFromView(visibleMessages.value, index)
-}
-
-function hasOutgoingMessageAfter(timestamp: number) {
-  return hasOutgoingMessageAfterFromView(messages.value, timestamp)
 }
 
 function getForwardItemAvatar(item: WebQQForwardItem) {

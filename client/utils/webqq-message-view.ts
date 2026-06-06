@@ -1,4 +1,5 @@
-import type { WebQQForwardItem, WebQQGroupMember, WebQQMessage } from '../state'
+import type { CapsuleData, WebQQForwardItem, WebQQGroupMember, WebQQMessage } from '../state'
+import type { WebQQChatSelection } from './webqq-contact-view'
 
 export type WebQQMessageElement = WebQQMessage['elements'][number]
 
@@ -60,6 +61,32 @@ export function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], 
 
 export function hasOutgoingMessageAfter(messages: WebQQMessage[], timestamp: number) {
   return messages.some((message) => message.direction === 'outgoing' && message.time >= timestamp)
+}
+
+export function createBotThinkingMessage(capsule: CapsuleData | undefined, currentChat: WebQQChatSelection | undefined, messages: WebQQMessage[]) {
+  const conversation = capsule?.conversation
+  const bot = capsule?.bot
+  if (!currentChat || !conversation || !bot || conversation.activityText !== '正在思考') return
+  const peerId = currentChat.type === 'group'
+    ? conversation.channelId
+    : conversation.userId || conversation.channelId
+  if (peerId !== currentChat.peerId) return
+  if (hasOutgoingMessageAfter(messages, conversation.timestamp)) return
+  const targetName = conversation.userName || currentChat.name
+  return {
+    id: `thinking:${currentChat.type}:${currentChat.peerId}:${conversation.timestamp}`,
+    sequence: `thinking:${conversation.timestamp}`,
+    time: conversation.timestamp,
+    senderId: bot.selfId,
+    senderName: bot.name || '机器人',
+    senderAvatar: bot.avatar || (bot.selfId ? `https://q1.qlogo.cn/g?b=qq&nk=${bot.selfId}&s=640` : ''),
+    senderRole: conversation.senderRole,
+    senderLevel: conversation.senderLevel,
+    senderTitle: conversation.senderTitle,
+    direction: 'outgoing',
+    summary: targetName ? `正在回复 ${targetName}` : '正在思考',
+    elements: [{ type: 'unknown', text: '正在思考' }],
+  } satisfies WebQQMessage
 }
 
 export function formatThinkingDuration(durationMs: number) {

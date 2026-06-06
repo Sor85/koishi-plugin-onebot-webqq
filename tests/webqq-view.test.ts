@@ -1,5 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
+import type { CapsuleData, WebQQMessage } from '../client/state'
+import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
+import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
@@ -26,6 +29,57 @@ function runGetUnreadText(count: number) {
   const returnExpression = webqqMessageView.match(/function getUnreadText\(count: number\)[\s\S]*?return\s+([^\n]+)/)?.[1]
   if (!returnExpression) throw new Error('getUnreadText return expression not found')
   return Function('count', `return ${returnExpression}`)(count)
+}
+
+function createCapsuleData(conversation: Partial<CapsuleData['conversation']> = {}): CapsuleData {
+  return {
+    bot: {
+      platform: 'onebot',
+      selfId: '10000',
+      name: 'Bot',
+    },
+    conversation: {
+      channelId: '20000',
+      channelName: '群聊',
+      userId: '30000',
+      userName: 'Alice',
+      activityText: '正在思考',
+      timestamp: 1710000000000,
+      ...conversation,
+    },
+    counters: {
+      received: 1,
+      sent: 2,
+    },
+  }
+}
+
+type WebQQGroupChatSelection = Extract<WebQQChatSelection, { type: 'group' }>
+
+function createGroupChatSelection(chat: Partial<WebQQGroupChatSelection> = {}): WebQQGroupChatSelection {
+  return {
+    type: 'group',
+    peerId: '20000',
+    name: '群聊',
+    subtitle: '群聊 20000 · 2 人',
+    avatar: '',
+    ...chat,
+  }
+}
+
+function createWebQQMessage(message: Partial<WebQQMessage> = {}): WebQQMessage {
+  return {
+    id: 'message-1',
+    sequence: 'message-1',
+    time: 1710000000000,
+    senderId: '10000',
+    senderName: 'Bot',
+    senderAvatar: '',
+    direction: 'outgoing',
+    summary: 'hello',
+    elements: [{ type: 'text', text: 'hello' }],
+    ...message,
+  }
 }
 
 describe('webqq observer view', () => {
@@ -166,21 +220,21 @@ describe('webqq observer view', () => {
   })
 
   it('shows the temporary bot thinking bubble only for the capsule current WebQQ conversation', () => {
-    expect(webqqView).toContain('const botThinkingMessage = computed<WebQQMessage | undefined>(() => {')
-    expect(webqqView).toContain('const conversation = capsule.value?.conversation')
-    expect(webqqView).toContain("conversation.activityText !== '正在思考'")
-    expect(webqqView).toContain('conversation.channelId')
-    expect(webqqView).toContain('conversation.userId')
-    expect(webqqView).toContain('conversation.userName')
-    expect(webqqView).toContain('currentChat.value.type')
-    expect(webqqView).toContain('currentChat.value.peerId')
+    expect(webqqView).toContain('const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage')
+    expect(webqqView).toContain('createBotThinkingMessage(capsule.value, currentChat.value, messages.value)')
+    expect(webqqMessageView).toContain('const conversation = capsule?.conversation')
+    expect(webqqMessageView).toContain("conversation.activityText !== '正在思考'")
+    expect(webqqMessageView).toContain('conversation.channelId')
+    expect(webqqMessageView).toContain('conversation.userId')
+    expect(webqqMessageView).toContain('conversation.userName')
+    expect(webqqMessageView).toContain('currentChat.type')
+    expect(webqqMessageView).toContain('currentChat.peerId')
   })
 
   it('hides the temporary bot thinking bubble after a real outgoing WebQQ message reaches the same conversation', () => {
-    expect(webqqView).toContain('function hasOutgoingMessageAfter(timestamp: number)')
-    expect(webqqView).toContain('hasOutgoingMessageAfterFromView(messages.value, timestamp)')
+    expect(webqqMessageView).toContain('function hasOutgoingMessageAfter(messages: WebQQMessage[], timestamp: number)')
     expect(webqqMessageView).toContain("messages.some((message) => message.direction === 'outgoing' && message.time >= timestamp)")
-    expect(webqqView).toContain('if (hasOutgoingMessageAfter(conversation.timestamp)) return')
+    expect(webqqMessageView).toContain('if (hasOutgoingMessageAfter(messages, conversation.timestamp)) return')
   })
 
   it('lets capsule conversation data carry group sender metadata', () => {
@@ -204,9 +258,9 @@ describe('webqq observer view', () => {
 
   it('uses capsule conversation group sender metadata on the temporary bot thinking message', () => {
     const thinkingMessageSource = sourceBetween(
-      webqqView,
-      'const botThinkingMessage = computed<WebQQMessage | undefined>(() => {',
-      'const visibleMessages = computed(() => {',
+      webqqMessageView,
+      'function createBotThinkingMessage',
+      'export function formatThinkingDuration',
     )
 
     expect(thinkingMessageSource).toContain("direction: 'outgoing'")
@@ -216,6 +270,34 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain("v-if=\"message.direction === 'outgoing'\"")
     expect(webqqView).toContain('getSenderAuthorityText(message)')
     expect(webqqView).toContain('message.senderLevel && !hideWebQQGroupLevel')
+  })
+
+  it('creates a temporary bot thinking message only for the active WebQQ conversation', () => {
+    const message = createBotThinkingMessage(createCapsuleData({
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '头衔',
+    }), createGroupChatSelection(), [])
+
+    expect(message).toMatchObject({
+      id: 'thinking:group:20000:1710000000000',
+      sequence: 'thinking:1710000000000',
+      time: 1710000000000,
+      senderId: '10000',
+      senderName: 'Bot',
+      senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=10000&s=640',
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '头衔',
+      direction: 'outgoing',
+      summary: '正在回复 Alice',
+      elements: [{ type: 'unknown', text: '正在思考' }],
+    })
+    expect(createBotThinkingMessage(createCapsuleData(), createGroupChatSelection({ peerId: 'other' }), [])).toBeUndefined()
+    expect(createBotThinkingMessage(createCapsuleData({ activityText: '空闲' }), createGroupChatSelection(), [])).toBeUndefined()
+    expect(createBotThinkingMessage(createCapsuleData(), createGroupChatSelection(), [
+      createWebQQMessage({ time: 1710000000000 }),
+    ])).toBeUndefined()
   })
 
   it('hydrates missing live WebQQ sender metadata from cached messages in the same conversation', () => {
