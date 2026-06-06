@@ -468,9 +468,14 @@ import {
   loadRemoteWebQQStoredState as loadRemoteWebQQStoredStateFromBackend,
   persistWebQQStoredState,
   saveCachedWebQQMessages as saveStoredWebQQMessages,
-  type ConversationSummary,
-  type WebQQStoredState,
 } from './stores/webqq-storage'
+import {
+  clearConversationUnreadCount,
+  type ConversationSummary,
+  increaseConversationUnreadCount,
+  setConversationSummary,
+  type WebQQStoredState,
+} from './stores/webqq-state'
 import {
   formatListTime,
   formatNoticeTime,
@@ -634,14 +639,9 @@ function selectTab(tab: 'recent' | 'friends' | 'groups') {
 }
 
 function updateConversationSummary(type: ChatSelection['type'], peerId: string, message?: WebQQMessage) {
-  if (!message) return
-  conversationSummaries.value = {
-    ...conversationSummaries.value,
-    [getChatKey(type, peerId)]: {
-      summary: message.summary,
-      time: message.time,
-    },
-  }
+  const next = setConversationSummary(conversationSummaries.value, type, peerId, message)
+  if (next === conversationSummaries.value) return
+  conversationSummaries.value = next
   persistWebQQState()
 }
 
@@ -658,19 +658,13 @@ function getUnreadCount(type: ChatSelection['type'], peerId: string) {
 }
 
 function increaseUnreadCount(type: ChatSelection['type'], peerId: string) {
-  const key = getChatKey(type, peerId)
-  conversationUnreadCounts.value = {
-    ...conversationUnreadCounts.value,
-    [key]: getUnreadCount(type, peerId) + 1,
-  }
+  conversationUnreadCounts.value = increaseConversationUnreadCount(conversationUnreadCounts.value, type, peerId)
   persistWebQQState()
 }
 
 function clearUnreadCount(type: ChatSelection['type'], peerId: string) {
-  const key = getChatKey(type, peerId)
-  if (!conversationUnreadCounts.value[key]) return
-  const next = { ...conversationUnreadCounts.value }
-  delete next[key]
+  const next = clearConversationUnreadCount(conversationUnreadCounts.value, type, peerId)
+  if (next === conversationUnreadCounts.value) return
   conversationUnreadCounts.value = next
   persistWebQQState()
 }

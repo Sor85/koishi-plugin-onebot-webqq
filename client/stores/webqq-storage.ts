@@ -1,13 +1,7 @@
 import { send } from '@koishijs/client'
 import type { WebQQMessage, WebQQStorageBackend } from '../state'
 import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from '../webqq-message-cache'
-
-export type ConversationSummary = { summary: string; time: number }
-
-export type WebQQStoredState = {
-  conversationSummaries: Record<string, ConversationSummary>
-  conversationUnreadCounts: Record<string, number>
-}
+import type { ConversationSummary, WebQQStoredState } from './webqq-state'
 
 const webQQStorageKey = 'chat-capsule:webqq:v1'
 

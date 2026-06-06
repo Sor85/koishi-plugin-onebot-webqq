@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
+import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
@@ -13,6 +14,7 @@ const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url)
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
+const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts', import.meta.url), 'utf8')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
 const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
@@ -705,6 +707,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('getContactTime')
     expect(webqqView).toContain('formatListTime')
     expect(webqqView).toContain('chat-capsule-webqq__contact-time')
+    expect(webqqStateStore).toContain('function setConversationSummary')
+    expect(webqqView).toContain('setConversationSummary(conversationSummaries.value, type, peerId, message)')
   })
 
   it('shows unread counts for conversations the user is not viewing', () => {
@@ -718,6 +722,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('!trackingMessages.value')
     expect(webqqView).toContain('increaseUnreadCount(payload.type, payload.peerId)')
     expect(webqqView).toContain('clearUnreadCount(currentChat.value.type, currentChat.value.peerId)')
+    expect(webqqStateStore).toContain('function increaseConversationUnreadCount')
+    expect(webqqStateStore).toContain('function clearConversationUnreadCount')
   })
 
   it('shares the summed WebQQ unread count with the capsule state', () => {
@@ -726,6 +732,26 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('watch(totalUnreadCount, (count) => {')
     expect(webqqView).toContain('webQQTotalUnread.value = count')
     expect(webqqView).toContain('{ immediate: true }')
+  })
+
+  it('updates WebQQ stored conversation summary and unread counts immutably', () => {
+    const summaries = { 'friend:10000': { summary: '旧消息', time: 1 } }
+    const unreadCounts = { 'friend:10000': 2, 'group:20000': 1 }
+    expect(setConversationSummary(summaries, 'friend', '10000', undefined)).toBe(summaries)
+    expect(setConversationSummary(summaries, 'friend', '10000', createWebQQMessage({
+      summary: '新消息',
+      time: 2,
+    }))).toEqual({
+      'friend:10000': { summary: '新消息', time: 2 },
+    })
+    expect(increaseConversationUnreadCount(unreadCounts, 'friend', '10000')).toEqual({
+      'friend:10000': 3,
+      'group:20000': 1,
+    })
+    expect(clearConversationUnreadCount(unreadCounts, 'friend', '10000')).toEqual({
+      'group:20000': 1,
+    })
+    expect(clearConversationUnreadCount(unreadCounts, 'group', '30000')).toBe(unreadCounts)
   })
 
   it('caps WebQQ unread badge text at 9999+ only above 9999', () => {
