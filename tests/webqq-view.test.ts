@@ -28,6 +28,7 @@ const webqqConversationStateStore = await readFile(new URL('../client/stores/web
 const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
+const webqqMessageCacheStore = await readFile(new URL('../client/stores/webqq-message-cache.ts', import.meta.url), 'utf8')
 const webqqMessageListStore = await readFile(new URL('../client/stores/webqq-message-list.ts', import.meta.url), 'utf8')
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
 const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices.ts', import.meta.url), 'utf8')
@@ -534,8 +535,9 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/save'")
     expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId)')
     expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, messages)')
-    expect(webqqView).toContain('loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)')
-    expect(webqqView).toContain('saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value)')
+    expect(webqqView).toContain('useWebQQMessageCache(webQQStorageBackend)')
+    expect(webqqMessageCacheStore).toContain('loadStoredWebQQMessages(type, peerId, storageBackend.value)')
+    expect(webqqMessageCacheStore).toContain('saveStoredWebQQMessages(type, peerId, messages, storageBackend.value)')
   })
 
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {

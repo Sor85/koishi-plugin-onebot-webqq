@@ -461,14 +461,11 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
-import {
-  loadCachedWebQQMessages as loadStoredWebQQMessages,
-  saveCachedWebQQMessages as saveStoredWebQQMessages,
-} from './stores/webqq-storage'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
+import { useWebQQMessageCache } from './stores/webqq-message-cache'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
 import { useWebQQMessageList } from './stores/webqq-message-list'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
@@ -497,10 +494,9 @@ import {
   formatNoticeComment,
   getHandledNoticeStatusText,
 } from './utils/webqq-notice-view'
-import { getGroupSubtitle, type WebQQChatSelection, type WebQQRecentItem } from './utils/webqq-contact-view'
+import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq-theme-view'
 
-type ChatSelection = WebQQChatSelection
 type RecentItem = WebQQRecentItem
 
 const props = defineProps<{ visible: boolean }>()
@@ -537,6 +533,7 @@ const {
   selectRecent: selectWebQQRecent,
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
+const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend)
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const historyLoading = ref(false)
@@ -586,14 +583,6 @@ const {
   loadGroupInfo,
   toggleGroupInfo,
 } = useWebQQGroupInfo(currentChat, { requestGroupInfo })
-
-async function loadCachedWebQQMessages(type: ChatSelection['type'], peerId: string) {
-  return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)
-}
-
-async function saveCachedWebQQMessages(type: ChatSelection['type'], peerId: string, messages: WebQQMessage[]) {
-  await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value)
-}
 
 const webQQEffectiveAccentColor = computed(() => getWebQQEffectiveAccentColor(
   useBotAvatarThemeColor.value,
