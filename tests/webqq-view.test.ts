@@ -538,6 +538,14 @@ describe('webqq observer view', () => {
     expect(buttonSource).not.toContain('::after')
   })
 
+  it('uses an inline SVG search icon in the WebQQ search field', () => {
+    const searchSource = webqqView.match(/<div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">[\s\S]*?<\/div>/)?.[0] ?? ''
+    expect(searchSource).toContain('<svg class="chat-capsule-webqq__search-icon"')
+    expect(searchSource).toContain('<circle')
+    expect(searchSource).toContain('<path')
+    expect(searchSource).not.toContain('<span class="chat-capsule-webqq__search-icon"></span>')
+  })
+
   it('shows latest message summary and time in the WebQQ contact list', () => {
     expect(webqqView).toContain('getContactSubtitle')
     expect(webqqView).toContain('getContactTime')

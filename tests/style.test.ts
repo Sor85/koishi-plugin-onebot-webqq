@@ -346,6 +346,13 @@ describe('chat capsule styles', () => {
     expect(style).not.toContain('.chat-capsule-webqq__tab-icon.is-group')
   })
 
+  it('uses inline SVG for the WebQQ search icon instead of pseudo elements', () => {
+    expect(ruleBody('.chat-capsule-webqq__search-icon')).toContain('stroke: currentColor')
+    expect(ruleBody('.chat-capsule-webqq__search-icon')).toContain('stroke-width: 2')
+    expect(style).not.toContain('.chat-capsule-webqq__search-icon::before')
+    expect(style).not.toContain('.chat-capsule-webqq__search-icon::after')
+  })
+
   it('lets the WebQQ tab header use the panel background with a rounded top-left corner', () => {
     expect(ruleBody('.chat-capsule-webqq__sidebar')).toContain('background: transparent')
     expect(ruleBody('.chat-capsule-webqq__sidebar')).not.toContain('rgba(255, 255, 255, 0.58)')

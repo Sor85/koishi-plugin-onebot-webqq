@@ -69,7 +69,10 @@
         </span>
       </div>
       <div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">
-        <span class="chat-capsule-webqq__search-icon"></span>
+        <svg class="chat-capsule-webqq__search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m16 16 4 4"></path>
+        </svg>
         <input
           v-model="searchQuery"
           type="text"

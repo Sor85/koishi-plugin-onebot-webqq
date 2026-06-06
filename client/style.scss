@@ -438,18 +438,14 @@
 }
 
 .chat-capsule-webqq__search-icon {
-  position: relative;
   width: 15px;
   height: 15px;
-  display: inline-block;
   flex-shrink: 0;
-}
-
-.chat-capsule-webqq__search-icon::before,
-.chat-capsule-webqq__search-icon::after {
-  content: '';
-  position: absolute;
-  box-sizing: border-box;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .chat-capsule-webqq__search {
@@ -480,25 +476,6 @@
   left: 23px;
   top: 21px;
   color: #9ca3af;
-}
-
-.chat-capsule-webqq__search-icon::before {
-  left: 1px;
-  top: 1px;
-  width: 9px;
-  height: 9px;
-  border: 1.8px solid currentColor;
-  border-radius: 50%;
-}
-
-.chat-capsule-webqq__search-icon::after {
-  right: 1px;
-  bottom: 2px;
-  width: 6px;
-  height: 1.8px;
-  border-radius: 2px;
-  background: currentColor;
-  transform: rotate(45deg);
 }
 
 .chat-capsule-webqq__list {
