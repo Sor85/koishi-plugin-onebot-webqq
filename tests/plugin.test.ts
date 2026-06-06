@@ -3,12 +3,18 @@ import { describe, expect, it, vi } from 'vitest'
 import * as plugin from '../src'
 import type { ChatCapsuleContext } from '../src'
 import type { CapsuleSnapshot } from '../src/state'
-import type { WebQQMessageElement } from '../src/onebot'
+import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
 import { getImageContentType, summarizeWebQQElements } from '../src/webqq-live-elements'
+import {
+  fillWebQQMessageSenderMetadata,
+  readWebQQSenderMetadata,
+  replaceWebQQMessageSenderMetadata,
+} from '../src/webqq-sender-metadata'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
+const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
 type TestLogger = {
@@ -123,6 +129,41 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqLiveElementsSource).toContain('export function summarizeWebQQElements')
     expect(summarizeWebQQElements(elements)).toBe('[图片]春日影')
     expect(getImageContentType('cover.webp')).toBe('image/webp')
+  })
+
+  it('keeps WebQQ live sender metadata helpers outside the plugin entry', () => {
+    const message: WebQQMessage = {
+      id: 'live-1',
+      sequence: 'live-1',
+      time: 1710000000000,
+      senderId: '30000',
+      senderName: 'Alice',
+      senderAvatar: 'https://example.com/avatar.png',
+      direction: 'incoming',
+      summary: 'hello',
+      elements: [{ type: 'text', text: 'hello' }],
+      senderRole: '管理员',
+    }
+    const metadata = readWebQQSenderMetadata({
+      role: 'owner',
+      sender_level: '100',
+      special_title: '闪亮头衔',
+    })
+
+    expect(pluginSource).toContain("from './webqq-sender-metadata'")
+    expect(pluginSource).not.toContain('function readWebQQSenderMetadata(')
+    expect(webqqSenderMetadataSource).toContain('export function readWebQQSenderMetadata')
+    expect(metadata).toEqual({
+      senderRole: '群主',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
+    expect(fillWebQQMessageSenderMetadata(message, metadata)).toMatchObject({
+      senderRole: '管理员',
+      senderLevel: '100',
+      senderTitle: '闪亮头衔',
+    })
+    expect(replaceWebQQMessageSenderMetadata(message, metadata)).toMatchObject(metadata)
   })
 
   it('exports a Config schema for backend options', () => {

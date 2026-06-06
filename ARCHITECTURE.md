@@ -20,6 +20,7 @@
 - `src/chatluna-thinking.ts`：ChatLuna character 回复解析，负责读取 after-chat 文本并提取 `<think>` 内容
 - `src/webqq-affinity.ts`：ChatLuna 好感度记录读取和 WebQQ 消息徽标补齐
 - `src/webqq-live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
+- `src/webqq-sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
 - `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
@@ -49,6 +50,7 @@
 - `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
+- `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
 - `client/components/`：后续拆出的 Vue 展示组件

@@ -54,6 +54,15 @@ import {
   type WebQQImageResolver,
   type WebQQQuoteResolver,
 } from './webqq-live-elements'
+import {
+  fillWebQQMessageSenderMetadata,
+  hasWebQQSenderMetadata,
+  isSameWebQQSenderMetadata,
+  readWebQQMessageSenderMetadata,
+  readWebQQSenderMetadata,
+  replaceWebQQMessageSenderMetadata,
+  type WebQQSenderMetadata,
+} from './webqq-sender-metadata'
 
 export { Config } from './config'
 
@@ -139,12 +148,6 @@ interface ChatLunaModelUsage {
 
 type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
 
-interface WebQQSenderMetadata {
-  senderRole?: string
-  senderLevel?: string
-  senderTitle?: string
-}
-
 const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
 
 function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
@@ -205,12 +208,6 @@ function createMessageInput(session: Session, message?: ChatLunaMessage) {
   }
 }
 
-function normalizeGroupRole(role: string) {
-  if (role === 'owner') return '群主'
-  if (role === 'admin' || role === 'administrator') return '管理员'
-  return ''
-}
-
 function toOneBotId(value: string) {
   return /^\d+$/.test(value) ? Number(value) : value
 }
@@ -218,54 +215,6 @@ function toOneBotId(value: string) {
 function getActionData(result: unknown) {
   const item = isRecord(result) ? result : {}
   return isRecord(item.data) ? item.data : item
-}
-
-function readWebQQSenderMetadata(source: unknown): WebQQSenderMetadata {
-  const role = normalizeGroupRole(readRecordText(source, ['role']))
-  const level = readRecordText(source, ['level', 'sender_level', 'senderLevel'])
-  const title = readRecordText(source, ['title', 'special_title', 'specialTitle'])
-  return {
-    ...(role ? { senderRole: role } : {}),
-    ...(level ? { senderLevel: level } : {}),
-    ...(title ? { senderTitle: title } : {}),
-  }
-}
-
-function hasWebQQSenderMetadata(metadata: WebQQSenderMetadata) {
-  return !!(metadata.senderRole || metadata.senderLevel || metadata.senderTitle)
-}
-
-function readWebQQMessageSenderMetadata(message: WebQQMessage): WebQQSenderMetadata {
-  return {
-    ...(message.senderRole ? { senderRole: message.senderRole } : {}),
-    ...(message.senderLevel ? { senderLevel: message.senderLevel } : {}),
-    ...(message.senderTitle ? { senderTitle: message.senderTitle } : {}),
-  }
-}
-
-function isSameWebQQSenderMetadata(left: WebQQSenderMetadata | undefined, right: WebQQSenderMetadata) {
-  return !!left &&
-    left.senderRole === right.senderRole &&
-    left.senderLevel === right.senderLevel &&
-    left.senderTitle === right.senderTitle
-}
-
-function fillWebQQMessageSenderMetadata(message: WebQQMessage, metadata?: WebQQSenderMetadata) {
-  if (!metadata) return message
-  return {
-    ...message,
-    ...(!message.senderRole && metadata.senderRole ? { senderRole: metadata.senderRole } : {}),
-    ...(!message.senderLevel && metadata.senderLevel ? { senderLevel: metadata.senderLevel } : {}),
-    ...(!message.senderTitle && metadata.senderTitle ? { senderTitle: metadata.senderTitle } : {}),
-  }
-}
-
-function replaceWebQQMessageSenderMetadata(message: WebQQMessage, metadata: WebQQSenderMetadata) {
-  const { senderRole: _senderRole, senderLevel: _senderLevel, senderTitle: _senderTitle, ...next } = message
-  return {
-    ...next,
-    ...metadata,
-  }
 }
 
 function createWebQQImageUrlResolver(ctx: ChatCapsuleContext, logger?: DebugLogger) {
