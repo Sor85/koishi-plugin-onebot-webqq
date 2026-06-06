@@ -476,6 +476,7 @@ import {
   type WebQQStoredState,
 } from './stores/webqq-state'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
+import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
 import {
   formatListTime,
@@ -555,11 +556,8 @@ conversationSummaries.value = stored.conversationSummaries
 conversationUnreadCounts.value = stored.conversationUnreadCounts
 const messages = ref<WebQQMessage[]>([])
 const notices = ref<WebQQNotice[]>([])
-const messagePane = ref<HTMLElement>()
 const { imagePreview, imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const forwardDialog = ref<WebQQMessageElement>()
-const trackingMessages = ref(true)
-const returningMessagesToBottom = ref(false)
 const expandedThinkingMessageIds = ref(new Set<string>())
 const historyLoading = ref(false)
 const historyExhausted = ref(false)
@@ -677,6 +675,19 @@ function clearCurrentUnreadCount() {
   clearUnreadCount(currentChat.value.type, currentChat.value.peerId)
 }
 
+const {
+  messagePane,
+  trackingMessages,
+  updateMessageTracking,
+  handleMessageImageLoad,
+  scrollMessagesToBottom,
+  returnMessagesToBottom,
+} = useWebQQMessageScroll({
+  clearCurrentUnreadCount,
+  shouldLoadOlderMessages,
+  loadOlderMessages,
+})
+
 function isBotThinkingMessage(message: WebQQMessage) {
   return message.id === botThinkingMessage.value?.id
 }
@@ -729,29 +740,6 @@ function appendMessage(message: WebQQMessage) {
   if (trackingMessages.value) scrollMessagesToBottom()
 }
 
-function isMessagePaneAtBottom() {
-  const pane = messagePane.value
-  if (!pane) return true
-  return pane.scrollHeight - pane.scrollTop - pane.clientHeight <= 8
-}
-
-function updateMessageTracking() {
-  const atBottom = isMessagePaneAtBottom()
-  if (returningMessagesToBottom.value) {
-    trackingMessages.value = true
-    if (atBottom) returningMessagesToBottom.value = false
-    if (atBottom) clearCurrentUnreadCount()
-    return
-  }
-  trackingMessages.value = atBottom
-  if (trackingMessages.value) clearCurrentUnreadCount()
-  if (shouldLoadOlderMessages()) loadOlderMessages()
-}
-
-function handleMessageImageLoad() {
-  if (trackingMessages.value) scrollMessagesToBottom()
-}
-
 // 打开结构化合并转发浮层，按 LLBot 的 modal 方式展示详情。
 function openForwardDialog(element: WebQQMessageElement) {
   if (!element.items?.length) return
@@ -762,22 +750,6 @@ function openForwardDialog(element: WebQQMessageElement) {
 // 清空合并转发浮层，恢复当前聊天面板。
 function closeForwardDialog() {
   forwardDialog.value = undefined
-}
-
-async function scrollMessagesToBottom(behavior: ScrollBehavior = 'auto') {
-  await nextTick()
-  const pane = messagePane.value
-  if (!pane) return
-  pane.scrollTo({
-    top: pane.scrollHeight,
-    behavior,
-  })
-}
-
-function returnMessagesToBottom() {
-  returningMessagesToBottom.value = true
-  trackingMessages.value = true
-  scrollMessagesToBottom('smooth')
 }
 
 function waitWebQQContactsRetry() {

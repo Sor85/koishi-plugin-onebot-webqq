@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import type { CapsuleData, WebQQMessage } from '../client/state'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
+import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage } from '../client/utils/webqq-message-view'
@@ -16,6 +17,7 @@ const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url)
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
+const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqStateStore = await readFile(new URL('../client/stores/webqq-state.ts', import.meta.url), 'utf8')
@@ -852,10 +854,38 @@ describe('webqq observer view', () => {
   it('tracks new WebQQ messages only while the message pane is at the bottom', () => {
     expect(webqqView).toContain('ref="messagePane"')
     expect(webqqView).toContain('@scroll="updateMessageTracking"')
-    expect(webqqView).toContain('const trackingMessages = ref(true)')
-    expect(webqqView).toContain('function updateMessageTracking()')
-    expect(webqqView).toContain('function scrollMessagesToBottom')
+    expect(webqqView).toContain('useWebQQMessageScroll({')
+    expect(webqqMessageScroll).toContain('const trackingMessages = ref(true)')
+    expect(webqqMessageScroll).toContain('function updateMessageTracking()')
+    expect(webqqMessageScroll).toContain('function scrollMessagesToBottom')
+    expect(webqqMessageScroll).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
     expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
+  })
+
+  it('keeps WebQQ message scroll tracking state inside a composable', () => {
+    const events: string[] = []
+    const scroll = useWebQQMessageScroll({
+      clearCurrentUnreadCount: () => events.push('clear'),
+      shouldLoadOlderMessages: () => {
+        events.push('check')
+        return false
+      },
+      loadOlderMessages: () => events.push('load'),
+    })
+
+    scroll.trackingMessages.value = false
+    scroll.updateMessageTracking()
+    expect(scroll.trackingMessages.value).toBe(true)
+    expect(events).toEqual(['clear', 'check'])
+
+    events.length = 0
+    scroll.returnMessagesToBottom()
+    expect(scroll.trackingMessages.value).toBe(true)
+    expect(scroll.returningMessagesToBottom.value).toBe(true)
+
+    scroll.updateMessageTracking()
+    expect(scroll.returningMessagesToBottom.value).toBe(false)
+    expect(events).toEqual(['clear'])
   })
 
   it('shows a WebQQ return-to-bottom button only when message tracking is paused', () => {
@@ -889,7 +919,7 @@ describe('webqq observer view', () => {
   })
 
   it('returns WebQQ messages to the bottom by resuming tracking before scrolling', () => {
-    const returnMessagesToBottomSource = webqqView.match(/(?:async\s+)?function returnMessagesToBottom\(\)\s*{[\s\S]*?^}/m)?.[0] ?? ''
+    const returnMessagesToBottomSource = webqqMessageScroll.match(/(?:async\s+)?function returnMessagesToBottom\(\)\s*{[\s\S]*?^}/m)?.[0] ?? ''
     const missingRequirements = [
       returnMessagesToBottomSource ? '' : '缺少 returnMessagesToBottom 函数',
       returnMessagesToBottomSource.includes('trackingMessages.value = true')
@@ -911,12 +941,12 @@ describe('webqq observer view', () => {
 
   it('keeps the WebQQ return-to-bottom button hidden while smooth scrolling back', () => {
     const updateTrackingSource = sourceBetween(
-      webqqView,
+      webqqMessageScroll,
       'function updateMessageTracking()',
-      'function handleMessageImageLoad',
+      'async function scrollMessagesToBottom',
     )
     const missingRequirements = [
-      webqqView.includes('const returningMessagesToBottom = ref(false)')
+      webqqMessageScroll.includes('const returningMessagesToBottom = ref(false)')
         ? ''
         : '缺少返回底部中的状态标记',
       updateTrackingSource.includes('const atBottom = isMessagePaneAtBottom()')
@@ -940,7 +970,7 @@ describe('webqq observer view', () => {
   })
 
   it('lets WebQQ bottom scrolling choose instant or smooth behavior', () => {
-    const scrollMessagesToBottomSource = webqqView.match(/async function scrollMessagesToBottom\([\s\S]*?^}/m)?.[0] ?? ''
+    const scrollMessagesToBottomSource = webqqMessageScroll.match(/async function scrollMessagesToBottom\([\s\S]*?^}/m)?.[0] ?? ''
     const missingRequirements = [
       scrollMessagesToBottomSource ? '' : '缺少 scrollMessagesToBottom 函数',
       /behavior:\s*ScrollBehavior\s*=\s*['"]auto['"]/.test(scrollMessagesToBottomSource)
@@ -967,8 +997,8 @@ describe('webqq observer view', () => {
 
   it('keeps following the latest message after WebQQ images finish loading', () => {
     expect(webqqView).toContain('@load="handleMessageImageLoad"')
-    expect(webqqView).toContain('function handleMessageImageLoad()')
-    expect(webqqView).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
+    expect(webqqMessageScroll).toContain('function handleMessageImageLoad()')
+    expect(webqqMessageScroll).toContain('if (trackingMessages.value) scrollMessagesToBottom()')
   })
 
   it('renders quote blocks inside WebQQ message bubbles', () => {

@@ -24,6 +24,7 @@
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-state.ts`：WebQQ 最近会话和未读数的前端状态类型与纯更新 helper
 - `client/stores/webqq-image-preview.ts`：WebQQ 图片预览状态 composable，负责预览 URL、遮罩 ref、打开和关闭
+- `client/stores/webqq-message-scroll.ts`：WebQQ 消息滚动状态 composable，负责消息面板 ref、底部跟随、返回底部和图片加载后的滚动
 - `client/stores/webqq-sender-metadata.ts`：WebQQ 发送者身份缓存 composable，负责当前会话上下文下的缓存写入和消息补齐
 - `client/stores/webqq-storage.ts`：WebQQ 最近会话、未读数和消息缓存的前端存储分支
 - `client/utils/webqq-contact-view.ts`：WebQQ 联系人和最近会话展示纯函数，负责会话 key、聊天选择构造、当前聊天头部、群聊副标题、联系人搜索过滤、最近会话列表、摘要时间和未读数读取
