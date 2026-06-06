@@ -1,4 +1,4 @@
-import type { WebQQForwardItem, WebQQMessage } from '../state'
+import type { WebQQForwardItem, WebQQGroupMember, WebQQMessage } from '../state'
 
 export type WebQQMessageElement = WebQQMessage['elements'][number]
 
@@ -152,4 +152,18 @@ export function formatNoticeTime(timestamp: number) {
 
 export function formatSenderLevel(level: string) {
   return level.startsWith('Lv.') ? level : `Lv.${level}`
+}
+
+export function getGroupMemberName(member: WebQQGroupMember) {
+  return member.card || member.nickname || member.userId
+}
+
+export function getSenderAuthorityText(message: WebQQMessage) {
+  return message.senderTitle || message.senderRole || ''
+}
+
+export function getSenderAuthorityClass(message: WebQQMessage) {
+  if (message.senderRole === '群主') return 'is-owner'
+  if (message.senderRole === '管理员') return 'is-admin'
+  return 'is-title'
 }

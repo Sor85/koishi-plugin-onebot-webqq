@@ -482,7 +482,10 @@ import {
   getForwardItemName,
   getForwardPreviewItems as getForwardPreviewItemsFromView,
   getForwardPreviewText,
+  getGroupMemberName,
   getMessageClusterClass as getMessageClusterClassFromView,
+  getSenderAuthorityClass,
+  getSenderAuthorityText,
   getUnreadText,
   getWebQQElementRuns,
   isImageOnlyMessage,
@@ -1141,10 +1144,6 @@ function selectRecent(item: RecentItem) {
   loadMessages()
 }
 
-function getGroupMemberName(member: WebQQGroupMember) {
-  return member.card || member.nickname || member.userId
-}
-
 async function handleNotice(notice: WebQQNotice, approve: boolean) {
   if (!notice.flag) return
   handlingNoticeId.value = notice.id
@@ -1163,16 +1162,6 @@ async function handleNotice(notice: WebQQNotice, approve: boolean) {
   } finally {
     handlingNoticeId.value = ''
   }
-}
-
-function getSenderAuthorityText(message: WebQQMessage) {
-  return message.senderTitle || message.senderRole || ''
-}
-
-function getSenderAuthorityClass(message: WebQQMessage) {
-  if (message.senderRole === '群主') return 'is-owner'
-  if (message.senderRole === '管理员') return 'is-admin'
-  return 'is-title'
 }
 
 async function saveLiveWebQQMessage(payload: WebQQLiveMessage) {
