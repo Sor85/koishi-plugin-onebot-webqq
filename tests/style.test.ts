@@ -119,6 +119,34 @@ describe('chat capsule styles', () => {
     expect(style).not.toContain('.chat-capsule__usage-icon')
   })
 
+  it('renders the main capsule with a frosted glass surface', () => {
+    const capsuleBody = ruleBody('.chat-capsule')
+    const autoDarkBody = ruleBody('.chat-capsule.is-color-auto')
+    const darkBody = ruleBody('.chat-capsule.is-color-dark')
+    const missingRequirements = [
+      capsuleBody.includes('background: rgba(255, 255, 255, 0.78)')
+        ? ''
+        : '主胶囊浅色背景不是半透明毛玻璃',
+      capsuleBody.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
+        ? ''
+        : '主胶囊浅色边框没有使用半透明高光',
+      capsuleBody.includes('backdrop-filter: saturate(180%) blur(18px)')
+        ? ''
+        : '主胶囊缺少毛玻璃背景模糊',
+      capsuleBody.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
+        ? ''
+        : '主胶囊缺少 Safari 毛玻璃前缀',
+      autoDarkBody.includes('background: rgba(15, 23, 42, 0.72)')
+        ? ''
+        : '主胶囊自动暗色背景不是半透明毛玻璃',
+      darkBody.includes('background: rgba(15, 23, 42, 0.72)')
+        ? ''
+        : '主胶囊暗色背景不是半透明毛玻璃',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('starts the main capsule thinking shimmer outside the visible text on the first loop', () => {
     expect(style).toContain('animation-delay: -0.01s')
     expect(ruleBody('@keyframes chat-capsule-thinking-shimmer')).toContain('background-position: 120% 0')

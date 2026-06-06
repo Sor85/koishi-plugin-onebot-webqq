@@ -16,11 +16,12 @@
   padding: 5px 12px 5px 7px;
   box-sizing: border-box;
   color: var(--k-text-dark, var(--fg1, #1f2328));
-  background: #ffffff;
-  border: 1px solid var(--k-color-divider, #e0e4e8);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 999px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(12px);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
   pointer-events: none;
 }
 
@@ -2051,7 +2052,7 @@
 
   .chat-capsule.is-color-auto {
     color: #e5edf7;
-    background: rgba(15, 23, 42, 0.96);
+    background: rgba(15, 23, 42, 0.72);
     border-color: rgba(148, 163, 184, 0.28);
     box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
   }
@@ -2068,7 +2069,7 @@
 
 .chat-capsule.is-color-dark {
   color: #e5edf7;
-  background: rgba(15, 23, 42, 0.96);
+  background: rgba(15, 23, 42, 0.72);
   border-color: rgba(148, 163, 184, 0.28);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
 }
