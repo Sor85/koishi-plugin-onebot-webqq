@@ -42,7 +42,7 @@ describe('webqq observer view', () => {
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
     expect(webqqView).toContain("from './state'")
-    expect(webqqView).toContain('sortWebQQGroupMembers')
+    expect(webqqContactView).toContain('sortWebQQGroupMembers')
     expect(webqqView).toContain('useBotAvatarThemeColor')
     expect(webqqView).toContain('webQQAccentColor')
     expect(webqqView).toContain('webQQAvatarAccentColor')
@@ -546,9 +546,10 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('v-for="member in visibleGroupMembers"')
     expect(webqqView).toContain('v-model="groupInfoSearchQuery"')
     expect(webqqView).toContain('const visibleGroupMembers = computed')
-    expect(webqqView).toContain('sortWebQQGroupMembers(members)')
-    expect(webqqView).toContain('member.card.toLowerCase().includes(query)')
-    expect(webqqView).toContain('member.userId.includes(groupInfoSearchQuery.value)')
+    expect(webqqView).toContain('getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value)')
+    expect(webqqContactView).toContain('sortWebQQGroupMembers(visibleMembers)')
+    expect(webqqContactView).toContain('member.card.toLowerCase().includes(query)')
+    expect(webqqContactView).toContain('member.userId.includes(rawQuery)')
     expect(webqqView).not.toContain('<button type="button" @click="loadContacts">刷新</button>')
   })
 

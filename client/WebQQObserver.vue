@@ -459,7 +459,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { receive, send, withProxy } from '@koishijs/client'
-import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
+import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQContacts, WebQQForwardItem, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
 import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata, type WebQQSenderMetadataCache } from './webqq-sender-metadata'
 import {
@@ -506,13 +506,18 @@ import {
   getGroupSubtitle,
   getRecentItems,
   getUnreadCount as getUnreadCountFromView,
+  getVisibleFriendCategories,
+  getVisibleFriends,
+  getVisibleGroupMembers,
+  getVisibleGroups,
+  type WebQQFriendCategoryView,
   type WebQQChatSelection,
   type WebQQRecentItem,
 } from './utils/webqq-contact-view'
 
 type ChatSelection = WebQQChatSelection
 type RecentItem = WebQQRecentItem
-type FriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
+type FriendCategoryView = WebQQFriendCategoryView
 type WebQQThinkingMessage = WebQQMessage & { thinking: NonNullable<WebQQMessage['thinking']> }
 
 const props = defineProps<{ visible: boolean }>()
@@ -611,38 +616,9 @@ const webQQAccentStyle = computed(() => ({
   '--chat-capsule-webqq-accent-shadow': hexToRgba(webQQEffectiveAccentColor.value, 0.24),
 }))
 
-const visibleFriends = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return contacts.value.friends
-  return contacts.value.friends.filter((friend) => {
-    return friend.name.toLowerCase().includes(query) ||
-      friend.nickname.toLowerCase().includes(query) ||
-      friend.userId.includes(searchQuery.value)
-  })
-})
-const visibleGroups = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return contacts.value.groups
-  return contacts.value.groups.filter((group) => {
-    return group.name.toLowerCase().includes(query) || group.groupId.includes(searchQuery.value)
-  })
-})
-const visibleFriendCategories = computed<FriendCategoryView[]>(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  const categories = contacts.value.friendCategories?.length
-    ? contacts.value.friendCategories
-    : [{ id: 'all', name: '好友', friends: contacts.value.friends }]
-  return categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    friends: category.friends.filter((friend) => {
-      if (!query) return true
-      return friend.name.toLowerCase().includes(query) ||
-        friend.nickname.toLowerCase().includes(query) ||
-        friend.userId.includes(searchQuery.value)
-    }),
-  })).filter((category) => category.friends.length)
-})
+const visibleFriends = computed(() => getVisibleFriends(contacts.value, searchQuery.value))
+const visibleGroups = computed(() => getVisibleGroups(contacts.value, searchQuery.value))
+const visibleFriendCategories = computed<FriendCategoryView[]>(() => getVisibleFriendCategories(contacts.value, searchQuery.value))
 const recentItems = computed<RecentItem[]>(() => getRecentItems(contacts.value, conversationSummaries.value))
 const currentPeerId = computed(() => currentChat.value?.peerId)
 const currentTitle = computed(() => currentChat.value?.name || 'WebQQ')
@@ -656,15 +632,7 @@ const filteredNotices = computed(() => {
       : notice.type === 'group-notice'
   }))
 })
-const visibleGroupMembers = computed(() => {
-  const query = groupInfoSearchQuery.value.trim().toLowerCase()
-  const members = query ? groupInfo.value.members.filter((member) => {
-    return member.card.toLowerCase().includes(query) ||
-      member.nickname.toLowerCase().includes(query) ||
-      member.userId.includes(groupInfoSearchQuery.value)
-  }) : groupInfo.value.members
-  return sortWebQQGroupMembers(members)
-})
+const visibleGroupMembers = computed(() => getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value))
 const botThinkingMessage = computed<WebQQMessage | undefined>(() => {
   const conversation = capsule.value?.conversation
   const bot = capsule.value?.bot

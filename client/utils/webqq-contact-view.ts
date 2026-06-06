@@ -1,4 +1,4 @@
-import type { WebQQContacts, WebQQGroup } from '../state'
+import { sortWebQQGroupMembers, type WebQQContacts, type WebQQFriend, type WebQQGroup, type WebQQGroupMember } from '../state'
 import type { ConversationSummary } from '../stores/webqq-storage'
 
 export type WebQQChatSelection =
@@ -6,6 +6,27 @@ export type WebQQChatSelection =
   | { type: 'group'; peerId: string; name: string; subtitle: string; avatar: string }
 
 export type WebQQRecentItem = WebQQChatSelection & { summary?: string; time?: number }
+export type WebQQFriendCategoryView = { id: string; name: string; friends: WebQQFriend[] }
+
+function getSearchQuery(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function matchesFriendSearch(friend: WebQQFriend, rawQuery: string, query: string) {
+  return friend.name.toLowerCase().includes(query) ||
+    friend.nickname.toLowerCase().includes(query) ||
+    friend.userId.includes(rawQuery)
+}
+
+function matchesGroupSearch(group: WebQQGroup, rawQuery: string, query: string) {
+  return group.name.toLowerCase().includes(query) || group.groupId.includes(rawQuery)
+}
+
+function matchesGroupMemberSearch(member: WebQQGroupMember, rawQuery: string, query: string) {
+  return member.card.toLowerCase().includes(query) ||
+    member.nickname.toLowerCase().includes(query) ||
+    member.userId.includes(rawQuery)
+}
 
 export function getGroupSubtitle(group: WebQQGroup) {
   return `群聊 ${group.groupId} · ${group.memberCount} 人`
@@ -72,4 +93,36 @@ export function getContactTime(conversationSummaries: Record<string, Conversatio
 
 export function getUnreadCount(conversationUnreadCounts: Record<string, number>, type: WebQQChatSelection['type'], peerId: string) {
   return conversationUnreadCounts[getChatKey(type, peerId)] || 0
+}
+
+export function getVisibleFriends(contacts: WebQQContacts, rawQuery: string) {
+  const query = getSearchQuery(rawQuery)
+  if (!query) return contacts.friends
+  return contacts.friends.filter((friend) => matchesFriendSearch(friend, rawQuery, query))
+}
+
+export function getVisibleGroups(contacts: WebQQContacts, rawQuery: string) {
+  const query = getSearchQuery(rawQuery)
+  if (!query) return contacts.groups
+  return contacts.groups.filter((group) => matchesGroupSearch(group, rawQuery, query))
+}
+
+export function getVisibleFriendCategories(contacts: WebQQContacts, rawQuery: string) {
+  const query = getSearchQuery(rawQuery)
+  const categories = contacts.friendCategories?.length
+    ? contacts.friendCategories
+    : [{ id: 'all', name: '好友', friends: contacts.friends }]
+  return categories.map((category): WebQQFriendCategoryView => ({
+    id: category.id,
+    name: category.name,
+    friends: category.friends.filter((friend) => !query || matchesFriendSearch(friend, rawQuery, query)),
+  })).filter((category) => category.friends.length)
+}
+
+export function getVisibleGroupMembers(members: WebQQGroupMember[], rawQuery: string) {
+  const query = getSearchQuery(rawQuery)
+  const visibleMembers = query
+    ? members.filter((member) => matchesGroupMemberSearch(member, rawQuery, query))
+    : members
+  return sortWebQQGroupMembers(visibleMembers)
 }
