@@ -77,6 +77,11 @@ export interface WebQQMessage {
   senderRelationship?: string
   direction: 'incoming' | 'outgoing'
   summary: string
+  recalled?: boolean
+  event?: {
+    type: 'recall'
+    targetMessageId?: string
+  }
   thinking?: {
     content: string
     durationMs: number
@@ -92,6 +97,14 @@ export interface WebQQLiveMessage {
   type: 'friend' | 'group'
   peerId: string
   message: WebQQMessage
+}
+
+export interface WebQQRecallPayload {
+  type: 'friend' | 'group'
+  peerId: string
+  messageId: string
+  mode: 'mark' | 'remove'
+  eventMessage?: WebQQMessage
 }
 
 export interface WebQQNotice {

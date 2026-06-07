@@ -616,6 +616,142 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('marks recalled WebQQ live messages by default', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await listeners['message-deleted'][0](createSession({
+      bot,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        operator: { id: '30000', name: 'Alice' },
+        message: { id: 'new-1' },
+      },
+    }))
+
+    const recallCall = broadcast.mock.calls.find(([event]) => event === 'chat-capsule/webqq/recall')
+    expect(recallCall?.[1]).toMatchObject({
+      type: 'group',
+      peerId: '20000',
+      messageId: 'new-1',
+      mode: 'mark',
+    })
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'new-1',
+        recalled: true,
+      }),
+    ])
+  })
+
+  it('removes recalled WebQQ messages and appends recall events when recall marking is disabled', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx, { webQQMarkRecalledMessages: false })
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await listeners['message-deleted'][0](createSession({
+      bot,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        operator: { id: '30000', name: 'Alice' },
+        message: { id: 'new-1' },
+      },
+    }))
+
+    const recallCall = broadcast.mock.calls.find(([event]) => event === 'chat-capsule/webqq/recall')
+    expect(recallCall?.[1]).toMatchObject({
+      type: 'group',
+      peerId: '20000',
+      messageId: 'new-1',
+      mode: 'remove',
+      eventMessage: {
+        summary: 'Alice 撤回了一条消息',
+        event: {
+          type: 'recall',
+          targetMessageId: 'new-1',
+        },
+      },
+    })
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: 'Alice 撤回了一条消息',
+        event: {
+          type: 'recall',
+          targetMessageId: 'new-1',
+        },
+      }),
+    ])
+  })
+
   it('keeps ChatLuna message input building outside the plugin entry', () => {
     const session = createSession({
       event: {
@@ -701,6 +837,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB')")
     expect(configSource).toContain("webQQImageCacheItemLimitMB?: number")
     expect(configSource).toContain("Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB')")
+    expect(configSource).toContain("webQQMarkRecalledMessages?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息')")
     expect(configSource).not.toContain("Schema.const('s3')")
     expect(configSource).not.toContain('webQQS3')
     expect(configSource).not.toContain('@aws-sdk/client-s3')

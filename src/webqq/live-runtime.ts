@@ -2,15 +2,16 @@ import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../chatluna/thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../chatluna/thinking'
-import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage } from '../onebot'
+import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from '../onebot'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
-import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
+import { applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
 import { createWebQQLiveMessage } from './live-message'
 import type { WebQQImageUrlResolver } from './live-elements'
 import {
   readWebQQPeer,
   readWebQQLiveDirection,
+  getWebQQUserAvatar,
 } from './session'
 import {
   readWebQQGroupSenderMetadata,
@@ -28,6 +29,12 @@ type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>
 
 export type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
+
+function readRawRecallMessageId(session: Session) {
+  const data = (session.event as { _data?: Record<string, unknown> })._data
+  const value = data?.message_id ?? data?.messageId ?? data?.msg_id ?? data?.msgId
+  return value == null ? '' : String(value)
+}
 
 export function createWebQQLiveRuntime(options: {
   ctx: ChatCapsuleContext
@@ -59,6 +66,12 @@ export function createWebQQLiveRuntime(options: {
     const messages = mergeWebQQLiveMessages(liveMessages.get(key) ?? [], [payload.message], 100)
     liveMessages.set(key, messages)
     options.ctx.console?.broadcast('chat-capsule/webqq/message', payload, options.consoleAuthOptions)
+  }
+  const broadcastWebQQRecallPayload = (payload: WebQQRecallPayload) => {
+    const key = getWebQQLiveMessageKey(payload)
+    const messages = applyWebQQRecallToLiveMessages(liveMessages.get(key) ?? [], payload, 100)
+    liveMessages.set(key, messages)
+    options.ctx.console?.broadcast('chat-capsule/webqq/recall', payload, options.consoleAuthOptions)
   }
   const attachPendingWebQQThinking = (payload: WebQQLiveMessage): WebQQLiveMessage => {
     if (payload.message.direction !== 'outgoing') return payload
@@ -156,10 +169,43 @@ export function createWebQQLiveRuntime(options: {
       },
     })
   }
+  const recordWebQQRecall = (session: Session | undefined) => {
+    if (!session || (session.bot.platform || session.platform) !== 'onebot') return
+    const peer = readWebQQPeer(session)
+    if (!peer) return
+    const messageId = session.messageId || session.event.message?.id || readRawRecallMessageId(session)
+    if (!messageId) return
+    const operatorId = session.operatorId || session.event.operator?.id || session.userId || ''
+    const operatorName = session.event.operator?.name || session.event.member?.name || session.event.user?.name || operatorId || '有人'
+    const summary = `${operatorName} 撤回了一条消息`
+    const markRecalledMessage = options.config.webQQMarkRecalledMessages ?? true
+    const eventMessage: WebQQMessage = {
+      id: `recall:${peer.type}:${peer.peerId}:${messageId}:${session.timestamp}`,
+      sequence: `recall:${messageId}:${session.timestamp}`,
+      time: session.timestamp,
+      senderId: operatorId,
+      senderName: operatorName,
+      senderAvatar: getWebQQUserAvatar(operatorId),
+      direction: 'incoming',
+      summary,
+      event: {
+        type: 'recall',
+        targetMessageId: messageId,
+      },
+      elements: [{ type: 'unknown', text: summary }],
+    }
+    broadcastWebQQRecallPayload({
+      ...peer,
+      messageId,
+      mode: markRecalledMessage ? 'mark' : 'remove',
+      ...(markRecalledMessage ? {} : { eventMessage }),
+    })
+  }
 
   return {
     liveMessages,
     recordWebQQLiveMessage,
+    recordWebQQRecall,
     updateLastOutgoingWebQQThinking,
   }
 }

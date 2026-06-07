@@ -15,6 +15,7 @@ import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary, type ConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage, type WebQQMessageElement } from '../client/utils/webqq-message-view'
+import { applyWebQQRecallToMessages } from '../client/utils/webqq-recall-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
@@ -839,6 +840,34 @@ describe('webqq observer view', () => {
     expect(list.isBotThinkingMessage(list.visibleMessages.value[0])).toBe(false)
   })
 
+  it('applies WebQQ recall payloads to message lists', () => {
+    const message = createWebQQMessage({ id: 'message-1', sequence: 'message-1' })
+    const recallEvent = createWebQQMessage({
+      id: 'recall:message-1',
+      sequence: 'recall:message-1',
+      time: 1710000000001,
+      summary: 'Alice 撤回了一条消息',
+      event: {
+        type: 'recall',
+        targetMessageId: 'message-1',
+      },
+    })
+
+    expect(applyWebQQRecallToMessages([message], {
+      type: 'group',
+      peerId: '20000',
+      messageId: 'message-1',
+      mode: 'mark',
+    })).toEqual([{ ...message, recalled: true }])
+    expect(applyWebQQRecallToMessages([message], {
+      type: 'group',
+      peerId: '20000',
+      messageId: 'message-1',
+      mode: 'remove',
+      eventMessage: recallEvent,
+    })).toEqual([recallEvent])
+  })
+
   it('shows cached WebQQ messages while remote history refreshes', async () => {
     const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
     const messages = ref<WebQQMessage[]>([])
@@ -886,7 +915,7 @@ describe('webqq observer view', () => {
   })
 
   it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {
-    const thinkingRowStart = '<div\n        v-if="getThinkingMessage(index)"'
+    const thinkingRowStart = '<div\n        v-if="!message.event && getThinkingMessage(index)"'
     const messageContentSource = sourceBetween(
       webqqMessageListView,
       'class="chat-capsule-webqq__message-content"',
@@ -899,6 +928,16 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('getThinkingMessage(index)')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
     expect(webqqMessageListView).toContain('toggleThinking(index)')
+  })
+
+  it('renders WebQQ recall events and recalled message marks', () => {
+    expect(clientState).toContain('recalled?: boolean')
+    expect(clientState).toContain("event?: {")
+    expect(clientState).toContain("type: 'recall'")
+    expect(webqqMessageListView).toContain("message.event?.type === 'recall'")
+    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-event')
+    expect(webqqMessageListView).toContain("'is-recalled': message.recalled")
+    expect(style).toContain('.chat-capsule-webqq__message.is-recalled')
   })
 
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {

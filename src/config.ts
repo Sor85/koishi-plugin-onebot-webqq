@@ -10,6 +10,7 @@ export interface Config {
   webQQImageCacheEnabled?: boolean
   webQQImageCacheLimitMB?: number
   webQQImageCacheItemLimitMB?: number
+  webQQMarkRecalledMessages?: boolean
   webQQTheme?: 'fresh' | 'frosted' | 'glass'
   webQQChatStyle?: 'qq' | 'telegram'
   webQQColorMode?: 'auto' | 'light' | 'dark'
@@ -35,6 +36,7 @@ export const Config: Schema<Config> = Schema.object({
   webQQImageCacheEnabled: Schema.boolean().default(true).description('启用 WebQQ 图片代理内存缓存，会额外占用服务器内存'),
   webQQImageCacheLimitMB: Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB'),
   webQQImageCacheItemLimitMB: Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB'),
+  webQQMarkRecalledMessages: Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息'),
   webQQTheme: Schema.union([
     Schema.const('fresh').description('清爽'),
     Schema.const('frosted').description('毛玻璃'),

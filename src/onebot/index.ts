@@ -75,6 +75,7 @@ export type {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQProtocol,
+  WebQQRecallPayload,
   WebQQRecentContact,
 } from './types'
 

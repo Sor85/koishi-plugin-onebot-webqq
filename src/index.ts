@@ -22,6 +22,7 @@ import {
   WebQQMessageQuery,
   WebQQNotice,
   WebQQNoticeAction,
+  WebQQRecallPayload,
 } from './onebot'
 import {
   chatCapsuleStorageTable,
@@ -63,6 +64,7 @@ declare module '@koishijs/console' {
   interface Events {
     'chat-capsule/update'(data: CapsuleSnapshot | undefined): void
     'chat-capsule/webqq/message'(data: WebQQLiveMessage): void
+    'chat-capsule/webqq/recall'(data: WebQQRecallPayload): void
     'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
     'chat-capsule/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
     'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
@@ -163,6 +165,10 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     logSnapshot('message')
     broadcast()
     await liveRuntime.recordWebQQLiveMessage(session)
+  })
+
+  ctx.on('message-deleted', (session) => {
+    liveRuntime.recordWebQQRecall(session)
   })
 
   ctx.on('friend-request', (session) => {

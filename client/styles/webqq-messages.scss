@@ -46,6 +46,19 @@
   margin-top: -14px;
 }
 
+.chat-capsule-webqq__message-event {
+  align-self: center;
+  max-width: 74%;
+  margin: 0 auto 16px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.58)));
+  background: rgba(148, 163, 184, 0.14);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
 .chat-capsule-webqq__message-avatar-wrap {
   position: relative;
   width: 32px;
@@ -137,6 +150,28 @@
   max-height: 220px;
   border-radius: 8px;
   object-fit: contain;
+}
+
+.chat-capsule-webqq__message.is-recalled {
+  .chat-capsule-webqq__bubble,
+  .chat-capsule-webqq__message-media {
+    position: relative;
+    opacity: 0.62;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 50%;
+      height: 2px;
+      border-radius: 2px;
+      background: currentColor;
+      opacity: 0.56;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+  }
 }
 
 .chat-capsule-webqq__sender-line {

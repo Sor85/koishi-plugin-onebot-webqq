@@ -13,8 +13,12 @@
   </template>
   <template v-else>
     <template v-for="(message, index) in visibleMessages" :key="message.id || message.sequence">
+      <div v-if="message.event?.type === 'recall'" class="chat-capsule-webqq__message-event">
+        {{ message.summary }}
+      </div>
       <div
-        :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message) }]"
+        v-else
+        :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message), 'is-recalled': message.recalled }]"
       >
         <span class="chat-capsule-webqq__message-avatar-wrap">
           <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
@@ -100,7 +104,7 @@
         </div>
       </div>
       <div
-        v-if="getThinkingMessage(index)"
+        v-if="!message.event && getThinkingMessage(index)"
         class="chat-capsule-webqq__thinking-row"
       >
         <button
