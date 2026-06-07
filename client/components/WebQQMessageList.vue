@@ -98,12 +98,25 @@
                 </button>
                 <span v-else>{{ run.element.text || message.summary }}</span>
               </template>
+              <div v-if="message.reactions?.length && chatStyle === 'telegram'" class="chat-capsule-webqq__message-reactions">
+                <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
+                  <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
+                  <template v-else>{{ reaction.label }}</template>
+                  <span v-if="getReactionUsers(reaction).length" class="chat-capsule-webqq__message-reaction-users">
+                    <img v-for="user in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(user.userAvatar)" :alt="user.userId">
+                  </span>
+                  <span v-if="shouldShowReactionCount(reaction)" class="chat-capsule-webqq__message-reaction-count">{{ reaction.count }}</span>
+                </span>
+              </div>
             </div>
-            <div v-if="message.reactions?.length" class="chat-capsule-webqq__message-reactions">
+            <div v-if="message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))" class="chat-capsule-webqq__message-reactions">
               <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
-                <img v-if="reaction.userAvatar" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(reaction.userAvatar)" :alt="reaction.userId || reaction.label">
                 <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
-                <template v-else>{{ reaction.label }}</template><span v-if="reaction.count > 1"> {{ reaction.count }}</span>
+                <template v-else>{{ reaction.label }}</template>
+                <span v-if="getReactionUsers(reaction).length" class="chat-capsule-webqq__message-reaction-users">
+                  <img v-for="user in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(user.userAvatar)" :alt="user.userId">
+                </span>
+                <span v-if="shouldShowReactionCount(reaction)" class="chat-capsule-webqq__message-reaction-count">{{ reaction.count }}</span>
               </span>
             </div>
             <div v-if="message.recalled" class="chat-capsule-webqq__message-recall-status">已撤回</div>
@@ -154,7 +167,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { WebQQForwardItem, WebQQMessage } from '../state'
+import type { WebQQForwardItem, WebQQMessage, WebQQMessageReactionUser } from '../state'
 import type { WebQQElementRun, WebQQMessageElement, WebQQThinkingMessage } from '../utils/webqq-message-view'
 
 const props = defineProps<{
@@ -162,6 +175,7 @@ const props = defineProps<{
   errorText: string
   hasCurrentChat: boolean
   visibleMessages: WebQQMessage[]
+  chatStyle: string
   showWebQQAffinity: boolean
   showWebQQRelationship: boolean
   hideWebQQGroupLevel: boolean
@@ -202,6 +216,19 @@ function isThinkingMessageExpanded(index: number) {
 function getThinkingDurationText(index: number) {
   const message = getThinkingMessage(index)
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
+}
+
+type WebQQMessageReaction = NonNullable<WebQQMessage['reactions']>[number]
+
+function getReactionUsers(reaction: WebQQMessageReaction): WebQQMessageReactionUser[] {
+  if (reaction.users?.length) return reaction.users
+  return reaction.userId && reaction.userAvatar
+    ? [{ userId: reaction.userId, userAvatar: reaction.userAvatar }]
+    : []
+}
+
+function shouldShowReactionCount(reaction: WebQQMessageReaction) {
+  return reaction.count > Math.max(getReactionUsers(reaction).length, 1)
 }
 
 function toggleThinking(index: number) {

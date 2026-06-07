@@ -883,11 +883,24 @@ describe('chat capsule plugin wiring', () => {
             count: 2,
             userId: '40000',
             userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+            users: [{
+              userId: '40000',
+              userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+            }],
           }],
         }),
       }),
     ]))
     const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '50000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 3 }],
+      is_add: true,
+    })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual(expect.arrayContaining([
       expect.objectContaining({
         summary: 'Alice Card 戳了戳 Bob Card',
@@ -903,19 +916,51 @@ describe('chat capsule plugin wiring', () => {
           emojiId: '76',
           label: '赞',
           emojiUrl: 'https://koishi.js.org/QFace/gif/s76.gif',
-          count: 2,
-          userId: '40000',
-          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          count: 3,
+          userId: '50000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=50000&s=640',
+          users: [{
+            userId: '40000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          }, {
+            userId: '50000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=50000&s=640',
+          }],
         }],
       }),
     ]))
 
-    // 取消：is_add false 应移除该表情，移空后 reactions 字段消失
+    // 取消其中一人时保留剩余用户；count 归零后移除该表情，移空后 reactions 字段消失
     emitReaction({
       post_type: 'notice',
       notice_type: 'group_msg_emoji_like',
       group_id: '20000',
       user_id: '40000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 2 }],
+      is_add: false,
+    })
+    const afterPartialCancelMessages = await loadMessages?.({ type: 'group', peerId: '20000', limit: 20 }) as Array<{ id: string; reactions?: unknown }>
+    expect(afterPartialCancelMessages.find((item) => item.id === 'new-1')).toEqual(expect.objectContaining({
+      reactions: [{
+        emojiId: '76',
+        label: '赞',
+        emojiUrl: 'https://koishi.js.org/QFace/gif/s76.gif',
+        count: 2,
+        userId: '40000',
+        userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+        users: [{
+          userId: '50000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=50000&s=640',
+        }],
+      }],
+    }))
+
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '50000',
       message_id: 'new-1',
       likes: [{ emoji_id: '76', count: 0 }],
       is_add: false,

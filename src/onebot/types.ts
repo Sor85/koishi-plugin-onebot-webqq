@@ -47,6 +47,12 @@ export interface WebQQMessageReaction {
   count: number
   userId?: string
   userAvatar?: string
+  users?: WebQQMessageReactionUser[]
+}
+
+export interface WebQQMessageReactionUser {
+  userId: string
+  userAvatar: string
 }
 
 // WebQQ 只读面板使用的历史消息。

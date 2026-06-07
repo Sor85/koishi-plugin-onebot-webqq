@@ -70,6 +70,12 @@ export interface WebQQMessageReaction {
   count: number
   userId?: string
   userAvatar?: string
+  users?: WebQQMessageReactionUser[]
+}
+
+export interface WebQQMessageReactionUser {
+  userId: string
+  userAvatar: string
 }
 
 export interface WebQQMessage {

@@ -14,6 +14,24 @@ function isMessageTarget(message: WebQQMessage, messageId: string) {
   return message.id === messageId || message.sequence === messageId
 }
 
+function getReactionUsers(reaction: WebQQMessageReaction) {
+  if (reaction.users?.length) return reaction.users
+  return reaction.userId && reaction.userAvatar
+    ? [{ userId: reaction.userId, userAvatar: reaction.userAvatar }]
+    : []
+}
+
+function mergeReactionUsers(current: WebQQMessageReaction | undefined, reaction: WebQQMessageReaction, isAdd: boolean) {
+  const user = reaction.userId && reaction.userAvatar
+    ? { userId: reaction.userId, userAvatar: reaction.userAvatar }
+    : undefined
+  if (!user) return getReactionUsers(current ?? reaction)
+
+  const users = getReactionUsers(current ?? reaction).filter((item) => item.userId !== user.userId)
+  const nextUsers = isAdd ? [...users, user] : users
+  return reaction.count > 0 ? nextUsers.slice(-reaction.count) : []
+}
+
 export function mergeWebQQLiveMessages(history: WebQQMessage[], live: WebQQMessage[] = [], limit?: number) {
   const messages = new Map<string, WebQQMessage>()
   for (const message of [...history, ...live]) {
@@ -32,12 +50,20 @@ export function applyWebQQReactionToLiveMessages(messages: WebQQMessage[], messa
     matched = true
     const reactions = message.reactions?.slice() ?? []
     const index = reactions.findIndex((item) => item.emojiId === reaction.emojiId)
-    if (!isAdd || reaction.count <= 0) {
+    if (reaction.count <= 0) {
       if (index >= 0) reactions.splice(index, 1)
     } else if (index >= 0) {
-      reactions[index] = { ...reactions[index], ...reaction, label: reaction.label || reactions[index].label }
+      reactions[index] = {
+        ...reactions[index],
+        ...reaction,
+        label: reaction.label || reactions[index].label,
+        users: mergeReactionUsers(reactions[index], reaction, isAdd),
+      }
     } else {
-      reactions.push(reaction)
+      reactions.push({
+        ...reaction,
+        users: mergeReactionUsers(undefined, reaction, isAdd),
+      })
     }
     const next: WebQQMessage = { ...message, reactions }
     if (!reactions.length) delete next.reactions

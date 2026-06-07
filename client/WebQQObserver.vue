@@ -54,6 +54,7 @@
               :error-text="errorText"
               :has-current-chat="!!currentChat"
               :visible-messages="visibleMessages"
+              :chat-style="webQQChatStyle"
               :show-web-q-q-affinity="showWebQQAffinity"
               :show-web-q-q-relationship="showWebQQRelationship"
               :hide-web-q-q-group-level="hideWebQQGroupLevel"

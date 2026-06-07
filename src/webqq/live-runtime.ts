@@ -334,12 +334,17 @@ export function createWebQQLiveRuntime(options: {
     const peer = { type: 'group' as const, peerId: reaction.groupId }
     const label = readWebQQReactionLabel(reaction.emojiId)
     const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)
+    const userAvatar = reaction.userId ? getWebQQUserAvatar(reaction.userId) : ''
     const entry: WebQQMessageReaction = {
       emojiId: reaction.emojiId,
       label,
       ...(emojiUrl ? { emojiUrl } : {}),
       count: reaction.count,
-      ...(reaction.userId ? { userId: reaction.userId, userAvatar: getWebQQUserAvatar(reaction.userId) } : {}),
+      ...(reaction.userId ? {
+        userId: reaction.userId,
+        userAvatar,
+        users: [{ userId: reaction.userId, userAvatar }],
+      } : {}),
     }
     const key = getWebQQLiveMessageKey(peer)
     const nextMessages = applyWebQQReactionToLiveMessages(liveMessages.get(key) ?? [], reaction.messageId, entry, reaction.isAdd)
