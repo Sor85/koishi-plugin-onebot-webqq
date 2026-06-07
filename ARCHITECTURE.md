@@ -76,7 +76,7 @@
 - `client/stores/webqq-message-history.ts`：WebQQ 消息首屏加载、历史翻页、缓存合并和加载错误状态
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
 - `client/webqq-sender-metadata.ts`：前端群成员身份缓存补齐
-- `client/style.scss`：前端样式入口，继续承接 WebQQ 主题覆盖和部分全局响应式样式
+- `client/style.scss`：前端样式入口，继续承接全局 keyframes、reduced-motion 和响应式样式
 - `client/styles/capsule.scss`：右下角胶囊外壳基础样式
 - `client/styles/webqq-shell.scss`：WebQQ 面板外壳、侧栏、通知入口、搜索和联系人列表基础样式
 - `client/styles/webqq-chat.scss`：WebQQ 聊天容器、顶部栏、消息滚动容器和返回底部按钮样式
@@ -85,6 +85,7 @@
 - `client/styles/webqq-messages.scss`：WebQQ 消息列表和消息元素样式
 - `client/styles/webqq-message-overlays.scss`：WebQQ 合并转发弹窗和图片预览遮罩样式
 - `client/styles/webqq-message-effects.scss`：WebQQ inline 文本片段和临时 thinking dots 动效样式
+- `client/styles/theme-colors.scss`：胶囊和 WebQQ 的主题、暗色和 auto 配色覆盖样式
 
 ## 简单目录规则
 
@@ -141,6 +142,6 @@
 
 - `src/index.ts` 已拆出 Console entry、WebQQ RPC listener、character 响应锁同步和 WebQQ live runtime，但仍承担插件入口、ChatLuna 活动状态和顶层注册编排
 - `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表和消息历史加载，但仍承担联系人加载、实时消息接收、通知和多块面板连接
-- `client/style.scss` 已拆出主要界面区域样式，但主题覆盖、暗色适配、动效 keyframes 和响应式样式仍集中，需要继续谨慎按职责处理
+- `client/style.scss` 已拆出主要界面区域样式和主题色覆盖，但全局 keyframes、reduced-motion 和响应式样式仍集中，需要继续谨慎按职责处理
 - `src/webqq-live-runtime.ts` 和 `src/onebot-messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查
