@@ -30,7 +30,8 @@
 - `src/onebot/notices.ts`：OneBot 群系统通知标准化 helper
 - `src/onebot/text.ts`：OneBot 文本和 @ 标记内容提取 helper
 - `src/onebot/types.ts`：OneBot WebQQ DTO 类型
-- `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
+- `src/state/index.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
+- `src/state/types.ts`：后端胶囊状态输入和快照类型
 - `src/chatluna/message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
 - `src/structured-text.ts`：通用结构化文本读取 helper，用于从 LangChain 消息、Koishi 元素和对象字段中提取文本
 - `src/chatluna/thinking.ts`：ChatLuna character 回复解析，负责读取 after-chat 文本并提取 `<think>` 内容
@@ -96,7 +97,8 @@
 - `src/chatluna/character-lock.ts`：后端 ChatLuna character 响应锁同步
 - `src/console-entry.ts`：后端 Koishi Console 前端入口注册
 - `src/webqq/console.ts`：后端 WebQQ Console RPC listener 注册
-- `src/state.ts`：后端内存状态机
+- `src/state/index.ts`：后端内存状态机，对外继续通过 `src/state` 导入
+- `src/state/types.ts`：后端内存状态输入和快照类型
 - `src/chatluna/message-input.ts`：后端 ChatLuna message/session 输入组装 helper
 - `src/structured-text.ts`：后端通用文本读取 helper
 - `src/chatluna/thinking.ts`：ChatLuna 思考内容解析 helper

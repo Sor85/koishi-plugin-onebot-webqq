@@ -4,7 +4,7 @@ import type {
   CapsuleMessageInput,
   CapsuleModelUsageInput,
   CapsuleSnapshot,
-} from './state-types'
+} from './types'
 
 export type {
   CapsuleActivityOptions,
@@ -12,7 +12,7 @@ export type {
   CapsuleMessageInput,
   CapsuleModelUsageInput,
   CapsuleSnapshot,
-} from './state-types'
+} from './types'
 
 const capsuleStateBrand: unique symbol = Symbol('chat-capsule-state')
 
