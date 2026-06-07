@@ -129,7 +129,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { receive, withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
@@ -145,6 +145,7 @@ import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQMessageCache } from './stores/webqq-message-cache'
+import { useWebQQMessageHistory } from './stores/webqq-message-history'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
 import { useWebQQMessageList } from './stores/webqq-message-list'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
@@ -208,8 +209,6 @@ const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSe
 const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend)
 const { imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
-const historyLoading = ref(false)
-const historyExhausted = ref(false)
 const loading = ref(false)
 const errorText = ref('')
 
@@ -268,6 +267,7 @@ function clearCurrentUnreadCount() {
   clearUnreadCount(currentChat.value.type, currentChat.value.peerId)
 }
 
+let messageHistory: ReturnType<typeof useWebQQMessageHistory>
 const {
   messagePane,
   trackingMessages,
@@ -277,8 +277,8 @@ const {
   returnMessagesToBottom,
 } = useWebQQMessageScroll({
   clearCurrentUnreadCount,
-  shouldLoadOlderMessages,
-  loadOlderMessages,
+  shouldLoadOlderMessages: () => messageHistory.shouldLoadOlderMessages(),
+  loadOlderMessages: () => { messageHistory.loadOlderMessages() },
 })
 
 const {
@@ -298,6 +298,22 @@ const {
   shouldScrollToBottom: () => trackingMessages.value,
   scrollMessagesToBottom,
 })
+
+messageHistory = useWebQQMessageHistory({
+  currentChat,
+  messages,
+  loading,
+  errorText,
+  trackingMessages,
+  messagePane,
+  requestMessages: requestWebQQMessages,
+  loadCachedMessages: loadCachedWebQQMessages,
+  saveCachedMessages: saveCachedWebQQMessages,
+  rememberMessageSenderMetadata,
+  updateConversationSummary,
+  scrollMessagesToBottom,
+})
+const { loadMessages } = messageHistory
 
 // 打开结构化合并转发浮层，按 LLBot 的 modal 方式展示详情。
 function openForwardDialog(element: WebQQMessageElement) {
@@ -320,67 +336,6 @@ async function loadContacts() {
 function closeNoticeMenu() {
   noticeOpen.value = false
   closeForwardDialog()
-}
-
-async function loadMessages() {
-  if (!currentChat.value) return
-  trackingMessages.value = true
-  historyExhausted.value = false
-  loading.value = true
-  errorText.value = ''
-  try {
-    const cachedMessages = await loadCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId)
-    messages.value = cachedMessages
-    messages.value = await requestWebQQMessages({
-      type: currentChat.value.type,
-      peerId: currentChat.value.peerId,
-    })
-    messages.value = mergeMessages(cachedMessages, messages.value)
-    rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)
-    updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
-    await saveCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId, messages.value)
-  } catch (error) {
-    errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
-  } finally {
-    loading.value = false
-  }
-  if (!errorText.value && trackingMessages.value) await scrollMessagesToBottom()
-}
-
-function shouldLoadOlderMessages() {
-  const pane = messagePane.value
-  return !!currentChat.value &&
-    !!pane &&
-    pane.scrollTop <= 8 &&
-    messages.value.length > 0 &&
-    !historyLoading.value &&
-    !historyExhausted.value
-}
-
-async function loadOlderMessages() {
-  if (!currentChat.value || historyLoading.value || historyExhausted.value) return
-  const pane = messagePane.value
-  const previousScrollHeight = pane?.scrollHeight ?? 0
-  const previousCount = messages.value.length
-  historyLoading.value = true
-  try {
-    const olderMessages = await requestWebQQMessages({
-      type: currentChat.value.type,
-      peerId: currentChat.value.peerId,
-      beforeSequence: messages.value[0]?.sequence,
-    })
-    rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, olderMessages)
-    messages.value = mergeMessages(olderMessages, messages.value)
-    updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
-    await saveCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId, messages.value)
-    historyExhausted.value = messages.value.length === previousCount
-    await nextTick()
-    if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
-  } catch (error) {
-    errorText.value = error instanceof Error ? error.message : '加载更早聊天历史失败'
-  } finally {
-    historyLoading.value = false
-  }
 }
 
 function selectFriend(friend: WebQQFriend) {

@@ -39,6 +39,7 @@ const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-f
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
 const webqqMessageCacheStore = await readFile(new URL('../client/stores/webqq-message-cache.ts', import.meta.url), 'utf8')
+const webqqMessageHistoryStore = await readFile(new URL('../client/stores/webqq-message-history.ts', import.meta.url), 'utf8')
 const webqqMessageListStore = await readFile(new URL('../client/stores/webqq-message-list.ts', import.meta.url), 'utf8')
 const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
 const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices.ts', import.meta.url), 'utf8')
@@ -360,7 +361,7 @@ describe('webqq observer view', () => {
     expect(webqqSenderMetadataStore).toContain('function rememberMessageSenderMetadata')
     expect(webqqSenderMetadataStore).toContain('function applyMessageSenderMetadata')
     expect(visibleMessagesSource).toContain('messages.value.map(options.applyMessageSenderMetadata)')
-    expect(webqqView).toContain('rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)')
+    expect(webqqMessageHistoryStore).toContain('options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, options.messages.value)')
     expect(receiveSource).toContain('rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])')
   })
 
@@ -561,8 +562,8 @@ describe('webqq observer view', () => {
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
     expect(webqqMessageView).toContain('function mergeWebQQMessage')
     expect(webqqMessageView).toContain('thinking: next.thinking || current.thinking')
-    expect(webqqView).toContain('messages.value = mergeMessages(cachedMessages, messages.value)')
-    expect(webqqView).toContain('saveCachedWebQQMessages')
+    expect(webqqMessageHistoryStore).toContain('options.messages.value = mergeMessages(cachedMessages, options.messages.value)')
+    expect(webqqMessageHistoryStore).toContain('options.saveCachedMessages')
   })
 
   it('renders WebQQ friends under backend categories', () => {
@@ -1196,8 +1197,8 @@ describe('webqq observer view', () => {
   })
 
   it('scrolls to the latest message after the loading placeholder is hidden', () => {
-    expect(webqqView).toContain('finally {\n    loading.value = false\n  }')
-    expect(webqqView).toContain('if (!errorText.value && trackingMessages.value) await scrollMessagesToBottom()')
+    expect(webqqMessageHistoryStore).toContain('finally {\n      options.loading.value = false\n    }')
+    expect(webqqMessageHistoryStore).toContain('if (!options.errorText.value && options.trackingMessages.value) await options.scrollMessagesToBottom()')
   })
 
   it('keeps following the latest message after WebQQ images finish loading', () => {
@@ -1374,11 +1375,13 @@ describe('webqq observer view', () => {
   })
 
   it('loads earlier WebQQ messages when scrolling to the top', () => {
-    expect(webqqView).toContain('const historyLoading = ref(false)')
-    expect(webqqView).toContain('const historyExhausted = ref(false)')
-    expect(webqqView).toContain('function shouldLoadOlderMessages()')
-    expect(webqqView).toContain('async function loadOlderMessages()')
-    expect(webqqView).toContain('beforeSequence: messages.value[0]?.sequence')
+    expect(webqqView).toContain('useWebQQMessageHistory({')
+    expect(webqqView).toContain('shouldLoadOlderMessages: () => messageHistory.shouldLoadOlderMessages()')
+    expect(webqqMessageHistoryStore).toContain('const historyLoading = ref(false)')
+    expect(webqqMessageHistoryStore).toContain('const historyExhausted = ref(false)')
+    expect(webqqMessageHistoryStore).toContain('function shouldLoadOlderMessages()')
+    expect(webqqMessageHistoryStore).toContain('async function loadOlderMessages()')
+    expect(webqqMessageHistoryStore).toContain('beforeSequence: options.messages.value[0]?.sequence')
   })
 
   it('keeps tabs at the top without the WebQQ profile block', () => {
