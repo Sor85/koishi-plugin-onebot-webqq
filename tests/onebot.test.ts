@@ -13,6 +13,7 @@ const onebotContactsSource = await readFile(new URL('../src/onebot-contacts.ts',
 const onebotActionsSource = await readFile(new URL('../src/onebot-actions.ts', import.meta.url), 'utf8')
 const onebotImagesSource = await readFile(new URL('../src/onebot-images.ts', import.meta.url), 'utf8')
 const onebotMessageElementsSource = await readFile(new URL('../src/onebot-message-elements.ts', import.meta.url), 'utf8')
+const onebotMessagesSource = await readFile(new URL('../src/onebot-messages.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot-types.ts', import.meta.url), 'utf8')
 
 describe('onebot webqq adapter', () => {
@@ -41,7 +42,8 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot card payload helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot-card'")
+    expect(onebotMessagesSource).toContain("from './onebot-card'")
+    expect(onebotSource).not.toContain("from './onebot-card'")
     expect(onebotSource).not.toContain('function normalizeCardElement(')
     expect(onebotCardSource).toContain('export function normalizeCardElement')
   })
@@ -101,6 +103,18 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).not.toContain('function summarizeElements(')
     expect(onebotMessageElementsSource).toContain('export function normalizeFaceElement')
     expect(onebotMessageElementsSource).toContain('export function summarizeElements')
+  })
+
+  it('keeps OneBot message normalization outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './onebot-messages'")
+    expect(onebotSource).not.toContain('async function normalizeSegment(')
+    expect(onebotSource).not.toContain('async function normalizeMessage(')
+    expect(onebotSource).not.toContain('async function resolveOneBotQuote(')
+    expect(onebotSource).not.toContain('async function resolveOneBotForward(')
+    expect(onebotMessagesSource).toContain('export async function normalizeMessage(')
+    expect(onebotMessagesSource).toContain('export async function normalizeMessageElements(')
+    expect(onebotMessagesSource).toContain('export async function resolveOneBotQuote(')
+    expect(onebotMessagesSource).toContain('export async function resolveOneBotForward(')
   })
 
   it('loads friends and groups through the OneBot request API', async () => {
