@@ -7,6 +7,7 @@ import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
 import { requestWebQQContactsWithRetry } from '../client/stores/webqq-contact-loader'
 import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
 import { useWebQQImagePreview } from '../client/stores/webqq-image-preview'
+import { useWebQQMessageHistory } from '../client/stores/webqq-message-history'
 import { useWebQQMessageList } from '../client/stores/webqq-message-list'
 import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
 import { useWebQQNotices } from '../client/stores/webqq-notices'
@@ -569,7 +570,7 @@ describe('webqq observer view', () => {
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
     expect(webqqMessageView).toContain('function mergeWebQQMessage')
     expect(webqqMessageView).toContain('thinking: next.thinking || current.thinking')
-    expect(webqqMessageHistoryStore).toContain('options.messages.value = mergeMessages(cachedMessages, options.messages.value)')
+    expect(webqqMessageHistoryStore).toContain('options.messages.value = mergeMessages(options.messages.value, remoteMessages)')
     expect(webqqMessageHistoryStore).toContain('options.saveCachedMessages')
   })
 
@@ -836,6 +837,52 @@ describe('webqq observer view', () => {
     expect(list.messages.value).toHaveLength(1)
     expect(scrollEvents).toEqual(['scroll'])
     expect(list.isBotThinkingMessage(list.visibleMessages.value[0])).toBe(false)
+  })
+
+  it('shows cached WebQQ messages while remote history refreshes', async () => {
+    const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
+    const messages = ref<WebQQMessage[]>([])
+    const loading = ref(false)
+    const errorText = ref('')
+    const trackingMessages = ref(false)
+    const messagePane = ref<HTMLElement>()
+    const cachedMessage = createWebQQMessage({ id: 'cached', sequence: 'cached', time: 1, summary: 'cached' })
+    const remoteMessage = createWebQQMessage({ id: 'remote', sequence: 'remote', time: 2, summary: 'remote' })
+    const savedMessages: WebQQMessage[][] = []
+    let resolveRemoteMessages: (messages: WebQQMessage[]) => void = () => {}
+    const remoteMessages = new Promise<WebQQMessage[]>((resolve) => {
+      resolveRemoteMessages = resolve
+    })
+    const history = useWebQQMessageHistory({
+      currentChat,
+      messages,
+      loading,
+      errorText,
+      trackingMessages,
+      messagePane,
+      requestMessages: async () => remoteMessages,
+      loadCachedMessages: async () => [cachedMessage],
+      saveCachedMessages: async (_type, _peerId, nextMessages) => {
+        savedMessages.push(nextMessages)
+      },
+      rememberMessageSenderMetadata: () => {},
+      updateConversationSummary: () => {},
+      scrollMessagesToBottom: async () => {},
+    })
+
+    const loadingMessages = history.loadMessages()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(messages.value).toEqual([cachedMessage])
+    expect(loading.value).toBe(false)
+    expect(savedMessages).toEqual([])
+
+    resolveRemoteMessages([remoteMessage])
+    await loadingMessages
+
+    expect(messages.value.map((message) => message.id)).toEqual(['cached', 'remote'])
+    expect(savedMessages[0].map((message) => message.id)).toEqual(['cached', 'remote'])
   })
 
   it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {
@@ -1203,9 +1250,20 @@ describe('webqq observer view', () => {
     expect(missingRequirements).toEqual([])
   })
 
-  it('scrolls to the latest message after the loading placeholder is hidden', () => {
-    expect(webqqMessageHistoryStore).toContain('finally {\n      options.loading.value = false\n    }')
-    expect(webqqMessageHistoryStore).toContain('if (!options.errorText.value && options.trackingMessages.value) await options.scrollMessagesToBottom()')
+  it('shows cached WebQQ history before remote refresh completes', () => {
+    const loadMessagesSource = sourceBetween(
+      webqqMessageHistoryStore,
+      'async function loadMessages()',
+      'function shouldLoadOlderMessages()',
+    )
+
+    expect(loadMessagesSource).toContain('options.loading.value = false')
+    expect(loadMessagesSource.indexOf('options.loading.value = false')).toBeLessThan(
+      loadMessagesSource.indexOf('await options.requestMessages'),
+    )
+    expect(loadMessagesSource).toContain('const remoteMessages = await options.requestMessages')
+    expect(loadMessagesSource).toContain('options.messages.value = mergeMessages(options.messages.value, remoteMessages)')
+    expect(webqqMessageHistoryStore).toContain('async function scrollLoadedMessagesToBottom()')
   })
 
   it('keeps following the latest message after WebQQ images finish loading', () => {

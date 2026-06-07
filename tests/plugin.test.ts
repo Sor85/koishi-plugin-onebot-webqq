@@ -245,6 +245,9 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain("from './webqq/image-url-resolver'")
     expect(pluginSource).not.toContain('function createWebQQImageUrlResolver(')
     expect(webqqImageUrlResolverSource).toContain('export function createWebQQImageUrlResolver')
+    expect(pluginSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
+    expect(pluginSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
+    expect(pluginSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
     expect(serverGet).toHaveBeenCalledWith('/chat-capsule/webqq/image/:id', expect.any(Function))
 
     const localImageFile = fileURLToPath(new URL('../src/webqq/image-url-resolver.ts', import.meta.url))
@@ -259,6 +262,8 @@ describe('chat capsule plugin wiring', () => {
     }
     await handler(routerCtx)
     expect(routerCtx.set).toHaveBeenCalledWith('content-type', 'image/png')
+    expect(routerCtx.set).toHaveBeenCalledWith('cache-control', 'private, max-age=86400, immutable')
+    expect(routerCtx.set).toHaveBeenCalledWith('etag', `"${routerCtx.params.id}"`)
     expect(routerCtx.body).toBeDefined()
 
     const missingCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
@@ -267,6 +272,170 @@ describe('chat capsule plugin wiring', () => {
     }
     await handler(missingCtx)
     expect(missingCtx.status).toBe(404)
+    expect(missingCtx.set).not.toHaveBeenCalledWith('cache-control', expect.any(String))
+  })
+
+  it('caches remote WebQQ image proxy bytes in memory', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/image.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const createRouterCtx = () => ({
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      })
+      const firstCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = createRouterCtx()
+      const secondCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = createRouterCtx()
+
+      await handler(firstCtx)
+      await handler(secondCtx)
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(firstCtx.status).toBe(200)
+      expect(secondCtx.status).toBe(200)
+      expect(secondCtx.set).toHaveBeenCalledWith('content-type', 'image/jpeg')
+      expect(secondCtx.set).toHaveBeenCalledWith('cache-control', 'private, max-age=86400, immutable')
+      expect(secondCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('skips WebQQ image memory cache when disabled', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    }, undefined, {
+      cacheEnabled: false,
+    })
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/image.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const createRouterCtx = () => ({
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      })
+
+      await handler(createRouterCtx())
+      const secondCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = createRouterCtx()
+      await handler(secondCtx)
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(secondCtx.set).toHaveBeenCalledWith('cache-control', 'private, max-age=86400, immutable')
+      expect(secondCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('uses configured WebQQ image memory cache byte limits', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    }, undefined, {
+      cacheLimitBytes: 4,
+      cacheItemLimitBytes: 3,
+    })
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/image.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const createRouterCtx = () => ({
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      })
+
+      await handler(createRouterCtx())
+      await handler(createRouterCtx())
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('evicts least recently used WebQQ image memory cache entries over the configured total limit', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    }, undefined, {
+      cacheLimitBytes: 4,
+      cacheItemLimitBytes: 4,
+    })
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => Uint8Array.from([1, 2, 3, 4]).buffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const nowSpy = vi.spyOn(Date, 'now')
+    let now = 0
+    nowSpy.mockImplementation(() => ++now)
+
+    try {
+      const firstUrl = resolver('https://example.com/first.jpg')
+      const secondUrl = resolver('https://example.com/second.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const createRouterCtx = (imageUrl: string) => ({
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      })
+
+      await handler(createRouterCtx(firstUrl))
+      await handler(createRouterCtx(secondUrl))
+      await handler(createRouterCtx(firstUrl))
+
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+    } finally {
+      nowSpy.mockRestore()
+      vi.unstubAllGlobals()
+    }
   })
 
   it('keeps WebQQ session display helpers outside the plugin entry', () => {
@@ -526,6 +695,12 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("description('WebQQ 状态存储后端')")
     expect(configSource).toContain("webQQMessageCacheLimit?: number")
     expect(configSource).toContain("Schema.natural().min(1).max(1000).default(100).description('每个 WebQQ 会话保留的最近消息缓存数量')")
+    expect(configSource).toContain("webQQImageCacheEnabled?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('启用 WebQQ 图片代理内存缓存，会额外占用服务器内存')")
+    expect(configSource).toContain("webQQImageCacheLimitMB?: number")
+    expect(configSource).toContain("Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB')")
+    expect(configSource).toContain("webQQImageCacheItemLimitMB?: number")
+    expect(configSource).toContain("Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB')")
     expect(configSource).not.toContain("Schema.const('s3')")
     expect(configSource).not.toContain('webQQS3')
     expect(configSource).not.toContain('@aws-sdk/client-s3')
