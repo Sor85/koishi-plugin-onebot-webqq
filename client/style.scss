@@ -4,6 +4,7 @@
 @use './styles/webqq-group-info';
 @use './styles/webqq-notices';
 @use './styles/webqq-messages';
+@use './styles/webqq-message-overlays';
 
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__sidebar,
 .chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__tabs-row {
