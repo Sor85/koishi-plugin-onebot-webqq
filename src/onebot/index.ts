@@ -4,42 +4,42 @@ import {
   toArrayResult,
   toOneBotId,
   toTimestampMs,
-} from './onebot/data'
+} from './data'
 import {
   callAction,
   selectBot,
   type OneBotBot,
   type OneBotContext,
-} from './onebot/actions'
-import { getTextValue } from './onebot/text'
+} from './actions'
+import { getTextValue } from './text'
 import {
   getGroupAvatar,
   getGroupSubtitle,
   getUserAvatar,
-} from './onebot/display'
-import { normalizeGroupNotices } from './onebot/notices'
+} from './display'
+import { normalizeGroupNotices } from './notices'
 import {
   normalizeGroupAnnouncement,
   normalizeGroupMember,
-} from './onebot/group-info'
+} from './group-info'
 import {
   getRecentPeerType,
   normalizeFriend,
   normalizeFriendCategory,
   normalizeGroup,
-} from './onebot/contacts'
+} from './contacts'
 import {
   resolveOneBotImage,
-} from './onebot/images'
+} from './images'
 import {
   summarizeElements,
-} from './onebot/message-elements'
+} from './message-elements'
 import {
   normalizeMessage,
   normalizeMessageElements,
   resolveOneBotForward,
   resolveOneBotQuote,
-} from './onebot/messages'
+} from './messages'
 import type {
   OneBotWebQQOptions,
   WebQQChatType,
@@ -54,7 +54,7 @@ import type {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecentContact,
-} from './onebot/types'
+} from './types'
 
 export type {
   OneBotWebQQOptions,
@@ -76,7 +76,7 @@ export type {
   WebQQNoticeAction,
   WebQQProtocol,
   WebQQRecentContact,
-} from './onebot/types'
+} from './types'
 
 function toStringId(value: unknown) {
   return value == null ? '' : String(value)

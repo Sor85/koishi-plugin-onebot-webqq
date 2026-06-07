@@ -17,7 +17,7 @@
 - `src/console-entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
 - `src/webqq/console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
-- `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知和图片 action 的服务编排
+- `src/onebot/index.ts`：OneBot action 适配入口，负责联系人、群信息、历史消息、通知和图片 action 的服务编排
 - `src/onebot/actions.ts`：OneBot bot 选择和 action 调用 helper
 - `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析 helper
 - `src/onebot/contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化 helper
@@ -103,7 +103,7 @@
 - `src/structured-text.ts`：后端通用文本读取 helper
 - `src/chatluna/thinking.ts`：ChatLuna 思考内容解析 helper
 - `src/chatluna/`：后端 ChatLuna 子领域 helper，放 character lock、消息输入和 thinking 解析
-- `src/onebot.ts`：OneBot 协议读取和数据标准化入口，保留对外导入路径
+- `src/onebot/index.ts`：OneBot 协议读取和数据标准化入口，对外继续通过 `src/onebot` 导入
 - `src/onebot/actions.ts`：OneBot bot 选择和 action 调用
 - `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析
 - `src/onebot/contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化
@@ -153,4 +153,4 @@
 - `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表、消息历史加载和实时消息接收，但仍承担联系人加载、通知和多块面板连接
 - `client/style.scss` 已拆出主要界面区域样式和主题色覆盖，但全局 keyframes、reduced-motion 和响应式样式仍集中，需要继续谨慎按职责处理
 - `src/webqq/live-runtime.ts` 和 `src/onebot/messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
-- `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查
+- `src/onebot/types.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

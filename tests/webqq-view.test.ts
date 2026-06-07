@@ -21,7 +21,7 @@ import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
 const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
 const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
-const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
+const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqApi = await readFile(new URL('../client/api/webqq.ts', import.meta.url), 'utf8')

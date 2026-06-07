@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { createOneBotWebQQService } from '../src/onebot'
 
-const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
+const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const onebotDataSource = await readFile(new URL('../src/onebot/data.ts', import.meta.url), 'utf8')
 const onebotTextSource = await readFile(new URL('../src/onebot/text.ts', import.meta.url), 'utf8')
 const onebotCardSource = await readFile(new URL('../src/onebot/card.ts', import.meta.url), 'utf8')
@@ -18,7 +18,7 @@ const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', impor
 
 describe('onebot webqq adapter', () => {
   it('keeps OneBot WebQQ public types outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/types'")
+    expect(onebotSource).toContain("from './types'")
     expect(onebotSource).not.toContain('export interface WebQQMessage {')
     expect(onebotSource).not.toContain('export interface WebQQContacts {')
     expect(onebotTypesSource).toContain('export interface WebQQMessage')
@@ -26,7 +26,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot data field helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/data'")
+    expect(onebotSource).toContain("from './data'")
     expect(onebotSource).not.toContain('function toArrayResult(')
     expect(onebotSource).not.toContain('function getActionData(')
     expect(onebotDataSource).toContain('export function toArrayResult')
@@ -34,7 +34,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot text markup helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/text'")
+    expect(onebotSource).toContain("from './text'")
     expect(onebotSource).not.toContain('function normalizeMentionMarkupText(')
     expect(onebotSource).not.toContain('function getTextValue(')
     expect(onebotTextSource).toContain('export function normalizeMentionMarkupText')
@@ -43,13 +43,13 @@ describe('onebot webqq adapter', () => {
 
   it('keeps OneBot card payload helpers outside the adapter entry', () => {
     expect(onebotMessagesSource).toContain("from './card'")
-    expect(onebotSource).not.toContain("from './onebot/card'")
+    expect(onebotSource).not.toContain("from './card'")
     expect(onebotSource).not.toContain('function normalizeCardElement(')
     expect(onebotCardSource).toContain('export function normalizeCardElement')
   })
 
   it('keeps OneBot display field helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/display'")
+    expect(onebotSource).toContain("from './display'")
     expect(onebotSource).not.toContain('function getUserAvatar(')
     expect(onebotSource).not.toContain('function normalizeGroupRole(')
     expect(onebotDisplaySource).toContain('export function getUserAvatar')
@@ -57,13 +57,13 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot group notice normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/notices'")
+    expect(onebotSource).toContain("from './notices'")
     expect(onebotSource).not.toContain('function normalizeGroupNotices(')
     expect(onebotNoticesSource).toContain('export function normalizeGroupNotices')
   })
 
   it('keeps OneBot group info normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/group-info'")
+    expect(onebotSource).toContain("from './group-info'")
     expect(onebotSource).not.toContain('function normalizeGroupMember(')
     expect(onebotSource).not.toContain('function normalizeGroupAnnouncement(')
     expect(onebotGroupInfoSource).toContain('export function normalizeGroupMember')
@@ -71,7 +71,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot contact normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/contacts'")
+    expect(onebotSource).toContain("from './contacts'")
     expect(onebotSource).not.toContain('function getRecentPeerType(')
     expect(onebotSource).not.toContain('function normalizeFriend(')
     expect(onebotSource).not.toContain('function normalizeFriendCategory(')
@@ -82,7 +82,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot action selection outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/actions'")
+    expect(onebotSource).toContain("from './actions'")
     expect(onebotSource).not.toContain('function selectBot(')
     expect(onebotSource).not.toContain('async function callAction(')
     expect(onebotActionsSource).toContain('export function selectBot')
@@ -90,7 +90,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot image resolving outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/images'")
+    expect(onebotSource).toContain("from './images'")
     expect(onebotSource).not.toContain('async function normalizeImageElement(')
     expect(onebotSource).not.toContain('async function resolveOneBotImage(')
     expect(onebotImagesSource).toContain('export async function normalizeImageElement')
@@ -98,7 +98,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot message element display helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/message-elements'")
+    expect(onebotSource).toContain("from './message-elements'")
     expect(onebotSource).not.toContain('function normalizeFaceElement(')
     expect(onebotSource).not.toContain('function summarizeElements(')
     expect(onebotMessageElementsSource).toContain('export function normalizeFaceElement')
@@ -106,7 +106,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot message normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './onebot/messages'")
+    expect(onebotSource).toContain("from './messages'")
     expect(onebotSource).not.toContain('async function normalizeSegment(')
     expect(onebotSource).not.toContain('async function normalizeMessage(')
     expect(onebotSource).not.toContain('async function resolveOneBotQuote(')
