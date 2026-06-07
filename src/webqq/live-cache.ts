@@ -1,4 +1,4 @@
-import type { WebQQMessage, WebQQMessageQuery, WebQQRecallPayload } from '../onebot'
+import type { WebQQMessage, WebQQMessageQuery, WebQQMessageReaction, WebQQRecallPayload } from '../onebot'
 
 type WebQQLiveMessageKeyInput = Pick<WebQQMessageQuery, 'type' | 'peerId'>
 
@@ -10,7 +10,7 @@ function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
 
-function isRecallTarget(message: WebQQMessage, messageId: string) {
+function isMessageTarget(message: WebQQMessage, messageId: string) {
   return message.id === messageId || message.sequence === messageId
 }
 
@@ -23,13 +23,34 @@ export function mergeWebQQLiveMessages(history: WebQQMessage[], live: WebQQMessa
   return limit ? merged.slice(-limit) : merged
 }
 
+export function applyWebQQReactionToLiveMessages(messages: WebQQMessage[], messageId: string, reaction: WebQQMessageReaction) {
+  let matched = false
+  const nextMessages = messages.map((message) => {
+    if (!isMessageTarget(message, messageId)) return message
+    matched = true
+    const reactions = message.reactions?.slice() ?? []
+    const index = reactions.findIndex((item) => item.emojiId === reaction.emojiId)
+    if (index >= 0) {
+      reactions[index] = {
+        ...reactions[index],
+        label: reaction.label || reactions[index].label,
+        count: reactions[index].count + reaction.count,
+      }
+    } else {
+      reactions.push(reaction)
+    }
+    return { ...message, reactions }
+  })
+  return matched ? nextMessages : undefined
+}
+
 export function applyWebQQRecallToLiveMessages(messages: WebQQMessage[], payload: WebQQRecallPayload, limit?: number) {
   if (payload.mode === 'mark') {
-    return messages.map((message) => isRecallTarget(message, payload.messageId)
+    return messages.map((message) => isMessageTarget(message, payload.messageId)
       ? { ...message, recalled: true }
       : message)
   }
-  const nextMessages = messages.filter((message) => !isRecallTarget(message, payload.messageId))
+  const nextMessages = messages.filter((message) => !isMessageTarget(message, payload.messageId))
   return payload.eventMessage
     ? mergeWebQQLiveMessages(nextMessages, [payload.eventMessage], limit)
     : nextMessages

@@ -40,6 +40,12 @@ export interface WebQQMessageElement {
   items?: WebQQForwardItem[]
 }
 
+export interface WebQQMessageReaction {
+  emojiId: string
+  label: string
+  count: number
+}
+
 // WebQQ 只读面板使用的历史消息。
 export interface WebQQMessage {
   id: string
@@ -56,8 +62,9 @@ export interface WebQQMessage {
   direction: 'incoming' | 'outgoing'
   summary: string
   recalled?: boolean
+  reactions?: WebQQMessageReaction[]
   event?: {
-    type: 'recall'
+    type: 'recall' | 'poke' | 'mute' | 'reaction'
     targetMessageId?: string
   }
   thinking?: {

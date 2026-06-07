@@ -171,6 +171,14 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     liveRuntime.recordWebQQRecall(session)
   })
 
+  ctx.on('internal/session', async (session) => {
+    await liveRuntime.recordWebQQNotice(session)
+  })
+
+  ctx.on('reaction-added', (session) => {
+    liveRuntime.recordWebQQReaction(session)
+  })
+
   ctx.on('friend-request', (session) => {
     const notice = createWebQQFriendRequestNotice(session)
     if (!notice) return

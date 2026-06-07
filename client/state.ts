@@ -63,6 +63,12 @@ export interface WebQQMessageElement {
   items?: WebQQForwardItem[]
 }
 
+export interface WebQQMessageReaction {
+  emojiId: string
+  label: string
+  count: number
+}
+
 export interface WebQQMessage {
   id: string
   sequence: string
@@ -78,8 +84,9 @@ export interface WebQQMessage {
   direction: 'incoming' | 'outgoing'
   summary: string
   recalled?: boolean
+  reactions?: WebQQMessageReaction[]
   event?: {
-    type: 'recall'
+    type: 'recall' | 'poke' | 'mute' | 'reaction'
     targetMessageId?: string
   }
   thinking?: {

@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import { isRecord } from '../shared/structured-text'
+import { isRecord, readRecordText } from '../shared/structured-text'
 import {
   hasWebQQSenderMetadata,
   readWebQQSenderMetadata,
@@ -15,9 +15,12 @@ function getActionData(result: unknown) {
   return isRecord(item.data) ? item.data : item
 }
 
-export async function readWebQQGroupSenderMetadata(session: Session, userId: string, noCache: boolean): Promise<WebQQSenderMetadata | undefined> {
+async function readWebQQGroupMemberInfo(session: Session, userId: string, noCache: boolean) {
   if ((session.bot.platform || session.platform) !== 'onebot') return
-  const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+  const rawData = isRecord((session.event as { _data?: unknown })._data)
+    ? (session.event as { _data?: Record<string, unknown> })._data
+    : {}
+  const groupId = session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id || readRecordText(rawData, ['group_id', 'groupId'])
   if (!groupId || !userId || !isRecord(session.bot)) return
   const internal = isRecord(session.bot.internal) ? session.bot.internal : undefined
   if (!internal) return
@@ -34,7 +37,19 @@ export async function readWebQQGroupSenderMetadata(session: Session, userId: str
   } else {
     return
   }
-  const metadata = readWebQQSenderMetadata(getActionData(result))
+  const data = getActionData(result)
+  return isRecord(data) ? data : undefined
+}
+
+export async function readWebQQGroupMemberName(session: Session, userId: string, noCache: boolean): Promise<string | undefined> {
+  const data = await readWebQQGroupMemberInfo(session, userId, noCache)
+  return readRecordText(data, ['card', 'nickname', 'name', 'user_name', 'userName']) || undefined
+}
+
+export async function readWebQQGroupSenderMetadata(session: Session, userId: string, noCache: boolean): Promise<WebQQSenderMetadata | undefined> {
+  const data = await readWebQQGroupMemberInfo(session, userId, noCache)
+  if (!data) return
+  const metadata = readWebQQSenderMetadata(data)
   return hasWebQQSenderMetadata(metadata) ? metadata : undefined
 }
 

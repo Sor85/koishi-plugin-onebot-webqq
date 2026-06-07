@@ -2,10 +2,11 @@ import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../chatluna/thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../chatluna/thinking'
-import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from '../onebot'
+import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQRecallPayload } from '../onebot'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
+import { isRecord, readRecordText } from '../shared/structured-text'
 import { attachWebQQAffinityBadges } from './affinity'
-import { applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
+import { applyWebQQReactionToLiveMessages, applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
 import { createWebQQLiveMessage } from './live-message'
 import type { WebQQImageUrlResolver } from './live-elements'
 import {
@@ -14,6 +15,7 @@ import {
   getWebQQUserAvatar,
 } from './session'
 import {
+  readWebQQGroupMemberName,
   readWebQQGroupSenderMetadata,
 } from './group-sender-metadata'
 import {
@@ -34,6 +36,63 @@ function readRawRecallMessageId(session: Session) {
   const data = (session.event as { _data?: Record<string, unknown> })._data
   const value = data?.message_id ?? data?.messageId ?? data?.msg_id ?? data?.msgId
   return value == null ? '' : String(value)
+}
+
+function readRawEventData(session: Session) {
+  const data = (session.event as { _data?: unknown })._data
+  return isRecord(data) ? data : {}
+}
+
+function readWebQQNoticePeer(session: Session) {
+  const groupId = readRecordText(readRawEventData(session), ['group_id', 'groupId'])
+  if (groupId) return { type: 'group' as const, peerId: groupId }
+  return readWebQQPeer(session)
+}
+
+function readSessionUserName(session: Session, fallbackId = '') {
+  return session.event.member?.name || session.event.operator?.name || session.event.user?.name || session.username || fallbackId || '有人'
+}
+
+async function readWebQQNoticeMemberName(session: Session, userId: string, fallbackName: string, genericName: string) {
+  if (userId) {
+    try {
+      const name = await readWebQQGroupMemberName(session, userId, true)
+      if (name) return name
+    } catch {}
+  }
+  return fallbackName && fallbackName !== userId && !/^\d+$/.test(fallbackName) ? fallbackName : genericName
+}
+
+function formatMuteDuration(seconds: number) {
+  if (!seconds) return ''
+  if (seconds % 3600 === 0) return `${seconds / 3600} 小时`
+  if (seconds % 60 === 0) return `${seconds / 60} 分钟`
+  return `${seconds} 秒`
+}
+
+function createWebQQEventMessage(
+  peer: { type: WebQQChatType; peerId: string },
+  session: Session,
+  type: NonNullable<WebQQMessage['event']>['type'],
+  summary: string,
+  senderId: string,
+  targetMessageId?: string,
+): WebQQMessage {
+  return {
+    id: `${type}:${peer.type}:${peer.peerId}:${session.timestamp}:${senderId}:${targetMessageId || ''}`,
+    sequence: `${type}:${session.timestamp}:${targetMessageId || senderId}`,
+    time: session.timestamp,
+    senderId,
+    senderName: readSessionUserName(session, senderId),
+    senderAvatar: getWebQQUserAvatar(senderId),
+    direction: 'incoming',
+    summary,
+    event: {
+      type,
+      ...(targetMessageId ? { targetMessageId } : {}),
+    },
+    elements: [{ type: 'unknown', text: summary }],
+  }
 }
 
 export function createWebQQLiveRuntime(options: {
@@ -201,10 +260,96 @@ export function createWebQQLiveRuntime(options: {
       ...(markRecalledMessage ? {} : { eventMessage }),
     })
   }
+  const recordWebQQNotice = async (session: Session | undefined) => {
+    if (!session || (session.bot.platform || session.platform) !== 'onebot') return
+    const data = readRawEventData(session)
+    const noticeType = readRecordText(data, ['notice_type', 'noticeType'])
+    const subType = readRecordText(data, ['sub_type', 'subType'])
+    if (noticeType !== 'group_ban' && !(noticeType === 'notify' && subType === 'poke')) return
+    const peer = readWebQQNoticePeer(session)
+    if (!peer) return
+    if (noticeType === 'notify' && subType === 'poke') {
+      const senderId = readRecordText(data, ['user_id', 'userId', 'sender_id', 'senderId']) || session.userId || session.event.user?.id || ''
+      const targetId = readRecordText(data, ['target_id', 'targetId']) || session.event.operator?.id || ''
+      const senderName = await readWebQQNoticeMemberName(
+        session,
+        senderId,
+        readRecordText(data, ['sender_nickname', 'senderNickname', 'user_name', 'userName']) || readSessionUserName(session, senderId),
+        '某成员',
+      )
+      const targetName = await readWebQQNoticeMemberName(
+        session,
+        targetId,
+        readRecordText(data, ['target_nickname', 'targetNickname', 'target_name', 'targetName']),
+        '对方',
+      )
+      broadcastWebQQLivePayload({
+        ...peer,
+        message: createWebQQEventMessage(peer, session, 'poke', `${senderName} 戳了戳 ${targetName}`, senderId),
+      })
+      return
+    }
+    if (noticeType === 'group_ban') {
+      const operatorId = readRecordText(data, ['operator_id', 'operatorId']) || session.operatorId || session.event.operator?.id || ''
+      const targetId = readRecordText(data, ['user_id', 'userId', 'target_id', 'targetId']) || session.userId || session.event.user?.id || ''
+      const operatorName = await readWebQQNoticeMemberName(
+        session,
+        operatorId,
+        readRecordText(data, ['operator_name', 'operatorName']) || session.event.operator?.name || '',
+        '管理员',
+      )
+      const targetName = await readWebQQNoticeMemberName(
+        session,
+        targetId,
+        readRecordText(data, ['user_name', 'userName', 'target_name', 'targetName']) || session.event.user?.name || '',
+        '对方',
+      )
+      const duration = Number(data.duration) || 0
+      const durationText = formatMuteDuration(duration)
+      const summary = subType === 'lift_ban'
+        ? `${operatorName} 解除了 ${targetName} 的禁言`
+        : `${operatorName} 禁言了 ${targetName}${durationText ? ` ${durationText}` : ''}`
+      broadcastWebQQLivePayload({
+        ...peer,
+        message: createWebQQEventMessage(peer, session, 'mute', summary, operatorId),
+      })
+    }
+  }
+  const recordWebQQReaction = (session: Session | undefined) => {
+    if (!session) return
+    const peer = readWebQQPeer(session)
+    if (!peer) return
+    const data = readRawEventData(session)
+    const messageId = session.messageId || session.event.message?.id || readRecordText(data, ['message_id', 'messageId', 'msg_id', 'msgId'])
+    const emojiId = session.event.emoji?.id || readRecordText(data, ['emoji_id', 'emojiId', 'id'])
+    if (!messageId || !emojiId) return
+    const label = session.event.emoji?.name || readRecordText(data, ['emoji_name', 'emojiName', 'emoji']) || emojiId
+    const reaction: WebQQMessageReaction = {
+      emojiId,
+      label,
+      count: 1,
+    }
+    const key = getWebQQLiveMessageKey(peer)
+    const nextMessages = applyWebQQReactionToLiveMessages(liveMessages.get(key) ?? [], messageId, reaction)
+    if (nextMessages) {
+      liveMessages.set(key, nextMessages)
+      const message = nextMessages.find((item) => item.id === messageId || item.sequence === messageId)
+      if (message) options.ctx.console?.broadcast('chat-capsule/webqq/message', { ...peer, message }, options.consoleAuthOptions)
+      return
+    }
+    const senderId = session.userId || session.event.user?.id || ''
+    const senderName = readSessionUserName(session, senderId)
+    broadcastWebQQLivePayload({
+      ...peer,
+      message: createWebQQEventMessage(peer, session, 'reaction', `${senderName} 给一条消息贴了 ${label}`, senderId, messageId),
+    })
+  }
 
   return {
     liveMessages,
     recordWebQQLiveMessage,
+    recordWebQQNotice,
+    recordWebQQReaction,
     recordWebQQRecall,
     updateLastOutgoingWebQQThinking,
   }

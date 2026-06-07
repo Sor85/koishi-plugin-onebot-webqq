@@ -13,7 +13,7 @@
   </template>
   <template v-else>
     <template v-for="(message, index) in visibleMessages" :key="message.id || message.sequence">
-      <div v-if="message.event?.type === 'recall'" class="chat-capsule-webqq__message-event">
+      <div v-if="message.event" class="chat-capsule-webqq__message-event">
         {{ message.summary }}
       </div>
       <div
@@ -98,6 +98,11 @@
                 </button>
                 <span v-else>{{ run.element.text || message.summary }}</span>
               </template>
+            </div>
+            <div v-if="message.reactions?.length" class="chat-capsule-webqq__message-reactions">
+              <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
+                {{ reaction.label }}<span v-if="reaction.count > 1"> {{ reaction.count }}</span>
+              </span>
             </div>
             <div v-if="message.recalled" class="chat-capsule-webqq__message-recall-status">已撤回</div>
             <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>

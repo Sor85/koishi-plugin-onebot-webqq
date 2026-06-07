@@ -71,6 +71,7 @@ export type {
   WebQQLiveMessage,
   WebQQMessage,
   WebQQMessageElement,
+  WebQQMessageReaction,
   WebQQMessageQuery,
   WebQQNotice,
   WebQQNoticeAction,

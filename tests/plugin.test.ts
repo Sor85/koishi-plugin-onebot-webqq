@@ -753,6 +753,150 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('broadcasts WebQQ poke, mute, and reaction events', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_group_member_info: vi.fn(async ({ user_id }: { user_id: number | string }) => ({
+          user_id,
+          card: user_id === 30000 ? 'Alice Card' : 'Bob Card',
+          nickname: user_id === 30000 ? 'Alice Nick' : 'Bob Nick',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        member: { name: 'Alice Card' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await listeners['internal/session'][0](createSession({
+      bot,
+      channelId: undefined,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          notice_type: 'notify',
+          sub_type: 'poke',
+          group_id: '20000',
+          user_id: '30000',
+          target_id: '40000',
+        },
+      },
+    }))
+    await listeners['internal/session'][0](createSession({
+      bot,
+      channelId: undefined,
+      timestamp: 1710000003000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000003000,
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          notice_type: 'group_ban',
+          sub_type: 'ban',
+          group_id: '20000',
+          user_id: '40000',
+          operator_id: '30000',
+          duration: 600,
+        },
+      },
+    }))
+    listeners['reaction-added'][0](createSession({
+      bot,
+      timestamp: 1710000004000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000004000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '40000', name: 'Bob' },
+        member: { name: 'Bob Card' },
+        message: { id: 'new-1' },
+        emoji: { id: '66', name: '点赞' },
+      },
+    }))
+
+    const webqqMessages = broadcast.mock.calls
+      .filter(([event]) => event === 'chat-capsule/webqq/message')
+      .map(([, payload]) => payload)
+    expect(webqqMessages).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          summary: 'Alice Card 戳了戳 Bob Card',
+          event: { type: 'poke' },
+        }),
+      }),
+      expect.objectContaining({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          summary: 'Alice Card 禁言了 Bob Card 10 分钟',
+          event: { type: 'mute' },
+        }),
+      }),
+      expect.objectContaining({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'new-1',
+          reactions: [{
+            emojiId: '66',
+            label: '点赞',
+            count: 1,
+          }],
+        }),
+      }),
+    ]))
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        summary: 'Alice Card 戳了戳 Bob Card',
+        event: { type: 'poke' },
+      }),
+      expect.objectContaining({
+        summary: 'Alice Card 禁言了 Bob Card 10 分钟',
+        event: { type: 'mute' },
+      }),
+      expect.objectContaining({
+        id: 'new-1',
+        reactions: [{
+          emojiId: '66',
+          label: '点赞',
+          count: 1,
+        }],
+      }),
+    ]))
+  })
+
   it('keeps ChatLuna message input building outside the plugin entry', () => {
     const session = createSession({
       event: {
