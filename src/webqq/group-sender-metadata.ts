@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import { isRecord } from '../structured-text'
+import { isRecord } from '../shared/structured-text'
 import {
   hasWebQQSenderMetadata,
   readWebQQSenderMetadata,

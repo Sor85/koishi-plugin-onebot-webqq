@@ -1,5 +1,5 @@
 import type { WebQQMessage } from '../onebot'
-import { readRecordText } from '../structured-text'
+import { readRecordText } from '../shared/structured-text'
 
 export interface WebQQSenderMetadata {
   senderRole?: string

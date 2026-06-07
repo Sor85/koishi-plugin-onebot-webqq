@@ -1,6 +1,6 @@
 import type { Session } from 'koishi'
 import type { WebQQNotice } from '../onebot'
-import { isRecord, readRecordText } from '../structured-text'
+import { isRecord, readRecordText } from '../shared/structured-text'
 import { getWebQQGroupAvatar, getWebQQUserAvatar, readUserName } from './session'
 
 export function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {

@@ -1,7 +1,7 @@
 import type { Session } from 'koishi'
 import { extname } from 'path'
 import type { WebQQMessageElement } from '../onebot'
-import { isRecord, readRecordText, readStructuredText } from '../structured-text'
+import { isRecord, readRecordText, readStructuredText } from '../shared/structured-text'
 
 function readElementText(value: unknown) {
   return value == null ? '' : String(value)
