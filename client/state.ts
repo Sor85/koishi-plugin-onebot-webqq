@@ -67,6 +67,8 @@ export interface WebQQMessageReaction {
   emojiId: string
   label: string
   count: number
+  userId?: string
+  userAvatar?: string
 }
 
 export interface WebQQMessage {

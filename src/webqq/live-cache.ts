@@ -35,7 +35,7 @@ export function applyWebQQReactionToLiveMessages(messages: WebQQMessage[], messa
     if (!isAdd || reaction.count <= 0) {
       if (index >= 0) reactions.splice(index, 1)
     } else if (index >= 0) {
-      reactions[index] = { ...reactions[index], label: reaction.label || reactions[index].label, count: reaction.count }
+      reactions[index] = { ...reactions[index], ...reaction, label: reaction.label || reactions[index].label }
     } else {
       reactions.push(reaction)
     }

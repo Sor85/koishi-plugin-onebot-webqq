@@ -101,6 +101,7 @@
             </div>
             <div v-if="message.reactions?.length" class="chat-capsule-webqq__message-reactions">
               <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
+                <img v-if="reaction.userAvatar" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(reaction.userAvatar)" :alt="reaction.userId || reaction.label">
                 {{ reaction.label }}<span v-if="reaction.count > 1"> {{ reaction.count }}</span>
               </span>
             </div>

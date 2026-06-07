@@ -936,6 +936,7 @@ describe('webqq observer view', () => {
     expect(clientState).toContain("type: 'recall'")
     expect(clientState).toContain("type: 'recall' | 'poke' | 'mute' | 'reaction'")
     expect(clientState).toContain('reactions?: WebQQMessageReaction[]')
+    expect(clientState).toContain('userAvatar?: string')
     expect(webqqMessageListView).toContain("message.event")
     expect(webqqMessageListView).toContain('chat-capsule-webqq__message-event')
     expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-recall-status"')
@@ -943,12 +944,15 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain("'is-recalled': message.recalled")
     expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reactions')
     expect(webqqMessageListView).toContain('message.reactions')
+    expect(webqqMessageListView).toContain('reaction.userAvatar')
+    expect(webqqMessageListView).toContain(':src="withProxy(reaction.userAvatar)"')
     expect(webqqMessageListView).toContain('reaction.label')
     expect(style).toContain('.chat-capsule-webqq__message.is-recalled')
     expect(style).toContain('.chat-capsule-webqq__message-recall-status')
     expect(style).toContain('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')
     expect(style).toContain('.chat-capsule-webqq__message-reactions')
     expect(style).toContain('.chat-capsule-webqq__message-reaction')
+    expect(style).toContain('.chat-capsule-webqq__message-reaction-avatar')
   })
 
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {

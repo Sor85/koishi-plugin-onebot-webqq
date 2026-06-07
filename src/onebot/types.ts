@@ -44,6 +44,8 @@ export interface WebQQMessageReaction {
   emojiId: string
   label: string
   count: number
+  userId?: string
+  userAvatar?: string
 }
 
 // WebQQ 只读面板使用的历史消息。

@@ -57,7 +57,7 @@ function parseReaction(raw: unknown): WebQQRawReaction | undefined {
   const isAdd = raw.is_add !== false
   return {
     groupId,
-    userId: getStringField(raw, ['user_id']),
+    userId: getStringField(raw, ['user_id', 'operator_id']),
     messageId,
     emojiId,
     count: like ? getNumberField(like, ['count']) : 0,

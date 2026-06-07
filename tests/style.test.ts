@@ -235,6 +235,14 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-affinity-icon')).toContain('fill: currentColor')
   })
 
+  it('keeps WebQQ reaction avatars compact inside reaction pills', () => {
+    const avatarBody = ruleBody('.chat-capsule-webqq__message-reaction-avatar')
+
+    expect(avatarBody).toContain('width: 16px')
+    expect(avatarBody).toContain('height: 16px')
+    expect(avatarBody).toContain('border-radius: 50%')
+  })
+
   it('stacks WebQQ rich message elements vertically inside the bubble', () => {
     expect(style).toContain('.chat-capsule-webqq__bubble {\n  display: flex')
     expect(style).toContain('.chat-capsule-webqq__bubble {\n  display: flex;\n  max-width: 100%;\n  flex-direction: column')
