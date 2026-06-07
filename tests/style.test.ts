@@ -5,7 +5,8 @@ const styleEntry = await readFile(new URL('../client/style.scss', import.meta.ur
 const capsuleStyle = await readFile(new URL('../client/styles/capsule.scss', import.meta.url), 'utf8')
 const webqqShellStyle = await readFile(new URL('../client/styles/webqq-shell.scss', import.meta.url), 'utf8')
 const webqqChatStyle = await readFile(new URL('../client/styles/webqq-chat.scss', import.meta.url), 'utf8')
-const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${styleEntry}`
+const webqqGroupInfoStyle = await readFile(new URL('../client/styles/webqq-group-info.scss', import.meta.url), 'utf8')
+const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${styleEntry}`
 
 function ruleBody(selector: string) {
   const start = style.indexOf(`${selector} {`)
