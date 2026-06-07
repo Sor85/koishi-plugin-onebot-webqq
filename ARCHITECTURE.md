@@ -19,7 +19,7 @@
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知和图片 action 的服务编排
 - `src/onebot-actions.ts`：OneBot bot 选择和 action 调用 helper
-- `src/onebot-card.ts`：OneBot JSON/XML/lightapp 卡片消息解析 helper
+- `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析 helper
 - `src/onebot-contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化 helper
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换 helper
 - `src/onebot-display.ts`：OneBot WebQQ 展示字段派生 helper，负责头像 URL、群角色和群副标题
@@ -101,7 +101,7 @@
 - `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
 - `src/onebot.ts`：OneBot 协议读取和数据标准化
 - `src/onebot-actions.ts`：OneBot bot 选择和 action 调用
-- `src/onebot-card.ts`：OneBot JSON/XML/lightapp 卡片消息解析
+- `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析
 - `src/onebot-contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化
 - `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换
 - `src/onebot-display.ts`：OneBot WebQQ 展示字段派生
@@ -111,6 +111,7 @@
 - `src/onebot-messages.ts`：OneBot 历史消息、引用和合并转发消息标准化
 - `src/onebot-notices.ts`：OneBot 群系统通知标准化
 - `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取
+- `src/onebot/`：后端 OneBot 子领域 helper，按职责逐步迁入，不一次性大搬家
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
 - `src/webqq-event-notices.ts`：后端 WebQQ session 事件通知 payload 构造
 - `src/webqq-group-sender-metadata.ts`：后端 WebQQ 群成员身份 metadata 查询
@@ -121,7 +122,7 @@
 - `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
 - `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
-- `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
+- `src/*.ts`：后端小模块，按真实职责命名，领域目录成熟后再逐步迁移
 - `client/api/`：前端 Console RPC thin wrapper，只放网络事件调用和默认返回值，不放 UI 状态
 - `client/components/`：前端展示组件，按完整展示区域拆分，避免拆单个按钮或图标
 - `client/*.vue`：前端入口和仍未迁移的 WebQQ 展示组件，状态与请求编排继续留在 stores 或主界面组件

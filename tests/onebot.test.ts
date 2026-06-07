@@ -5,7 +5,7 @@ import { createOneBotWebQQService } from '../src/onebot'
 const onebotSource = await readFile(new URL('../src/onebot.ts', import.meta.url), 'utf8')
 const onebotDataSource = await readFile(new URL('../src/onebot-data.ts', import.meta.url), 'utf8')
 const onebotTextSource = await readFile(new URL('../src/onebot-text.ts', import.meta.url), 'utf8')
-const onebotCardSource = await readFile(new URL('../src/onebot-card.ts', import.meta.url), 'utf8')
+const onebotCardSource = await readFile(new URL('../src/onebot/card.ts', import.meta.url), 'utf8')
 const onebotDisplaySource = await readFile(new URL('../src/onebot-display.ts', import.meta.url), 'utf8')
 const onebotNoticesSource = await readFile(new URL('../src/onebot-notices.ts', import.meta.url), 'utf8')
 const onebotGroupInfoSource = await readFile(new URL('../src/onebot-group-info.ts', import.meta.url), 'utf8')
@@ -42,8 +42,8 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot card payload helpers outside the adapter entry', () => {
-    expect(onebotMessagesSource).toContain("from './onebot-card'")
-    expect(onebotSource).not.toContain("from './onebot-card'")
+    expect(onebotMessagesSource).toContain("from './onebot/card'")
+    expect(onebotSource).not.toContain("from './onebot/card'")
     expect(onebotSource).not.toContain('function normalizeCardElement(')
     expect(onebotCardSource).toContain('export function normalizeCardElement')
   })

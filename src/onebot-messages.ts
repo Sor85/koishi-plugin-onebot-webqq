@@ -11,7 +11,7 @@ import {
   type OneBotBot,
 } from './onebot-actions'
 import { getTextValue, normalizeMentionMarkupText } from './onebot-text'
-import { normalizeCardElement } from './onebot-card'
+import { normalizeCardElement } from './onebot/card'
 import {
   getUserAvatar,
   normalizeGroupRole,
