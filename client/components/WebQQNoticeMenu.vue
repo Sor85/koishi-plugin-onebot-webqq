@@ -34,12 +34,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { WebQQNotice } from './state'
+import type { WebQQNotice } from '../state'
 import {
   canHandleNotice,
   formatNoticeComment,
   getHandledNoticeStatusText,
-} from './utils/webqq-notice-view'
+} from '../utils/webqq-notice-view'
 
 defineProps<{
   tab: 'friends' | 'groups'

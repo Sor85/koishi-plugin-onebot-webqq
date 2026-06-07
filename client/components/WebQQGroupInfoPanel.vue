@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { WebQQGroupInfo, WebQQGroupMember } from './state'
+import type { WebQQGroupInfo, WebQQGroupMember } from '../state'
 
 defineProps<{
   loading: boolean

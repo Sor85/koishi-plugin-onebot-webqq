@@ -33,7 +33,10 @@ import {
 import { createMessageInput } from '../src/chatluna-message-input'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
+const chatlunaCharacterLockSource = await readFile(new URL('../src/chatluna-character-lock.ts', import.meta.url), 'utf8')
+const consoleEntrySource = await readFile(new URL('../src/console-entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
+const webqqConsoleSource = await readFile(new URL('../src/webqq-console.ts', import.meta.url), 'utf8')
 const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna-message-input.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
 const webqqLiveCacheSource = await readFile(new URL('../src/webqq-live-cache.ts', import.meta.url), 'utf8')
@@ -150,6 +153,35 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain('interface ChatCapsuleContext')
     expect(pluginContextSource).toContain('export interface ChatCapsuleContext')
     expect(pluginContextSource).toContain('export interface ChatLunaModelUsage')
+  })
+
+  it('keeps console entry data outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './console-entry'")
+    expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
+    expect(pluginSource).not.toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'browser'")
+    expect(consoleEntrySource).toContain('export function registerConsoleEntry')
+    expect(consoleEntrySource).toContain("dev: resolve(__dirname, '../client/index.ts')")
+    expect(consoleEntrySource).toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'browser'")
+  })
+
+  it('keeps WebQQ console listeners outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './webqq-console'")
+    expect(pluginSource).not.toContain("console.addListener('chat-capsule/webqq/contacts'")
+    expect(pluginSource).not.toContain("console.addListener('chat-capsule/webqq/messages'")
+    expect(webqqConsoleSource).toContain('export function registerWebQQConsoleListeners')
+    expect(webqqConsoleSource).toContain("console.addListener('chat-capsule/webqq/contacts'")
+    expect(webqqConsoleSource).toContain("console.addListener('chat-capsule/webqq/messages'")
+    expect(webqqConsoleSource).toContain("console.addListener('chat-capsule/webqq/messages/cache/save'")
+  })
+
+  it('keeps ChatLuna character lock syncing outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './chatluna-character-lock'")
+    expect(pluginSource).not.toContain('service.acquireResponseLock = async')
+    expect(pluginSource).not.toContain('service.releaseResponseLock = async')
+    expect(chatlunaCharacterLockSource).toContain('export function registerChatLunaCharacterLockSync')
+    expect(chatlunaCharacterLockSource).toContain('service.acquireResponseLock = async')
+    expect(chatlunaCharacterLockSource).toContain('service.releaseResponseLock = async')
+    expect(chatlunaCharacterLockSource).toContain("ctx.on('dispose'")
   })
 
   it('keeps WebQQ live element normalization outside the plugin entry', () => {

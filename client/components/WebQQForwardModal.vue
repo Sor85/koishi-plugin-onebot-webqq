@@ -76,12 +76,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { WebQQForwardItem } from './state'
+import type { WebQQForwardItem } from '../state'
 import {
   getForwardItemName,
   getWebQQElementRuns,
   type WebQQMessageElement,
-} from './utils/webqq-message-view'
+} from '../utils/webqq-message-view'
 
 defineProps<{
   dialog: WebQQMessageElement

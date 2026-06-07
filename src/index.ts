@@ -1,6 +1,8 @@
 import type { Session } from 'koishi'
-import { resolve } from 'path'
 import type { Config as PluginConfig } from './config'
+import { registerChatLunaCharacterLockSync } from './chatluna-character-lock'
+import { registerConsoleEntry } from './console-entry'
+import { registerWebQQConsoleListeners } from './webqq-console'
 import {
   parseThinkContent,
   readCharacterAfterChatText,
@@ -29,10 +31,6 @@ import {
 } from './onebot'
 import {
   chatCapsuleStorageTable,
-  loadKoishiWebQQMessageCache,
-  loadWebQQStorage,
-  saveKoishiWebQQMessageCache,
-  saveWebQQStorage,
 } from './webqq-storage'
 import type {
   ChatCapsuleStorageRow,
@@ -348,66 +346,17 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   }, (inner) => {
     const console = inner.console
     if (!console) return
-    console.addEntry(process.env.KOISHI_BASE ? [
-      process.env.KOISHI_BASE + '/dist/index.js',
-      process.env.KOISHI_BASE + '/dist/style.css',
-    ] : {
-      dev: resolve(__dirname, '../client/index.ts'),
-      prod: resolve(__dirname, '../dist'),
-    }, () => {
-      logSnapshot('entry')
-      return {
-        capsule: state.snapshot(),
-        debug,
-        webQQTheme: config.webQQTheme ?? 'fresh',
-        webQQChatStyle: config.webQQChatStyle ?? 'qq',
-        webQQColorMode: config.webQQColorMode ?? 'auto',
-        webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
-        useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
-        hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? false,
-        showWebQQAffinity: config.showWebQQAffinity ?? false,
-        showWebQQRelationship: config.showWebQQRelationship ?? false,
-        showWebQQCapsuleUnread: config.showWebQQCapsuleUnread ?? true,
-        webQQStorageBackend: config.webQQStorageBackend ?? 'browser',
-      }
+    registerConsoleEntry(console, state, config, { debug, logSnapshot })
+    registerWebQQConsoleListeners(console, inner, {
+      config,
+      webqq,
+      historyLimit,
+      liveMessages,
+      friendRequestNotices,
+      groupLeaveNotices,
+      consoleAuthOptions,
+      logger,
     })
-    console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/messages', async (query: WebQQMessageQuery) => {
-      const nextQuery = {
-        ...query,
-        limit: query.limit ?? historyLimit,
-      }
-      const history = await webqq.loadMessages(nextQuery)
-      return attachWebQQAffinityBadges(inner, config, mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit), logger)
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/group-info', (query: WebQQGroupInfoQuery) => {
-      return webqq.loadGroupInfo(query)
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/notices', () => {
-      return webqq.loadNotices([...friendRequestNotices.values(), ...groupLeaveNotices.values()])
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/notice-action', async (action: WebQQNoticeAction) => {
-      await webqq.handleNotice(action)
-      if (action.type !== 'friend-request') return
-      const notice = friendRequestNotices.get(action.id)
-      if (!notice) return
-      friendRequestNotices.set(action.id, {
-        ...notice,
-        status: action.approve ? 'approved' : 'rejected',
-      })
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/storage/load', () => {
-      return loadWebQQStorage(inner, config)
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/storage/save', (state: WebQQStoredState) => {
-      return saveWebQQStorage(inner, config, state)
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/messages/cache/load', (query: WebQQMessageCacheQuery) => {
-      return loadKoishiWebQQMessageCache(inner, config, query)
-    }, consoleAuthOptions)
-    console.addListener('chat-capsule/webqq/messages/cache/save', (payload: WebQQMessageCachePayload) => {
-      return saveKoishiWebQQMessageCache(inner, config, payload)
-    }, consoleAuthOptions)
   })
 
   ctx.inject({
@@ -415,33 +364,11 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   }, (inner) => {
     const service = inner.chatluna_character
     if (!service) return
-    const acquireResponseLock = service.acquireResponseLock
-    const releaseResponseLock = service.releaseResponseLock
-
-    // 包裹 character 响应锁以同步胶囊状态，dispose 时恢复原方法。
-    service.acquireResponseLock = async (session, message) => {
-      const acquired = await acquireResponseLock.call(service, session, message)
-      if (acquired) {
-        const input = createMessageInput(session, message)
-        input.user.name = readMemberName(session) || input.user.name
-        recordConversationActivity(state, input, `正在与 ${input.user.name || input.user.id} 对话`)
-        logSnapshot('character-lock')
-        broadcast()
-      }
-      return acquired
-    }
-
-    service.releaseResponseLock = async (session) => {
-      try {
-        await releaseResponseLock.call(service, session)
-      } finally {
-        clearActivity('character-release')
-      }
-    }
-
-    ctx.on('dispose', () => {
-      service.acquireResponseLock = acquireResponseLock
-      service.releaseResponseLock = releaseResponseLock
+    registerChatLunaCharacterLockSync(ctx, service, {
+      state,
+      logSnapshot,
+      broadcast,
+      clearActivity,
     })
   })
 

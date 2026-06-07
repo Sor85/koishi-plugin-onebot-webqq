@@ -12,7 +12,10 @@
 
 ## 当前模块
 
-- `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、console 事件桥、ChatLuna 状态监听、WebQQ live 消息桥接和存储注册
+- `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、ChatLuna 状态监听、WebQQ live 消息桥接和顶层注册编排
+- `src/chatluna-character-lock.ts`：ChatLuna character 响应锁同步 helper，负责包裹 acquire/release 并在 dispose 恢复原方法
+- `src/console-entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
+- `src/webqq-console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知、图片、引用和合并转发的读取与标准化
 - `src/onebot-actions.ts`：OneBot bot 选择和 action 调用 helper
@@ -58,13 +61,16 @@
 - `client/utils/webqq-message-view.ts`：WebQQ 消息展示纯函数，负责消息 key、消息合并、未读数、时间、临时思考消息构造、思考耗时、completed thinking 聚合、消息元素分组、合并转发预览文案、消息聚类 class、群成员名称和发送者徽标判断
 - `client/utils/webqq-notice-view.ts`：WebQQ 通知展示纯函数，负责通知排序、申请备注拆行、已处理状态文案和可处理状态判断
 - `client/utils/webqq-theme-view.ts`：WebQQ 主题色展示纯函数，负责 accent 颜色校验、头像主题色优先级和 CSS 变量对象生成
+- `client/api/webqq.ts`：前端 WebQQ Console RPC thin wrapper，负责封装 `send('chat-capsule/webqq/...')` 调用和默认返回值
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
-- `client/WebQQContactList.vue`：WebQQ 最近会话、好友分组和群组列表展示组件
-- `client/WebQQForwardModal.vue`：WebQQ 合并转发消息弹窗展示组件
-- `client/WebQQGroupInfoPanel.vue`：WebQQ 群信息面板展示组件
-- `client/WebQQImagePreview.vue`：WebQQ 图片预览遮罩展示组件
-- `client/WebQQNoticeMenu.vue`：WebQQ 好友申请和群通知菜单展示组件
-- `client/WebQQObserver.vue`：WebQQ 主界面，当前包含联系人、聊天记录、通知、群信息、缓存、滚动、图片预览和面板编排
+- `client/components/WebQQSidebar.vue`：WebQQ 侧栏展示组件，负责 tab、搜索、通知入口和联系人列表组合
+- `client/components/WebQQMessageList.vue`：WebQQ 消息列表展示组件，负责消息气泡、图片、引用、卡片、合并转发预览和 completed thinking 展示
+- `client/components/WebQQContactList.vue`：WebQQ 最近会话、好友分组和群组列表展示组件
+- `client/components/WebQQForwardModal.vue`：WebQQ 合并转发消息弹窗展示组件
+- `client/components/WebQQGroupInfoPanel.vue`：WebQQ 群信息面板展示组件
+- `client/components/WebQQImagePreview.vue`：WebQQ 图片预览遮罩展示组件
+- `client/components/WebQQNoticeMenu.vue`：WebQQ 好友申请和群通知菜单展示组件
+- `client/WebQQObserver.vue`：WebQQ 主界面编排组件，负责联系人、消息、通知、群信息、缓存、滚动、图片预览和面板状态连接
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
 - `client/webqq-sender-metadata.ts`：前端群成员身份缓存补齐
 - `client/style.scss`：胶囊和 WebQQ 面板全部样式
@@ -72,6 +78,9 @@
 ## 简单目录规则
 
 - `src/config.ts`：后端插件配置 schema 和配置类型
+- `src/chatluna-character-lock.ts`：后端 ChatLuna character 响应锁同步
+- `src/console-entry.ts`：后端 Koishi Console 前端入口注册
+- `src/webqq-console.ts`：后端 WebQQ Console RPC listener 注册
 - `src/state.ts`：后端内存状态机
 - `src/chatluna-message-input.ts`：后端 ChatLuna message/session 输入组装 helper
 - `src/structured-text.ts`：后端通用文本读取 helper
@@ -97,7 +106,9 @@
 - `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
 - `src/*.ts`：后端小模块，按真实职责命名，避免新建空泛目录
-- `client/*.vue`：前端入口和 WebQQ 展示组件，状态与请求编排继续留在 stores 或主界面组件
+- `client/api/`：前端 Console RPC thin wrapper，只放网络事件调用和默认返回值，不放 UI 状态
+- `client/components/`：前端展示组件，按完整展示区域拆分，避免拆单个按钮或图标
+- `client/*.vue`：前端入口和仍未迁移的 WebQQ 展示组件，状态与请求编排继续留在 stores 或主界面组件
 - `client/stores/`：后续拆出的前端响应式状态或 composable
 - `client/utils/`：前端纯函数和浏览器小工具
 - `client/types.ts`：后续如果前端类型继续增长，再从 `client/state.ts` 拆出
@@ -108,13 +119,14 @@
 - 优先拆超过 500 行且经常改动的文件
 - 优先提取独立、低副作用、已有测试覆盖的逻辑
 - 不改事件名、配置项、存储 key、消息结构、CSS class 和可见文案
+- 不继续拆单个按钮、标题、图标或几行模板这类微组件；前端组件拆分必须对应完整展示区域或明确状态边界
 - 不为了目录好看新增空抽象
 - 不顺手重写稳定逻辑
 
 ## 当前高风险区域
 
-- `src/index.ts` 同时承担插件入口、console RPC、live 消息标准化、ChatLuna 状态、数据库存储和好感度读取
-- `client/WebQQObserver.vue` 同时承担视图、请求、缓存、滚动、通知和多块面板编排
+- `src/index.ts` 已拆出 Console entry、WebQQ RPC listener 和 character 响应锁同步，但仍承担插件入口、live 消息标准化、ChatLuna 状态和顶层注册编排
+- `client/WebQQObserver.vue` 已拆出 API、侧栏和消息列表，但仍承担请求编排、缓存、滚动、通知和多块面板连接
 - `client/style.scss` 体量过大，且强绑定 `Capsule.vue` 和 `WebQQObserver.vue` 的 class 结构
 - `src/index.ts` 和 `src/onebot.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

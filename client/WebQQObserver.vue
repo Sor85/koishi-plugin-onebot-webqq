@@ -1,82 +1,34 @@
 <template>
   <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`, `is-color-${webQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
-    <aside class="chat-capsule-webqq__sidebar">
-      <div class="chat-capsule-webqq__tabs-row">
-        <div class="chat-capsule-webqq__tabs">
-          <button :class="{ 'is-active': activeTab === 'recent' }" type="button" @click="selectTab('recent')">
-            <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="M12 7v5l3 2"></path>
-            </svg>
-            最近
-          </button>
-          <button :class="{ 'is-active': activeTab === 'friends' }" type="button" @click="selectTab('friends')">
-            <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8" r="4"></circle>
-              <path d="M5 21a7 7 0 0 1 14 0"></path>
-            </svg>
-            好友
-          </button>
-          <button :class="{ 'is-active': activeTab === 'groups' }" type="button" @click="selectTab('groups')">
-            <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="9" cy="8" r="3.5"></circle>
-              <circle cx="17" cy="9" r="3"></circle>
-              <path d="M2.5 21a6.5 6.5 0 0 1 13 0"></path>
-              <path d="M14 16.5A5 5 0 0 1 21.5 21"></path>
-            </svg>
-            群组
-          </button>
-        </div>
-        <span class="chat-capsule-webqq__notify-wrap" @click.stop>
-          <button :class="['chat-capsule-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="openNotices">
-            <svg class="chat-capsule-webqq__notify-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15 18a3 3 0 0 1-6 0"></path>
-              <path d="M19 16H5c1.4-1.4 2-3.2 2-5.5a5 5 0 0 1 10 0c0 2.3.6 4.1 2 5.5Z"></path>
-            </svg>
-          </button>
-          <WebQQNoticeMenu
-            v-if="noticeOpen"
-            v-model:tab="noticeMenuTab"
-            :loading="noticeLoading"
-            :error-text="noticeErrorText"
-            :notices="filteredNotices"
-            :handling-notice-id="handlingNoticeId"
-            :with-proxy="withProxy"
-            :format-notice-time="formatNoticeTime"
-            @handle="handleNotice"
-          />
-        </span>
-      </div>
-      <div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">
-        <svg class="chat-capsule-webqq__search-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="11" cy="11" r="7"></circle>
-          <path d="m16 16 4 4"></path>
-        </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="activeTab === 'friends' ? '搜索好友...' : '搜索群组...'"
-        >
-      </div>
-      <WebQQContactList
-        :active-tab="activeTab"
-        :recent-items="recentItems"
-        :visible-friend-categories="visibleFriendCategories"
-        :visible-friends="visibleFriends"
-        :visible-groups="visibleGroups"
-        :current-peer-id="currentPeerId"
-        :with-proxy="withProxy"
-        :get-unread-count="getUnreadCount"
-        :get-unread-text="getUnreadText"
-        :get-contact-subtitle="getContactSubtitle"
-        :get-contact-time="getContactTime"
-        :format-list-time="formatListTime"
-        :get-group-subtitle="getGroupSubtitle"
-        @select-recent="selectRecent"
-        @select-friend="selectFriend"
-        @select-group="selectGroup"
-      />
-    </aside>
+    <WebQQSidebar
+      v-model:search-query="searchQuery"
+      v-model:notice-menu-tab="noticeMenuTab"
+      :active-tab="activeTab"
+      :recent-items="recentItems"
+      :visible-friend-categories="visibleFriendCategories"
+      :visible-friends="visibleFriends"
+      :visible-groups="visibleGroups"
+      :current-peer-id="currentPeerId"
+      :notice-open="noticeOpen"
+      :notice-loading="noticeLoading"
+      :notice-error-text="noticeErrorText"
+      :filtered-notices="filteredNotices"
+      :handling-notice-id="handlingNoticeId"
+      :with-proxy="withProxy"
+      :get-unread-count="getUnreadCount"
+      :get-unread-text="getUnreadText"
+      :get-contact-subtitle="getContactSubtitle"
+      :get-contact-time="getContactTime"
+      :format-list-time="formatListTime"
+      :format-notice-time="formatNoticeTime"
+      :get-group-subtitle="getGroupSubtitle"
+      @select-tab="selectTab"
+      @select-recent="selectRecent"
+      @select-friend="selectFriend"
+      @select-group="selectGroup"
+      @open-notices="openNotices"
+      @handle-notice="handleNotice"
+    />
     <section class="chat-capsule-webqq__chat">
       <div class="chat-capsule-webqq__chat-main">
         <header class="chat-capsule-webqq__chat-header">
@@ -97,146 +49,35 @@
         </header>
         <div class="chat-capsule-webqq__chat-body">
           <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
-            <template v-if="loading">
-              <div class="chat-capsule-webqq__placeholder">加载中</div>
-            </template>
-            <template v-else-if="errorText">
-              <div class="chat-capsule-webqq__placeholder is-error">{{ errorText }}</div>
-            </template>
-            <template v-else-if="!currentChat">
-              <div class="chat-capsule-webqq__placeholder">选择一个会话</div>
-            </template>
-            <template v-else-if="!visibleMessages.length">
-              <div class="chat-capsule-webqq__placeholder">暂无消息</div>
-            </template>
-            <template v-else>
-              <template v-for="(message, index) in visibleMessages" :key="message.id || message.sequence">
-                <div
-                  :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message) }]"
-                >
-                  <span class="chat-capsule-webqq__message-avatar-wrap">
-                    <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
-                    <span v-if="message.senderAffinity != null && showWebQQAffinity" class="chat-capsule-webqq__message-affinity">
-                      <svg class="chat-capsule-webqq__message-affinity-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
-                      </svg>
-                      {{ message.senderAffinity }}
-                    </span>
-                  </span>
-                  <div class="chat-capsule-webqq__message-content">
-                    <div v-if="!isMergedMessage(index)" class="chat-capsule-webqq__sender-line">
-                      <template v-if="message.direction === 'outgoing'">
-                        <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
-                        <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
-                        <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
-                        <span v-if="message.senderRelationship && showWebQQRelationship" class="chat-capsule-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
-                      </template>
-                      <template v-if="message.direction === 'incoming'">
-                        <span class="chat-capsule-webqq__message-name">{{ message.senderName }}</span>
-                        <span v-if="message.senderRelationship && showWebQQRelationship" class="chat-capsule-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
-                        <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="chat-capsule-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
-                        <span v-if="getSenderAuthorityText(message)" :class="['chat-capsule-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
-                      </template>
-                    </div>
-                    <div class="chat-capsule-webqq__message-body">
-                      <div v-if="isImageOnlyMessage(message)" class="chat-capsule-webqq__message-media">
-                        <button class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(message.elements[0].url)">
-                          <img :src="withProxy(message.elements[0].url)" alt="图片" @load="handleMessageImageLoad">
-                        </button>
-                      </div>
-                      <div v-else class="chat-capsule-webqq__bubble">
-                        <span v-if="isBotThinkingMessage(message)" class="chat-capsule-webqq__thinking-dots" aria-label="机器人正在思考">
-                          <span v-for="dot in 3" :key="dot" class="chat-capsule-webqq__thinking-dot"></span>
-                        </span>
-                        <template v-else v-for="(run, runIndex) in getWebQQElementRuns(message.elements)" :key="`${message.id}:run:${runIndex}`">
-                          <span v-if="run.type === 'inline'" class="chat-capsule-webqq__inline-run">
-                            <template v-for="element in run.elements" :key="`${message.id}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
-                              <span v-if="element.type === 'text'">{{ element.text }}</span>
-                              <span v-else>{{ element.text || message.summary }}</span>
-                            </template>
-                          </span>
-                          <div v-else-if="run.element.type === 'quote'" class="chat-capsule-webqq__quote">
-                            <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
-                            <span>{{ run.element.text || '[引用消息]' }}</span>
-                          </div>
-                          <button
-                            v-else-if="run.element.type === 'forward'"
-                            class="chat-capsule-webqq__quote chat-capsule-webqq__forward"
-                            type="button"
-                            :disabled="!run.element.items?.length"
-                            aria-label="查看合并转发消息"
-                            @click.stop="openForwardDialog(run.element)"
-                          >
-                            <strong class="chat-capsule-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
-                            <template v-if="run.element.items?.length">
-                              <span v-for="(item, itemIndex) in getForwardPreviewItems(run.element)" :key="`${message.id}:forward:${runIndex}:${itemIndex}`">
-                                {{ getForwardItemName(item) }}：{{ getForwardPreviewText(item) }}
-                              </span>
-                              <span class="chat-capsule-webqq__forward-entry">查看{{ run.element.items.length }}条转发消息</span>
-                            </template>
-                            <span v-else>{{ run.element.text || '[合并转发]' }}</span>
-                          </button>
-                          <div
-                            v-else-if="run.element.type === 'card'"
-                            class="chat-capsule-webqq__card"
-                          >
-                            <img v-if="run.element.imageUrl" class="chat-capsule-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
-                            <span class="chat-capsule-webqq__card-content">
-                              <strong class="chat-capsule-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
-                              <span v-if="run.element.text" class="chat-capsule-webqq__card-desc">{{ run.element.text }}</span>
-                              <span v-if="run.element.source" class="chat-capsule-webqq__card-source">{{ run.element.source }}</span>
-                            </span>
-                          </div>
-                          <button v-else-if="run.element.type === 'image' && run.element.url" class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="openImagePreview(run.element.url)">
-                            <img :src="withProxy(run.element.url)" alt="图片" @load="handleMessageImageLoad">
-                          </button>
-                          <span v-else>{{ run.element.text || message.summary }}</span>
-                        </template>
-                      </div>
-                      <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  v-if="getLastOutgoingClusterThinkingMessage(index)"
-                  class="chat-capsule-webqq__thinking-row"
-                >
-                  <button
-                    class="chat-capsule-webqq__thinking-toggle"
-                    type="button"
-                    :aria-expanded="isThinkingExpanded(getLastOutgoingClusterThinkingMessage(index))"
-                    @click="toggleThinking(getLastOutgoingClusterThinkingMessage(index))"
-                  >
-                    <span
-                      v-if="getLastOutgoingClusterThinkingMessage(index).thinking.usage"
-                      class="chat-capsule-webqq__thinking-usage"
-                      aria-label="本次 token 用量"
-                    >
-                      <svg class="chat-capsule-webqq__thinking-usage-icon is-input" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 20V8"></path>
-                        <path d="m7 13 5-5 5 5"></path>
-                        <path d="M5 4h14"></path>
-                      </svg>
-                      <span>{{ getLastOutgoingClusterThinkingMessage(index).thinking.usage.inputTokens }}</span>
-                      <svg class="chat-capsule-webqq__thinking-usage-icon is-output" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 4v12"></path>
-                        <path d="m7 11 5 5 5-5"></path>
-                        <path d="M5 20h14"></path>
-                      </svg>
-                      <span>{{ getLastOutgoingClusterThinkingMessage(index).thinking.usage.outputTokens }}</span>
-                    </span>
-                    <span>{{ formatThinkingDuration(getLastOutgoingClusterThinkingMessage(index).thinking.durationMs) }}</span>
-                    <svg class="chat-capsule-webqq__thinking-chevron" viewBox="0 0 16 16" aria-hidden="true">
-                      <path d="M6 3.5 10.5 8 6 12.5"></path>
-                    </svg>
-                  </button>
-                  <div
-                    v-if="isThinkingExpanded(getLastOutgoingClusterThinkingMessage(index))"
-                    class="chat-capsule-webqq__thinking-content"
-                  >{{ getLastOutgoingClusterThinkingMessage(index).thinking.content }}</div>
-                </div>
-              </template>
-            </template>
+            <WebQQMessageList
+              :loading="loading"
+              :error-text="errorText"
+              :has-current-chat="!!currentChat"
+              :visible-messages="visibleMessages"
+              :show-web-q-q-affinity="showWebQQAffinity"
+              :show-web-q-q-relationship="showWebQQRelationship"
+              :hide-web-q-q-group-level="hideWebQQGroupLevel"
+              :with-proxy="withProxy"
+              :is-bot-thinking-message="isBotThinkingMessage"
+              :get-message-cluster-class="getMessageClusterClass"
+              :is-merged-message="isMergedMessage"
+              :get-sender-authority-text="getSenderAuthorityText"
+              :get-sender-authority-class="getSenderAuthorityClass"
+              :format-sender-level="formatSenderLevel"
+              :is-image-only-message="isImageOnlyMessage"
+              :get-web-q-q-element-runs="getWebQQElementRuns"
+              :get-forward-preview-items="getForwardPreviewItems"
+              :get-forward-item-name="getForwardItemName"
+              :get-forward-preview-text="getForwardPreviewText"
+              :format-time="formatTime"
+              :get-last-outgoing-cluster-thinking-message="getLastOutgoingClusterThinkingMessage"
+              :is-thinking-expanded="isThinkingExpanded"
+              :format-thinking-duration="formatThinkingDuration"
+              @open-image="openImagePreview"
+              @image-load="handleMessageImageLoad"
+              @open-forward="openForwardDialog"
+              @toggle-thinking="toggleThinking"
+            />
           </div>
           <Transition name="webqq-scroll-bottom">
             <button
@@ -289,14 +130,15 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { receive, send, withProxy } from '@koishijs/client'
-import WebQQContactList from './WebQQContactList.vue'
-import WebQQForwardModal from './WebQQForwardModal.vue'
-import WebQQGroupInfoPanel from './WebQQGroupInfoPanel.vue'
-import WebQQImagePreview from './WebQQImagePreview.vue'
-import WebQQNoticeMenu from './WebQQNoticeMenu.vue'
+import { receive, withProxy } from '@koishijs/client'
+import WebQQMessageList from './components/WebQQMessageList.vue'
+import WebQQSidebar from './components/WebQQSidebar.vue'
+import WebQQForwardModal from './components/WebQQForwardModal.vue'
+import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
+import WebQQImagePreview from './components/WebQQImagePreview.vue'
+import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices } from './api/webqq'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
-import type { WebQQContacts, WebQQFriend, WebQQGroup, WebQQGroupInfo, WebQQGroupMember, WebQQLiveMessage, WebQQMessage, WebQQNotice } from './state'
+import type { WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
 import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
@@ -371,20 +213,6 @@ const historyExhausted = ref(false)
 const loading = ref(false)
 const errorText = ref('')
 
-async function requestNotices() {
-  return await send('chat-capsule/webqq/notices') as WebQQNotice[] || []
-}
-
-async function approveNotice(notice: WebQQNotice, approve: boolean) {
-  await send('chat-capsule/webqq/notice-action', {
-    id: notice.id,
-    type: notice.type,
-    flag: notice.flag,
-    subType: notice.subType,
-    approve,
-  })
-}
-
 const {
   noticeOpen,
   noticeMenuTab,
@@ -394,13 +222,11 @@ const {
   filteredNotices,
   openNotices,
   handleNotice,
-} = useWebQQNotices({ requestNotices, approveNotice })
+} = useWebQQNotices({ requestNotices: requestWebQQNotices, approveNotice: approveWebQQNotice })
 
-async function requestGroupInfo() {
+async function requestCurrentGroupInfo() {
   if (currentChat.value?.type !== 'group') return { announcements: [], members: [] }
-  return await send('chat-capsule/webqq/group-info', {
-    groupId: currentChat.value.peerId,
-  }) as WebQQGroupInfo || { announcements: [], members: [] }
+  return requestWebQQGroupInfo(currentChat.value.peerId)
 }
 
 const {
@@ -412,7 +238,7 @@ const {
   visibleGroupMembers,
   loadGroupInfo,
   toggleGroupInfo,
-} = useWebQQGroupInfo(currentChat, { requestGroupInfo })
+} = useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })
 
 const webQQEffectiveAccentColor = computed(() => getWebQQEffectiveAccentColor(
   useBotAvatarThemeColor.value,
@@ -479,10 +305,6 @@ function openForwardDialog(element: WebQQMessageElement) {
   noticeOpen.value = false
 }
 
-async function requestWebQQContacts() {
-  return await send('chat-capsule/webqq/contacts') as WebQQContacts || { friends: [], groups: [] }
-}
-
 async function loadContacts() {
   loading.value = true
   errorText.value = ''
@@ -509,10 +331,10 @@ async function loadMessages() {
   try {
     const cachedMessages = await loadCachedWebQQMessages(currentChat.value.type, currentChat.value.peerId)
     messages.value = cachedMessages
-    messages.value = await send('chat-capsule/webqq/messages', {
+    messages.value = await requestWebQQMessages({
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
-    }) as WebQQMessage[] || []
+    })
     messages.value = mergeMessages(cachedMessages, messages.value)
     rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, messages.value)
     updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])
@@ -542,11 +364,11 @@ async function loadOlderMessages() {
   const previousCount = messages.value.length
   historyLoading.value = true
   try {
-    const olderMessages = await send('chat-capsule/webqq/messages', {
+    const olderMessages = await requestWebQQMessages({
       type: currentChat.value.type,
       peerId: currentChat.value.peerId,
       beforeSequence: messages.value[0]?.sequence,
-    }) as WebQQMessage[] || []
+    })
     rememberMessageSenderMetadata(currentChat.value.type, currentChat.value.peerId, olderMessages)
     messages.value = mergeMessages(olderMessages, messages.value)
     updateConversationSummary(currentChat.value.type, currentChat.value.peerId, messages.value[messages.value.length - 1])

@@ -69,8 +69,8 @@
 </template>
 
 <script lang="ts" setup>
-import type { WebQQFriend, WebQQGroup } from './state'
-import type { WebQQFriendCategoryView, WebQQRecentItem } from './utils/webqq-contact-view'
+import type { WebQQFriend, WebQQGroup } from '../state'
+import type { WebQQFriendCategoryView, WebQQRecentItem } from '../utils/webqq-contact-view'
 
 type WebQQContactType = 'friend' | 'group'
 type WebQQTab = 'recent' | 'friends' | 'groups'
