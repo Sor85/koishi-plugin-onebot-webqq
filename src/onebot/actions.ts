@@ -1,4 +1,4 @@
-import { isRecord } from './onebot-data'
+import { isRecord } from './data'
 
 export interface OneBotContext {
   bots?: unknown[]

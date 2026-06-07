@@ -1,5 +1,5 @@
-import type { WebQQMessageElement } from './onebot'
-import { getStringField } from './onebot-data'
+import type { WebQQMessageElement } from './types'
+import { getStringField } from './data'
 
 export function normalizeFaceElement(data: Record<string, unknown>): WebQQMessageElement {
   const summary = getStringField(data, ['summary', 'text', 'name'])

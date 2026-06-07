@@ -5,28 +5,28 @@ import {
   toArrayResult,
   toOneBotId,
   toTimestampMs,
-} from './onebot-data'
+} from './data'
 import {
   callAction,
   type OneBotBot,
-} from './onebot-actions'
-import { getTextValue, normalizeMentionMarkupText } from './onebot-text'
-import { normalizeCardElement } from './onebot/card'
+} from './actions'
+import { getTextValue, normalizeMentionMarkupText } from './text'
+import { normalizeCardElement } from './card'
 import {
   getUserAvatar,
   normalizeGroupRole,
-} from './onebot-display'
+} from './display'
 import {
   normalizeImageElement,
-} from './onebot-images'
+} from './images'
 import {
   normalizeFaceElement,
   summarizeElements,
-} from './onebot-message-elements'
+} from './message-elements'
 import type {
   WebQQMessage,
   WebQQMessageElement,
-} from './onebot-types'
+} from './types'
 
 export async function resolveOneBotQuote(bot: OneBotBot, id: string, imageUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
   const item = getActionData(await callAction(bot, 'get_msg', { message_id: toOneBotId(id) }))

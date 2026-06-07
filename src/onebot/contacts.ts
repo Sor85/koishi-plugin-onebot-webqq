@@ -1,11 +1,11 @@
-import type { WebQQChatType, WebQQFriend, WebQQFriendCategory, WebQQGroup } from './onebot'
+import type { WebQQChatType, WebQQFriend, WebQQFriendCategory, WebQQGroup } from './types'
 import {
   getNumberField,
   getStringField,
   isRecord,
   toArrayResult,
-} from './onebot-data'
-import { getGroupAvatar, getUserAvatar } from './onebot-display'
+} from './data'
+import { getGroupAvatar, getUserAvatar } from './display'
 
 export function normalizeFriend(raw: unknown, category?: { id: string; name: string }): WebQQFriend {
   const item = isRecord(raw) ? raw : {}

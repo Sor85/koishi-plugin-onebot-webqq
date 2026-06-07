@@ -1,12 +1,12 @@
-import type { WebQQNotice } from './onebot'
+import type { WebQQNotice } from './types'
 import {
   getBooleanField,
   getStringField,
   isRecord,
   toArrayResult,
   toTimestampMs,
-} from './onebot-data'
-import { getGroupAvatar } from './onebot-display'
+} from './data'
+import { getGroupAvatar } from './display'
 
 function isHandledGroupNotice(raw: unknown) {
   if (!isRecord(raw)) return false

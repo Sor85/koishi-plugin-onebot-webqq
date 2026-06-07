@@ -1,5 +1,5 @@
-import { getStringField, isRecord } from '../onebot-data'
-import type { WebQQMessageElement } from '../onebot-types'
+import { getStringField, isRecord } from './data'
+import type { WebQQMessageElement } from './types'
 
 function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
   if (isRecord(value)) return value

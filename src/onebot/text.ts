@@ -1,4 +1,4 @@
-import { isRecord } from './onebot-data'
+import { isRecord } from './data'
 
 const mentionAttributeKeys = ['name', 'nickname', 'nick', 'card', 'text', 'display', 'qq', 'id', 'user_id', 'uin']
 

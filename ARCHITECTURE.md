@@ -18,17 +18,18 @@
 - `src/webqq-console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知和图片 action 的服务编排
-- `src/onebot-actions.ts`：OneBot bot 选择和 action 调用 helper
+- `src/onebot/actions.ts`：OneBot bot 选择和 action 调用 helper
 - `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析 helper
-- `src/onebot-contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化 helper
-- `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换 helper
-- `src/onebot-display.ts`：OneBot WebQQ 展示字段派生 helper，负责头像 URL、群角色和群副标题
-- `src/onebot-group-info.ts`：OneBot 群成员和群公告标准化 helper
-- `src/onebot-images.ts`：OneBot 图片元素和 `get_image` 结果解析 helper
-- `src/onebot-message-elements.ts`：OneBot 表情元素和消息元素摘要 helper
-- `src/onebot-messages.ts`：OneBot 历史消息、引用和合并转发消息标准化 helper
-- `src/onebot-notices.ts`：OneBot 群系统通知标准化 helper
-- `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取 helper
+- `src/onebot/contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化 helper
+- `src/onebot/data.ts`：OneBot 返回值字段读取和基础数据转换 helper
+- `src/onebot/display.ts`：OneBot WebQQ 展示字段派生 helper，负责头像 URL、群角色和群副标题
+- `src/onebot/group-info.ts`：OneBot 群成员和群公告标准化 helper
+- `src/onebot/images.ts`：OneBot 图片元素和 `get_image` 结果解析 helper
+- `src/onebot/message-elements.ts`：OneBot 表情元素和消息元素摘要 helper
+- `src/onebot/messages.ts`：OneBot 历史消息、引用和合并转发消息标准化 helper
+- `src/onebot/notices.ts`：OneBot 群系统通知标准化 helper
+- `src/onebot/text.ts`：OneBot 文本和 @ 标记内容提取 helper
+- `src/onebot/types.ts`：OneBot WebQQ DTO 类型
 - `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
 - `src/chatluna-message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
 - `src/structured-text.ts`：通用结构化文本读取 helper，用于从 LangChain 消息、Koishi 元素和对象字段中提取文本
@@ -99,19 +100,20 @@
 - `src/chatluna-message-input.ts`：后端 ChatLuna message/session 输入组装 helper
 - `src/structured-text.ts`：后端通用文本读取 helper
 - `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
-- `src/onebot.ts`：OneBot 协议读取和数据标准化
-- `src/onebot-actions.ts`：OneBot bot 选择和 action 调用
+- `src/onebot.ts`：OneBot 协议读取和数据标准化入口，保留对外导入路径
+- `src/onebot/actions.ts`：OneBot bot 选择和 action 调用
 - `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析
-- `src/onebot-contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化
-- `src/onebot-data.ts`：OneBot 返回值字段读取和基础数据转换
-- `src/onebot-display.ts`：OneBot WebQQ 展示字段派生
-- `src/onebot-group-info.ts`：OneBot 群成员和群公告标准化
-- `src/onebot-images.ts`：OneBot 图片元素和 `get_image` 结果解析
-- `src/onebot-message-elements.ts`：OneBot 表情元素和消息元素摘要
-- `src/onebot-messages.ts`：OneBot 历史消息、引用和合并转发消息标准化
-- `src/onebot-notices.ts`：OneBot 群系统通知标准化
-- `src/onebot-text.ts`：OneBot 文本和 @ 标记内容提取
-- `src/onebot/`：后端 OneBot 子领域 helper，按职责逐步迁入，不一次性大搬家
+- `src/onebot/contacts.ts`：OneBot 好友、好友分组、群列表和最近会话类型标准化
+- `src/onebot/data.ts`：OneBot 返回值字段读取和基础数据转换
+- `src/onebot/display.ts`：OneBot WebQQ 展示字段派生
+- `src/onebot/group-info.ts`：OneBot 群成员和群公告标准化
+- `src/onebot/images.ts`：OneBot 图片元素和 `get_image` 结果解析
+- `src/onebot/message-elements.ts`：OneBot 表情元素和消息元素摘要
+- `src/onebot/messages.ts`：OneBot 历史消息、引用和合并转发消息标准化
+- `src/onebot/notices.ts`：OneBot 群系统通知标准化
+- `src/onebot/text.ts`：OneBot 文本和 @ 标记内容提取
+- `src/onebot/types.ts`：OneBot WebQQ DTO 类型
+- `src/onebot/`：后端 OneBot 子领域 helper，按职责放置 OneBot 相关纯函数和类型
 - `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
 - `src/webqq-event-notices.ts`：后端 WebQQ session 事件通知 payload 构造
 - `src/webqq-group-sender-metadata.ts`：后端 WebQQ 群成员身份 metadata 查询
@@ -146,5 +148,5 @@
 - `src/index.ts` 已拆出 Console entry、WebQQ RPC listener、character 响应锁同步和 WebQQ live runtime，但仍承担插件入口、ChatLuna 活动状态和顶层注册编排
 - `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表、消息历史加载和实时消息接收，但仍承担联系人加载、通知和多块面板连接
 - `client/style.scss` 已拆出主要界面区域样式和主题色覆盖，但全局 keyframes、reduced-motion 和响应式样式仍集中，需要继续谨慎按职责处理
-- `src/webqq-live-runtime.ts` 和 `src/onebot-messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
+- `src/webqq-live-runtime.ts` 和 `src/onebot/messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

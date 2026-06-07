@@ -1,11 +1,11 @@
-import type { WebQQGroupAnnouncement, WebQQGroupMember } from './onebot'
+import type { WebQQGroupAnnouncement, WebQQGroupMember } from './types'
 import {
   getStringField,
   isRecord,
   toTimestampMs,
-} from './onebot-data'
-import { getTextValue } from './onebot-text'
-import { getUserAvatar, normalizeGroupRole } from './onebot-display'
+} from './data'
+import { getTextValue } from './text'
+import { getUserAvatar, normalizeGroupRole } from './display'
 
 export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
   const item = isRecord(raw) ? raw : {}
