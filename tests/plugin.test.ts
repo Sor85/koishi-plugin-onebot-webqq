@@ -30,14 +30,14 @@ import {
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
 } from '../src/webqq/live-cache'
-import { createMessageInput } from '../src/chatluna-message-input'
+import { createMessageInput } from '../src/chatluna/message-input'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
-const chatlunaCharacterLockSource = await readFile(new URL('../src/chatluna-character-lock.ts', import.meta.url), 'utf8')
+const chatlunaCharacterLockSource = await readFile(new URL('../src/chatluna/character-lock.ts', import.meta.url), 'utf8')
 const consoleEntrySource = await readFile(new URL('../src/console-entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const webqqConsoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
-const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna-message-input.ts', import.meta.url), 'utf8')
+const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna/message-input.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq/live-elements.ts', import.meta.url), 'utf8')
 const webqqLiveCacheSource = await readFile(new URL('../src/webqq/live-cache.ts', import.meta.url), 'utf8')
 const webqqLiveMessageSource = await readFile(new URL('../src/webqq/live-message.ts', import.meta.url), 'utf8')
@@ -176,7 +176,7 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps ChatLuna character lock syncing outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './chatluna-character-lock'")
+    expect(pluginSource).toContain("from './chatluna/character-lock'")
     expect(pluginSource).not.toContain('service.acquireResponseLock = async')
     expect(pluginSource).not.toContain('service.releaseResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain('export function registerChatLunaCharacterLockSync')
@@ -470,7 +470,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './chatluna-message-input'")
+    expect(pluginSource).toContain("from './chatluna/message-input'")
     expect(pluginSource).not.toContain('function createMessageInput(')
     expect(chatlunaMessageInputSource).toContain('export function createMessageInput')
     expect(createMessageInput(session, {

@@ -1,6 +1,6 @@
 import type { Session } from 'koishi'
 import type { Config as PluginConfig } from './config'
-import { registerChatLunaCharacterLockSync } from './chatluna-character-lock'
+import { registerChatLunaCharacterLockSync } from './chatluna/character-lock'
 import { registerConsoleEntry } from './console-entry'
 import { registerWebQQConsoleListeners } from './webqq/console'
 import {
@@ -43,7 +43,7 @@ import {
   createWebQQLiveRuntime,
   type ChatLunaCharacterAfterChatPayload,
 } from './webqq/live-runtime'
-import { createMessageInput, type ChatLunaMessage } from './chatluna-message-input'
+import { createMessageInput, type ChatLunaMessage } from './chatluna/message-input'
 import type {
   ChatCapsuleContext,
   ChatLunaModelUsage,

@@ -13,7 +13,7 @@
 ## 当前模块
 
 - `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、ChatLuna 状态监听和顶层注册编排
-- `src/chatluna-character-lock.ts`：ChatLuna character 响应锁同步 helper，负责包裹 acquire/release 并在 dispose 恢复原方法
+- `src/chatluna/character-lock.ts`：ChatLuna character 响应锁同步 helper，负责包裹 acquire/release 并在 dispose 恢复原方法
 - `src/console-entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
 - `src/webqq/console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
@@ -31,9 +31,9 @@
 - `src/onebot/text.ts`：OneBot 文本和 @ 标记内容提取 helper
 - `src/onebot/types.ts`：OneBot WebQQ DTO 类型
 - `src/state.ts`：后端胶囊状态机，负责收发计数、当前会话、模型用量和思考时长
-- `src/chatluna-message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
+- `src/chatluna/message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
 - `src/structured-text.ts`：通用结构化文本读取 helper，用于从 LangChain 消息、Koishi 元素和对象字段中提取文本
-- `src/chatluna-thinking.ts`：ChatLuna character 回复解析，负责读取 after-chat 文本并提取 `<think>` 内容
+- `src/chatluna/thinking.ts`：ChatLuna character 回复解析，负责读取 after-chat 文本并提取 `<think>` 内容
 - `src/webqq/affinity.ts`：ChatLuna 好感度记录读取和 WebQQ 消息徽标补齐
 - `src/webqq/event-notices.ts`：WebQQ 事件通知构造 helper，负责把 Koishi 好友申请和群成员退出事件转换为 WebQQNotice
 - `src/webqq/group-sender-metadata.ts`：WebQQ 群成员身份 metadata 查询 helper，负责 OneBot 群成员信息 action 调用和返回值整理
@@ -93,13 +93,14 @@
 ## 简单目录规则
 
 - `src/config.ts`：后端插件配置 schema 和配置类型
-- `src/chatluna-character-lock.ts`：后端 ChatLuna character 响应锁同步
+- `src/chatluna/character-lock.ts`：后端 ChatLuna character 响应锁同步
 - `src/console-entry.ts`：后端 Koishi Console 前端入口注册
 - `src/webqq/console.ts`：后端 WebQQ Console RPC listener 注册
 - `src/state.ts`：后端内存状态机
-- `src/chatluna-message-input.ts`：后端 ChatLuna message/session 输入组装 helper
+- `src/chatluna/message-input.ts`：后端 ChatLuna message/session 输入组装 helper
 - `src/structured-text.ts`：后端通用文本读取 helper
-- `src/chatluna-thinking.ts`：ChatLuna 思考内容解析 helper
+- `src/chatluna/thinking.ts`：ChatLuna 思考内容解析 helper
+- `src/chatluna/`：后端 ChatLuna 子领域 helper，放 character lock、消息输入和 thinking 解析
 - `src/onebot.ts`：OneBot 协议读取和数据标准化入口，保留对外导入路径
 - `src/onebot/actions.ts`：OneBot bot 选择和 action 调用
 - `src/onebot/card.ts`：OneBot JSON/XML/lightapp 卡片消息解析

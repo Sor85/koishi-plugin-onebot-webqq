@@ -1,10 +1,10 @@
-import type { ChatCapsuleContext, ChatLunaCharacterService } from './plugin-context'
-import { createMessageInput } from './chatluna-message-input'
+import type { ChatCapsuleContext, ChatLunaCharacterService } from '../plugin-context'
+import { createMessageInput } from './message-input'
 import {
   recordConversationActivity,
   type CapsuleState,
-} from './state'
-import { readMemberName } from './webqq/session'
+} from '../state'
+import { readMemberName } from '../webqq/session'
 
 export function registerChatLunaCharacterLockSync(
   ctx: ChatCapsuleContext,
