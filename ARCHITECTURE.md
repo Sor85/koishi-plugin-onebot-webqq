@@ -79,8 +79,9 @@
 - `client/styles/webqq-chat.scss`：WebQQ 聊天容器、顶部栏、消息滚动容器和返回底部按钮样式
 - `client/styles/webqq-group-info.scss`：WebQQ 群信息面板、公告和成员列表样式
 - `client/styles/webqq-notices.scss`：WebQQ 通知列表、通知卡片和处理状态样式
-- `client/styles/webqq-messages.scss`：WebQQ 消息列表、消息元素和消息动效样式
+- `client/styles/webqq-messages.scss`：WebQQ 消息列表和消息元素样式
 - `client/styles/webqq-message-overlays.scss`：WebQQ 合并转发弹窗和图片预览遮罩样式
+- `client/styles/webqq-message-effects.scss`：WebQQ inline 文本片段和临时 thinking dots 动效样式
 
 ## 简单目录规则
 

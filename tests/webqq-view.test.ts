@@ -54,7 +54,8 @@ const webqqThemeView = await readFile(new URL('../client/utils/webqq-theme-view.
 const styleEntry = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 const webqqMessagesStyle = await readFile(new URL('../client/styles/webqq-messages.scss', import.meta.url), 'utf8')
 const webqqMessageOverlaysStyle = await readFile(new URL('../client/styles/webqq-message-overlays.scss', import.meta.url), 'utf8')
-const style = `${webqqMessagesStyle}\n${webqqMessageOverlaysStyle}\n${styleEntry}`
+const webqqMessageEffectsStyle = await readFile(new URL('../client/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
+const style = `${webqqMessagesStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${styleEntry}`
 
 function sourceBetween(source: string, start: string, end: string) {
   const startIndex = source.indexOf(start)
