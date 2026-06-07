@@ -27,6 +27,7 @@ import {
   createWebQQGroupLeaveNotice,
 } from '../src/webqq/event-notices'
 import {
+  applyWebQQReactionToLiveMessages,
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
 } from '../src/webqq/live-cache'
@@ -234,6 +235,27 @@ describe('chat capsule plugin wiring', () => {
         summary: 'hello',
         elements: [{ type: 'text', text: 'hello' }],
       },
+    })
+  })
+
+  it('uses raw OneBot message ids and sequences for WebQQ live messages', async () => {
+    const payload = await createWebQQLiveMessage(createSession({
+      messageId: 'koishi-id',
+      content: 'hello',
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          message_id: 'onebot-id',
+          message_seq: 31318,
+        },
+      },
+    }) as unknown as Session, 'incoming')
+
+    expect(payload?.message).toMatchObject({
+      id: 'onebot-id',
+      sequence: '31318',
     })
   })
 
@@ -967,6 +989,113 @@ describe('chat capsule plugin wiring', () => {
     })
     const finalMessages = await loadMessages?.({ type: 'group', peerId: '20000', limit: 20 }) as Array<{ id: string; reactions?: unknown }>
     expect(finalMessages.find((item) => item.id === 'new-1')).not.toHaveProperty('reactions')
+  })
+
+  it('loads the target message when a WebQQ reaction is not in the live cache', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_msg: vi.fn(async ({ message_id }: { message_id: string }) => ({
+          message_id,
+          message_seq: 31318,
+          time: 1710000001,
+          group_id: 20000,
+          user_id: 30000,
+          sender: {
+            user_id: 30000,
+            nickname: 'Alice',
+            card: 'Alice Card',
+          },
+          message: [{ type: 'text', data: { text: 'history target' } }],
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    expect(socketListener).toBeDefined()
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'onebot-id',
+        likes: [{ emoji_id: '76', count: 1 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.get_msg).toHaveBeenCalledWith({ message_id: 'onebot-id' })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'onebot-id',
+        sequence: '31318',
+        summary: 'history target',
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          emojiUrl: 'https://koishi.js.org/QFace/gif/s76.gif',
+          count: 1,
+          userId: '40000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          users: [{
+            userId: '40000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          }],
+        }],
+      }),
+    }, { authority: 1 })
+  })
+
+  it('matches WebQQ reactions by message sequence when available', () => {
+    const message: WebQQMessage = {
+      id: 'onebot-id',
+      sequence: '31318',
+      time: 1710000001000,
+      senderId: '30000',
+      senderName: 'Alice',
+      senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+      direction: 'incoming',
+      summary: 'history target',
+      elements: [{ type: 'text', text: 'history target' }],
+    }
+
+    expect(applyWebQQReactionToLiveMessages([message], '31318', {
+      emojiId: '76',
+      label: '赞',
+      count: 1,
+    }, true)).toEqual([{
+      ...message,
+      reactions: [{
+        emojiId: '76',
+        label: '赞',
+        count: 1,
+        users: [],
+      }],
+    }])
   })
 
   it('keeps ChatLuna message input building outside the plugin entry', () => {

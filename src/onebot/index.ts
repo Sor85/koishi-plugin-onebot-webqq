@@ -1,4 +1,5 @@
 import {
+  getActionData,
   getStringField,
   isRecord,
   toArrayResult,
@@ -147,6 +148,11 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     async resolveForward(id: string) {
       return resolveOneBotForward(getBot(), id, imageUrlResolver)
+    },
+
+    async resolveMessage(id: string) {
+      const bot = getBot()
+      return normalizeMessage(getActionData(await callAction(bot, 'get_msg', { message_id: toOneBotId(id) })), bot, imageUrlResolver)
     },
 
     async resolveImage(file: string) {

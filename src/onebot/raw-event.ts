@@ -9,6 +9,7 @@ export interface WebQQRawReaction {
   groupId: string
   userId: string
   messageId: string
+  messageSeq?: string
   emojiId: string
   count: number
   isAdd: boolean
@@ -50,6 +51,11 @@ function parseReaction(raw: unknown): WebQQRawReaction | undefined {
   const groupId = getStringField(raw, ['group_id'])
   const messageId = getStringField(raw, ['message_id'])
   if (!groupId || !messageId) return
+  // LLBot 内部原始通知有 target.sequence，但翻译成 OneBot 事件后通常只剩 message_id；
+  // 这里兼容少数实现透出的序号，后续可优先用它命中 WebQQ 消息。
+  const target = isRecord(raw.target) ? raw.target : undefined
+  const messageSeq = getStringField(raw, ['message_seq', 'messageSeq', 'msg_seq', 'msgSeq', 'seq']) ||
+    (target ? getStringField(target, ['sequence']) : '')
   const likes = Array.isArray(raw.likes) ? raw.likes : []
   const like = likes.find(isRecord)
   const emojiId = like ? getStringField(like, ['emoji_id']) : ''
@@ -59,6 +65,7 @@ function parseReaction(raw: unknown): WebQQRawReaction | undefined {
     groupId,
     userId: getStringField(raw, ['user_id', 'operator_id']),
     messageId,
+    ...(messageSeq ? { messageSeq } : {}),
     emojiId,
     count: like ? getNumberField(like, ['count']) : 0,
     isAdd,

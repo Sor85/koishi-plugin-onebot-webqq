@@ -330,7 +330,18 @@ export function createWebQQLiveRuntime(options: {
       })
     }
   }
-  const recordWebQQReaction = (reaction: WebQQRawReaction) => {
+  const getReactionTargetIds = (reaction: WebQQRawReaction) => {
+    return [reaction.messageSeq, reaction.messageId].filter((id, index, array): id is string => !!id && array.indexOf(id) === index)
+  }
+  const applyWebQQReaction = (messages: WebQQMessage[], targetIds: string[], entry: WebQQMessageReaction, isAdd: boolean) => {
+    for (const targetId of targetIds) {
+      const nextMessages = applyWebQQReactionToLiveMessages(messages, targetId, entry, isAdd)
+      if (!nextMessages) continue
+      const message = nextMessages.find((item) => item.id === targetId || item.sequence === targetId)
+      if (message) return { messages: nextMessages, message }
+    }
+  }
+  const recordWebQQReaction = async (reaction: WebQQRawReaction) => {
     const peer = { type: 'group' as const, peerId: reaction.groupId }
     const label = readWebQQReactionLabel(reaction.emojiId)
     const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)
@@ -347,12 +358,30 @@ export function createWebQQLiveRuntime(options: {
       } : {}),
     }
     const key = getWebQQLiveMessageKey(peer)
-    const nextMessages = applyWebQQReactionToLiveMessages(liveMessages.get(key) ?? [], reaction.messageId, entry, reaction.isAdd)
-    if (nextMessages) {
-      liveMessages.set(key, nextMessages)
-      const message = nextMessages.find((item) => item.id === reaction.messageId || item.sequence === reaction.messageId)
-      if (message) options.ctx.console?.broadcast('chat-capsule/webqq/message', { ...peer, message }, options.consoleAuthOptions)
+    const targetIds = getReactionTargetIds(reaction)
+    const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entry, reaction.isAdd)
+    if (applied) {
+      liveMessages.set(key, applied.messages)
+      options.ctx.console?.broadcast('chat-capsule/webqq/message', { ...peer, message: applied.message }, options.consoleAuthOptions)
       return
+    }
+    // 目标消息可能是前端已加载的历史消息，而不是后端 live cache 中的实时消息。
+    // OneBot reaction 只有短 message_id 时，拉一次 get_msg 得到同一条消息和 message_seq，
+    // 再广播带 reaction 的原消息，让前端用正常消息合并逻辑更新气泡。
+    try {
+      const targetMessage = await options.webqq.resolveMessage(reaction.messageId)
+      const targetApplied = applyWebQQReaction(
+        [targetMessage],
+        [...targetIds, targetMessage.id, targetMessage.sequence],
+        entry,
+        reaction.isAdd,
+      )
+      if (targetApplied) {
+        broadcastWebQQLivePayload({ ...peer, message: targetApplied.message })
+      }
+      return
+    } catch (error) {
+      options.logger?.info('webqq reaction target resolve failed %s', error instanceof Error ? error.message : String(error))
     }
     if (!reaction.isAdd) return
     const senderName = reaction.userId || '有人'
