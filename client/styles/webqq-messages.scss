@@ -401,8 +401,11 @@
   cursor: default;
 }
 
-.chat-capsule-webqq__forward span {
-  white-space: pre-line;
+.chat-capsule-webqq__forward > span:not(.chat-capsule-webqq__forward-entry) {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .chat-capsule-webqq__forward-entry {

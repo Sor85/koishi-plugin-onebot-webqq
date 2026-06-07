@@ -521,8 +521,13 @@ describe('chat capsule styles', () => {
     }`)
   })
 
-  it('keeps WebQQ forward message previews readable across multiple lines', () => {
-    expect(ruleBody('.chat-capsule-webqq__forward span')).toContain('white-space: pre-line')
+  it('truncates each WebQQ forward preview segment to one line', () => {
+    const previewLineBody = ruleBody('.chat-capsule-webqq__forward > span:not(.chat-capsule-webqq__forward-entry)')
+
+    expect(previewLineBody).toContain('display: block')
+    expect(previewLineBody).toContain('overflow: hidden')
+    expect(previewLineBody).toContain('white-space: nowrap')
+    expect(previewLineBody).toContain('text-overflow: ellipsis')
   })
 
   it('shortens WebQQ forward cards with a width rule that overrides quote width', () => {
