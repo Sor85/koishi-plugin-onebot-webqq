@@ -12,7 +12,7 @@
 
 ## 当前模块
 
-- `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、ChatLuna 状态监听、WebQQ live 消息桥接和顶层注册编排
+- `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、ChatLuna 状态监听和顶层注册编排
 - `src/chatluna-character-lock.ts`：ChatLuna character 响应锁同步 helper，负责包裹 acquire/release 并在 dispose 恢复原方法
 - `src/console-entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
 - `src/webqq-console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
@@ -39,6 +39,7 @@
 - `src/webqq-live-cache.ts`：WebQQ live 消息缓存纯 helper，负责会话 key、消息去重合并、排序和 limit 裁剪
 - `src/webqq-live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
 - `src/webqq-live-message.ts`：WebQQ live message payload 构造 helper，负责把 Koishi session 和标准化元素组装为 WebQQ live 消息
+- `src/webqq-live-runtime.ts`：WebQQ live 消息运行态，负责 live 缓存、pending thinking、群成员 metadata 刷新和前端广播
 - `src/webqq-sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
 - `src/webqq-session.ts`：WebQQ session 展示信息 helper，负责 bot/profile、用户昵称、头像、peer 和 live 方向等纯读取逻辑
 - `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
@@ -111,6 +112,7 @@
 - `src/webqq-image-url-resolver.ts`：后端 WebQQ 图片代理 URL 注册和解析
 - `src/webqq-live-cache.ts`：后端 WebQQ live 消息缓存 key 和合并纯 helper
 - `src/webqq-live-message.ts`：后端 WebQQ live 消息 payload 构造
+- `src/webqq-live-runtime.ts`：后端 WebQQ live 消息运行态，负责 live 缓存、pending thinking、群成员 metadata 刷新和前端广播
 - `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
 - `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper
 - `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
@@ -135,8 +137,8 @@
 
 ## 当前高风险区域
 
-- `src/index.ts` 已拆出 Console entry、WebQQ RPC listener 和 character 响应锁同步，但仍承担插件入口、live 消息标准化、ChatLuna 状态和顶层注册编排
+- `src/index.ts` 已拆出 Console entry、WebQQ RPC listener、character 响应锁同步和 WebQQ live runtime，但仍承担插件入口、ChatLuna 活动状态和顶层注册编排
 - `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表和消息历史加载，但仍承担联系人加载、实时消息接收、通知和多块面板连接
 - `client/style.scss` 已拆出主要界面区域样式，但主题覆盖、暗色适配、动效 keyframes 和响应式样式仍集中，需要继续谨慎按职责处理
-- `src/index.ts` 和 `src/onebot.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
+- `src/webqq-live-runtime.ts` 和 `src/onebot.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

@@ -41,6 +41,7 @@ const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna-messa
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq-live-elements.ts', import.meta.url), 'utf8')
 const webqqLiveCacheSource = await readFile(new URL('../src/webqq-live-cache.ts', import.meta.url), 'utf8')
 const webqqLiveMessageSource = await readFile(new URL('../src/webqq-live-message.ts', import.meta.url), 'utf8')
+const webqqLiveRuntimeSource = await readFile(new URL('../src/webqq-live-runtime.ts', import.meta.url), 'utf8')
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq-image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq-group-sender-metadata.ts', import.meta.url), 'utf8')
@@ -184,6 +185,17 @@ describe('chat capsule plugin wiring', () => {
     expect(chatlunaCharacterLockSource).toContain("ctx.on('dispose'")
   })
 
+  it('keeps WebQQ live runtime outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './webqq-live-runtime'")
+    expect(pluginSource).not.toContain('const pendingWebQQThinking = new Map')
+    expect(pluginSource).not.toContain('const liveSenderMetadata = new Map')
+    expect(pluginSource).not.toContain('const broadcastWebQQLivePayload =')
+    expect(webqqLiveRuntimeSource).toContain('export function createWebQQLiveRuntime')
+    expect(webqqLiveRuntimeSource).toContain('const pendingWebQQThinking = new Map')
+    expect(webqqLiveRuntimeSource).toContain('const liveSenderMetadata = new Map')
+    expect(webqqLiveRuntimeSource).toContain('const broadcastWebQQLivePayload =')
+  })
+
   it('keeps WebQQ live element normalization outside the plugin entry', () => {
     const elements: WebQQMessageElement[] = [
       { type: 'quote', text: '引用内容' },
@@ -206,7 +218,7 @@ describe('chat capsule plugin wiring', () => {
       content: 'hello',
     }) as unknown as Session, 'incoming')
 
-    expect(pluginSource).toContain("from './webqq-live-message'")
+    expect(webqqLiveRuntimeSource).toContain("from './webqq-live-message'")
     expect(pluginSource).not.toContain('async function createWebQQLiveMessage(')
     expect(webqqLiveMessageSource).toContain('export async function createWebQQLiveMessage')
     expect(payload).toMatchObject({
@@ -293,7 +305,8 @@ describe('chat capsule plugin wiring', () => {
       special_title: '闪亮头衔',
     })
 
-    expect(pluginSource).toContain("from './webqq-sender-metadata'")
+    expect(webqqLiveRuntimeSource).toContain("from './webqq-sender-metadata'")
+    expect(pluginSource).not.toContain("from './webqq-sender-metadata'")
     expect(pluginSource).not.toContain('function readWebQQSenderMetadata(')
     expect(webqqSenderMetadataSource).toContain('export function readWebQQSenderMetadata')
     expect(metadata).toEqual({
@@ -423,7 +436,8 @@ describe('chat capsule plugin wiring', () => {
       elements: [{ type: 'text', text: 'other' }],
     }
 
-    expect(pluginSource).toContain("from './webqq-live-cache'")
+    expect(webqqLiveRuntimeSource).toContain("from './webqq-live-cache'")
+    expect(pluginSource).not.toContain("from './webqq-live-cache'")
     expect(pluginSource).not.toContain('function mergeWebQQMessages(')
     expect(webqqLiveCacheSource).toContain('export function mergeWebQQLiveMessages')
     expect(getWebQQLiveMessageKey({ type: 'group', peerId: '20000' })).toBe('group:20000')

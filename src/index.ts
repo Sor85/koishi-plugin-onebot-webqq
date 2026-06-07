@@ -4,11 +4,6 @@ import { registerChatLunaCharacterLockSync } from './chatluna-character-lock'
 import { registerConsoleEntry } from './console-entry'
 import { registerWebQQConsoleListeners } from './webqq-console'
 import {
-  parseThinkContent,
-  readCharacterAfterChatText,
-  type ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload,
-} from './chatluna-thinking'
-import {
   CapsuleSnapshot,
   clearConversationActivity,
   createCapsuleState,
@@ -19,7 +14,6 @@ import {
 } from './state'
 import {
   createOneBotWebQQService,
-  WebQQChatType,
   WebQQContacts,
   WebQQGroupInfo,
   WebQQGroupInfoQuery,
@@ -38,34 +32,17 @@ import type {
   WebQQMessageCacheQuery,
   WebQQStoredState,
 } from './webqq-storage'
-import { attachWebQQAffinityBadges } from './webqq-affinity'
-import { createWebQQLiveMessage } from './webqq-live-message'
 import { createWebQQImageUrlResolver } from './webqq-image-url-resolver'
-import {
-  readMemberName,
-  readWebQQPeer,
-  readWebQQLiveDirection,
-} from './webqq-session'
+import { readMemberName } from './webqq-session'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
 } from './webqq-event-notices'
+import { readWebQQBotGroupSenderMetadata } from './webqq-group-sender-metadata'
 import {
-  getWebQQLiveMessageKey,
-  mergeWebQQLiveMessages,
-} from './webqq-live-cache'
-import {
-  fillWebQQMessageSenderMetadata,
-  hasWebQQSenderMetadata,
-  isSameWebQQSenderMetadata,
-  readWebQQMessageSenderMetadata,
-  replaceWebQQMessageSenderMetadata,
-  type WebQQSenderMetadata,
-} from './webqq-sender-metadata'
-import {
-  readWebQQBotGroupSenderMetadata,
-  readWebQQGroupSenderMetadata,
-} from './webqq-group-sender-metadata'
+  createWebQQLiveRuntime,
+  type ChatLunaCharacterAfterChatPayload,
+} from './webqq-live-runtime'
 import { createMessageInput, type ChatLunaMessage } from './chatluna-message-input'
 import type {
   ChatCapsuleContext,
@@ -104,8 +81,6 @@ declare module 'koishi' {
   }
 }
 
-type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
-
 const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
 
 function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
@@ -127,9 +102,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const consoleAuthOptions = { authority: 1 }
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
-  const liveMessages = new Map<string, WebQQMessage[]>()
-  const pendingWebQQThinking = new Map<string, NonNullable<WebQQMessage['thinking']>>()
-  const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
   let currentThinkingStartedAt: number | undefined
@@ -142,91 +114,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     primary: 'id',
   })
 
-  const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
-  const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
-    return type === 'group' ? liveSenderMetadata.get(getLiveSenderMetadataKey(peerId, userId)) : undefined
-  }
-  // 记录 live 消息路径里最新的群成员身份缓存。
-  const rememberLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string, metadata: WebQQSenderMetadata) => {
-    if (type !== 'group' || !hasWebQQSenderMetadata(metadata)) return false
-    const key = getLiveSenderMetadataKey(peerId, userId)
-    if (isSameWebQQSenderMetadata(liveSenderMetadata.get(key), metadata)) return false
-    liveSenderMetadata.set(key, metadata)
-    return true
-  }
-  // 写入 live 消息缓存并推送给 WebQQ 前端。
-  const broadcastWebQQLivePayload = (payload: WebQQLiveMessage) => {
-    const key = getWebQQLiveMessageKey(payload)
-    const messages = mergeWebQQLiveMessages(liveMessages.get(key) ?? [], [payload.message], 100)
-    liveMessages.set(key, messages)
-    ctx.console?.broadcast('chat-capsule/webqq/message', payload, consoleAuthOptions)
-  }
-  const attachPendingWebQQThinking = (payload: WebQQLiveMessage): WebQQLiveMessage => {
-    if (payload.message.direction !== 'outgoing') return payload
-    const key = getWebQQLiveMessageKey(payload)
-    const thinking = pendingWebQQThinking.get(key)
-    if (!thinking) return payload
-    pendingWebQQThinking.delete(key)
-    return {
-      ...payload,
-      message: {
-        ...payload.message,
-        thinking,
-      },
-    }
-  }
-  // 每条群 live 消息后台刷新发送者群身份，变化时用同 id 消息覆盖。
-  const refreshWebQQLiveSenderMetadata = async (session: Session, payload: WebQQLiveMessage) => {
-    if (payload.type !== 'group') return
-    let metadata: WebQQSenderMetadata | undefined
-    try {
-      metadata = await readWebQQGroupSenderMetadata(session, payload.message.senderId, true)
-    } catch (error) {
-      logger?.info('webqq sender metadata refresh failed %s', error instanceof Error ? error.message : String(error))
-      return
-    }
-    if (!metadata) return
-    if (!rememberLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId, metadata)) return
-    broadcastWebQQLivePayload({
-      ...payload,
-      message: replaceWebQQMessageSenderMetadata(payload.message, metadata),
-    })
-  }
-  const recordWebQQLiveMessage = async (session: Session | undefined, direction: WebQQMessage['direction']) => {
-    if (!session) return
-    let payload = await createWebQQLiveMessage(
-      session,
-      direction,
-      async (file, source) => {
-        if (source === 'url') {
-          const url = imageUrlResolver(file) || file
-          logger?.info('webqq image url %s', JSON.stringify({ direction, url: file, proxyUrl: url }))
-          return { url, debug: { url: file } }
-        }
-        const image = await webqq.resolveImage(file)
-        logger?.info('webqq image %s', JSON.stringify({ direction, file, result: image.debug, url: image.url }))
-        return image
-      },
-      async (id) => webqq.resolveQuote(id),
-      async (id) => webqq.resolveForward(id),
-    )
-    if (!payload) return
-    payload = attachPendingWebQQThinking({
-      ...payload,
-      message: fillWebQQMessageSenderMetadata(
-        payload.message,
-        getLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId),
-      ),
-    })
-    const [messageWithAffinity = payload.message] = await attachWebQQAffinityBadges(ctx, config, [payload.message], logger)
-    payload = {
-      ...payload,
-      message: messageWithAffinity,
-    }
-    rememberLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId, readWebQQMessageSenderMetadata(payload.message))
-    broadcastWebQQLivePayload(payload)
-    await refreshWebQQLiveSenderMetadata(session, payload)
-  }
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const thinkingStartedAt = Date.now()
     currentThinkingStartedAt = thinkingStartedAt
@@ -256,42 +143,22 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const getCurrentThinkingDurationMs = () => {
     return currentThinkingStartedAt == null ? 0 : Math.max(0, Date.now() - currentThinkingStartedAt)
   }
-  const updateLastOutgoingWebQQThinking = (payload: ChatLunaCharacterAfterChatPayload) => {
-    if (!payload.session) return
-    const content = parseThinkContent(readCharacterAfterChatText(payload))
-    if (!content) return
-    const peer = readWebQQPeer(payload.session)
-    if (!peer) return
-    const key = getWebQQLiveMessageKey(peer)
-    const usage = state.snapshot()?.conversation.usage
-    const thinking = {
-      content,
-      durationMs: getCurrentThinkingDurationMs(),
-      ...(usage ? {
-        usage,
-      } : {}),
-    }
-    const messages = liveMessages.get(key)
-    const message = messages?.slice().reverse().find((item) => item.direction === 'outgoing')
-    if (!message) {
-      pendingWebQQThinking.set(key, thinking)
-      return
-    }
-    pendingWebQQThinking.delete(key)
-    broadcastWebQQLivePayload({
-      ...peer,
-      message: {
-        ...message,
-        thinking,
-      },
-    })
-  }
+  const liveRuntime = createWebQQLiveRuntime({
+    ctx,
+    config,
+    webqq,
+    imageUrlResolver,
+    consoleAuthOptions,
+    logger,
+    getThinkingDurationMs: getCurrentThinkingDurationMs,
+    getThinkingUsage: () => state.snapshot()?.conversation.usage,
+  })
 
   ctx.on('message', async (session) => {
     recordIncomingMessage(state, createMessageInput(session))
     logSnapshot('message')
     broadcast()
-    await recordWebQQLiveMessage(session, readWebQQLiveDirection(session))
+    await liveRuntime.recordWebQQLiveMessage(session)
   })
 
   ctx.on('friend-request', (session) => {
@@ -319,7 +186,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   })
 
   ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
-    updateLastOutgoingWebQQThinking(payload)
+    liveRuntime.updateLastOutgoingWebQQThinking(payload)
   })
 
   ctx.before('send', async (session) => {
@@ -351,7 +218,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
       config,
       webqq,
       historyLimit,
-      liveMessages,
+      liveMessages: liveRuntime.liveMessages,
       friendRequestNotices,
       groupLeaveNotices,
       consoleAuthOptions,
