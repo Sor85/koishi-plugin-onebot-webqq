@@ -243,6 +243,14 @@ describe('chat capsule styles', () => {
     expect(avatarBody).toContain('border-radius: 50%')
   })
 
+  it('renders WebQQ reaction emoji images at a stable inline size', () => {
+    const emojiBody = ruleBody('.chat-capsule-webqq__message-reaction-emoji')
+
+    expect(emojiBody).toContain('width: 18px')
+    expect(emojiBody).toContain('height: 18px')
+    expect(emojiBody).toContain('object-fit: contain')
+  })
+
   it('stacks WebQQ rich message elements vertically inside the bubble', () => {
     expect(style).toContain('.chat-capsule-webqq__bubble {\n  display: flex')
     expect(style).toContain('.chat-capsule-webqq__bubble {\n  display: flex;\n  max-width: 100%;\n  flex-direction: column')

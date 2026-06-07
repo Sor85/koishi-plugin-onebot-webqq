@@ -80,6 +80,10 @@ function readWebQQReactionLabel(emojiId: string) {
   return /^\d+$/.test(emojiId) ? '[表情]' : emojiId
 }
 
+function readWebQQReactionEmojiUrl(emojiId: string) {
+  return qface.getUrl(emojiId) || ''
+}
+
 function createWebQQEventMessage(
   peer: { type: WebQQChatType; peerId: string },
   time: number,
@@ -329,9 +333,11 @@ export function createWebQQLiveRuntime(options: {
   const recordWebQQReaction = (reaction: WebQQRawReaction) => {
     const peer = { type: 'group' as const, peerId: reaction.groupId }
     const label = readWebQQReactionLabel(reaction.emojiId)
+    const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)
     const entry: WebQQMessageReaction = {
       emojiId: reaction.emojiId,
       label,
+      ...(emojiUrl ? { emojiUrl } : {}),
       count: reaction.count,
       ...(reaction.userId ? { userId: reaction.userId, userAvatar: getWebQQUserAvatar(reaction.userId) } : {}),
     }

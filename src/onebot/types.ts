@@ -43,6 +43,7 @@ export interface WebQQMessageElement {
 export interface WebQQMessageReaction {
   emojiId: string
   label: string
+  emojiUrl?: string
   count: number
   userId?: string
   userAvatar?: string

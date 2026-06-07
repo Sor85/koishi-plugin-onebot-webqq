@@ -102,7 +102,8 @@
             <div v-if="message.reactions?.length" class="chat-capsule-webqq__message-reactions">
               <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
                 <img v-if="reaction.userAvatar" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(reaction.userAvatar)" :alt="reaction.userId || reaction.label">
-                {{ reaction.label }}<span v-if="reaction.count > 1"> {{ reaction.count }}</span>
+                <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
+                <template v-else>{{ reaction.label }}</template><span v-if="reaction.count > 1"> {{ reaction.count }}</span>
               </span>
             </div>
             <div v-if="message.recalled" class="chat-capsule-webqq__message-recall-status">已撤回</div>

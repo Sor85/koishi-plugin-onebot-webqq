@@ -222,6 +222,13 @@
   object-fit: cover;
 }
 
+.chat-capsule-webqq__message-reaction-emoji {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
 .chat-capsule-webqq__sender-line {
   display: flex;
   max-width: 100%;

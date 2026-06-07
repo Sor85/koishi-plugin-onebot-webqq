@@ -879,6 +879,7 @@ describe('chat capsule plugin wiring', () => {
           reactions: [{
             emojiId: '76',
             label: '赞',
+            emojiUrl: 'https://koishi.js.org/QFace/gif/s76.gif',
             count: 2,
             userId: '40000',
             userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
@@ -901,6 +902,7 @@ describe('chat capsule plugin wiring', () => {
         reactions: [{
           emojiId: '76',
           label: '赞',
+          emojiUrl: 'https://koishi.js.org/QFace/gif/s76.gif',
           count: 2,
           userId: '40000',
           userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
