@@ -2,7 +2,7 @@ import type { Session } from 'koishi'
 import type { Config as PluginConfig } from './config'
 import { registerChatLunaCharacterLockSync } from './chatluna-character-lock'
 import { registerConsoleEntry } from './console-entry'
-import { registerWebQQConsoleListeners } from './webqq-console'
+import { registerWebQQConsoleListeners } from './webqq/console'
 import {
   CapsuleSnapshot,
   clearConversationActivity,
@@ -25,24 +25,24 @@ import {
 } from './onebot'
 import {
   chatCapsuleStorageTable,
-} from './webqq-storage'
+} from './webqq/storage'
 import type {
   ChatCapsuleStorageRow,
   WebQQMessageCachePayload,
   WebQQMessageCacheQuery,
   WebQQStoredState,
-} from './webqq-storage'
-import { createWebQQImageUrlResolver } from './webqq-image-url-resolver'
-import { readMemberName } from './webqq-session'
+} from './webqq/storage'
+import { createWebQQImageUrlResolver } from './webqq/image-url-resolver'
+import { readMemberName } from './webqq/session'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
-} from './webqq-event-notices'
-import { readWebQQBotGroupSenderMetadata } from './webqq-group-sender-metadata'
+} from './webqq/event-notices'
+import { readWebQQBotGroupSenderMetadata } from './webqq/group-sender-metadata'
 import {
   createWebQQLiveRuntime,
   type ChatLunaCharacterAfterChatPayload,
-} from './webqq-live-runtime'
+} from './webqq/live-runtime'
 import { createMessageInput, type ChatLunaMessage } from './chatluna-message-input'
 import type {
   ChatCapsuleContext,

@@ -1,4 +1,4 @@
-import type { WebQQMessage, WebQQMessageQuery } from './onebot'
+import type { WebQQMessage, WebQQMessageQuery } from '../onebot'
 
 type WebQQLiveMessageKeyInput = Pick<WebQQMessageQuery, 'type' | 'peerId'>
 

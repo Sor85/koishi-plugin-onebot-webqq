@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import { createReadStream } from 'fs'
-import type { WebQQImageUrlResolver } from './webqq-live-elements'
-import { getImageContentType, isRemoteImageSource } from './webqq-live-elements'
+import type { WebQQImageUrlResolver } from './live-elements'
+import { getImageContentType, isRemoteImageSource } from './live-elements'
 
 export interface WebQQImageContext {
   params: Record<string, string>

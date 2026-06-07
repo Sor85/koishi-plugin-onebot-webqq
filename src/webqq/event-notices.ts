@@ -1,7 +1,7 @@
 import type { Session } from 'koishi'
-import type { WebQQNotice } from './onebot'
-import { isRecord, readRecordText } from './structured-text'
-import { getWebQQGroupAvatar, getWebQQUserAvatar, readUserName } from './webqq-session'
+import type { WebQQNotice } from '../onebot'
+import { isRecord, readRecordText } from '../structured-text'
+import { getWebQQGroupAvatar, getWebQQUserAvatar, readUserName } from './session'
 
 export function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {
   if ((session.bot.platform || session.platform) !== 'onebot') return

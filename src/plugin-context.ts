@@ -1,7 +1,7 @@
 import type { Entry } from '@koishijs/console'
 import type { Session } from 'koishi'
 import type { ChatLunaMessage } from './chatluna-message-input'
-import type { WebQQImageServer } from './webqq-image-url-resolver'
+import type { WebQQImageServer } from './webqq/image-url-resolver'
 
 export interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown

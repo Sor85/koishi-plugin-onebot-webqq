@@ -4,7 +4,7 @@ import {
   recordConversationActivity,
   type CapsuleState,
 } from './state'
-import { readMemberName } from './webqq-session'
+import { readMemberName } from './webqq/session'
 
 export function registerChatLunaCharacterLockSync(
   ctx: ChatCapsuleContext,

@@ -15,7 +15,7 @@
 - `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、ChatLuna 状态监听和顶层注册编排
 - `src/chatluna-character-lock.ts`：ChatLuna character 响应锁同步 helper，负责包裹 acquire/release 并在 dispose 恢复原方法
 - `src/console-entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
-- `src/webqq-console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
+- `src/webqq/console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot.ts`：OneBot action 适配，负责联系人、群信息、历史消息、通知和图片 action 的服务编排
 - `src/onebot/actions.ts`：OneBot bot 选择和 action 调用 helper
@@ -34,17 +34,17 @@
 - `src/chatluna-message-input.ts`：ChatLuna/Koishi session 到胶囊状态输入的组装 helper
 - `src/structured-text.ts`：通用结构化文本读取 helper，用于从 LangChain 消息、Koishi 元素和对象字段中提取文本
 - `src/chatluna-thinking.ts`：ChatLuna character 回复解析，负责读取 after-chat 文本并提取 `<think>` 内容
-- `src/webqq-affinity.ts`：ChatLuna 好感度记录读取和 WebQQ 消息徽标补齐
-- `src/webqq-event-notices.ts`：WebQQ 事件通知构造 helper，负责把 Koishi 好友申请和群成员退出事件转换为 WebQQNotice
-- `src/webqq-group-sender-metadata.ts`：WebQQ 群成员身份 metadata 查询 helper，负责 OneBot 群成员信息 action 调用和返回值整理
-- `src/webqq-image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/chat-capsule/webqq/image/:id` 代理路由并生成缓存 URL
-- `src/webqq-live-cache.ts`：WebQQ live 消息缓存纯 helper，负责会话 key、消息去重合并、排序和 limit 裁剪
-- `src/webqq-live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
-- `src/webqq-live-message.ts`：WebQQ live message payload 构造 helper，负责把 Koishi session 和标准化元素组装为 WebQQ live 消息
-- `src/webqq-live-runtime.ts`：WebQQ live 消息运行态，负责 live 缓存、pending thinking、群成员 metadata 刷新和前端广播
-- `src/webqq-sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
-- `src/webqq-session.ts`：WebQQ session 展示信息 helper，负责 bot/profile、用户昵称、头像、peer 和 live 方向等纯读取逻辑
-- `src/webqq-storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
+- `src/webqq/affinity.ts`：ChatLuna 好感度记录读取和 WebQQ 消息徽标补齐
+- `src/webqq/event-notices.ts`：WebQQ 事件通知构造 helper，负责把 Koishi 好友申请和群成员退出事件转换为 WebQQNotice
+- `src/webqq/group-sender-metadata.ts`：WebQQ 群成员身份 metadata 查询 helper，负责 OneBot 群成员信息 action 调用和返回值整理
+- `src/webqq/image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/chat-capsule/webqq/image/:id` 代理路由并生成缓存 URL
+- `src/webqq/live-cache.ts`：WebQQ live 消息缓存纯 helper，负责会话 key、消息去重合并、排序和 limit 裁剪
+- `src/webqq/live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
+- `src/webqq/live-message.ts`：WebQQ live message payload 构造 helper，负责把 Koishi session 和标准化元素组装为 WebQQ live 消息
+- `src/webqq/live-runtime.ts`：WebQQ live 消息运行态，负责 live 缓存、pending thinking、群成员 metadata 刷新和前端广播
+- `src/webqq/sender-metadata.ts`：WebQQ live 发送者群身份 metadata 读取、比较、填充和替换 helper
+- `src/webqq/session.ts`：WebQQ session 展示信息 helper，负责 bot/profile、用户昵称、头像、peer 和 live 方向等纯读取逻辑
+- `src/webqq/storage.ts`：WebQQ 会话状态和消息缓存的 Koishi 数据库存储 helper
 - `client/index.ts`：Koishi Console 前端入口，负责读取 entry data、初始化前端全局状态、监听胶囊更新并注册全局组件
 - `client/state.ts`：前端共享类型和响应式状态
 - `client/stores/webqq-state.ts`：WebQQ 最近会话和未读数的前端状态类型与纯更新 helper
@@ -95,7 +95,7 @@
 - `src/config.ts`：后端插件配置 schema 和配置类型
 - `src/chatluna-character-lock.ts`：后端 ChatLuna character 响应锁同步
 - `src/console-entry.ts`：后端 Koishi Console 前端入口注册
-- `src/webqq-console.ts`：后端 WebQQ Console RPC listener 注册
+- `src/webqq/console.ts`：后端 WebQQ Console RPC listener 注册
 - `src/state.ts`：后端内存状态机
 - `src/chatluna-message-input.ts`：后端 ChatLuna message/session 输入组装 helper
 - `src/structured-text.ts`：后端通用文本读取 helper
@@ -114,16 +114,17 @@
 - `src/onebot/text.ts`：OneBot 文本和 @ 标记内容提取
 - `src/onebot/types.ts`：OneBot WebQQ DTO 类型
 - `src/onebot/`：后端 OneBot 子领域 helper，按职责放置 OneBot 相关纯函数和类型
-- `src/webqq-affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
-- `src/webqq-event-notices.ts`：后端 WebQQ session 事件通知 payload 构造
-- `src/webqq-group-sender-metadata.ts`：后端 WebQQ 群成员身份 metadata 查询
-- `src/webqq-image-url-resolver.ts`：后端 WebQQ 图片代理 URL 注册和解析
-- `src/webqq-live-cache.ts`：后端 WebQQ live 消息缓存 key 和合并纯 helper
-- `src/webqq-live-message.ts`：后端 WebQQ live 消息 payload 构造
-- `src/webqq-live-runtime.ts`：后端 WebQQ live 消息运行态，负责 live 缓存、pending thinking、群成员 metadata 刷新和前端广播
-- `src/webqq-sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
-- `src/webqq-session.ts`：后端 WebQQ session 派生展示字段 helper
-- `src/webqq-storage.ts`：后端 WebQQ 持久化和缓存读写
+- `src/webqq/affinity.ts`：后端 WebQQ 好感度读取和消息字段补齐
+- `src/webqq/event-notices.ts`：后端 WebQQ session 事件通知 payload 构造
+- `src/webqq/group-sender-metadata.ts`：后端 WebQQ 群成员身份 metadata 查询
+- `src/webqq/image-url-resolver.ts`：后端 WebQQ 图片代理 URL 注册和解析
+- `src/webqq/live-cache.ts`：后端 WebQQ live 消息缓存 key 和合并纯 helper
+- `src/webqq/live-message.ts`：后端 WebQQ live 消息 payload 构造
+- `src/webqq/live-runtime.ts`：后端 WebQQ live 消息运行态，负责 live 缓存、pending thinking、群成员 metadata 刷新和前端广播
+- `src/webqq/sender-metadata.ts`：后端 WebQQ 发送者身份 metadata 纯 helper
+- `src/webqq/session.ts`：后端 WebQQ session 派生展示字段 helper
+- `src/webqq/storage.ts`：后端 WebQQ 持久化和缓存读写
+- `src/webqq/`：后端 WebQQ 子领域 helper，放 Console listener、live 消息、session、storage 和 sender metadata 相关逻辑
 - `src/*.ts`：后端小模块，按真实职责命名，领域目录成熟后再逐步迁移
 - `client/api/`：前端 Console RPC thin wrapper，只放网络事件调用和默认返回值，不放 UI 状态
 - `client/components/`：前端展示组件，按完整展示区域拆分，避免拆单个按钮或图标
@@ -148,5 +149,5 @@
 - `src/index.ts` 已拆出 Console entry、WebQQ RPC listener、character 响应锁同步和 WebQQ live runtime，但仍承担插件入口、ChatLuna 活动状态和顶层注册编排
 - `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表、消息历史加载和实时消息接收，但仍承担联系人加载、通知和多块面板连接
 - `client/style.scss` 已拆出主要界面区域样式和主题色覆盖，但全局 keyframes、reduced-motion 和响应式样式仍集中，需要继续谨慎按职责处理
-- `src/webqq-live-runtime.ts` 和 `src/onebot/messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
+- `src/webqq/live-runtime.ts` 和 `src/onebot/messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查

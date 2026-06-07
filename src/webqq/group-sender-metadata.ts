@@ -1,10 +1,10 @@
 import type { Session } from 'koishi'
-import { isRecord } from './structured-text'
+import { isRecord } from '../structured-text'
 import {
   hasWebQQSenderMetadata,
   readWebQQSenderMetadata,
   type WebQQSenderMetadata,
-} from './webqq-sender-metadata'
+} from './sender-metadata'
 
 function toOneBotId(value: string) {
   return /^\d+$/.test(value) ? Number(value) : value

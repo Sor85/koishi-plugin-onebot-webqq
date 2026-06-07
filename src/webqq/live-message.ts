@@ -1,12 +1,12 @@
 import type { Session } from 'koishi'
-import type { WebQQLiveMessage, WebQQMessage } from './onebot'
+import type { WebQQLiveMessage, WebQQMessage } from '../onebot'
 import {
   normalizeLiveElements,
   summarizeWebQQElements,
   type WebQQForwardResolver,
   type WebQQImageResolver,
   type WebQQQuoteResolver,
-} from './webqq-live-elements'
+} from './live-elements'
 import {
   getWebQQUserAvatar,
   readBotProfile,
@@ -14,7 +14,7 @@ import {
   readUserName,
   readWebQQPeer,
   readWebQQLiveSenderMetadata,
-} from './webqq-session'
+} from './session'
 
 export async function createWebQQLiveMessage(
   session: Session,

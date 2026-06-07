@@ -1,5 +1,5 @@
-import type { Config } from './config'
-import type { WebQQMessage } from './onebot'
+import type { Config } from '../config'
+import type { WebQQMessage } from '../onebot'
 
 interface WebQQAffinityContext {
   database?: {

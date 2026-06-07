@@ -1,20 +1,20 @@
 import type { Session } from 'koishi'
-import type { Config as PluginConfig } from './config'
-import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './chatluna-thinking'
-import { parseThinkContent, readCharacterAfterChatText } from './chatluna-thinking'
-import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage } from './onebot'
-import type { ChatCapsuleContext, DebugLogger } from './plugin-context'
-import { attachWebQQAffinityBadges } from './webqq-affinity'
-import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './webqq-live-cache'
-import { createWebQQLiveMessage } from './webqq-live-message'
-import type { WebQQImageUrlResolver } from './webqq-live-elements'
+import type { Config as PluginConfig } from '../config'
+import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../chatluna-thinking'
+import { parseThinkContent, readCharacterAfterChatText } from '../chatluna-thinking'
+import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage } from '../onebot'
+import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
+import { attachWebQQAffinityBadges } from './affinity'
+import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
+import { createWebQQLiveMessage } from './live-message'
+import type { WebQQImageUrlResolver } from './live-elements'
 import {
   readWebQQPeer,
   readWebQQLiveDirection,
-} from './webqq-session'
+} from './session'
 import {
   readWebQQGroupSenderMetadata,
-} from './webqq-group-sender-metadata'
+} from './group-sender-metadata'
 import {
   fillWebQQMessageSenderMetadata,
   hasWebQQSenderMetadata,
@@ -22,7 +22,7 @@ import {
   readWebQQMessageSenderMetadata,
   replaceWebQQMessageSenderMetadata,
   type WebQQSenderMetadata,
-} from './webqq-sender-metadata'
+} from './sender-metadata'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>

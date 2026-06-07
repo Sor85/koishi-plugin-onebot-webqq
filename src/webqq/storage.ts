@@ -1,5 +1,5 @@
-import type { Config } from './config'
-import type { WebQQChatType, WebQQMessage } from './onebot'
+import type { Config } from '../config'
+import type { WebQQChatType, WebQQMessage } from '../onebot'
 
 export interface WebQQConversationSummary {
   summary: string

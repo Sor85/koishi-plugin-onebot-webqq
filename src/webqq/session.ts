@@ -1,6 +1,6 @@
 import type { Session } from 'koishi'
-import type { WebQQMessage } from './onebot'
-import { readWebQQSenderMetadata } from './webqq-sender-metadata'
+import type { WebQQMessage } from '../onebot'
+import { readWebQQSenderMetadata } from './sender-metadata'
 
 export function readBotProfile(session: Session) {
   const user = session.bot.toJSON?.().user
