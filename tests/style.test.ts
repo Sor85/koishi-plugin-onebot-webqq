@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 const styleEntry = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
 const capsuleStyle = await readFile(new URL('../client/styles/capsule.scss', import.meta.url), 'utf8')
-const style = `${capsuleStyle}\n${styleEntry}`
+const webqqShellStyle = await readFile(new URL('../client/styles/webqq-shell.scss', import.meta.url), 'utf8')
+const style = `${capsuleStyle}\n${webqqShellStyle}\n${styleEntry}`
 
 function ruleBody(selector: string) {
   const start = style.indexOf(`${selector} {`)
