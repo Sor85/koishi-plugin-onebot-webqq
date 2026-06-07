@@ -1,0 +1,406 @@
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__sidebar,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__tabs-row {
+  background: #f4f6f8;
+  backdrop-filter: none;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__sidebar,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__tabs-row {
+  background: rgba(244, 246, 248, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__tabs button.is-active,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notify:hover,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notify.is-active,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-tabs button.is-active,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__contact:hover,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__contact.is-active {
+  color: var(--chat-capsule-webqq-accent);
+  background: #e8f0ff;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__tabs button.is-active,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notify:hover,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notify.is-active,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-tabs button.is-active,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__contact:hover,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__contact.is-active {
+  color: var(--chat-capsule-webqq-accent);
+  background: rgba(232, 240, 255, 0.78);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__search input,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__group-members input {
+  background: #ffffff;
+  border-color: #d9e1ea;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__search input,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__group-members input {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(217, 225, 234, 0.78);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat {
+  background: #f1f5f9;
+  backdrop-filter: none;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat {
+  background: rgba(241, 245, 249, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-main {
+  position: relative;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat-main {
+  position: relative;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__chat-header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  background: rgba(248, 250, 252, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__chat-header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  background: rgba(248, 250, 252, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__messages {
+  padding: 84px 22px 20px;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__messages {
+  padding: 84px 22px 20px;
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__group-info {
+  background: #f8fafc;
+  backdrop-filter: none;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__group-info {
+  background: rgba(248, 250, 252, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-actions button {
+  color: var(--chat-capsule-webqq-accent);
+  background: #e8f0ff;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-actions button {
+  color: var(--chat-capsule-webqq-accent);
+  background: rgba(232, 240, 255, 0.78);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-menu,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__notice-card,
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__group-announcement {
+  background: #ffffff;
+  border-color: #d9e1ea;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-menu,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__notice-card,
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__group-announcement {
+  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(217, 225, 234, 0.78);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__bubble {
+  background: #ffffff;
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__bubble {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.chat-capsule-webqq.is-theme-fresh .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble {
+  background: var(--chat-capsule-webqq-accent);
+  box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+}
+
+.chat-capsule-webqq.is-theme-frosted .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble {
+  background: var(--chat-capsule-webqq-accent);
+  box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+}
+
+.chat-capsule-webqq.is-color-dark {
+  color: #e5edf7;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 78%, rgba(14, 165, 233, 0.14), transparent 36%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.96) 52%, rgba(30, 41, 59, 0.96));
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__sidebar,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__tabs-row {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__tabs button,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notify,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header button,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-tabs button {
+  color: #94a3b8;
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__tabs button.is-active,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notify:hover,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notify.is-active,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-tabs button.is-active,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__contact:hover,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__contact.is-active,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-actions button {
+  color: #dbeafe;
+  background: rgba(37, 99, 235, 0.26);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__search input,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-members input {
+  color: #e5edf7;
+  background: rgba(15, 23, 42, 0.62);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__search input::placeholder,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-members input::placeholder {
+  color: #64748b;
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat {
+  background: rgba(15, 23, 42, 0.74);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-info-header,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-announcements {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header {
+  background: rgba(15, 23, 42, 0.88);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__chat-header span,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__contact small,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__contact-time,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__empty-list,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-empty,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-announcement p,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-announcement time,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__message-name,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__message-time {
+  color: #94a3b8;
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-info {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.92));
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-info-header strong,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-announcements h3,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-members h3 {
+  color: #e5edf7;
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-menu,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__notice-card,
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__group-announcement {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__bubble {
+  color: #e5edf7;
+  background: rgba(30, 41, 59, 0.96);
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__quote {
+  border-left-color: rgba(147, 197, 253, 0.56);
+  background: rgba(15, 23, 42, 0.42);
+  color: #cbd5e1;
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__quote-title {
+  color: #dbeafe;
+}
+
+.chat-capsule-webqq.is-color-dark .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble {
+  color: #ffffff;
+  background: var(--chat-capsule-webqq-accent);
+  box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-capsule-webqq.is-color-auto {
+    color: #e5edf7;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.18), transparent 34%),
+      radial-gradient(circle at 82% 78%, rgba(14, 165, 233, 0.14), transparent 36%),
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.96) 52%, rgba(30, 41, 59, 0.96));
+    border-color: rgba(148, 163, 184, 0.28);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__sidebar,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__tabs-row {
+    background: rgba(15, 23, 42, 0.88);
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__tabs button,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notify,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header button,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-tabs button {
+    color: #94a3b8;
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__tabs button.is-active,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notify:hover,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notify.is-active,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-tabs button.is-active,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__contact:hover,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__contact.is-active,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-actions button {
+    color: #dbeafe;
+    background: rgba(37, 99, 235, 0.26);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__search input,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-members input {
+    color: #e5edf7;
+    background: rgba(15, 23, 42, 0.62);
+    border-color: rgba(148, 163, 184, 0.28);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__search input::placeholder,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-members input::placeholder {
+    color: #64748b;
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat {
+    background: rgba(15, 23, 42, 0.74);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-info-header,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-announcements {
+    background: rgba(15, 23, 42, 0.88);
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header {
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__chat-header span,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__contact small,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__contact-time,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__empty-list,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-empty,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-announcement p,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-announcement time,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__message-name,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__message-time {
+    color: #94a3b8;
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-info {
+    background:
+      radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.12), transparent 34%),
+      linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.92));
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-info-header strong,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-announcements h3,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-members h3 {
+    color: #e5edf7;
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-menu,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__notice-card,
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__group-announcement {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(148, 163, 184, 0.24);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__bubble {
+    color: #e5edf7;
+    background: rgba(30, 41, 59, 0.96);
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__quote {
+    border-left-color: rgba(147, 197, 253, 0.56);
+    background: rgba(15, 23, 42, 0.42);
+    color: #cbd5e1;
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__quote-title {
+    color: #dbeafe;
+  }
+
+  .chat-capsule-webqq.is-color-auto .chat-capsule-webqq__message.is-outgoing .chat-capsule-webqq__bubble {
+    color: #ffffff;
+    background: var(--chat-capsule-webqq-accent);
+    box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+  }
+
+  .chat-capsule.is-color-auto {
+    color: #e5edf7;
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.28);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+  }
+
+  .chat-capsule.is-color-auto .chat-capsule__meta,
+  .chat-capsule.is-color-auto .chat-capsule__title-status {
+    color: #94a3b8;
+  }
+
+  .chat-capsule.is-color-auto .chat-capsule__status {
+    border-color: rgba(15, 23, 42, 0.96);
+  }
+}
+
+.chat-capsule.is-color-dark {
+  color: #e5edf7;
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+.chat-capsule.is-color-dark .chat-capsule__meta,
+.chat-capsule.is-color-dark .chat-capsule__title-status {
+  color: #94a3b8;
+}
+
+.chat-capsule.is-color-dark .chat-capsule__status {
+  border-color: rgba(15, 23, 42, 0.96);
+}

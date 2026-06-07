@@ -1,7 +1,122 @@
+import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { createOneBotWebQQService } from '../src/onebot'
 
+const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
+const onebotDataSource = await readFile(new URL('../src/onebot/data.ts', import.meta.url), 'utf8')
+const onebotTextSource = await readFile(new URL('../src/onebot/text.ts', import.meta.url), 'utf8')
+const onebotCardSource = await readFile(new URL('../src/onebot/card.ts', import.meta.url), 'utf8')
+const onebotDisplaySource = await readFile(new URL('../src/onebot/display.ts', import.meta.url), 'utf8')
+const onebotNoticesSource = await readFile(new URL('../src/onebot/notices.ts', import.meta.url), 'utf8')
+const onebotGroupInfoSource = await readFile(new URL('../src/onebot/group-info.ts', import.meta.url), 'utf8')
+const onebotContactsSource = await readFile(new URL('../src/onebot/contacts.ts', import.meta.url), 'utf8')
+const onebotActionsSource = await readFile(new URL('../src/onebot/actions.ts', import.meta.url), 'utf8')
+const onebotImagesSource = await readFile(new URL('../src/onebot/images.ts', import.meta.url), 'utf8')
+const onebotMessageElementsSource = await readFile(new URL('../src/onebot/message-elements.ts', import.meta.url), 'utf8')
+const onebotMessagesSource = await readFile(new URL('../src/onebot/messages.ts', import.meta.url), 'utf8')
+const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', import.meta.url), 'utf8')
+
 describe('onebot webqq adapter', () => {
+  it('keeps OneBot WebQQ public types outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './types'")
+    expect(onebotSource).not.toContain('export interface WebQQMessage {')
+    expect(onebotSource).not.toContain('export interface WebQQContacts {')
+    expect(onebotTypesSource).toContain('export interface WebQQMessage')
+    expect(onebotTypesSource).toContain('export interface WebQQContacts')
+  })
+
+  it('keeps OneBot data field helpers outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './data'")
+    expect(onebotSource).not.toContain('function toArrayResult(')
+    expect(onebotSource).not.toContain('function getActionData(')
+    expect(onebotDataSource).toContain('export function toArrayResult')
+    expect(onebotDataSource).toContain('export function getActionData')
+  })
+
+  it('keeps OneBot text markup helpers outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './text'")
+    expect(onebotSource).not.toContain('function normalizeMentionMarkupText(')
+    expect(onebotSource).not.toContain('function getTextValue(')
+    expect(onebotTextSource).toContain('export function normalizeMentionMarkupText')
+    expect(onebotTextSource).toContain('export function getTextValue')
+  })
+
+  it('keeps OneBot card payload helpers outside the adapter entry', () => {
+    expect(onebotMessagesSource).toContain("from './card'")
+    expect(onebotSource).not.toContain("from './card'")
+    expect(onebotSource).not.toContain('function normalizeCardElement(')
+    expect(onebotCardSource).toContain('export function normalizeCardElement')
+  })
+
+  it('keeps OneBot display field helpers outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './display'")
+    expect(onebotSource).not.toContain('function getUserAvatar(')
+    expect(onebotSource).not.toContain('function normalizeGroupRole(')
+    expect(onebotDisplaySource).toContain('export function getUserAvatar')
+    expect(onebotDisplaySource).toContain('export function normalizeGroupRole')
+  })
+
+  it('keeps OneBot group notice normalization outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './notices'")
+    expect(onebotSource).not.toContain('function normalizeGroupNotices(')
+    expect(onebotNoticesSource).toContain('export function normalizeGroupNotices')
+  })
+
+  it('keeps OneBot group info normalization outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './group-info'")
+    expect(onebotSource).not.toContain('function normalizeGroupMember(')
+    expect(onebotSource).not.toContain('function normalizeGroupAnnouncement(')
+    expect(onebotGroupInfoSource).toContain('export function normalizeGroupMember')
+    expect(onebotGroupInfoSource).toContain('export function normalizeGroupAnnouncement')
+  })
+
+  it('keeps OneBot contact normalization outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './contacts'")
+    expect(onebotSource).not.toContain('function getRecentPeerType(')
+    expect(onebotSource).not.toContain('function normalizeFriend(')
+    expect(onebotSource).not.toContain('function normalizeFriendCategory(')
+    expect(onebotSource).not.toContain('function normalizeGroup(')
+    expect(onebotContactsSource).toContain('export function getRecentPeerType')
+    expect(onebotContactsSource).toContain('export function normalizeFriend')
+    expect(onebotContactsSource).toContain('export function normalizeGroup')
+  })
+
+  it('keeps OneBot action selection outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './actions'")
+    expect(onebotSource).not.toContain('function selectBot(')
+    expect(onebotSource).not.toContain('async function callAction(')
+    expect(onebotActionsSource).toContain('export function selectBot')
+    expect(onebotActionsSource).toContain('export async function callAction')
+  })
+
+  it('keeps OneBot image resolving outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './images'")
+    expect(onebotSource).not.toContain('async function normalizeImageElement(')
+    expect(onebotSource).not.toContain('async function resolveOneBotImage(')
+    expect(onebotImagesSource).toContain('export async function normalizeImageElement')
+    expect(onebotImagesSource).toContain('export async function resolveOneBotImage')
+  })
+
+  it('keeps OneBot message element display helpers outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './message-elements'")
+    expect(onebotSource).not.toContain('function normalizeFaceElement(')
+    expect(onebotSource).not.toContain('function summarizeElements(')
+    expect(onebotMessageElementsSource).toContain('export function normalizeFaceElement')
+    expect(onebotMessageElementsSource).toContain('export function summarizeElements')
+  })
+
+  it('keeps OneBot message normalization outside the adapter entry', () => {
+    expect(onebotSource).toContain("from './messages'")
+    expect(onebotSource).not.toContain('async function normalizeSegment(')
+    expect(onebotSource).not.toContain('async function normalizeMessage(')
+    expect(onebotSource).not.toContain('async function resolveOneBotQuote(')
+    expect(onebotSource).not.toContain('async function resolveOneBotForward(')
+    expect(onebotMessagesSource).toContain('export async function normalizeMessage(')
+    expect(onebotMessagesSource).toContain('export async function normalizeMessageElements(')
+    expect(onebotMessagesSource).toContain('export async function resolveOneBotQuote(')
+    expect(onebotMessagesSource).toContain('export async function resolveOneBotForward(')
+  })
+
   it('loads friends and groups through the OneBot request API', async () => {
     const request = vi.fn(async (action: string) => {
       if (action === 'get_friend_list') return [{

@@ -1,0 +1,101 @@
+<template>
+  <div
+    class="chat-capsule-webqq__forward-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-label="合并转发消息"
+    tabindex="0"
+    @click.self="emit('close')"
+    @keydown.esc="emit('close')"
+  >
+    <div class="chat-capsule-webqq__forward-modal" @click.stop>
+      <header class="chat-capsule-webqq__forward-modal-header">
+        <strong>{{ dialog.title || '合并转发' }}</strong>
+        <button type="button" aria-label="关闭合并转发消息" @click="emit('close')">
+          <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12"></path>
+            <path d="M18 6L6 18"></path>
+          </svg>
+        </button>
+      </header>
+      <div class="chat-capsule-webqq__forward-modal-body">
+        <article v-for="(item, itemIndex) in items" :key="`forward:${itemIndex}`" :class="['chat-capsule-webqq__message', 'is-incoming', getForwardItemClusterClass(itemIndex), { 'is-merged': isMergedForwardItem(itemIndex) }]">
+          <img class="chat-capsule-webqq__message-avatar" :src="withProxy(getForwardItemAvatar(item))" :alt="getForwardItemName(item)">
+          <div class="chat-capsule-webqq__message-content">
+            <div v-if="!isMergedForwardItem(itemIndex)" class="chat-capsule-webqq__sender-line">
+              <span class="chat-capsule-webqq__message-name">{{ getForwardItemName(item) }}</span>
+            </div>
+            <div class="chat-capsule-webqq__message-body">
+              <div class="chat-capsule-webqq__bubble">
+                <template v-for="(run, runIndex) in getWebQQElementRuns(item.elements)" :key="`forward:${itemIndex}:run:${runIndex}`">
+                  <span v-if="run.type === 'inline'" class="chat-capsule-webqq__inline-run">
+                    <template v-for="element in run.elements" :key="`forward:${itemIndex}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
+                      <span v-if="element.type === 'text'">{{ element.text }}</span>
+                      <span v-else>{{ element.text || '[消息]' }}</span>
+                    </template>
+                  </span>
+                  <div v-else-if="run.element.type === 'quote'" class="chat-capsule-webqq__quote">
+                    <strong v-if="run.element.title" class="chat-capsule-webqq__quote-title">{{ run.element.title }}</strong>
+                    <span>{{ run.element.text || '[引用消息]' }}</span>
+                  </div>
+                  <button
+                    v-else-if="run.element.type === 'forward'"
+                    class="chat-capsule-webqq__quote chat-capsule-webqq__forward"
+                    type="button"
+                    :disabled="!run.element.items?.length"
+                    aria-label="查看合并转发消息"
+                    @click.stop="emit('open-forward', run.element)"
+                  >
+                    <strong class="chat-capsule-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
+                    <span>{{ run.element.text || '[合并转发]' }}</span>
+                  </button>
+                  <div
+                    v-else-if="run.element.type === 'card'"
+                    class="chat-capsule-webqq__card"
+                  >
+                    <img v-if="run.element.imageUrl" class="chat-capsule-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
+                    <span class="chat-capsule-webqq__card-content">
+                      <strong class="chat-capsule-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
+                      <span v-if="run.element.text" class="chat-capsule-webqq__card-desc">{{ run.element.text }}</span>
+                      <span v-if="run.element.source" class="chat-capsule-webqq__card-source">{{ run.element.source }}</span>
+                    </span>
+                  </div>
+                  <button v-else-if="run.element.type === 'image' && run.element.url" class="chat-capsule-webqq__message-image" type="button" aria-label="查看大图" @click="emit('open-image', run.element.url)">
+                    <img :src="withProxy(run.element.url)" alt="图片" @load="emit('image-load')">
+                  </button>
+                  <span v-else>{{ run.element.text || '[消息]' }}</span>
+                </template>
+              </div>
+            </div>
+          </div>
+        </article>
+        <div v-if="!items.length" class="chat-capsule-webqq__forward-modal-empty">暂无消息</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import type { WebQQForwardItem } from '../state'
+import {
+  getForwardItemName,
+  getWebQQElementRuns,
+  type WebQQMessageElement,
+} from '../utils/webqq-message-view'
+
+defineProps<{
+  dialog: WebQQMessageElement
+  items: WebQQForwardItem[]
+  withProxy: (url: string) => string
+  getForwardItemAvatar: (item: WebQQForwardItem) => string
+  getForwardItemClusterClass: (index: number) => string
+  isMergedForwardItem: (index: number) => boolean
+}>()
+
+const emit = defineEmits<{
+  close: []
+  'open-forward': [element: WebQQMessageElement]
+  'open-image': [url: string]
+  'image-load': []
+}>()
+</script>
