@@ -176,7 +176,7 @@ export function createWebQQLiveRuntime(options: {
     const messageId = session.messageId || session.event.message?.id || readRawRecallMessageId(session)
     if (!messageId) return
     const operatorId = session.operatorId || session.event.operator?.id || session.userId || ''
-    const operatorName = session.event.operator?.name || session.event.member?.name || session.event.user?.name || operatorId || '有人'
+    const operatorName = session.event.member?.name || session.event.operator?.name || session.event.user?.name || operatorId || '有人'
     const summary = `${operatorName} 撤回了一条消息`
     const markRecalledMessage = options.config.webQQMarkRecalledMessages ?? true
     const eventMessage: WebQQMessage = {

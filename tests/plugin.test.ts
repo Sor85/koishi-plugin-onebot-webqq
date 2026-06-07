@@ -722,6 +722,7 @@ describe('chat capsule plugin wiring', () => {
         guild: { id: '20000', name: 'Guild Name' },
         channel: { id: '20000', name: 'Guild Name' },
         operator: { id: '30000', name: 'Alice' },
+        member: { name: '蒸汽机' },
         message: { id: 'new-1' },
       },
     }))
@@ -733,7 +734,7 @@ describe('chat capsule plugin wiring', () => {
       messageId: 'new-1',
       mode: 'remove',
       eventMessage: {
-        summary: 'Alice 撤回了一条消息',
+        summary: '蒸汽机 撤回了一条消息',
         event: {
           type: 'recall',
           targetMessageId: 'new-1',
@@ -743,7 +744,7 @@ describe('chat capsule plugin wiring', () => {
     const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
-        summary: 'Alice 撤回了一条消息',
+        summary: '蒸汽机 撤回了一条消息',
         event: {
           type: 'recall',
           targetMessageId: 'new-1',

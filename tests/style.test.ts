@@ -325,6 +325,16 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message:hover .chat-capsule-webqq__message-time')).toContain('opacity: 1')
   })
 
+  it('shows compact WebQQ recall status and event capsules', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-event')).toContain('width: fit-content')
+    expect(ruleBody('.chat-capsule-webqq__message-event')).toContain('max-width: 74%')
+    expect(ruleBody('.chat-capsule-webqq__message-recall-status')).toContain('opacity: 0')
+    expect(ruleBody('.chat-capsule-webqq__message-recall-status')).toContain('visibility: hidden')
+    expect(ruleBody('.chat-capsule-webqq__message-recall-status')).toContain('white-space: nowrap')
+    expect(ruleBodyIncluding('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')).toContain('opacity: 1')
+    expect(ruleBodyIncluding('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')).toContain('visibility: visible')
+  })
+
   it('keeps WebQQ contact message times in the top-right corner', () => {
     expect(ruleBody('.chat-capsule-webqq__contact')).toContain('position: relative')
     expect(ruleBody('.chat-capsule-webqq__contact')).toContain('padding: 10px 58px 10px 12px')

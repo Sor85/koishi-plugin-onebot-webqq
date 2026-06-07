@@ -936,8 +936,12 @@ describe('webqq observer view', () => {
     expect(clientState).toContain("type: 'recall'")
     expect(webqqMessageListView).toContain("message.event?.type === 'recall'")
     expect(webqqMessageListView).toContain('chat-capsule-webqq__message-event')
+    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-recall-status"')
+    expect(webqqMessageListView).toContain('已撤回')
     expect(webqqMessageListView).toContain("'is-recalled': message.recalled")
     expect(style).toContain('.chat-capsule-webqq__message.is-recalled')
+    expect(style).toContain('.chat-capsule-webqq__message-recall-status')
+    expect(style).toContain('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')
   })
 
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {

@@ -48,6 +48,7 @@
 
 .chat-capsule-webqq__message-event {
   align-self: center;
+  width: fit-content;
   max-width: 74%;
   margin: 0 auto 16px;
   padding: 3px 10px;
@@ -172,6 +173,23 @@
       transform: translateY(-50%);
     }
   }
+}
+
+.chat-capsule-webqq__message-recall-status {
+  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.58)));
+  font-size: 11px;
+  line-height: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, visibility 0.16s ease;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status,
+.chat-capsule-webqq__message.is-recalled:focus-within .chat-capsule-webqq__message-recall-status {
+  opacity: 1;
+  visibility: visible;
 }
 
 .chat-capsule-webqq__sender-line {

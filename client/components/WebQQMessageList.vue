@@ -99,6 +99,7 @@
                 <span v-else>{{ run.element.text || message.summary }}</span>
               </template>
             </div>
+            <div v-if="message.recalled" class="chat-capsule-webqq__message-recall-status">已撤回</div>
             <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
           </div>
         </div>
