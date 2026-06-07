@@ -27,6 +27,7 @@ export function registerConsoleEntry(
       webQQChatStyle: config.webQQChatStyle ?? 'qq',
       webQQColorMode: config.webQQColorMode ?? 'auto',
       webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
+      webQQMessageCacheLimit: config.webQQMessageCacheLimit ?? 100,
       useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
       hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? false,
       showWebQQAffinity: config.showWebQQAffinity ?? false,

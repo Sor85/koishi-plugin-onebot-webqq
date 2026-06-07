@@ -1,7 +1,7 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
 import Capsule from './Capsule.vue'
-import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
+import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
 import './style.scss'
 
 interface ClientData {
@@ -11,6 +11,7 @@ interface ClientData {
   webQQChatStyle?: WebQQChatStyle
   webQQColorMode?: WebQQColorMode
   webQQStorageBackend?: WebQQStorageBackend
+  webQQMessageCacheLimit?: number
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
   hideWebQQGroupLevel?: boolean
@@ -117,6 +118,7 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'
   webQQColorMode.value = data?.value?.webQQColorMode || 'auto'
   webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'browser'
+  webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100
   webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'
   useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false
   hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false

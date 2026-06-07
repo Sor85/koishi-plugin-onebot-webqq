@@ -92,10 +92,10 @@ export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: 
   return loadBrowserWebQQMessages(type, peerId)
 }
 
-export async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[], storageBackend: WebQQStorageBackend) {
+export async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[], storageBackend: WebQQStorageBackend, messageCacheLimit: number) {
   if (storageBackend === 'koishi') {
     await send('chat-capsule/webqq/messages/cache/save', { type, peerId, messages }).catch(() => {})
     return
   }
-  await saveBrowserWebQQMessages(type, peerId, messages)
+  await saveBrowserWebQQMessages(type, peerId, messages, messageCacheLimit)
 }

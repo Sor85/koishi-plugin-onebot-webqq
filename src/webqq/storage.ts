@@ -44,6 +44,7 @@ interface WebQQStorageContext {
 export const chatCapsuleStorageTable = 'onebot_webqq_storage'
 
 const webQQStateStorageId = 'state:webqq'
+const defaultWebQQMessageCacheLimit = 100
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
@@ -139,9 +140,11 @@ export async function loadKoishiWebQQMessageCache(ctx: WebQQStorageContext, conf
 export async function saveKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload) {
   if (config.webQQStorageBackend !== 'koishi') return
   const database = getWebQQDatabase(ctx)
+  const messageCacheLimit = config.webQQMessageCacheLimit ?? defaultWebQQMessageCacheLimit
+  const messages = payload.messages.slice(-messageCacheLimit)
   await database.upsert(chatCapsuleStorageTable, [{
     id: getWebQQMessageStorageId(payload),
-    payload: { messages: payload.messages },
+    payload: { messages },
     updatedAt: new Date(),
   }])
 }

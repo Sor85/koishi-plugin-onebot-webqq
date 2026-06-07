@@ -524,6 +524,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.const('koishi').description('Koishi 数据库')")
     expect(configSource).toContain(".default('browser')")
     expect(configSource).toContain("description('WebQQ 状态存储后端')")
+    expect(configSource).toContain("webQQMessageCacheLimit?: number")
+    expect(configSource).toContain("Schema.natural().min(1).max(1000).default(100).description('每个 WebQQ 会话保留的最近消息缓存数量')")
     expect(configSource).not.toContain("Schema.const('s3')")
     expect(configSource).not.toContain('webQQS3')
     expect(configSource).not.toContain('@aws-sdk/client-s3')
@@ -554,6 +556,7 @@ describe('chat capsule plugin wiring', () => {
       showWebQQRelationship: false,
       showWebQQCapsuleUnread: true,
       webQQStorageBackend: 'browser',
+      webQQMessageCacheLimit: 100,
     })
   })
 
@@ -659,6 +662,39 @@ describe('chat capsule plugin wiring', () => {
     expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [{
       id: 'messages:friend:10001',
       payload: { messages: cachedMessages },
+      updatedAt: expect.any(Date),
+    }])
+  })
+
+  it('limits Koishi WebQQ message cache per conversation', async () => {
+    const database = {
+      get: vi.fn(async () => []),
+      upsert: vi.fn(async () => {}),
+    }
+    const { ctx, addListener } = createFakeContext({ database })
+    type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: { webQQStorageBackend?: 'koishi'; webQQMessageCacheLimit?: number }) => void
+    const applyWithConfig: ApplyWithConfig = plugin.apply
+
+    applyWithConfig(ctx, { webQQStorageBackend: 'koishi', webQQMessageCacheLimit: 2 })
+
+    const saveMessageCache = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages/cache/save')?.[1]
+    const messages: WebQQMessage[] = [1, 2, 3].map((index) => ({
+      id: `msg-${index}`,
+      sequence: `${index}`,
+      time: 1710000000000 + index,
+      senderId: '10000',
+      senderName: 'Capsule Bot',
+      senderAvatar: '',
+      direction: 'incoming',
+      summary: `消息 ${index}`,
+      elements: [{ type: 'text', text: `消息 ${index}` }],
+    }))
+
+    await saveMessageCache?.({ type: 'group', peerId: '20000', messages })
+
+    expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [{
+      id: 'messages:group:20000',
+      payload: { messages: messages.slice(-2) },
       updatedAt: expect.any(Date),
     }])
   })
@@ -1981,6 +2017,7 @@ describe('chat capsule plugin wiring', () => {
       showWebQQRelationship: false,
       showWebQQCapsuleUnread: true,
       webQQStorageBackend: 'browser',
+      webQQMessageCacheLimit: 100,
     })
   })
 
@@ -1998,6 +2035,7 @@ describe('chat capsule plugin wiring', () => {
       webQQAffinityScopeId?: string
       showWebQQCapsuleUnread?: boolean
       webQQStorageBackend?: 'browser' | 'koishi'
+      webQQMessageCacheLimit?: number
     }) => void
     const applyWithConfig: ApplyWithConfig = plugin.apply
 
@@ -2013,6 +2051,7 @@ describe('chat capsule plugin wiring', () => {
       webQQAffinityScopeId: 'cat',
       showWebQQCapsuleUnread: false,
       webQQStorageBackend: 'koishi',
+      webQQMessageCacheLimit: 50,
     })
 
     const data = addEntry.mock.calls[0][1]
@@ -2029,6 +2068,7 @@ describe('chat capsule plugin wiring', () => {
       showWebQQRelationship: true,
       showWebQQCapsuleUnread: false,
       webQQStorageBackend: 'koishi',
+      webQQMessageCacheLimit: 50,
     })
   })
 

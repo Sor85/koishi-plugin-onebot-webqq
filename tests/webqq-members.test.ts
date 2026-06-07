@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { showWebQQCapsuleUnread, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQStorageBackend, webQQTheme, webQQTotalUnread, type WebQQGroupMember } from '../client/state'
+import { showWebQQCapsuleUnread, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTotalUnread, type WebQQGroupMember } from '../client/state'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -16,6 +16,7 @@ describe('webqq group members', () => {
     expect(webQQTheme.value).toBe('fresh')
     expect(webQQChatStyle.value).toBe('qq')
     expect(webQQStorageBackend.value).toBe('browser')
+    expect(webQQMessageCacheLimit.value).toBe(100)
     expect(webQQAccentColor.value).toBe('#2563eb')
     expect(webQQAvatarAccentColor.value).toBe('')
     expect(useBotAvatarThemeColor.value).toBe(false)

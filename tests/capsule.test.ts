@@ -177,11 +177,12 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')
     expect(clientEntry).toContain('webQQStorageBackend?: WebQQStorageBackend')
+    expect(clientEntry).toContain('webQQMessageCacheLimit?: number')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain('showWebQQAffinity?: boolean')
     expect(clientEntry).toContain('showWebQQRelationship?: boolean')
@@ -190,6 +191,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'")
     expect(clientEntry).toContain("webQQColorMode.value = data?.value?.webQQColorMode || 'auto'")
     expect(clientEntry).toContain("webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'browser'")
+    expect(clientEntry).toContain('webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100')
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false')

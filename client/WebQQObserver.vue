@@ -137,7 +137,7 @@ import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
 import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices } from './api/webqq'
-import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
+import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './state'
 import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
 import { useWebQQContacts } from './stores/webqq-contacts'
@@ -206,7 +206,7 @@ const {
   selectRecent: selectWebQQRecent,
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
-const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend)
+const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend, webQQMessageCacheLimit)
 const { imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const loading = ref(false)

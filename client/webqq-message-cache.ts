@@ -1,7 +1,5 @@
 import type { WebQQMessage } from './state'
 
-export const webQQMessageCacheLimit = 100
-
 const webQQMessageCacheStoreName = 'messages'
 let webQQMessageCacheDatabase: IDBDatabase | undefined
 
@@ -51,10 +49,10 @@ export async function loadBrowserWebQQMessages(type: string, peerId: string): Pr
 }
 
 // 保存当前浏览器里指定 WebQQ 会话的最近消息缓存。
-export async function saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[]): Promise<void> {
+export async function saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number): Promise<void> {
   try {
     const database = await openWebQQMessageCacheDatabase()
-    const cachedMessages = messages.slice(-webQQMessageCacheLimit)
+    const cachedMessages = messages.slice(-limit)
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(webQQMessageCacheStoreName, 'readwrite')
       const store = transaction.objectStore(webQQMessageCacheStoreName)

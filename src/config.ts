@@ -6,6 +6,7 @@ export interface Config {
   onebotSelfId?: string
   onebotProtocol?: WebQQProtocol
   historyLimit?: number
+  webQQMessageCacheLimit?: number
   webQQTheme?: 'fresh' | 'frosted' | 'glass'
   webQQChatStyle?: 'qq' | 'telegram'
   webQQColorMode?: 'auto' | 'light' | 'dark'
@@ -27,6 +28,7 @@ export const Config: Schema<Config> = Schema.object({
     Schema.const('llbot').description('LLBot'),
   ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
   historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
+  webQQMessageCacheLimit: Schema.natural().min(1).max(1000).default(100).description('每个 WebQQ 会话保留的最近消息缓存数量'),
   webQQTheme: Schema.union([
     Schema.const('fresh').description('清爽'),
     Schema.const('frosted').description('毛玻璃'),

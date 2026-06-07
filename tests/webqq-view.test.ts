@@ -546,10 +546,11 @@ describe('webqq observer view', () => {
   it('caches full WebQQ messages in IndexedDB for the browser backend', () => {
     expect(webqqStorage).toContain('loadBrowserWebQQMessages')
     expect(webqqStorage).toContain('saveBrowserWebQQMessages')
-    expect(webqqMessageCache).toContain('const webQQMessageCacheLimit = 100')
+    expect(webqqMessageCache).not.toContain('const webQQMessageCacheLimit = 100')
     expect(webqqMessageCache).toContain("indexedDB.open('chat-capsule-webqq'")
     expect(webqqMessageCache).toContain("database.createObjectStore('messages', { keyPath: 'id' })")
-    expect(webqqMessageCache).toContain('messages.slice(-webQQMessageCacheLimit)')
+    expect(webqqMessageCache).toContain('saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number)')
+    expect(webqqMessageCache).toContain('messages.slice(-limit)')
   })
 
   it('uses Koishi DB message cache listeners for the koishi backend', () => {
@@ -559,10 +560,10 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/load'")
     expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/save'")
     expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId)')
-    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, messages)')
-    expect(webqqView).toContain('useWebQQMessageCache(webQQStorageBackend)')
+    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, messages, messageCacheLimit)')
+    expect(webqqView).toContain('useWebQQMessageCache(webQQStorageBackend, webQQMessageCacheLimit)')
     expect(webqqMessageCacheStore).toContain('loadStoredWebQQMessages(type, peerId, storageBackend.value)')
-    expect(webqqMessageCacheStore).toContain('saveStoredWebQQMessages(type, peerId, messages, storageBackend.value)')
+    expect(webqqMessageCacheStore).toContain('saveStoredWebQQMessages(type, peerId, messages, storageBackend.value, messageCacheLimit.value)')
   })
 
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
