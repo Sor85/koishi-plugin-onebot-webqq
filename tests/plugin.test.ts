@@ -34,7 +34,7 @@ import { createMessageInput } from '../src/chatluna/message-input'
 
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const chatlunaCharacterLockSource = await readFile(new URL('../src/chatluna/character-lock.ts', import.meta.url), 'utf8')
-const consoleEntrySource = await readFile(new URL('../src/console-entry.ts', import.meta.url), 'utf8')
+const consoleEntrySource = await readFile(new URL('../src/console/entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const webqqConsoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
 const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna/message-input.ts', import.meta.url), 'utf8')
@@ -157,7 +157,7 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps console entry data outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './console-entry'")
+    expect(pluginSource).toContain("from './console/entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
     expect(pluginSource).not.toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'browser'")
     expect(consoleEntrySource).toContain('export function registerConsoleEntry')

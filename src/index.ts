@@ -1,7 +1,7 @@
 import type { Session } from 'koishi'
 import type { Config as PluginConfig } from './config'
 import { registerChatLunaCharacterLockSync } from './chatluna/character-lock'
-import { registerConsoleEntry } from './console-entry'
+import { registerConsoleEntry } from './console/entry'
 import { registerWebQQConsoleListeners } from './webqq/console'
 import {
   CapsuleSnapshot,

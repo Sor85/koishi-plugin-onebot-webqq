@@ -14,7 +14,7 @@
 
 - `src/index.ts`：Koishi 插件入口，负责服务注入、配置导出、ChatLuna 状态监听和顶层注册编排
 - `src/chatluna/character-lock.ts`：ChatLuna character 响应锁同步 helper，负责包裹 acquire/release 并在 dispose 恢复原方法
-- `src/console-entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
+- `src/console/entry.ts`：Koishi Console 前端入口注册 helper，负责 entry 文件路径和初始配置数据
 - `src/webqq/console.ts`：WebQQ Console RPC listener 注册 helper，负责联系人、消息、群信息、通知、状态存储和消息缓存的 console 事件桥
 - `src/config.ts`：插件配置类型和 Koishi 配置 schema
 - `src/onebot/index.ts`：OneBot action 适配入口，负责联系人、群信息、历史消息、通知和图片 action 的服务编排
@@ -95,7 +95,8 @@
 
 - `src/config.ts`：后端插件配置 schema 和配置类型
 - `src/chatluna/character-lock.ts`：后端 ChatLuna character 响应锁同步
-- `src/console-entry.ts`：后端 Koishi Console 前端入口注册
+- `src/console/entry.ts`：后端 Koishi Console 前端入口注册
+- `src/console/`：后端 Koishi Console 子领域 helper，放控制台 entry 和后续 Console 相关 glue
 - `src/webqq/console.ts`：后端 WebQQ Console RPC listener 注册
 - `src/state/index.ts`：后端内存状态机，对外继续通过 `src/state` 导入
 - `src/state/types.ts`：后端内存状态输入和快照类型
