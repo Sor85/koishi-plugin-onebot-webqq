@@ -73,7 +73,8 @@
 - `client/WebQQObserver.vue`：WebQQ 主界面编排组件，负责联系人、消息、通知、群信息、缓存、滚动、图片预览和面板状态连接
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
 - `client/webqq-sender-metadata.ts`：前端群成员身份缓存补齐
-- `client/style.scss`：胶囊和 WebQQ 面板全部样式
+- `client/style.scss`：前端样式入口，继续承接 WebQQ 面板和部分全局响应式样式
+- `client/styles/capsule.scss`：右下角胶囊外壳基础样式
 
 ## 简单目录规则
 
@@ -110,6 +111,7 @@
 - `client/components/`：前端展示组件，按完整展示区域拆分，避免拆单个按钮或图标
 - `client/*.vue`：前端入口和仍未迁移的 WebQQ 展示组件，状态与请求编排继续留在 stores 或主界面组件
 - `client/stores/`：后续拆出的前端响应式状态或 composable
+- `client/styles/`：前端样式 partial，按完整界面区域拆分，入口仍由 `client/style.scss` 统一引入
 - `client/utils/`：前端纯函数和浏览器小工具
 - `client/types.ts`：后续如果前端类型继续增长，再从 `client/state.ts` 拆出
 
@@ -127,6 +129,6 @@
 
 - `src/index.ts` 已拆出 Console entry、WebQQ RPC listener 和 character 响应锁同步，但仍承担插件入口、live 消息标准化、ChatLuna 状态和顶层注册编排
 - `client/WebQQObserver.vue` 已拆出 API、侧栏和消息列表，但仍承担请求编排、缓存、滚动、通知和多块面板连接
-- `client/style.scss` 体量过大，且强绑定 `Capsule.vue` 和 `WebQQObserver.vue` 的 class 结构
+- `client/style.scss` 已拆出胶囊外壳基础样式，但 WebQQ 面板样式仍集中且强绑定 `WebQQObserver.vue` 和子组件 class 结构
 - `src/index.ts` 和 `src/onebot.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查
