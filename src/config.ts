@@ -7,6 +7,9 @@ export interface Config {
   onebotProtocol?: WebQQProtocol
   historyLimit?: number
   webQQMessageCacheLimit?: number
+  webQQImageCacheEnabled?: boolean
+  webQQImageCacheLimitMB?: number
+  webQQImageCacheItemLimitMB?: number
   webQQTheme?: 'fresh' | 'frosted' | 'glass'
   webQQChatStyle?: 'qq' | 'telegram'
   webQQColorMode?: 'auto' | 'light' | 'dark'
@@ -29,6 +32,9 @@ export const Config: Schema<Config> = Schema.object({
   ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
   historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
   webQQMessageCacheLimit: Schema.natural().min(1).max(1000).default(100).description('每个 WebQQ 会话保留的最近消息缓存数量'),
+  webQQImageCacheEnabled: Schema.boolean().default(true).description('启用 WebQQ 图片代理内存缓存，会额外占用服务器内存'),
+  webQQImageCacheLimitMB: Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB'),
+  webQQImageCacheItemLimitMB: Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB'),
   webQQTheme: Schema.union([
     Schema.const('fresh').description('清爽'),
     Schema.const('frosted').description('毛玻璃'),

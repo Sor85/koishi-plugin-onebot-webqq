@@ -93,7 +93,11 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const historyLimit = config.historyLimit ?? 100
   const debug = !!config.debug
   const logger = debug ? ctx.logger?.('chat-capsule') : undefined
-  const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger)
+  const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger, {
+    cacheEnabled: config.webQQImageCacheEnabled ?? true,
+    cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024,
+    cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024,
+  })
   const webqq = createOneBotWebQQService(ctx, {
     selfId: config.onebotSelfId,
     protocol: config.onebotProtocol,

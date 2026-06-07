@@ -22,6 +22,12 @@ interface WebQQImageUrlResolverLogger {
   info(format: string, ...param: unknown[]): unknown
 }
 
+export interface WebQQImageUrlResolverOptions {
+  cacheEnabled?: boolean
+  cacheLimitBytes?: number
+  cacheItemLimitBytes?: number
+}
+
 interface CachedWebQQImage {
   body: Buffer
   contentType: string
@@ -33,11 +39,18 @@ const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
 const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
 
-export function createWebQQImageUrlResolver(ctx: WebQQImageUrlResolverContext, logger?: WebQQImageUrlResolverLogger): WebQQImageUrlResolver {
+export function createWebQQImageUrlResolver(
+  ctx: WebQQImageUrlResolverContext,
+  logger?: WebQQImageUrlResolverLogger,
+  options: WebQQImageUrlResolverOptions = {},
+): WebQQImageUrlResolver {
   const files = new Map<string, string>()
   const ids = new Map<string, string>()
   const imageCache = new Map<string, CachedWebQQImage>()
   let imageCacheSize = 0
+  const cacheEnabled = options.cacheEnabled ?? true
+  const cacheLimitBytes = options.cacheLimitBytes ?? WEBQQ_IMAGE_CACHE_LIMIT
+  const cacheItemLimitBytes = options.cacheItemLimitBytes ?? WEBQQ_IMAGE_CACHE_ITEM_LIMIT
 
   function setImageHeaders(routerCtx: WebQQImageContext, id: string, contentType: string) {
     routerCtx.set('content-type', contentType)
@@ -46,7 +59,7 @@ export function createWebQQImageUrlResolver(ctx: WebQQImageUrlResolverContext, l
   }
 
   function cacheImage(id: string, body: Buffer, contentType: string) {
-    if (body.length > WEBQQ_IMAGE_CACHE_ITEM_LIMIT) return
+    if (!cacheEnabled || body.length > cacheItemLimitBytes) return
 
     const cached = imageCache.get(id)
     if (cached) imageCacheSize -= cached.size
@@ -59,7 +72,7 @@ export function createWebQQImageUrlResolver(ctx: WebQQImageUrlResolverContext, l
     })
     imageCacheSize += body.length
 
-    while (imageCacheSize > WEBQQ_IMAGE_CACHE_LIMIT) {
+    while (imageCacheSize > cacheLimitBytes) {
       let oldestId: string | undefined
       let oldestAccess = Infinity
       for (const [cacheId, cachedImage] of imageCache) {
@@ -82,13 +95,15 @@ export function createWebQQImageUrlResolver(ctx: WebQQImageUrlResolverContext, l
       routerCtx.status = 404
       return
     }
-    const cached = imageCache.get(id)
-    if (cached) {
-      cached.lastAccessed = Date.now()
-      routerCtx.status = 200
-      setImageHeaders(routerCtx, id, cached.contentType)
-      routerCtx.body = cached.body
-      return
+    if (cacheEnabled) {
+      const cached = imageCache.get(id)
+      if (cached) {
+        cached.lastAccessed = Date.now()
+        routerCtx.status = 200
+        setImageHeaders(routerCtx, id, cached.contentType)
+        routerCtx.body = cached.body
+        return
+      }
     }
     logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
     if (isRemoteImageSource(file)) {
