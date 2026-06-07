@@ -144,7 +144,7 @@
 ## 当前高风险区域
 
 - `src/index.ts` 已拆出 Console entry、WebQQ RPC listener、character 响应锁同步和 WebQQ live runtime，但仍承担插件入口、ChatLuna 活动状态和顶层注册编排
-- `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表和消息历史加载，但仍承担联系人加载、实时消息接收、通知和多块面板连接
+- `client/WebQQObserver.vue` 已拆出 API、侧栏、消息列表、消息历史加载和实时消息接收，但仍承担联系人加载、通知和多块面板连接
 - `client/style.scss` 已拆出主要界面区域样式和主题色覆盖，但全局 keyframes、reduced-motion 和响应式样式仍集中，需要继续谨慎按职责处理
 - `src/webqq-live-runtime.ts` 和 `src/onebot-messages.ts` 存在 live 消息与历史消息标准化的相似逻辑，后续修改容易漂移
 - `src/onebot.ts` 与 `client/state.ts` 各自维护 WebQQ DTO 类型，后续协议字段变更需要同步检查
