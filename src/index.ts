@@ -24,6 +24,7 @@ import {
   WebQQNoticeAction,
   WebQQRecallPayload,
 } from './onebot'
+import { registerWebQQReactionInterceptor } from './onebot/raw-event'
 import {
   chatCapsuleStorageTable,
 } from './webqq/storage'
@@ -175,8 +176,8 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     await liveRuntime.recordWebQQNotice(session)
   })
 
-  ctx.on('reaction-added', (session) => {
-    liveRuntime.recordWebQQReaction(session)
+  registerWebQQReactionInterceptor(ctx, (reaction) => {
+    liveRuntime.recordWebQQReaction(reaction)
   })
 
   ctx.on('friend-request', (session) => {

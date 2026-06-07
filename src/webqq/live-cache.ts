@@ -23,23 +23,25 @@ export function mergeWebQQLiveMessages(history: WebQQMessage[], live: WebQQMessa
   return limit ? merged.slice(-limit) : merged
 }
 
-export function applyWebQQReactionToLiveMessages(messages: WebQQMessage[], messageId: string, reaction: WebQQMessageReaction) {
+// 贴表情事件的 count 是该表情的全量人数，因此直接覆盖；is_add 为 false（取消）
+// 或 count 归零时移除该表情，移空后清掉 reactions 字段避免渲染空容器。
+export function applyWebQQReactionToLiveMessages(messages: WebQQMessage[], messageId: string, reaction: WebQQMessageReaction, isAdd: boolean) {
   let matched = false
   const nextMessages = messages.map((message) => {
     if (!isMessageTarget(message, messageId)) return message
     matched = true
     const reactions = message.reactions?.slice() ?? []
     const index = reactions.findIndex((item) => item.emojiId === reaction.emojiId)
-    if (index >= 0) {
-      reactions[index] = {
-        ...reactions[index],
-        label: reaction.label || reactions[index].label,
-        count: reactions[index].count + reaction.count,
-      }
+    if (!isAdd || reaction.count <= 0) {
+      if (index >= 0) reactions.splice(index, 1)
+    } else if (index >= 0) {
+      reactions[index] = { ...reactions[index], label: reaction.label || reactions[index].label, count: reaction.count }
     } else {
       reactions.push(reaction)
     }
-    return { ...message, reactions }
+    const next: WebQQMessage = { ...message, reactions }
+    if (!reactions.length) delete next.reactions
+    return next
   })
   return matched ? nextMessages : undefined
 }

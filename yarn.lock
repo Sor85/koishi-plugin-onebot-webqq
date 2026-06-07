@@ -4016,6 +4016,7 @@ __metadata:
     "@types/node": "npm:^22.10.1"
     "@vitejs/plugin-vue": "npm:^5.1.4"
     koishi: "npm:^4.18.9"
+    qface: "npm:^1.4.1"
     sass: "npm:^1.77.0"
     schemastery: "npm:^3.18.0"
     shx: "npm:^0.4.0"
@@ -4638,6 +4639,13 @@ __metadata:
     end-of-stream: "npm:^1.1.0"
     once: "npm:^1.3.1"
   checksum: 10c0/2780e66b5471c19e3e3e1063b84f3f6a3a08367f24c5ed552f98cd5901e6ada27c7ad6495d4244f553fd03b01884a4561933064f053f47c8994d84fd352768ea
+  languageName: node
+  linkType: hard
+
+"qface@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "qface@npm:1.4.1"
+  checksum: 10c0/64f84389b120c3a9b3408eacbedf1eac895ab19abdf4341a8610cdc6eff1b1c92024083b342ea091f2fe897544aefb57bd5a509f4483daeee41403065d7a389c
   languageName: node
   linkType: hard
 

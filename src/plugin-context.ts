@@ -49,5 +49,6 @@ export interface ChatCapsuleContext {
   logger?(name: string): DebugLogger
   on(event: string, listener: (...args: any[]) => void): unknown
   before(event: 'send', listener: (session?: Session) => unknown): unknown
+  setInterval(callback: () => void, delay: number): unknown
   inject(services: Record<string, { required: boolean }>, callback: (inner: ChatCapsuleContext) => void): unknown
 }

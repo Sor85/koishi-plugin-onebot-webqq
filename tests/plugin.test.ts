@@ -63,12 +63,15 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
   const modelExtend = vi.fn((_table: string, _fields: unknown, _options?: unknown) => {})
   const hasConsole = options.console ?? true
 
-  const base: Pick<ChatCapsuleContext, 'on' | 'before'> = {
+  const base: Pick<ChatCapsuleContext, 'on' | 'before' | 'setInterval'> = {
     on(event, listener) {
       ;(listeners[event] ||= []).push(listener)
     },
     before(event, listener) {
       ;(listeners[`before:${event}`] ||= []).push(listener)
+    },
+    setInterval() {
+      return () => {}
     },
   }
 
@@ -754,10 +757,18 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('broadcasts WebQQ poke, mute, and reaction events', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
     const bot = {
       platform: 'onebot',
       selfId: '10000',
       status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
       internal: {
         get_group_list: vi.fn(async () => []),
         get_group_msg_history: vi.fn(async () => ({ messages: [] })),
@@ -777,6 +788,7 @@ describe('chat capsule plugin wiring', () => {
     const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
 
     plugin.apply(ctx)
+    const emitReaction = (data: Record<string, unknown>) => socketListener?.({ data: JSON.stringify(data) })
     await listeners.message[0](createSession({
       bot,
       timestamp: 1710000001000,
@@ -828,20 +840,16 @@ describe('chat capsule plugin wiring', () => {
         },
       },
     }))
-    listeners['reaction-added'][0](createSession({
-      bot,
-      timestamp: 1710000004000,
-      event: {
-        platform: 'onebot',
-        timestamp: 1710000004000,
-        guild: { id: '20000', name: 'Guild Name' },
-        channel: { id: '20000', name: 'Guild Name' },
-        user: { id: '40000', name: 'Bob' },
-        member: { name: 'Bob Card' },
-        message: { id: 'new-1' },
-        emoji: { id: '66', name: '点赞' },
-      },
-    }))
+    // 贴上：count 为该表情全量人数（2 人），emoji_id 76 经 qface 转为「赞」
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '40000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 2 }],
+      is_add: true,
+    })
 
     const webqqMessages = broadcast.mock.calls
       .filter(([event]) => event === 'chat-capsule/webqq/message')
@@ -869,9 +877,9 @@ describe('chat capsule plugin wiring', () => {
         message: expect.objectContaining({
           id: 'new-1',
           reactions: [{
-            emojiId: '66',
-            label: '点赞',
-            count: 1,
+            emojiId: '76',
+            label: '赞',
+            count: 2,
           }],
         }),
       }),
@@ -889,12 +897,25 @@ describe('chat capsule plugin wiring', () => {
       expect.objectContaining({
         id: 'new-1',
         reactions: [{
-          emojiId: '66',
-          label: '点赞',
-          count: 1,
+          emojiId: '76',
+          label: '赞',
+          count: 2,
         }],
       }),
     ]))
+
+    // 取消：is_add false 应移除该表情，移空后 reactions 字段消失
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '40000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 0 }],
+      is_add: false,
+    })
+    const finalMessages = await loadMessages?.({ type: 'group', peerId: '20000', limit: 20 }) as Array<{ id: string; reactions?: unknown }>
+    expect(finalMessages.find((item) => item.id === 'new-1')).not.toHaveProperty('reactions')
   })
 
   it('keeps ChatLuna message input building outside the plugin entry', () => {

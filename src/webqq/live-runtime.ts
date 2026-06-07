@@ -1,8 +1,10 @@
 import type { Session } from 'koishi'
+import * as qface from 'qface'
 import type { Config as PluginConfig } from '../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../chatluna/thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../chatluna/thinking'
 import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQRecallPayload } from '../onebot'
+import type { WebQQRawReaction } from '../onebot/raw-event'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
 import { isRecord, readRecordText } from '../shared/structured-text'
 import { attachWebQQAffinityBadges } from './affinity'
@@ -70,20 +72,29 @@ function formatMuteDuration(seconds: number) {
   return `${seconds} 秒`
 }
 
+// QQ 表情贴上报的 emoji_id 多为数字 ID，用 qface 转成可读名（如「赞」）；
+// 取不到时回退原值（unicode emoji 可直接显示，纯数字 ID 兜底为 [表情]）。
+function readWebQQReactionLabel(emojiId: string) {
+  const name = qface.get(emojiId)?.QDes?.replace(/^\//, '')
+  if (name) return name
+  return /^\d+$/.test(emojiId) ? '[表情]' : emojiId
+}
+
 function createWebQQEventMessage(
   peer: { type: WebQQChatType; peerId: string },
-  session: Session,
+  time: number,
   type: NonNullable<WebQQMessage['event']>['type'],
   summary: string,
   senderId: string,
+  senderName: string,
   targetMessageId?: string,
 ): WebQQMessage {
   return {
-    id: `${type}:${peer.type}:${peer.peerId}:${session.timestamp}:${senderId}:${targetMessageId || ''}`,
-    sequence: `${type}:${session.timestamp}:${targetMessageId || senderId}`,
-    time: session.timestamp,
+    id: `${type}:${peer.type}:${peer.peerId}:${time}:${senderId}:${targetMessageId || ''}`,
+    sequence: `${type}:${time}:${targetMessageId || senderId}`,
+    time,
     senderId,
-    senderName: readSessionUserName(session, senderId),
+    senderName,
     senderAvatar: getWebQQUserAvatar(senderId),
     direction: 'incoming',
     summary,
@@ -285,7 +296,7 @@ export function createWebQQLiveRuntime(options: {
       )
       broadcastWebQQLivePayload({
         ...peer,
-        message: createWebQQEventMessage(peer, session, 'poke', `${senderName} 戳了戳 ${targetName}`, senderId),
+        message: createWebQQEventMessage(peer, session.timestamp, 'poke', `${senderName} 戳了戳 ${targetName}`, senderId, readSessionUserName(session, senderId)),
       })
       return
     }
@@ -311,37 +322,27 @@ export function createWebQQLiveRuntime(options: {
         : `${operatorName} 禁言了 ${targetName}${durationText ? ` ${durationText}` : ''}`
       broadcastWebQQLivePayload({
         ...peer,
-        message: createWebQQEventMessage(peer, session, 'mute', summary, operatorId),
+        message: createWebQQEventMessage(peer, session.timestamp, 'mute', summary, operatorId, readSessionUserName(session, operatorId)),
       })
     }
   }
-  const recordWebQQReaction = (session: Session | undefined) => {
-    if (!session) return
-    const peer = readWebQQPeer(session)
-    if (!peer) return
-    const data = readRawEventData(session)
-    const messageId = session.messageId || session.event.message?.id || readRecordText(data, ['message_id', 'messageId', 'msg_id', 'msgId'])
-    const emojiId = session.event.emoji?.id || readRecordText(data, ['emoji_id', 'emojiId', 'id'])
-    if (!messageId || !emojiId) return
-    const label = session.event.emoji?.name || readRecordText(data, ['emoji_name', 'emojiName', 'emoji']) || emojiId
-    const reaction: WebQQMessageReaction = {
-      emojiId,
-      label,
-      count: 1,
-    }
+  const recordWebQQReaction = (reaction: WebQQRawReaction) => {
+    const peer = { type: 'group' as const, peerId: reaction.groupId }
+    const label = readWebQQReactionLabel(reaction.emojiId)
+    const entry: WebQQMessageReaction = { emojiId: reaction.emojiId, label, count: reaction.count }
     const key = getWebQQLiveMessageKey(peer)
-    const nextMessages = applyWebQQReactionToLiveMessages(liveMessages.get(key) ?? [], messageId, reaction)
+    const nextMessages = applyWebQQReactionToLiveMessages(liveMessages.get(key) ?? [], reaction.messageId, entry, reaction.isAdd)
     if (nextMessages) {
       liveMessages.set(key, nextMessages)
-      const message = nextMessages.find((item) => item.id === messageId || item.sequence === messageId)
+      const message = nextMessages.find((item) => item.id === reaction.messageId || item.sequence === reaction.messageId)
       if (message) options.ctx.console?.broadcast('chat-capsule/webqq/message', { ...peer, message }, options.consoleAuthOptions)
       return
     }
-    const senderId = session.userId || session.event.user?.id || ''
-    const senderName = readSessionUserName(session, senderId)
+    if (!reaction.isAdd) return
+    const senderName = reaction.userId || '有人'
     broadcastWebQQLivePayload({
       ...peer,
-      message: createWebQQEventMessage(peer, session, 'reaction', `${senderName} 给一条消息贴了 ${label}`, senderId, messageId),
+      message: createWebQQEventMessage(peer, Date.now(), 'reaction', `${senderName} 给一条消息贴了 ${label}`, reaction.userId, senderName, reaction.messageId),
     })
   }
 
