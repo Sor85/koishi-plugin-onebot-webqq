@@ -259,6 +259,8 @@ describe('chat capsule plugin wiring', () => {
     }
     await handler(routerCtx)
     expect(routerCtx.set).toHaveBeenCalledWith('content-type', 'image/png')
+    expect(routerCtx.set).toHaveBeenCalledWith('cache-control', 'private, max-age=86400, immutable')
+    expect(routerCtx.set).toHaveBeenCalledWith('etag', `"${routerCtx.params.id}"`)
     expect(routerCtx.body).toBeDefined()
 
     const missingCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
@@ -267,6 +269,49 @@ describe('chat capsule plugin wiring', () => {
     }
     await handler(missingCtx)
     expect(missingCtx.status).toBe(404)
+    expect(missingCtx.set).not.toHaveBeenCalledWith('cache-control', expect.any(String))
+  })
+
+  it('caches remote WebQQ image proxy bytes in memory', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/image.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const createRouterCtx = () => ({
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      })
+      const firstCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = createRouterCtx()
+      const secondCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = createRouterCtx()
+
+      await handler(firstCtx)
+      await handler(secondCtx)
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(firstCtx.status).toBe(200)
+      expect(secondCtx.status).toBe(200)
+      expect(secondCtx.set).toHaveBeenCalledWith('content-type', 'image/jpeg')
+      expect(secondCtx.set).toHaveBeenCalledWith('cache-control', 'private, max-age=86400, immutable')
+      expect(secondCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('keeps WebQQ session display helpers outside the plugin entry', () => {
