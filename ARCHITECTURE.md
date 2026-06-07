@@ -73,6 +73,7 @@
 - `client/components/WebQQImagePreview.vue`：WebQQ 图片预览遮罩展示组件
 - `client/components/WebQQNoticeMenu.vue`：WebQQ 好友申请和群通知菜单展示组件
 - `client/WebQQObserver.vue`：WebQQ 主界面编排组件，负责联系人、消息、通知、群信息、缓存、滚动、图片预览和面板状态连接
+- `client/stores/webqq-live-messages.ts`：WebQQ live 消息接收 composable，负责前端实时消息落库、摘要和未读数更新
 - `client/stores/webqq-message-history.ts`：WebQQ 消息首屏加载、历史翻页、缓存合并和加载错误状态
 - `client/webqq-message-cache.ts`：浏览器 IndexedDB 消息缓存
 - `client/webqq-sender-metadata.ts`：前端群成员身份缓存补齐

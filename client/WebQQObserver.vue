@@ -130,7 +130,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { receive, withProxy } from '@koishijs/client'
+import { withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
@@ -138,12 +138,13 @@ import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
 import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices } from './api/webqq'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
-import type { WebQQFriend, WebQQGroup, WebQQLiveMessage, WebQQMessage } from './state'
+import type { WebQQFriend, WebQQGroup, WebQQMessage } from './state'
 import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
 import { useWebQQImagePreview } from './stores/webqq-image-preview'
+import { useWebQQLiveMessages } from './stores/webqq-live-messages'
 import { useWebQQMessageCache } from './stores/webqq-message-cache'
 import { useWebQQMessageHistory } from './stores/webqq-message-history'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
@@ -166,7 +167,6 @@ import {
   getUnreadText,
   getWebQQElementRuns,
   isImageOnlyMessage,
-  mergeMessages,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
@@ -361,28 +361,17 @@ function selectRecent(item: RecentItem) {
   loadMessages()
 }
 
-async function saveLiveWebQQMessage(payload: WebQQLiveMessage) {
-  const cachedMessages = await loadCachedWebQQMessages(payload.type, payload.peerId)
-  await saveCachedWebQQMessages(payload.type, payload.peerId, mergeMessages(cachedMessages, [payload.message]))
-}
-
-receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
-  rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
-  updateConversationSummary(payload.type, payload.peerId, payload.message)
-  if (
-    currentChat.value?.type !== payload.type ||
-    currentChat.value.peerId !== payload.peerId
-  ) {
-    if (payload.message.direction === 'incoming') increaseUnreadCount(payload.type, payload.peerId)
-    saveLiveWebQQMessage(payload).catch(() => {})
-    return
-  }
-  if (
-    payload.message.direction === 'incoming' &&
-    (!props.visible || !trackingMessages.value)
-  ) increaseUnreadCount(payload.type, payload.peerId)
-  appendMessage(payload.message)
-  saveCachedWebQQMessages(payload.type, payload.peerId, messages.value).catch(() => {})
+useWebQQLiveMessages({
+  isVisible: () => props.visible,
+  currentChat,
+  trackingMessages,
+  messages,
+  rememberMessageSenderMetadata,
+  updateConversationSummary,
+  increaseUnreadCount,
+  appendMessage,
+  loadCachedMessages: loadCachedWebQQMessages,
+  saveCachedMessages: saveCachedWebQQMessages,
 })
 
 watch(() => props.visible, (visible) => {

@@ -38,6 +38,7 @@ const webqqConversationStateStore = await readFile(new URL('../client/stores/web
 const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
 const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
 const webqqImagePreview = await readFile(new URL('../client/stores/webqq-image-preview.ts', import.meta.url), 'utf8')
+const webqqLiveMessagesStore = await readFile(new URL('../client/stores/webqq-live-messages.ts', import.meta.url), 'utf8')
 const webqqMessageCacheStore = await readFile(new URL('../client/stores/webqq-message-cache.ts', import.meta.url), 'utf8')
 const webqqMessageHistoryStore = await readFile(new URL('../client/stores/webqq-message-history.ts', import.meta.url), 'utf8')
 const webqqMessageListStore = await readFile(new URL('../client/stores/webqq-message-list.ts', import.meta.url), 'utf8')
@@ -206,7 +207,8 @@ describe('webqq observer view', () => {
   it('passes panel visibility to the WebQQ observer', () => {
     expect(capsuleView).toContain(':visible="webqqOpen"')
     expect(webqqView).toContain('defineProps<{ visible: boolean }>()')
-    expect(webqqView).toContain('!props.visible')
+    expect(webqqView).toContain('isVisible: () => props.visible')
+    expect(webqqLiveMessagesStore).toContain('!options.isVisible()')
     expect(webqqView).toContain('watch(() => props.visible')
   })
 
@@ -220,7 +222,10 @@ describe('webqq observer view', () => {
   it('renders contacts, groups, message history, and no send input', () => {
     expect(webqqApi).toContain("send('chat-capsule/webqq/contacts')")
     expect(webqqApi).toContain("send('chat-capsule/webqq/messages'")
-    expect(webqqView).toContain("receive('chat-capsule/webqq/message'")
+    expect(webqqView).toContain("from './stores/webqq-live-messages'")
+    expect(webqqView).not.toContain("receive('chat-capsule/webqq/message'")
+    expect(webqqLiveMessagesStore).toContain("receive('chat-capsule/webqq/message'")
+    expect(webqqLiveMessagesStore).toContain('function useWebQQLiveMessages')
     expect(webqqView).toContain('<WebQQSidebar')
     expect(webqqSidebar).toContain("emit('select-tab', 'friends')")
     expect(webqqSidebar).toContain("emit('select-tab', 'groups')")
@@ -349,9 +354,9 @@ describe('webqq observer view', () => {
       'function isBotThinkingMessage',
     )
     const receiveSource = sourceBetween(
-      webqqView,
+      webqqLiveMessagesStore,
       "receive('chat-capsule/webqq/message'",
-      "watch(() => props.visible",
+      '})',
     )
 
     expect(webqqView).toContain('useWebQQSenderMetadata(currentChat)')
@@ -1012,9 +1017,9 @@ describe('webqq observer view', () => {
     expect(webqqContactList).toContain('class="chat-capsule-webqq__contact-unread"')
     expect(webqqContactList).toContain('getUnreadCount(item.type, item.peerId)')
     expect(webqqContactList).toContain('getUnreadText')
-    expect(webqqView).toContain("payload.message.direction === 'incoming'")
-    expect(webqqView).toContain('!trackingMessages.value')
-    expect(webqqView).toContain('increaseUnreadCount(payload.type, payload.peerId)')
+    expect(webqqLiveMessagesStore).toContain("payload.message.direction === 'incoming'")
+    expect(webqqLiveMessagesStore).toContain('!options.trackingMessages.value')
+    expect(webqqLiveMessagesStore).toContain('options.increaseUnreadCount(payload.type, payload.peerId)')
     expect(webqqView).toContain('clearUnreadCount(currentChat.value.type, currentChat.value.peerId)')
     expect(webqqStateStore).toContain('function increaseConversationUnreadCount')
     expect(webqqStateStore).toContain('function clearConversationUnreadCount')
