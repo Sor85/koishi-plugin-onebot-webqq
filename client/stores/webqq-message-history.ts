@@ -21,30 +21,50 @@ export function useWebQQMessageHistory(options: {
   const historyLoading = ref(false)
   const historyExhausted = ref(false)
 
+  function isCurrentChat(chat: WebQQChatSelection) {
+    const currentChat = options.currentChat.value
+    return currentChat?.type === chat.type && currentChat.peerId === chat.peerId
+  }
+
+  async function scrollLoadedMessagesToBottom() {
+    if (!options.errorText.value && options.trackingMessages.value) await options.scrollMessagesToBottom()
+  }
+
   async function loadMessages() {
     const currentChat = options.currentChat.value
     if (!currentChat) return
     options.trackingMessages.value = true
     historyExhausted.value = false
-    options.loading.value = true
+    options.loading.value = false
     options.errorText.value = ''
+    options.messages.value = []
     try {
       const cachedMessages = await options.loadCachedMessages(currentChat.type, currentChat.peerId)
+      if (!isCurrentChat(currentChat)) return
       options.messages.value = cachedMessages
-      options.messages.value = await options.requestMessages({
+    } catch (error) {
+      if (!isCurrentChat(currentChat)) return
+      options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
+      return
+    }
+    await scrollLoadedMessagesToBottom()
+    try {
+      const remoteMessages = await options.requestMessages({
         type: currentChat.type,
         peerId: currentChat.peerId,
       })
-      options.messages.value = mergeMessages(cachedMessages, options.messages.value)
+      if (!isCurrentChat(currentChat)) return
+      options.messages.value = mergeMessages(options.messages.value, remoteMessages)
       options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, options.messages.value)
       options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
       await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
     } catch (error) {
+      if (!isCurrentChat(currentChat) || options.messages.value.length) return
       options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
     } finally {
       options.loading.value = false
     }
-    if (!options.errorText.value && options.trackingMessages.value) await options.scrollMessagesToBottom()
+    await scrollLoadedMessagesToBottom()
   }
 
   function shouldLoadOlderMessages() {
