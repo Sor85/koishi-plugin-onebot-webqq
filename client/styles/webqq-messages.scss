@@ -453,6 +453,21 @@
   gap: 6px;
 }
 
+.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-reactions {
+  align-self: flex-end;
+  margin-top: 0;
+}
+
+.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-reaction {
+  gap: 2px;
+  min-height: 22px;
+  padding: 1px 7px;
+}
+
+.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-reaction-users {
+  display: none;
+}
+
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-body,
 .onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-body {
   flex-direction: row-reverse;

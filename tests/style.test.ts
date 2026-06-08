@@ -387,6 +387,19 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message:hover .onebot-webqq-webqq__message-time')).toContain('opacity: 1')
   })
 
+  it('places QQ-style WebQQ reactions outside bubbles without user avatars', () => {
+    const reactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-reactions')
+    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-reaction')
+    const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-reaction-users')
+
+    expect(reactionsBody).toContain('align-self: flex-end')
+    expect(reactionsBody).toContain('margin-top: 0')
+    expect(reactionBody).toContain('min-height: 22px')
+    expect(reactionBody).toContain('padding: 1px 7px')
+    expect(reactionBody).toContain('gap: 2px')
+    expect(usersBody).toContain('display: none')
+  })
+
   it('shows compact WebQQ recall status and event capsules', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-event')).toContain('width: fit-content')
     expect(ruleBody('.onebot-webqq-webqq__message-event')).toContain('max-width: 74%')

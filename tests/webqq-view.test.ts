@@ -973,6 +973,19 @@ describe('webqq observer view', () => {
     expect(style).toContain('.onebot-webqq-webqq__message-reaction-avatar')
   })
 
+  it('renders QQ-style WebQQ reactions outside bubbles without user avatars', () => {
+    const outsideReactionSource = sourceBetween(
+      webqqMessageListView,
+      "message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))",
+      'class="onebot-webqq-webqq__message-recall-status"',
+    )
+
+    expect(outsideReactionSource).toContain('shouldShowReactionUsers(reaction, chatStyle)')
+    expect(outsideReactionSource).toContain('shouldShowReactionCount(reaction, chatStyle)')
+    expect(webqqMessageListView).toContain("if (chatStyle !== 'telegram') return reaction.count > 1")
+    expect(webqqMessageListView).toContain("return chatStyle === 'telegram' && getReactionUsers(reaction).length > 0")
+  })
+
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {
     const thinkingToggleSource = sourceBetween(
       webqqMessageListView,

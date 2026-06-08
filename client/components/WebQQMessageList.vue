@@ -102,12 +102,12 @@
                 <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="onebot-webqq-webqq__message-reaction">
                   <img v-if="reaction.emojiUrl" class="onebot-webqq-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
                   <template v-else>{{ reaction.label }}</template>
-                  <span v-if="getReactionUsers(reaction).length" class="onebot-webqq-webqq__message-reaction-users">
+                  <span v-if="shouldShowReactionUsers(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-users">
                     <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="onebot-webqq-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
                       <img class="onebot-webqq-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
                     </span>
                   </span>
-                  <span v-if="shouldShowReactionCount(reaction)" class="onebot-webqq-webqq__message-reaction-count">{{ reaction.count }}</span>
+                  <span v-if="shouldShowReactionCount(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-count">{{ reaction.count }}</span>
                 </span>
               </div>
             </div>
@@ -115,12 +115,12 @@
               <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="onebot-webqq-webqq__message-reaction">
                 <img v-if="reaction.emojiUrl" class="onebot-webqq-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
                 <template v-else>{{ reaction.label }}</template>
-                <span v-if="getReactionUsers(reaction).length" class="onebot-webqq-webqq__message-reaction-users">
+                <span v-if="shouldShowReactionUsers(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-users">
                   <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="onebot-webqq-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
                     <img class="onebot-webqq-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
                   </span>
                 </span>
-                <span v-if="shouldShowReactionCount(reaction)" class="onebot-webqq-webqq__message-reaction-count">{{ reaction.count }}</span>
+                <span v-if="shouldShowReactionCount(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-count">{{ reaction.count }}</span>
               </span>
             </div>
             <div v-if="message.recalled" class="onebot-webqq-webqq__message-recall-status">已撤回</div>
@@ -231,7 +231,12 @@ function getReactionUsers(reaction: WebQQMessageReaction): WebQQMessageReactionU
     : []
 }
 
-function shouldShowReactionCount(reaction: WebQQMessageReaction) {
+function shouldShowReactionUsers(reaction: WebQQMessageReaction, chatStyle: string) {
+  return chatStyle === 'telegram' && getReactionUsers(reaction).length > 0
+}
+
+function shouldShowReactionCount(reaction: WebQQMessageReaction, chatStyle: string) {
+  if (chatStyle !== 'telegram') return reaction.count > 1
   return reaction.count > Math.max(getReactionUsers(reaction).length, 1)
 }
 
