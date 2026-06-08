@@ -20,7 +20,7 @@ interface ClientData {
   showWebQQCapsuleUnread?: boolean
 }
 
-const webQQAvatarThemeStorageKey = 'chat-capsule:webqq-avatar-theme:v1'
+const webQQAvatarThemeStorageKey = 'onebot-webqq:webqq-avatar-theme:v1'
 let lastCheckedAvatar = ''
 
 function isHexColor(value: unknown): value is string {
@@ -128,14 +128,14 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   updateWebQQAvatarThemeColor(capsule.value)
 
   if (debug.value) {
-    console.debug('[chat-capsule] entry data', data?.value)
+    console.debug('[onebot-webqq] entry data', data?.value)
   }
 
-  receive('chat-capsule/update', (value) => {
+  receive('onebot-webqq/update', (value) => {
     capsule.value = value as CapsuleData | undefined
     updateWebQQAvatarThemeColor(capsule.value)
     if (debug.value) {
-      console.debug('[chat-capsule] update', value)
+      console.debug('[onebot-webqq] update', value)
     }
   })
 

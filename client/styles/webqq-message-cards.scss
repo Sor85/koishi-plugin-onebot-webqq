@@ -1,4 +1,4 @@
-.chat-capsule-webqq__card {
+.onebot-webqq-webqq__card {
   width: 100%;
   display: flex;
   align-items: center;
@@ -11,7 +11,7 @@
   text-decoration: none;
 }
 
-.chat-capsule-webqq__card-cover {
+.onebot-webqq-webqq__card-cover {
   width: 42px;
   height: 42px;
   flex-shrink: 0;
@@ -19,14 +19,14 @@
   object-fit: cover;
 }
 
-.chat-capsule-webqq__card-content {
+.onebot-webqq-webqq__card-content {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.chat-capsule-webqq__card-title {
+.onebot-webqq-webqq__card-title {
   overflow: hidden;
   color: var(--k-text, var(--fg1, rgba(30, 30, 34, 0.78)));
   font-weight: 600;
@@ -34,12 +34,12 @@
   text-overflow: ellipsis;
 }
 
-.chat-capsule-webqq__card-desc {
+.onebot-webqq-webqq__card-desc {
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
   overflow-wrap: anywhere;
 }
 
-.chat-capsule-webqq__card-source {
+.onebot-webqq-webqq__card-source {
   color: #94a3b8;
   font-size: 11px;
   line-height: 16px;

@@ -14,7 +14,7 @@ export type {
   CapsuleSnapshot,
 } from './types'
 
-const capsuleStateBrand: unique symbol = Symbol('chat-capsule-state')
+const capsuleStateBrand: unique symbol = Symbol('onebot-webqq-state')
 
 export interface CapsuleState {
   readonly [capsuleStateBrand]: true

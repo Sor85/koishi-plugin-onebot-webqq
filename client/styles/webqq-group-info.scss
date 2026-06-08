@@ -1,4 +1,4 @@
-.chat-capsule-webqq__group-info {
+.onebot-webqq-webqq__group-info {
   width: 260px;
   min-height: 0;
   flex-shrink: 0;
@@ -11,7 +11,7 @@
   backdrop-filter: saturate(180%) blur(20px);
 }
 
-.chat-capsule-webqq__group-info-header {
+.onebot-webqq-webqq__group-info-header {
   min-height: 64px;
   flex-shrink: 0;
   display: flex;
@@ -27,14 +27,14 @@
   }
 }
 
-.chat-capsule-webqq__group-info-body {
+.onebot-webqq-webqq__group-info-body {
   min-height: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.chat-capsule-webqq__group-announcements {
+.onebot-webqq-webqq__group-announcements {
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -52,7 +52,7 @@
   }
 }
 
-.chat-capsule-webqq__group-announcement {
+.onebot-webqq-webqq__group-announcement {
   padding: 10px;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.5);
@@ -78,7 +78,7 @@
   }
 }
 
-.chat-capsule-webqq__group-members {
+.onebot-webqq-webqq__group-members {
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -106,12 +106,12 @@
   }
 }
 
-.chat-capsule-webqq__group-member-list {
+.onebot-webqq-webqq__group-member-list {
   min-height: 0;
   overflow-y: auto;
 }
 
-.chat-capsule-webqq__group-member {
+.onebot-webqq-webqq__group-member {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
@@ -159,7 +159,7 @@
   }
 }
 
-.chat-capsule-webqq__group-empty {
+.onebot-webqq-webqq__group-empty {
   padding: 18px 8px;
   color: #9ca3af;
   text-align: center;

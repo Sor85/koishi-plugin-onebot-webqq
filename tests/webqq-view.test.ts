@@ -151,12 +151,12 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('hideWebQQGroupLevel')
     expect(webqqView).toContain('showWebQQAffinity')
     expect(webqqView).toContain('showWebQQRelationship')
-    expect(webqqView).toContain("['chat-capsule-webqq'")
+    expect(webqqView).toContain("['onebot-webqq-webqq'")
     expect(webqqView).toContain('`is-theme-${webQQTheme}`')
     expect(webqqView).toContain('`is-chat-style-${webQQChatStyle}`')
     expect(webqqView).toContain('`is-color-${webQQColorMode}`')
     expect(webqqView).toContain(':style="webQQAccentStyle"')
-    expect(webqqView).not.toContain('class="chat-capsule-webqq__theme"')
+    expect(webqqView).not.toContain('class="onebot-webqq-webqq__theme"')
     expect(webqqView).not.toContain('aria-label="WebQQ 主题"')
     expect(webqqView).not.toContain('v-model="webQQTheme"')
     expect(webqqView).not.toContain('webQQThemeOptions')
@@ -189,8 +189,8 @@ describe('webqq observer view', () => {
     expect(webqqThemeView).toContain('return normalizeAccentColor(accentColor)')
     expect(webqqView).toContain('const webQQAccentStyle = computed')
     expect(webqqView).toContain('getWebQQAccentStyle(webQQEffectiveAccentColor.value)')
-    expect(webqqThemeView).toContain("'--chat-capsule-webqq-accent': accentColor")
-    expect(webqqThemeView).toContain("'--chat-capsule-webqq-accent-soft': hexToRgba(accentColor, 0.14)")
+    expect(webqqThemeView).toContain("'--onebot-webqq-webqq-accent': accentColor")
+    expect(webqqThemeView).toContain("'--onebot-webqq-webqq-accent-soft': hexToRgba(accentColor, 0.14)")
   })
 
   it('formats WebQQ accent colors for CSS variables', () => {
@@ -200,10 +200,10 @@ describe('webqq observer view', () => {
     expect(getWebQQEffectiveAccentColor(true, '', '#123456')).toBe('#2563eb')
     expect(getWebQQEffectiveAccentColor(false, '#abcdef', '#123456')).toBe('#123456')
     expect(getWebQQAccentStyle('#336699')).toEqual({
-      '--chat-capsule-webqq-accent': '#336699',
-      '--chat-capsule-webqq-accent-soft': 'rgba(51, 102, 153, 0.14)',
-      '--chat-capsule-webqq-accent-hover': 'rgba(51, 102, 153, 0.18)',
-      '--chat-capsule-webqq-accent-shadow': 'rgba(51, 102, 153, 0.24)',
+      '--onebot-webqq-webqq-accent': '#336699',
+      '--onebot-webqq-webqq-accent-soft': 'rgba(51, 102, 153, 0.14)',
+      '--onebot-webqq-webqq-accent-hover': 'rgba(51, 102, 153, 0.18)',
+      '--onebot-webqq-webqq-accent-shadow': 'rgba(51, 102, 153, 0.24)',
     })
   })
 
@@ -223,24 +223,24 @@ describe('webqq observer view', () => {
   })
 
   it('renders contacts, groups, message history, and no send input', () => {
-    expect(webqqApi).toContain("send('chat-capsule/webqq/contacts')")
-    expect(webqqApi).toContain("send('chat-capsule/webqq/messages'")
+    expect(webqqApi).toContain("send('onebot-webqq/webqq/contacts')")
+    expect(webqqApi).toContain("send('onebot-webqq/webqq/messages'")
     expect(webqqView).toContain("from './stores/webqq-live-messages'")
-    expect(webqqView).not.toContain("receive('chat-capsule/webqq/message'")
-    expect(webqqLiveMessagesStore).toContain("receive('chat-capsule/webqq/message'")
+    expect(webqqView).not.toContain("receive('onebot-webqq/webqq/message'")
+    expect(webqqLiveMessagesStore).toContain("receive('onebot-webqq/webqq/message'")
     expect(webqqLiveMessagesStore).toContain('function useWebQQLiveMessages')
     expect(webqqView).toContain('<WebQQSidebar')
     expect(webqqSidebar).toContain("emit('select-tab', 'friends')")
     expect(webqqSidebar).toContain("emit('select-tab', 'groups')")
-    expect(webqqSidebar.match(/class="chat-capsule-webqq__tab-icon"/g)).toHaveLength(3)
+    expect(webqqSidebar.match(/class="onebot-webqq-webqq__tab-icon"/g)).toHaveLength(3)
     expect(webqqSidebar).not.toContain('is-clock')
     expect(webqqSidebar).not.toContain('is-user')
     expect(webqqSidebar).not.toContain('is-group')
     expect(webqqMessageListView).toMatch(/v-for="\(message, index\) in (messages|visibleMessages)"/)
     expect(webqqView).not.toContain('textarea')
-    expect(webqqView).not.toContain("send('chat-capsule/webqq/send'")
+    expect(webqqView).not.toContain("send('onebot-webqq/webqq/send'")
     expect(webqqView).not.toContain('只读模式')
-    expect(webqqView).not.toContain('chat-capsule-webqq__readonly-bar')
+    expect(webqqView).not.toContain('onebot-webqq-webqq__readonly-bar')
   })
 
   it('renders a transient outgoing bot thinking message after the real WebQQ messages', () => {
@@ -251,22 +251,22 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('v-for="(message, index) in visibleMessages"')
     expect(webqqMessageListView).toContain("'is-thinking': isBotThinkingMessage(message)")
     expect(webqqMessageListStore).toContain('function isBotThinkingMessage(message: WebQQMessage)')
-    expect(webqqMessageListView).not.toContain('chat-capsule-webqq__thinking-bubble')
-    expect(style).not.toContain('chat-capsule-webqq__thinking-bubble')
+    expect(webqqMessageListView).not.toContain('onebot-webqq-webqq__thinking-bubble')
+    expect(style).not.toContain('onebot-webqq-webqq__thinking-bubble')
     const messageBodySource = sourceBetween(
       webqqMessageListView,
-      'class="chat-capsule-webqq__message-body"',
-      'class="chat-capsule-webqq__message-time"',
+      'class="onebot-webqq-webqq__message-body"',
+      'class="onebot-webqq-webqq__message-time"',
     )
-    expect(messageBodySource.indexOf('class="chat-capsule-webqq__thinking-dots"')).toBeGreaterThan(messageBodySource.indexOf('class="chat-capsule-webqq__bubble"'))
+    expect(messageBodySource.indexOf('class="onebot-webqq-webqq__thinking-dots"')).toBeGreaterThan(messageBodySource.indexOf('class="onebot-webqq-webqq__bubble"'))
   })
 
   it('uses three animated floating dots as the temporary bot thinking content', () => {
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__thinking-dots"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-dots"')
     expect(webqqMessageListView).toContain('v-for="dot in 3"')
     expect(webqqMessageListView).toContain(':key="dot"')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__thinking-dot"')
-    expect(style).toContain('@keyframes chat-capsule-webqq-thinking-dot')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-dot"')
+    expect(style).toContain('@keyframes onebot-webqq-webqq-thinking-dot')
   })
 
   it('shows the temporary bot thinking bubble only for the capsule current WebQQ conversation', () => {
@@ -358,7 +358,7 @@ describe('webqq observer view', () => {
     )
     const receiveSource = sourceBetween(
       webqqLiveMessagesStore,
-      "receive('chat-capsule/webqq/message'",
+      "receive('onebot-webqq/webqq/message'",
       '})',
     )
 
@@ -520,7 +520,7 @@ describe('webqq observer view', () => {
   })
 
   it('persists WebQQ recent message summaries and unread counts in browser storage by default', () => {
-    expect(webqqStorage).toContain("const webQQStorageKey = 'chat-capsule:webqq:v1'")
+    expect(webqqStorage).toContain("const webQQStorageKey = 'onebot-webqq:webqq:v1'")
     expect(webqqStorage).toContain('function loadBrowserWebQQStoredState')
     expect(webqqConversationStateStore).toContain('function persistWebQQState()')
     expect(webqqStorage).toContain("if (storageBackend !== 'browser') return empty")
@@ -538,9 +538,9 @@ describe('webqq observer view', () => {
     expect(webqqConversationStateStore).toContain('function createWebQQStoredState()')
     expect(webqqConversationStateStore).toContain('async function loadRemoteWebQQStoredState()')
     expect(webqqStorage).toContain("if (storageBackend === 'browser') return")
-    expect(webqqStorage).toContain("send('chat-capsule/webqq/storage/load')")
+    expect(webqqStorage).toContain("send('onebot-webqq/webqq/storage/load')")
     expect(webqqConversationStateStore).toContain('applyWebQQStoredState(stored)')
-    expect(webqqStorage).toContain("send('chat-capsule/webqq/storage/save', state)")
+    expect(webqqStorage).toContain("send('onebot-webqq/webqq/storage/save', state)")
     expect(webqqConversationStateStore).toContain('persistWebQQStoredState(storageBackend.value, createWebQQStoredState())')
     expect(webqqView).toContain('loadRemoteWebQQStoredState()')
   })
@@ -549,7 +549,7 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain('loadBrowserWebQQMessages')
     expect(webqqStorage).toContain('saveBrowserWebQQMessages')
     expect(webqqMessageCache).not.toContain('const webQQMessageCacheLimit = 100')
-    expect(webqqMessageCache).toContain("indexedDB.open('chat-capsule-webqq'")
+    expect(webqqMessageCache).toContain("indexedDB.open('onebot-webqq-webqq'")
     expect(webqqMessageCache).toContain("database.createObjectStore('messages', { keyPath: 'id' })")
     expect(webqqMessageCache).toContain('saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number)')
     expect(webqqMessageCache).toContain('messages.slice(-limit)')
@@ -559,8 +559,8 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain('async function loadCachedWebQQMessages')
     expect(webqqStorage).toContain('async function saveCachedWebQQMessages')
     expect(webqqStorage).toContain("if (storageBackend === 'koishi')")
-    expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/load'")
-    expect(webqqStorage).toContain("send('chat-capsule/webqq/messages/cache/save'")
+    expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/load'")
+    expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/save'")
     expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId)')
     expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, messages, messageCacheLimit)')
     expect(webqqView).toContain('useWebQQMessageCache(webQQStorageBackend, webQQMessageCacheLimit)')
@@ -580,23 +580,23 @@ describe('webqq observer view', () => {
     expect(webqqSidebar).toContain('<WebQQContactList')
     expect(webqqView).toContain(':visible-friend-categories="visibleFriendCategories"')
     expect(webqqContactList).toContain('v-for="category in visibleFriendCategories"')
-    expect(webqqContactList).toContain('class="chat-capsule-webqq__friend-category"')
-    expect(webqqContactList).toContain('class="chat-capsule-webqq__friend-category-title"')
+    expect(webqqContactList).toContain('class="onebot-webqq-webqq__friend-category"')
+    expect(webqqContactList).toContain('class="onebot-webqq-webqq__friend-category-title"')
     expect(webqqContactList).toContain('v-for="friend in category.friends"')
   })
 
   it('opens a WebQQ notification dropdown menu from the bell button', () => {
     expect(webqqView).toContain('@open-notices="openNotices"')
     expect(webqqView).toContain('@click="closeNoticeMenu"')
-    expect(webqqSidebar).toContain('class="chat-capsule-webqq__notify-wrap" @click.stop')
-    expect(webqqSidebar).toContain('class="chat-capsule-webqq__notify-icon"')
+    expect(webqqSidebar).toContain('class="onebot-webqq-webqq__notify-wrap" @click.stop')
+    expect(webqqSidebar).toContain('class="onebot-webqq-webqq__notify-icon"')
     expect(webqqSidebar).toContain('viewBox="0 0 24 24"')
     expect(webqqSidebar).not.toContain('is-bell')
     expect(webqqSidebar).toContain('<WebQQNoticeMenu')
     expect(webqqSidebar).toContain('v-model:tab="noticeMenuTabModel"')
     expect(webqqSidebar).toContain(':notices="filteredNotices"')
     expect(webqqSidebar).toContain("@handle=\"(notice, approve) => emit('handle-notice', notice, approve)\"")
-    expect(webqqNoticeMenu).toContain('chat-capsule-webqq__notice-menu')
+    expect(webqqNoticeMenu).toContain('onebot-webqq-webqq__notice-menu')
     expect(webqqNoticeMenu).toContain("tab === 'friends'")
     expect(webqqNoticeMenu).toContain("tab === 'groups'")
     expect(webqqNoticeMenu).toContain("emit('update:tab', 'friends')")
@@ -605,33 +605,33 @@ describe('webqq observer view', () => {
     expect(webqqNoticeMenu).toContain("emit('handle', notice, false)")
     expect(webqqNoticeView).toContain('function sortPendingNotices(items: WebQQNotice[])')
     expect(webqqView).toContain('useWebQQNotices({ requestNotices: requestWebQQNotices, approveNotice: approveWebQQNotice })')
-    expect(webqqApi).toContain("send('chat-capsule/webqq/notices')")
-    expect(webqqApi).toContain("send('chat-capsule/webqq/notice-action'")
+    expect(webqqApi).toContain("send('onebot-webqq/webqq/notices')")
+    expect(webqqApi).toContain("send('onebot-webqq/webqq/notice-action'")
     expect(webqqNoticesStore).toContain('requestNotices: () => Promise<WebQQNotice[]>')
     expect(webqqNoticesStore).toContain('approveNotice: (notice: WebQQNotice, approve: boolean) => Promise<void>')
     expect(webqqNoticesStore).toContain('const filteredNotices = computed')
     expect(webqqNoticeMenu).toContain('v-for="notice in notices"')
-    expect(webqqNoticeMenu).toContain('chat-capsule-webqq__notice-card')
+    expect(webqqNoticeMenu).toContain('onebot-webqq-webqq__notice-card')
     expect(webqqNoticeMenu).toContain(':src="withProxy(notice.avatar)"')
-    expect(webqqNoticeMenu).toContain('class="chat-capsule-webqq__notice-title"')
+    expect(webqqNoticeMenu).toContain('class="onebot-webqq-webqq__notice-title"')
     expect(webqqNoticeMenu).toContain('getHandledNoticeStatusText(notice)')
-    expect(webqqNoticeMenu).toContain('chat-capsule-webqq__notice-result')
-    expect(webqqNoticeMenu).toContain('<time v-if="notice.time" class="chat-capsule-webqq__notice-time">{{ formatNoticeTime(notice.time) }}</time>')
+    expect(webqqNoticeMenu).toContain('onebot-webqq-webqq__notice-result')
+    expect(webqqNoticeMenu).toContain('<time v-if="notice.time" class="onebot-webqq-webqq__notice-time">{{ formatNoticeTime(notice.time) }}</time>')
     expect(webqqNoticeMenu).toContain('v-else-if="getHandledNoticeStatusText(notice)"')
     expect(webqqNoticeMenu).toContain('v-for="line in formatNoticeComment(notice.comment)"')
-    expect(webqqNoticeMenu).toContain('chat-capsule-webqq__notice-comment')
+    expect(webqqNoticeMenu).toContain('onebot-webqq-webqq__notice-comment')
     expect(webqqNoticeMenu).toContain("emit('handle', notice, true)")
     expect(webqqNoticeMenu).toContain("emit('handle', notice, false)")
     expect(webqqNoticeMenu).toContain('暂无通知')
-    expect(webqqView).not.toContain('chat-capsule-webqq__notice-meta')
-    expect(webqqView).not.toContain('chat-capsule-webqq__notice-type')
-    expect(webqqView).not.toContain('chat-capsule-webqq__notice-status')
+    expect(webqqView).not.toContain('onebot-webqq-webqq__notice-meta')
+    expect(webqqView).not.toContain('onebot-webqq-webqq__notice-type')
+    expect(webqqView).not.toContain('onebot-webqq-webqq__notice-status')
     expect(webqqView).not.toContain('getNoticeTypeText')
     expect(webqqView).not.toContain('getNoticeStatusText')
     expect(webqqView).not.toContain('申请时间：')
     expect(webqqView).not.toContain("return timestamp ? formatListTime(timestamp) : '未知'")
-    expect(webqqView).not.toContain('<small class="chat-capsule-webqq__notice-time"')
-    expect(webqqView).not.toContain('<div v-if="noticeOpen" class="chat-capsule-webqq__chat-title">')
+    expect(webqqView).not.toContain('<small class="onebot-webqq-webqq__notice-time"')
+    expect(webqqView).not.toContain('<div v-if="noticeOpen" class="onebot-webqq-webqq__chat-title">')
   })
 
   it('keeps WebQQ notification menu state inside a composable', async () => {
@@ -701,7 +701,7 @@ describe('webqq observer view', () => {
   })
 
   it('renders sender avatars for WebQQ messages', () => {
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-avatar"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-avatar"')
     expect(webqqMessageListView).toContain(':src="withProxy(message.senderAvatar)"')
     expect(webqqMessageListView).toContain(':alt="message.senderName"')
   })
@@ -728,14 +728,14 @@ describe('webqq observer view', () => {
 
   it('wraps WebQQ message bubbles with their time for Telegram hover layout', () => {
     expect(webqqView).toContain(':chat-style="webQQChatStyle"')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-body"')
-    expect(webqqMessageListView).toContain('<div v-else class="chat-capsule-webqq__bubble">')
-    expect(webqqMessageListView).toContain('<div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-body"')
+    expect(webqqMessageListView).toContain('<div v-else class="onebot-webqq-webqq__bubble">')
+    expect(webqqMessageListView).toContain('<div class="onebot-webqq-webqq__message-time">{{ formatTime(message.time) }}</div>')
   })
 
   it('renders image-only WebQQ messages without a text bubble', () => {
     expect(webqqMessageListView).toContain('v-if="isImageOnlyMessage(message)"')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-media"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-media"')
     expect(webqqMessageListView).toContain(':src="withProxy(message.elements[0].url)"')
     expect(webqqMessageView).toContain('function isImageOnlyMessage(message: WebQQMessage)')
   })
@@ -758,7 +758,7 @@ describe('webqq observer view', () => {
     expect(webqqImagePreviewView).toContain('onMounted(() => {')
     expect(webqqImagePreviewView).toContain('imagePreview.value?.focus()')
     expect(webqqImagePreviewView).toContain('ref="imagePreview"')
-    expect(webqqImagePreviewView).toContain('class="chat-capsule-webqq__image-preview"')
+    expect(webqqImagePreviewView).toContain('class="onebot-webqq-webqq__image-preview"')
     expect(webqqImagePreviewView).toContain("@click.stop.self=\"emit('close')\"")
     expect(webqqImagePreviewView).toContain("@keydown.esc=\"emit('close')\"")
     expect(webqqImagePreviewView).toContain(':src="url"')
@@ -803,12 +803,12 @@ describe('webqq observer view', () => {
     expect(webqqMessageListStore).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
     expect(webqqMessageView).toContain('function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], index: number)')
     expect(webqqMessageView).toContain('candidate.thinking?.content')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__thinking-row"')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__thinking-toggle"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-row"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-toggle"')
     expect(webqqMessageListView).toContain('@click="toggleThinking(index)"')
     expect(webqqView).toContain('@toggle-thinking="toggleThinking"')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__thinking-content"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-content"')
     expect(webqqMessageListView).toContain('{{ getThinkingMessage(index)?.thinking.content }}')
   })
 
@@ -919,13 +919,13 @@ describe('webqq observer view', () => {
     const thinkingRowStart = '<div\n        v-if="!message.event && getThinkingMessage(index)"'
     const messageContentSource = sourceBetween(
       webqqMessageListView,
-      'class="chat-capsule-webqq__message-content"',
+      'class="onebot-webqq-webqq__message-content"',
       thinkingRowStart,
     )
 
-    expect(messageContentSource).not.toContain('class="chat-capsule-webqq__thinking-toggle"')
-    expect(messageContentSource).not.toContain('class="chat-capsule-webqq__thinking-content"')
-    expect(webqqMessageListView.indexOf(thinkingRowStart)).toBeGreaterThan(webqqMessageListView.indexOf('class="chat-capsule-webqq__message-content"'))
+    expect(messageContentSource).not.toContain('class="onebot-webqq-webqq__thinking-toggle"')
+    expect(messageContentSource).not.toContain('class="onebot-webqq-webqq__thinking-content"')
+    expect(webqqMessageListView.indexOf(thinkingRowStart)).toBeGreaterThan(webqqMessageListView.indexOf('class="onebot-webqq-webqq__message-content"'))
     expect(webqqMessageListView).toContain('getThinkingMessage(index)')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
     expect(webqqMessageListView).toContain('toggleThinking(index)')
@@ -943,54 +943,54 @@ describe('webqq observer view', () => {
     expect(clientState).toContain('userAvatar?: string')
     expect(webqqMessageListView).toContain('chatStyle: string')
     expect(webqqMessageListView).toContain("message.event")
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-event')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-recall-status"')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-event')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-recall-status"')
     expect(webqqMessageListView).toContain('已撤回')
     expect(webqqMessageListView).toContain("'is-recalled': message.recalled")
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reactions')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-reactions')
     expect(webqqMessageListView).toContain('message.reactions')
     expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle === 'telegram'")
     expect(webqqMessageListView).toContain("message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))")
     expect(webqqMessageListView).toContain('getReactionUsers(reaction)')
     expect(webqqMessageListView).toContain('getReactionUserZIndex(reaction, userIndex)')
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reaction-users')
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reaction-avatar')
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reaction-avatar-image')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-reaction-users')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-reaction-avatar')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-reaction-avatar-image')
     expect(webqqMessageListView).toContain('reaction.emojiUrl')
     expect(webqqMessageListView).toContain(':src="withProxy(reaction.emojiUrl)"')
     expect(webqqMessageListView).toContain('reaction.userAvatar')
     expect(webqqMessageListView).toContain(':src="withProxy(user.userAvatar)"')
     expect(webqqMessageListView).toContain(':title="user.userName || user.userId"')
     expect(webqqMessageListView).toContain('reaction.label')
-    expect(style).toContain('.chat-capsule-webqq__message.is-recalled')
-    expect(style).toContain('.chat-capsule-webqq__message-recall-status')
-    expect(style).toContain('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')
-    expect(style).toContain('.chat-capsule-webqq__message-reactions')
-    expect(style).toContain('.chat-capsule-webqq__message-reaction')
-    expect(style).toContain('.chat-capsule-webqq__bubble .chat-capsule-webqq__message-reactions')
-    expect(style).toContain('.chat-capsule-webqq__message-reaction-users')
-    expect(style).toContain('.chat-capsule-webqq__message-reaction-emoji')
-    expect(style).toContain('.chat-capsule-webqq__message-reaction-avatar')
+    expect(style).toContain('.onebot-webqq-webqq__message.is-recalled')
+    expect(style).toContain('.onebot-webqq-webqq__message-recall-status')
+    expect(style).toContain('.onebot-webqq-webqq__message.is-recalled:hover .onebot-webqq-webqq__message-recall-status')
+    expect(style).toContain('.onebot-webqq-webqq__message-reactions')
+    expect(style).toContain('.onebot-webqq-webqq__message-reaction')
+    expect(style).toContain('.onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reactions')
+    expect(style).toContain('.onebot-webqq-webqq__message-reaction-users')
+    expect(style).toContain('.onebot-webqq-webqq__message-reaction-emoji')
+    expect(style).toContain('.onebot-webqq-webqq__message-reaction-avatar')
   })
 
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {
     const thinkingToggleSource = sourceBetween(
       webqqMessageListView,
-      'class="chat-capsule-webqq__thinking-toggle"',
-      'class="chat-capsule-webqq__thinking-chevron"',
+      'class="onebot-webqq-webqq__thinking-toggle"',
+      'class="onebot-webqq-webqq__thinking-chevron"',
     )
 
     expect(webqqMessageListView).not.toContain("return `输入 ${usage.inputTokens} / 输出 ${usage.outputTokens}`")
     expect(webqqMessageListView).not.toContain('输入 ${usage.inputTokens}')
     expect(webqqMessageListView).not.toContain('输出 ${usage.outputTokens}')
     expect(thinkingToggleSource).toContain('getThinkingMessage(index)?.thinking.usage')
-    expect(thinkingToggleSource).toContain('class="chat-capsule-webqq__thinking-usage"')
-    expect(thinkingToggleSource).toContain('class="chat-capsule-webqq__thinking-usage-icon is-input"')
-    expect(thinkingToggleSource).toContain('class="chat-capsule-webqq__thinking-usage-icon is-output"')
+    expect(thinkingToggleSource).toContain('class="onebot-webqq-webqq__thinking-usage"')
+    expect(thinkingToggleSource).toContain('class="onebot-webqq-webqq__thinking-usage-icon is-input"')
+    expect(thinkingToggleSource).toContain('class="onebot-webqq-webqq__thinking-usage-icon is-output"')
     expect(thinkingToggleSource).toContain('{{ getThinkingMessage(index)?.thinking.usage?.inputTokens }}')
     expect(thinkingToggleSource).toContain('{{ getThinkingMessage(index)?.thinking.usage?.outputTokens }}')
     expect(thinkingToggleSource).not.toContain(' / ')
-    expect(thinkingToggleSource.indexOf('class="chat-capsule-webqq__thinking-usage"')).toBeLessThan(
+    expect(thinkingToggleSource.indexOf('class="onebot-webqq-webqq__thinking-usage"')).toBeLessThan(
       thinkingToggleSource.indexOf('getThinkingDurationText(index)'),
     )
     expect(webqqMessageView).toContain('function formatThinkingDuration(durationMs: number)')
@@ -1000,18 +1000,18 @@ describe('webqq observer view', () => {
   it('renders consecutive inline WebQQ elements inside one inline container', () => {
     const bubbleSource = sourceBetween(
       webqqMessageListView,
-      '<div v-else class="chat-capsule-webqq__bubble">',
-      '<div class="chat-capsule-webqq__message-time"',
+      '<div v-else class="onebot-webqq-webqq__bubble">',
+      '<div class="onebot-webqq-webqq__message-time"',
     )
 
     expect(bubbleSource).toContain('getWebQQElementRuns(message.elements)')
-    expect(bubbleSource).toContain('class="chat-capsule-webqq__inline-run"')
+    expect(bubbleSource).toContain('class="onebot-webqq-webqq__inline-run"')
     expect(bubbleSource).toContain('v-for="element in run.elements"')
     expect(bubbleSource).not.toContain('v-for="(element, index) in message.elements"')
   })
 
   it('renders group badges around sender names in opposite order by direction', () => {
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__sender-line')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__sender-line')
     expect(webqqMessageListView).toContain("v-if=\"message.direction === 'outgoing'\"")
     expect(webqqMessageListView).toContain("v-if=\"message.direction === 'incoming'\"")
     expect(webqqMessageView).toContain('message.senderRole')
@@ -1023,17 +1023,17 @@ describe('webqq observer view', () => {
     expect(webqqMessageView).toContain("message.senderRole === '管理员'")
     expect(webqqMessageListView).toContain('formatSenderLevel')
     expect(webqqMessageListView).toContain('message.senderAffinity != null && showWebQQAffinity')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-avatar-wrap"')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-affinity"')
-    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-affinity-icon"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-avatar-wrap"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-affinity"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-affinity-icon"')
     expect(webqqMessageListView).toContain('{{ message.senderAffinity }}')
     expect(webqqMessageListView).not.toContain('function formatSenderAffinity')
-    expect(webqqMessageListView).not.toContain('chat-capsule-webqq__sender-badge is-affinity')
+    expect(webqqMessageListView).not.toContain('onebot-webqq-webqq__sender-badge is-affinity')
     expect(webqqMessageListView).toContain('message.senderRelationship && showWebQQRelationship')
   })
 
   it('shows group avatar, group id, and member count in the chat header', () => {
-    expect(webqqView).toContain('class="chat-capsule-webqq__chat-avatar"')
+    expect(webqqView).toContain('class="onebot-webqq-webqq__chat-avatar"')
     expect(webqqView).toContain(':src="withProxy(currentAvatar)"')
     expect(webqqContactView).toContain('function getGroupSubtitle')
     expect(webqqContactView).toContain('function getCurrentChatSubtitle')
@@ -1048,16 +1048,16 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('@click="closeGroupInfo"')
     expect(webqqView).not.toContain('function closeGroupInfo()')
     expect(webqqView).toContain('useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })')
-    expect(webqqApi).toContain("send('chat-capsule/webqq/group-info'")
+    expect(webqqApi).toContain("send('onebot-webqq/webqq/group-info'")
     expect(webqqGroupInfoStore).toContain('requestGroupInfo: () => Promise<WebQQGroupInfo>')
-    expect(webqqView).toContain('chat-capsule-webqq__chat-main')
+    expect(webqqView).toContain('onebot-webqq-webqq__chat-main')
     expect(webqqView).toContain('<WebQQGroupInfoPanel')
     expect(webqqView).toContain('v-model:search-query="groupInfoSearchQuery"')
     expect(webqqView).toContain(':group-info="groupInfo"')
     expect(webqqView).toContain(':visible-members="visibleGroupMembers"')
-    expect(webqqGroupInfoPanel).toContain('chat-capsule-webqq__group-info')
-    expect(webqqGroupInfoPanel).toContain('chat-capsule-webqq__group-announcements')
-    expect(webqqGroupInfoPanel).toContain('chat-capsule-webqq__group-members')
+    expect(webqqGroupInfoPanel).toContain('onebot-webqq-webqq__group-info')
+    expect(webqqGroupInfoPanel).toContain('onebot-webqq-webqq__group-announcements')
+    expect(webqqGroupInfoPanel).toContain('onebot-webqq-webqq__group-members')
     expect(webqqGroupInfoPanel).toContain('v-for="announcement in groupInfo.announcements"')
     expect(webqqGroupInfoPanel).not.toContain('<strong>{{ announcement.title }}</strong>')
     expect(webqqGroupInfoPanel).toContain('v-for="member in visibleMembers"')
@@ -1105,18 +1105,18 @@ describe('webqq observer view', () => {
     const buttonSource = webqqView.match(/<button v-if="currentChat\?\.type === 'group'"[\s\S]*?<\/button>/)?.[0] ?? ''
     expect(buttonSource).toContain('aria-label="更多群信息"')
     expect(buttonSource).toContain('@click="toggleGroupInfo"')
-    expect(buttonSource).toContain('class="chat-capsule-webqq__header-icon"')
+    expect(buttonSource).toContain('class="onebot-webqq-webqq__header-icon"')
     expect(buttonSource.match(/<circle /g)).toHaveLength(3)
     expect(buttonSource).not.toContain('::before')
     expect(buttonSource).not.toContain('::after')
   })
 
   it('uses an inline SVG search icon in the WebQQ search field', () => {
-    const searchSource = webqqSidebar.match(/<div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">[\s\S]*?<\/div>/)?.[0] ?? ''
-    expect(searchSource).toContain('<svg class="chat-capsule-webqq__search-icon"')
+    const searchSource = webqqSidebar.match(/<div v-if="activeTab !== 'recent'" class="onebot-webqq-webqq__search">[\s\S]*?<\/div>/)?.[0] ?? ''
+    expect(searchSource).toContain('<svg class="onebot-webqq-webqq__search-icon"')
     expect(searchSource).toContain('<circle')
     expect(searchSource).toContain('<path')
-    expect(searchSource).not.toContain('<span class="chat-capsule-webqq__search-icon"></span>')
+    expect(searchSource).not.toContain('<span class="onebot-webqq-webqq__search-icon"></span>')
   })
 
   it('shows latest message summary and time in the WebQQ contact list', () => {
@@ -1126,7 +1126,7 @@ describe('webqq observer view', () => {
     expect(webqqContactList).toContain('getContactSubtitle')
     expect(webqqContactList).toContain('getContactTime')
     expect(webqqContactList).toContain('formatListTime')
-    expect(webqqContactList).toContain('chat-capsule-webqq__contact-time')
+    expect(webqqContactList).toContain('onebot-webqq-webqq__contact-time')
     expect(webqqStateStore).toContain('function setConversationSummary')
     expect(webqqConversationStateStore).toContain('setConversationSummary(conversationSummaries.value, type, peerId, message)')
   })
@@ -1134,8 +1134,8 @@ describe('webqq observer view', () => {
   it('shows unread counts for conversations the user is not viewing', () => {
     expect(webqqConversationStateStore).toContain('conversationUnreadCounts')
     expect(webqqView).toContain('webQQTotalUnread')
-    expect(webqqContactList).toContain('class="chat-capsule-webqq__contact-avatar"')
-    expect(webqqContactList).toContain('class="chat-capsule-webqq__contact-unread"')
+    expect(webqqContactList).toContain('class="onebot-webqq-webqq__contact-avatar"')
+    expect(webqqContactList).toContain('class="onebot-webqq-webqq__contact-unread"')
     expect(webqqContactList).toContain('getUnreadCount(item.type, item.peerId)')
     expect(webqqContactList).toContain('getUnreadText')
     expect(webqqLiveMessagesStore).toContain("payload.message.direction === 'incoming'")
@@ -1221,7 +1221,7 @@ describe('webqq observer view', () => {
   })
 
   it('shows a WebQQ return-to-bottom button only when message tracking is paused', () => {
-    const scrollBottomButton = webqqView.match(/<button[\s\S]*?chat-capsule-webqq__scroll-bottom[\s\S]*?>/)?.[0] ?? ''
+    const scrollBottomButton = webqqView.match(/<button[\s\S]*?onebot-webqq-webqq__scroll-bottom[\s\S]*?>/)?.[0] ?? ''
     const missingRequirements = [
       scrollBottomButton ? '' : '缺少返回底部按钮',
       /v-if="!\s*trackingMessages\s*&&\s*visibleMessages\.length"/.test(scrollBottomButton)
@@ -1239,7 +1239,7 @@ describe('webqq observer view', () => {
     const scrollBottomTransition = webqqView.match(/<Transition\s+name="webqq-scroll-bottom">[\s\S]*?<\/Transition>/)?.[0] ?? ''
     const missingRequirements = [
       scrollBottomTransition ? '' : '缺少返回底部按钮过渡容器',
-      scrollBottomTransition.includes('class="chat-capsule-webqq__scroll-bottom"')
+      scrollBottomTransition.includes('class="onebot-webqq-webqq__scroll-bottom"')
         ? ''
         : '返回底部按钮没有放在过渡容器内',
       /v-if="!\s*trackingMessages\s*&&\s*visibleMessages\.length"/.test(scrollBottomTransition)
@@ -1347,8 +1347,8 @@ describe('webqq observer view', () => {
 
   it('renders quote blocks inside WebQQ message bubbles', () => {
     expect(webqqMessageListView).toContain('element.type === \'quote\'')
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__quote')
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__quote-title')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__quote')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__quote-title')
   })
 
   it('renders forward message elements as block previews inside WebQQ bubbles', () => {
@@ -1382,7 +1382,7 @@ describe('webqq observer view', () => {
     expect(clientForwardItemSource).toContain('senderId?: string')
     expect(clientForwardItemSource).toContain('senderAvatar?: string')
     expect(webqqMessageListView).toContain("run.element.type === 'forward'")
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__forward')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__forward')
     expect(webqqMessageListView).toContain("run.element.title || '合并转发'")
     expect(webqqMessageListView).toContain("run.element.text || '[合并转发]'")
     expect(webqqMessageView).toContain("element.type !== 'forward'")
@@ -1431,7 +1431,7 @@ describe('webqq observer view', () => {
     expect(backendMessageSource).toContain('source?:')
     expect(clientMessageSource).toContain('source?:')
     expect(webqqMessageListView).toContain("run.element.type === 'card'")
-    expect(webqqMessageListView).toContain('chat-capsule-webqq__card')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__card')
     expect(webqqMessageView).toContain("element.type !== 'card'")
     expect(webqqMessageListView).not.toContain(`:is="run.element.url ? 'a' : 'div'"`)
     expect(webqqMessageListView).not.toContain(':href="run.element.url || undefined"')
@@ -1456,18 +1456,18 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('@open-forward="openForwardDialog"')
     expect(webqqView).toContain('@open-image="openImagePreview"')
     expect(webqqView).toContain('@image-load="handleMessageImageLoad"')
-    expect(webqqForwardModal).toContain('class="chat-capsule-webqq__forward-modal-backdrop"')
-    expect(webqqForwardModal).toContain('class="chat-capsule-webqq__forward-modal"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__forward-modal-backdrop"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__forward-modal"')
     expect(webqqForwardModal).toContain("emit('close')")
     expect(webqqForwardModal).toContain("{{ dialog.title || '合并转发' }}")
     expect(webqqForwardModal).toContain('v-for="(item, itemIndex) in items"')
-    expect(webqqForwardModal).toContain(':class="[\'chat-capsule-webqq__message\', \'is-incoming\', getForwardItemClusterClass(itemIndex), { \'is-merged\': isMergedForwardItem(itemIndex) }]"')
-    expect(webqqForwardModal).toContain('class="chat-capsule-webqq__message-avatar"')
+    expect(webqqForwardModal).toContain(':class="[\'onebot-webqq-webqq__message\', \'is-incoming\', getForwardItemClusterClass(itemIndex), { \'is-merged\': isMergedForwardItem(itemIndex) }]"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__message-avatar"')
     expect(webqqForwardModal).toContain(':src="withProxy(getForwardItemAvatar(item))"')
     expect(webqqForwardModal).toContain(':alt="getForwardItemName(item)"')
-    expect(webqqForwardModal).toContain('class="chat-capsule-webqq__message-content"')
-    expect(webqqForwardModal).toContain('class="chat-capsule-webqq__message-body"')
-    expect(webqqForwardModal).toContain('class="chat-capsule-webqq__bubble"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__message-content"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__message-body"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__bubble"')
     expect(webqqForwardModal).toContain('getWebQQElementRuns(item.elements)')
     expect(webqqForwardModal).toContain("emit('open-forward', run.element)")
     expect(webqqForwardModal).toContain("emit('open-image', run.element.url)")
@@ -1478,8 +1478,8 @@ describe('webqq observer view', () => {
     expect(webqqForwardDialogStore).toContain('isMergedForwardItemFromView(forwardDialogItems.value, index, chatStyle.value)')
     expect(webqqForwardDialogStore).toContain('function getForwardItemClusterClass(index: number)')
     expect(webqqForwardDialogStore).toContain('getForwardItemClusterClassFromView(forwardDialogItems.value, index, chatStyle.value)')
-    expect(`${webqqView}\n${webqqForwardModal}`).not.toContain('chat-capsule-webqq__forward-popover')
-    expect(`${webqqView}\n${webqqForwardModal}`).not.toContain('chat-capsule-webqq__forward-page')
+    expect(`${webqqView}\n${webqqForwardModal}`).not.toContain('onebot-webqq-webqq__forward-popover')
+    expect(`${webqqView}\n${webqqForwardModal}`).not.toContain('onebot-webqq-webqq__forward-page')
   })
 
   it('keeps forward modal state and style-aware grouping in a focused store', () => {
@@ -1522,17 +1522,17 @@ describe('webqq observer view', () => {
   })
 
   it('keeps tabs at the top without the WebQQ profile block', () => {
-    expect(webqqView).not.toContain('chat-capsule-webqq__profile')
-    expect(webqqView).not.toContain('chat-capsule-webqq__profile-avatar')
+    expect(webqqView).not.toContain('onebot-webqq-webqq__profile')
+    expect(webqqView).not.toContain('onebot-webqq-webqq__profile-avatar')
 
-    const sidebarIndex = webqqView.indexOf('class="chat-capsule-webqq__sidebar"')
-    const tabsIndex = webqqSidebar.indexOf('class="chat-capsule-webqq__tabs-row"')
+    const sidebarIndex = webqqView.indexOf('class="onebot-webqq-webqq__sidebar"')
+    const tabsIndex = webqqSidebar.indexOf('class="onebot-webqq-webqq__tabs-row"')
     const listIndex = webqqSidebar.indexOf('<WebQQContactList')
 
     expect(webqqView).toContain('<WebQQSidebar')
-    expect(webqqSidebar).toContain('class="chat-capsule-webqq__sidebar"')
+    expect(webqqSidebar).toContain('class="onebot-webqq-webqq__sidebar"')
     expect(sidebarIndex).toBe(-1)
-    expect(tabsIndex).toBeGreaterThan(webqqSidebar.indexOf('class="chat-capsule-webqq__sidebar"'))
+    expect(tabsIndex).toBeGreaterThan(webqqSidebar.indexOf('class="onebot-webqq-webqq__sidebar"'))
     expect(tabsIndex).toBeLessThan(listIndex)
   })
 })

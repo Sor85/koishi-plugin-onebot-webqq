@@ -88,7 +88,7 @@ export function createWebQQImageUrlResolver(
     }
   }
 
-  ctx.server?.get('/chat-capsule/webqq/image/:id', async (routerCtx) => {
+  ctx.server?.get('/onebot-webqq/webqq/image/:id', async (routerCtx) => {
     const id = routerCtx.params.id
     const file = files.get(id)
     if (!file) {
@@ -127,10 +127,10 @@ export function createWebQQImageUrlResolver(
   return (file: string) => {
     if (!ctx.server) return ''
     const cached = ids.get(file)
-    if (cached) return `/chat-capsule/webqq/image/${cached}`
+    if (cached) return `/onebot-webqq/webqq/image/${cached}`
     const id = randomUUID()
     files.set(id, file)
     ids.set(file, id)
-    return `/chat-capsule/webqq/image/${id}`
+    return `/onebot-webqq/webqq/image/${id}`
   }
 }

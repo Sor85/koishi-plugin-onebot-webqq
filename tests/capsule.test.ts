@@ -37,23 +37,23 @@ describe('chat capsule view', () => {
   })
 
   it('renders a graphical WebQQ avatar guide without visible instruction text', () => {
-    const guideSource = capsuleView.match(/<Transition\s+name="chat-capsule-avatar-guide">[\s\S]*?<\/Transition>/)?.[0] ?? ''
+    const guideSource = capsuleView.match(/<Transition\s+name="onebot-webqq-avatar-guide">[\s\S]*?<\/Transition>/)?.[0] ?? ''
     const missingRequirements = [
       guideSource ? '' : '缺少头像图形引导过渡容器',
       guideSource.includes('v-if="webQQAvatarGuideVisible && !webqqOpen"')
         ? ''
         : '头像图形引导没有只在 WebQQ 未打开时显示',
-      guideSource.includes('class="chat-capsule__avatar-guide"')
+      guideSource.includes('class="onebot-webqq__avatar-guide"')
         ? ''
         : '缺少头像图形引导层',
       guideSource.includes(':style="webQQAvatarGuideStyle"')
         ? '头像图形引导不应再绑定 bot 头像主题色'
         : '',
       guideSource.includes('aria-hidden="true"') ? '' : '图形引导应该对读屏隐藏',
-      guideSource.includes('class="chat-capsule__avatar-guide-ring"')
+      guideSource.includes('class="onebot-webqq__avatar-guide-ring"')
         ? ''
         : '图形引导缺少头像光圈',
-      guideSource.includes('chat-capsule__avatar-guide-arrow')
+      guideSource.includes('onebot-webqq__avatar-guide-arrow')
         ? '图形引导不应再显示箭头'
         : '',
       guideSource.includes('点击头像') ? '图形引导不应显示文字说明' : '',
@@ -65,7 +65,7 @@ describe('chat capsule view', () => {
   it('shows the graphical WebQQ avatar guide on first use and capsule body clicks', () => {
     const mountedSource = capsuleView.match(/onMounted\(\(\) => \{[\s\S]*?^}\)/m)?.[0] ?? ''
     const missingRequirements = [
-      capsuleView.includes("const webQQAvatarGuideStorageKey = 'chat-capsule:webqq-avatar-guide:v1'")
+      capsuleView.includes("const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'")
         ? ''
         : '缺少头像引导本地存储 key',
       capsuleView.includes('const webQQAvatarGuideVisible = ref(false)')
@@ -116,9 +116,9 @@ describe('chat capsule view', () => {
     expect(capsuleView).not.toContain('const usage = computed')
     expect(capsuleView).not.toContain('const hasUsage = computed')
     expect(capsuleView).not.toContain('const usageTitle = computed')
-    expect(capsuleView).not.toContain('class="chat-capsule__usage"')
-    expect(capsuleView).not.toContain('class="chat-capsule__usage-icon is-input"')
-    expect(capsuleView).not.toContain('class="chat-capsule__usage-icon is-output"')
+    expect(capsuleView).not.toContain('class="onebot-webqq__usage"')
+    expect(capsuleView).not.toContain('class="onebot-webqq__usage-icon is-input"')
+    expect(capsuleView).not.toContain('class="onebot-webqq__usage-icon is-output"')
     expect(capsuleView).not.toContain('{{ usage!.inputTokens }}')
     expect(capsuleView).not.toContain('{{ usage!.outputTokens }}')
     expect(capsuleView).not.toContain('输入 ${usage.inputTokens}')
@@ -131,7 +131,7 @@ describe('chat capsule view', () => {
   })
 
   it('uses cached bot avatar and name before live capsule data arrives', () => {
-    expect(capsuleView).toContain("const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'")
+    expect(capsuleView).toContain("const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'")
     expect(capsuleView).toContain('const cachedBotProfile = ref(loadCachedBotProfile())')
     expect(capsuleView).toContain('const displayBotName = computed(() => capsule.value?.bot.name || cachedBotProfile.value.name ||')
     expect(capsuleView).toContain('const displayBotAvatar = computed(() => capsule.value?.bot.avatar || cachedBotProfile.value.avatar ||')
@@ -146,7 +146,7 @@ describe('chat capsule view', () => {
 
   it('renders total WebQQ unread count on the bot avatar when enabled', () => {
     expect(capsuleView).toContain("import { capsule, showWebQQCapsuleUnread, webQQColorMode, webQQTotalUnread } from './state'")
-    expect(capsuleView).toContain('class="chat-capsule__avatar-unread"')
+    expect(capsuleView).toContain('class="onebot-webqq__avatar-unread"')
     expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
     expect(capsuleView).toContain('{{ capsuleUnreadText }}')
     expect(capsuleView).toContain('const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))')
@@ -157,10 +157,10 @@ describe('chat capsule view', () => {
       /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\/state'/.test(capsuleView)
         ? ''
         : '主胶囊没有从 state 读取 webQQColorMode',
-      capsuleView.includes("['chat-capsule'") && capsuleView.includes('`is-color-${webQQColorMode}`')
+      capsuleView.includes("['onebot-webqq'") && capsuleView.includes('`is-color-${webQQColorMode}`')
         ? ''
         : '主胶囊根节点没有输出 is-color-${webQQColorMode} 类名',
-      capsuleView.includes('class="chat-capsule"')
+      capsuleView.includes('class="onebot-webqq"')
         ? '主胶囊仍是静态 class，无法随颜色模式切换'
         : '',
     ].filter(Boolean)
@@ -202,7 +202,7 @@ describe('chat capsule view', () => {
 
   it('checks and caches bot avatar theme colors in the browser', () => {
     expect(clientEntry).toContain("import { Context, receive, withProxy } from '@koishijs/client'")
-    expect(clientEntry).toContain("const webQQAvatarThemeStorageKey = 'chat-capsule:webqq-avatar-theme:v1'")
+    expect(clientEntry).toContain("const webQQAvatarThemeStorageKey = 'onebot-webqq:webqq-avatar-theme:v1'")
     expect(clientEntry).toContain('function loadCachedAvatarThemeColor(avatar: string)')
     expect(clientEntry).toContain('function cacheAvatarThemeColor(avatar: string, color: string)')
     expect(clientEntry).toContain('function extractDominantAvatarColor(avatar: string)')

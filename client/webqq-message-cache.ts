@@ -11,7 +11,7 @@ function openWebQQMessageCacheDatabase(): Promise<IDBDatabase> {
   if (webQQMessageCacheDatabase) return Promise.resolve(webQQMessageCacheDatabase)
   if (typeof indexedDB === 'undefined') return Promise.reject(new Error('IndexedDB unavailable'))
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('chat-capsule-webqq', 1)
+    const request = indexedDB.open('onebot-webqq-webqq', 1)
     request.onerror = () => reject(request.error)
     request.onsuccess = () => {
       webQQMessageCacheDatabase = request.result

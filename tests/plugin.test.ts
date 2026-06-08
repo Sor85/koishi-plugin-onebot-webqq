@@ -171,12 +171,12 @@ describe('chat capsule plugin wiring', () => {
 
   it('keeps WebQQ console listeners outside the plugin entry', () => {
     expect(pluginSource).toContain("from './webqq/console'")
-    expect(pluginSource).not.toContain("console.addListener('chat-capsule/webqq/contacts'")
-    expect(pluginSource).not.toContain("console.addListener('chat-capsule/webqq/messages'")
+    expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/contacts'")
+    expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/messages'")
     expect(webqqConsoleSource).toContain('export function registerWebQQConsoleListeners')
-    expect(webqqConsoleSource).toContain("console.addListener('chat-capsule/webqq/contacts'")
-    expect(webqqConsoleSource).toContain("console.addListener('chat-capsule/webqq/messages'")
-    expect(webqqConsoleSource).toContain("console.addListener('chat-capsule/webqq/messages/cache/save'")
+    expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/contacts'")
+    expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages'")
+    expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages/cache/save'")
   })
 
   it('keeps ChatLuna character lock syncing outside the plugin entry', () => {
@@ -273,11 +273,11 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
     expect(pluginSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
     expect(pluginSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
-    expect(serverGet).toHaveBeenCalledWith('/chat-capsule/webqq/image/:id', expect.any(Function))
+    expect(serverGet).toHaveBeenCalledWith('/onebot-webqq/webqq/image/:id', expect.any(Function))
 
     const localImageFile = fileURLToPath(new URL('../src/webqq/image-url-resolver.ts', import.meta.url))
     const firstUrl = resolver(localImageFile)
-    expect(firstUrl).toMatch(/^\/chat-capsule\/webqq\/image\//)
+    expect(firstUrl).toMatch(/^\/onebot-webqq\/webqq\/image\//)
     expect(resolver(localImageFile)).toBe(firstUrl)
 
     const handler = serverGet.mock.calls[0][1]
@@ -688,14 +688,14 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    const recallCall = broadcast.mock.calls.find(([event]) => event === 'chat-capsule/webqq/recall')
+    const recallCall = broadcast.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/recall')
     expect(recallCall?.[1]).toMatchObject({
       type: 'group',
       peerId: '20000',
       messageId: 'new-1',
       mode: 'mark',
     })
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         id: 'new-1',
@@ -752,7 +752,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    const recallCall = broadcast.mock.calls.find(([event]) => event === 'chat-capsule/webqq/recall')
+    const recallCall = broadcast.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/recall')
     expect(recallCall?.[1]).toMatchObject({
       type: 'group',
       peerId: '20000',
@@ -766,7 +766,7 @@ describe('chat capsule plugin wiring', () => {
         },
       },
     })
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         summary: '蒸汽机 撤回了一条消息',
@@ -874,7 +874,7 @@ describe('chat capsule plugin wiring', () => {
     })
 
     const webqqMessages = broadcast.mock.calls
-      .filter(([event]) => event === 'chat-capsule/webqq/message')
+      .filter(([event]) => event === 'onebot-webqq/webqq/message')
       .map(([, payload]) => payload)
     expect(webqqMessages).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -912,7 +912,7 @@ describe('chat capsule plugin wiring', () => {
         }),
       }),
     ]))
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     emitReaction({
       post_type: 'notice',
       notice_type: 'group_msg_emoji_like',
@@ -1044,7 +1044,7 @@ describe('chat capsule plugin wiring', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(bot.internal.get_msg).toHaveBeenCalledWith({ message_id: 'onebot-id' })
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -1138,7 +1138,7 @@ describe('chat capsule plugin wiring', () => {
       emoji_id: '76',
       count: 2,
     })
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -1327,20 +1327,20 @@ describe('chat capsule plugin wiring', () => {
 
     plugin.apply(ctx)
 
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/group-info', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notices', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/notice-action', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/storage/load', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/storage/save', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages/cache/load', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages/cache/save', expect.any(Function), { authority: 1 })
-    expect(addListener).not.toHaveBeenCalledWith('chat-capsule/webqq/send', expect.any(Function))
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/contacts', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/group-info', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/notices', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/notice-action', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/storage/load', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/storage/save', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages/cache/load', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages/cache/save', expect.any(Function), { authority: 1 })
+    expect(addListener).not.toHaveBeenCalledWith('onebot-webqq/webqq/send', expect.any(Function))
 
-    const loadContacts = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/contacts')?.[1]
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
-    const loadGroupInfo = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/group-info')?.[1]
+    const loadContacts = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/contacts')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
+    const loadGroupInfo = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/group-info')?.[1]
 
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
@@ -1395,10 +1395,10 @@ describe('chat capsule plugin wiring', () => {
       updatedAt: 'timestamp',
     }, { primary: 'id' })
 
-    const loadStorage = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/storage/load')?.[1]
-    const saveStorage = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/storage/save')?.[1]
-    const loadMessageCache = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages/cache/load')?.[1]
-    const saveMessageCache = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages/cache/save')?.[1]
+    const loadStorage = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/storage/load')?.[1]
+    const saveStorage = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/storage/save')?.[1]
+    const loadMessageCache = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages/cache/load')?.[1]
+    const saveMessageCache = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages/cache/save')?.[1]
     await expect(loadStorage?.()).resolves.toEqual(storedState)
     await saveStorage?.(storedState)
     await expect(loadMessageCache?.({ type: 'friend', peerId: '10001' })).resolves.toEqual(cachedMessages)
@@ -1429,7 +1429,7 @@ describe('chat capsule plugin wiring', () => {
 
     applyWithConfig(ctx, { webQQStorageBackend: 'koishi', webQQMessageCacheLimit: 2 })
 
-    const saveMessageCache = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages/cache/save')?.[1]
+    const saveMessageCache = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages/cache/save')?.[1]
     const messages: WebQQMessage[] = [1, 2, 3].map((index) => ({
       id: `msg-${index}`,
       sequence: `${index}`,
@@ -1495,7 +1495,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    const loadNotices = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/notices')?.[1]
+    const loadNotices = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/notices')?.[1]
     await expect(loadNotices?.()).resolves.toEqual([
       expect.objectContaining({
         id: 'friend:friend-flag',
@@ -1523,7 +1523,7 @@ describe('chat capsule plugin wiring', () => {
       }),
     ])
 
-    const handleNotice = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/notice-action')?.[1]
+    const handleNotice = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/notice-action')?.[1]
     await handleNotice?.({ id: 'friend:friend-flag', type: 'friend-request', flag: 'friend-flag', approve: true })
     await handleNotice?.({ id: 'group:join-1', type: 'group-notice', flag: 'join-1', subType: 'add', approve: false })
 
@@ -1543,8 +1543,8 @@ describe('chat capsule plugin wiring', () => {
 
     plugin.apply(ctx)
 
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/contacts', expect.any(Function), { authority: 1 })
-    expect(addListener).toHaveBeenCalledWith('chat-capsule/webqq/messages', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/contacts', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages', expect.any(Function), { authority: 1 })
 
     await listeners.message[0](createSession({
       event: {
@@ -1558,8 +1558,8 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', expect.any(Object), { authority: 1 })
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', expect.any(Object), { authority: 1 })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/update', expect.any(Object), { authority: 1 })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', expect.any(Object), { authority: 1 })
   })
 
   it('uses the configured WebQQ protocol for OneBot history calls', async () => {
@@ -1576,7 +1576,7 @@ describe('chat capsule plugin wiring', () => {
 
     plugin.apply(ctx, { onebotProtocol: 'llbot' })
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
 
     expect(bot.internal.get_group_msg_history).toHaveBeenCalledWith({
@@ -1601,7 +1601,7 @@ describe('chat capsule plugin wiring', () => {
 
     plugin.apply(ctx)
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000' })).resolves.toEqual([])
 
     expect(bot.internal.get_group_msg_history).toHaveBeenCalledWith({
@@ -1665,7 +1665,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -1681,7 +1681,7 @@ describe('chat capsule plugin wiring', () => {
       }),
     }, { authority: 1 })
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         id: 'old-1',
@@ -1744,7 +1744,7 @@ describe('chat capsule plugin wiring', () => {
       webQQAffinityScopeId: 'cat',
     })
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         id: 'old-1',
@@ -1806,7 +1806,7 @@ describe('chat capsule plugin wiring', () => {
       showWebQQRelationship: true,
     })
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         id: 'old-1',
@@ -1856,7 +1856,7 @@ describe('chat capsule plugin wiring', () => {
 
     applyWithConfig(ctx, { showWebQQAffinity: true })
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.not.objectContaining({
         senderAffinity: expect.any(Number),
@@ -1936,7 +1936,7 @@ describe('chat capsule plugin wiring', () => {
       user_id: 30000,
       no_cache: true,
     })
-    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
     expect(webQQCalls[0][1].message).not.toHaveProperty('senderRole')
     expect(webQQCalls[1][1].message).toMatchObject({
       id: 'new-1',
@@ -1957,7 +1957,7 @@ describe('chat capsule plugin wiring', () => {
       senderTitle: '新头衔',
     })
 
-    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         id: 'new-1',
@@ -2018,7 +2018,7 @@ describe('chat capsule plugin wiring', () => {
       user_id: 10000,
       no_cache: true,
     })
-    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
     expect(webQQCalls[0][1].message).toMatchObject({
       id: 'bot-1',
       senderId: '10000',
@@ -2071,7 +2071,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))).resolves.toBeUndefined()
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2113,7 +2113,7 @@ describe('chat capsule plugin wiring', () => {
       ],
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2172,10 +2172,10 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
     expect(webQQCalls).toHaveLength(2)
     expect(webQQCalls[0]).toEqual([
-      'chat-capsule/webqq/message',
+      'onebot-webqq/webqq/message',
       {
         type: 'group',
         peerId: '20000',
@@ -2188,7 +2188,7 @@ describe('chat capsule plugin wiring', () => {
       { authority: 1 },
     ])
     expect(webQQCalls[1]).toEqual([
-      'chat-capsule/webqq/message',
+      'onebot-webqq/webqq/message',
       {
         type: 'group',
         peerId: '20000',
@@ -2233,7 +2233,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2276,7 +2276,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2301,7 +2301,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).not.toHaveBeenCalledWith('chat-capsule/webqq/message', expect.any(Object), { authority: 1 })
+    expect(broadcast).not.toHaveBeenCalledWith('onebot-webqq/webqq/message', expect.any(Object), { authority: 1 })
   })
 
   it('resolves live OneBot image messages before broadcasting WebQQ updates', async () => {
@@ -2343,7 +2343,7 @@ describe('chat capsule plugin wiring', () => {
     expect(bot.internal.get_image).toHaveBeenCalledWith({
       file: 'live.image',
     })
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2396,7 +2396,7 @@ describe('chat capsule plugin wiring', () => {
     }))
 
     expect(bot.internal.get_image).not.toHaveBeenCalled()
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2404,7 +2404,7 @@ describe('chat capsule plugin wiring', () => {
         summary: '[图片]',
         elements: [{
           type: 'image',
-          url: expect.stringMatching(/^\/chat-capsule\/webqq\/image\//),
+          url: expect.stringMatching(/^\/onebot-webqq\/webqq\/image\//),
         }],
       }),
     }, { authority: 1 })
@@ -2449,7 +2449,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2504,7 +2504,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2541,7 +2541,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2602,7 +2602,7 @@ describe('chat capsule plugin wiring', () => {
     expect(bot.internal.get_msg).toHaveBeenCalledWith({
       message_id: 'quoted-1',
     })
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2662,7 +2662,7 @@ describe('chat capsule plugin wiring', () => {
     expect(bot.internal.get_forward_msg).toHaveBeenCalledWith({
       id: 'forward-detail-1',
     })
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2730,7 +2730,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }))
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
       type: 'group',
       peerId: '20000',
       message: expect.objectContaining({
@@ -2837,7 +2837,7 @@ describe('chat capsule plugin wiring', () => {
     plugin.apply(ctxWithLogger, { debug: true })
     listeners.message[0](createSession())
 
-    expect(ctxWithLogger.logger).toHaveBeenCalledWith('chat-capsule')
+    expect(ctxWithLogger.logger).toHaveBeenCalledWith('onebot-webqq')
     expect(logger.info).toHaveBeenCalledWith(
       'message %s',
       expect.stringContaining('"received":1'),
@@ -2850,7 +2850,7 @@ describe('chat capsule plugin wiring', () => {
     plugin.apply(ctx)
     listeners.message[0](createSession())
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/update', {
       bot: {
         platform: 'onebot',
         selfId: '10000',
@@ -2885,8 +2885,8 @@ describe('chat capsule plugin wiring', () => {
         }),
       }),
     }))
-    expect(entryData?.capsule?.bot.avatar).not.toMatch(/^\/chat-capsule\/webqq\/image\//)
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', expect.objectContaining({
+    expect(entryData?.capsule?.bot.avatar).not.toMatch(/^\/onebot-webqq\/webqq\/image\//)
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/update', expect.objectContaining({
       bot: expect.objectContaining({
         avatar: 'https://example.com/avatar.png',
       }),
@@ -2902,7 +2902,7 @@ describe('chat capsule plugin wiring', () => {
 
     await listeners['before:send'][0]()
 
-    expect(broadcast).toHaveBeenCalledWith('chat-capsule/update', {
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/update', {
       bot: {
         platform: 'onebot',
         selfId: '10000',
@@ -3347,7 +3347,7 @@ describe('chat capsule plugin wiring', () => {
         },
       }))
 
-      const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(initialWebQQCalls).toHaveLength(1)
       expect(initialWebQQCalls[0][1].message).not.toHaveProperty('thinking')
 
@@ -3359,7 +3359,7 @@ describe('chat capsule plugin wiring', () => {
         },
       })
 
-      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(webQQCalls.at(-1)?.[1]).toEqual({
         type: 'group',
         peerId: '20000',
@@ -3378,7 +3378,7 @@ describe('chat capsule plugin wiring', () => {
         }),
       })
 
-      const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+      const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
       await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
         expect.objectContaining({
           id: 'self-1',
@@ -3445,7 +3445,7 @@ describe('chat capsule plugin wiring', () => {
         },
       }))
 
-      const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(initialWebQQCalls).toHaveLength(1)
       expect(initialWebQQCalls[0][1].message).not.toHaveProperty('thinking')
 
@@ -3462,7 +3462,7 @@ describe('chat capsule plugin wiring', () => {
         }],
       })
 
-      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(webQQCalls.at(-1)?.[1]).toEqual({
         type: 'group',
         peerId: '20000',
@@ -3522,7 +3522,7 @@ describe('chat capsule plugin wiring', () => {
         },
       })
 
-      expect(broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')).toHaveLength(0)
+      expect(broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')).toHaveLength(0)
 
       await listeners.message[0](createSession({
         bot,
@@ -3555,7 +3555,7 @@ describe('chat capsule plugin wiring', () => {
         },
       }))
 
-      const nonMatchingWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      const nonMatchingWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(nonMatchingWebQQCalls).toHaveLength(2)
       expect(nonMatchingWebQQCalls[0][1].message).toMatchObject({
         id: 'incoming-1',
@@ -3586,7 +3586,7 @@ describe('chat capsule plugin wiring', () => {
         },
       }))
 
-      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(webQQCalls.at(-1)?.[1]).toEqual({
         type: 'group',
         peerId: '20000',
@@ -3655,7 +3655,7 @@ describe('chat capsule plugin wiring', () => {
       text: '开头<think>   </think>这是答案',
     })
 
-    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'chat-capsule/webqq/message')
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
     expect(webQQCalls).toHaveLength(1)
     expect(webQQCalls[0][1].message).toMatchObject({
       id: 'self-1',

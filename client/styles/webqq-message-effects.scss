@@ -1,8 +1,8 @@
-.chat-capsule-webqq__inline-run {
+.onebot-webqq-webqq__inline-run {
   display: inline;
 }
 
-.chat-capsule-webqq__thinking-dots {
+.onebot-webqq-webqq__thinking-dots {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,24 +11,24 @@
   min-height: 18px;
 }
 
-.chat-capsule-webqq__thinking-dot {
+.onebot-webqq-webqq__thinking-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
   opacity: 0.72;
-  animation: chat-capsule-webqq-thinking-dot 1s ease-in-out infinite;
+  animation: onebot-webqq-webqq-thinking-dot 1s ease-in-out infinite;
 }
 
-.chat-capsule-webqq__thinking-dot:nth-child(2) {
+.onebot-webqq-webqq__thinking-dot:nth-child(2) {
   animation-delay: 0.14s;
 }
 
-.chat-capsule-webqq__thinking-dot:nth-child(3) {
+.onebot-webqq-webqq__thinking-dot:nth-child(3) {
   animation-delay: 0.28s;
 }
 
-@keyframes chat-capsule-webqq-thinking-dot {
+@keyframes onebot-webqq-webqq-thinking-dot {
   0%,
   80%,
   100% {

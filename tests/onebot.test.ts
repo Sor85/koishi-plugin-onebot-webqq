@@ -728,13 +728,13 @@ describe('onebot webqq adapter', () => {
       },
     }
     const service = createOneBotWebQQService({ bots: [bot] }, {
-      imageUrlResolver: (file) => `/chat-capsule/webqq/image/${encodeURIComponent(file)}`,
+      imageUrlResolver: (file) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`,
     })
 
     await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         summary: '[图片]',
-        elements: [{ type: 'image', url: '/chat-capsule/webqq/image/%2Ftmp%2Fllbot-image.jpg' }],
+        elements: [{ type: 'image', url: '/onebot-webqq/webqq/image/%2Ftmp%2Fllbot-image.jpg' }],
       }),
     ])
   })
@@ -764,7 +764,7 @@ describe('onebot webqq adapter', () => {
       },
     }
     const service = createOneBotWebQQService({ bots: [bot] }, {
-      imageUrlResolver: (file) => `/chat-capsule/webqq/image/${encodeURIComponent(file)}`,
+      imageUrlResolver: (file) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`,
     })
 
     await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
@@ -772,7 +772,7 @@ describe('onebot webqq adapter', () => {
         summary: '[图片]',
         elements: [{
           type: 'image',
-          url: '/chat-capsule/webqq/image/https%3A%2F%2Fmultimedia.nt.qq.com.cn%2Fdownload%3Ffileid%3Dremote',
+          url: '/onebot-webqq/webqq/image/https%3A%2F%2Fmultimedia.nt.qq.com.cn%2Fdownload%3Ffileid%3Dremote',
         }],
       }),
     ])

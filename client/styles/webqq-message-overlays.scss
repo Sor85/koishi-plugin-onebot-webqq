@@ -1,4 +1,4 @@
-.chat-capsule-webqq__forward-modal-backdrop {
+.onebot-webqq-webqq__forward-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 10001;
@@ -12,7 +12,7 @@
   outline: none;
 }
 
-.chat-capsule-webqq__forward-modal {
+.onebot-webqq-webqq__forward-modal {
   width: min(480px, calc(100vw - 32px));
   max-height: min(80vh, 620px);
   display: flex;
@@ -24,7 +24,7 @@
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.32);
 }
 
-.chat-capsule-webqq__forward-modal-header {
+.onebot-webqq-webqq__forward-modal-header {
   min-height: 46px;
   flex-shrink: 0;
   display: flex;
@@ -60,17 +60,17 @@
   }
 }
 
-.chat-capsule-webqq__forward-modal-body {
+.onebot-webqq-webqq__forward-modal-body {
   min-height: 0;
   overflow-y: auto;
   padding: 14px 16px 2px;
 }
 
-.chat-capsule-webqq__forward-modal .chat-capsule-webqq__message {
+.onebot-webqq-webqq__forward-modal .onebot-webqq-webqq__message {
   max-width: 74%;
 }
 
-.chat-capsule-webqq__forward-modal-empty {
+.onebot-webqq-webqq__forward-modal-empty {
   padding: 28px 0;
   color: #94a3b8;
   font-size: 13px;
@@ -78,7 +78,7 @@
   text-align: center;
 }
 
-.chat-capsule-webqq__image-preview {
+.onebot-webqq-webqq__image-preview {
   position: fixed;
   inset: 0;
   z-index: 10002;
@@ -92,7 +92,7 @@
   outline: none;
 }
 
-.chat-capsule-webqq__image-preview img {
+.onebot-webqq-webqq__image-preview img {
   max-width: min(1120px, calc(100vw - 64px));
   max-height: calc(100vh - 64px);
   border-radius: 8px;
@@ -101,7 +101,7 @@
   object-fit: contain;
 }
 
-.chat-capsule-webqq__image-preview-close {
+.onebot-webqq-webqq__image-preview-close {
   position: fixed;
   top: 22px;
   right: 22px;
