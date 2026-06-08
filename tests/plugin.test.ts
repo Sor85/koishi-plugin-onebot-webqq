@@ -2646,6 +2646,56 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('renders markup inside live quote text as readable content', async () => {
+    const mentionPayload = await createWebQQLiveMessage(createSession({
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'quote-markup-1',
+          elements: [
+            {
+              type: 'quote',
+              attrs: {
+                name: '彩虹猫',
+                sourceMsgText: '宁宁这是一个测试，禁言<at id="1511991473" name="蒸汽机"/>1分钟',
+              },
+            },
+            { type: 'text', attrs: { content: '好哦，已经把他禁言一分钟啦' } },
+          ],
+        },
+      },
+    }) as unknown as Session, 'incoming')
+    const mediaPayload = await createWebQQLiveMessage(createSession({
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'quote-markup-2',
+          quote: {
+            id: 'quoted-markup-2',
+            user: { id: '40000', name: '笨蛋喵喵小尼' },
+            content: '<msg><img src="https://multimedia.nt.qq.com.cn/download?appid=1407&amp;fileid=remote" file="cover.jpg" sub-type="1"/><file name="作业.zip" file-size="1024"/></msg>',
+          },
+          elements: [
+            { type: 'text', attrs: { content: '@宁宁 这个苹果可以吗' } },
+          ],
+        },
+      },
+    }) as unknown as Session, 'incoming')
+
+    expect(mentionPayload?.message.elements).toEqual([
+      { type: 'quote', title: '彩虹猫', text: '宁宁这是一个测试，禁言@蒸汽机1分钟' },
+      { type: 'text', text: '好哦，已经把他禁言一分钟啦' },
+    ])
+    expect(mediaPayload?.message.elements).toEqual([
+      { type: 'quote', title: '笨蛋喵喵小尼', text: '[图片]作业.zip' },
+      { type: 'text', text: '@宁宁 这个苹果可以吗' },
+    ])
+  })
+
   it('renders live event message quote fields before the WebQQ message body', async () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 

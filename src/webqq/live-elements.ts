@@ -1,10 +1,37 @@
 import type { Session } from 'koishi'
 import { extname } from 'path'
 import type { WebQQMessageElement } from '../onebot'
+import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from '../onebot/text'
 import { isRecord, readRecordText, readStructuredText } from '../shared/structured-text'
 
 function readElementText(value: unknown) {
   return value == null ? '' : String(value)
+}
+
+function normalizeLiveQuoteMarkupText(value: string) {
+  const source = value.trim()
+  if (!source) return ''
+  const hasMarkup = /\[CQ:at,[^\]]+\]/i.test(source) ||
+    /<(?:[\w-]+:)?(?:msg|at|qqbot-at-user|img|image|mface|file|face|record|audio|video)\b/i.test(source)
+  if (!hasMarkup) return normalizeMentionMarkupText(source)
+
+  // 新消息的引用内容可能是 OneBot 适配器塞进 Koishi live element 的 XML 文本；
+  // 历史消息会先走 segment 解析。这里在引用边界压成摘要，避免 UI 直接露出 XML。
+  const normalizedMedia = source
+    .replace(/<(?:[\w-]+:)?(?:img|image|mface)\b[^>]*\/?>/gi, '[图片]')
+    .replace(/<(?:[\w-]+:)?file\b[^>]*\/?>/gi, (tag: string) =>
+      readMarkupAttribute(tag, ['name', 'file']) || '[文件]')
+    .replace(/<(?:[\w-]+:)?(?:record|audio)\b[^>]*\/?>/gi, '[语音]')
+    .replace(/<(?:[\w-]+:)?video\b[^>]*\/?>/gi, '[视频]')
+    .replace(/<(?:[\w-]+:)?face\b[^>]*\/?>/gi, (tag: string) => {
+      const id = readMarkupAttribute(tag, ['id', 'face_id', 'emoji_id'])
+      return id ? `[表情 ${id}]` : '[表情]'
+    })
+
+  return decodeTextEntity(normalizeMentionMarkupText(normalizedMedia))
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
@@ -117,15 +144,15 @@ async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolve
 }
 
 function readLiveQuoteText(raw: unknown): string {
-  if (typeof raw === 'string') return raw
+  if (typeof raw === 'string') return normalizeLiveQuoteMarkupText(raw)
   if (!isRecord(raw)) return ''
   const type = readElementText(raw.type)
   const attrs = isRecord(raw.attrs) ? raw.attrs : {}
-  if (type === 'text') return readElementText(attrs.content)
+  if (type === 'text') return normalizeLiveQuoteMarkupText(readElementText(attrs.content))
   if (type === 'img' || type === 'image') return '[图片]'
   if (type === 'face') return `[表情 ${readElementText(attrs.id)}]`
   if (Array.isArray(raw.children)) return raw.children.map(readLiveQuoteText).join('').trim()
-  return readElementText(attrs.content || attrs.text)
+  return normalizeLiveQuoteMarkupText(readElementText(attrs.content || attrs.text))
 }
 
 async function normalizeLiveQuoteField(session: Session, resolveQuote?: WebQQQuoteResolver): Promise<WebQQMessageElement | undefined> {
@@ -135,7 +162,7 @@ async function normalizeLiveQuoteField(session: Session, resolveQuote?: WebQQQuo
   const member = isRecord(quote.member) ? quote.member : undefined
   const title = (member ? readRecordText(member, ['name', 'nick']) : '') ||
     (user ? readRecordText(user, ['name', 'nick', 'id']) : '')
-  const text = readStructuredText(quote.content).trim() ||
+  const text = normalizeLiveQuoteMarkupText(readStructuredText(quote.content)) ||
     (Array.isArray(quote.elements) ? quote.elements.map(readLiveQuoteText).join('').trim() : '')
   const id = readRecordText(quote, ['id', 'messageId', 'message_id'])
   if (!text && id && resolveQuote) {
@@ -169,7 +196,7 @@ async function normalizeLiveElement(
   }
   if (type === 'quote' || type === 'reply') {
     const title = readElementText(attrs.name || attrs.nickname || attrs.senderName || attrs.sender_name)
-    const text = readElementText(attrs.content || attrs.text || attrs.sourceMsgText) ||
+    const text = normalizeLiveQuoteMarkupText(readElementText(attrs.content || attrs.text || attrs.sourceMsgText)) ||
       (Array.isArray(attrs.message) ? attrs.message.map(readLiveQuoteText).join('').trim() : '') ||
       (Array.isArray(raw.children) ? raw.children.map(readLiveQuoteText).join('').trim() : '')
     const id = readElementText(attrs.id || attrs.messageId || attrs.message_id)

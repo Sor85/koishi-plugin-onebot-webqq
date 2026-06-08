@@ -2,7 +2,7 @@ import { isRecord } from './data'
 
 const mentionAttributeKeys = ['name', 'nickname', 'nick', 'card', 'text', 'display', 'qq', 'id', 'user_id', 'uin']
 
-function decodeTextEntity(value: string) {
+export function decodeTextEntity(value: string) {
   const namedEntities: Record<string, string> = {
     amp: '&',
     lt: '<',
@@ -26,7 +26,7 @@ function decodeTextCodePoint(value: string, radix: number) {
   }
 }
 
-function readMarkupAttribute(source: string, keys: string[]) {
+export function readMarkupAttribute(source: string, keys: string[]) {
   for (const key of keys) {
     const match = new RegExp(`(?:^|[\\s,])${key}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s,>\\]]+))`, 'i').exec(source)
     const value = match?.[2] ?? match?.[3] ?? match?.[4]
