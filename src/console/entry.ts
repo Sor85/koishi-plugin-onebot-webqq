@@ -24,16 +24,16 @@ export function registerConsoleEntry(
       capsule: state.snapshot(),
       debug: options.debug,
       webQQTheme: config.webQQTheme ?? 'fresh',
-      webQQChatStyle: config.webQQChatStyle ?? 'qq',
+      webQQChatStyle: config.webQQChatStyle ?? 'telegram',
       webQQColorMode: config.webQQColorMode ?? 'auto',
       webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
       webQQMessageCacheLimit: config.webQQMessageCacheLimit ?? 100,
       useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
-      hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? false,
+      hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? true,
       showWebQQAffinity: config.showWebQQAffinity ?? false,
       showWebQQRelationship: config.showWebQQRelationship ?? false,
       showWebQQCapsuleUnread: config.showWebQQCapsuleUnread ?? true,
-      webQQStorageBackend: config.webQQStorageBackend ?? 'browser',
+      webQQStorageBackend: config.webQQStorageBackend ?? 'koishi',
     }
   })
 }

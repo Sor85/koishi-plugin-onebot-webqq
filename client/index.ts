@@ -115,13 +115,13 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   capsule.value = data?.value?.capsule
   debug.value = !!data?.value?.debug
   webQQTheme.value = data?.value?.webQQTheme || 'fresh'
-  webQQChatStyle.value = data?.value?.webQQChatStyle || 'qq'
+  webQQChatStyle.value = data?.value?.webQQChatStyle || 'telegram'
   webQQColorMode.value = data?.value?.webQQColorMode || 'auto'
-  webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'browser'
+  webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'koishi'
   webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100
   webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'
   useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false
-  hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? false
+  hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true
   showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false
   showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false
   showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true

@@ -11,7 +11,7 @@ export interface Config {
   webQQImageCacheLimitMB?: number
   webQQImageCacheItemLimitMB?: number
   webQQMarkRecalledMessages?: boolean
-  webQQTheme?: 'fresh' | 'frosted' | 'glass'
+  webQQTheme?: 'fresh' | 'frosted'
   webQQChatStyle?: 'qq' | 'telegram'
   webQQColorMode?: 'auto' | 'light' | 'dark'
   webQQAccentColor?: string
@@ -24,42 +24,55 @@ export interface Config {
   webQQStorageBackend?: 'browser' | 'koishi'
 }
 
-export const Config: Schema<Config> = Schema.object({
-  debug: Schema.boolean().default(false).description('显示前端调试信息'),
-  onebotSelfId: Schema.string().description('用于读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人'),
-  onebotProtocol: Schema.union([
-    Schema.const('napcat').description('NapCat'),
-    Schema.const('llbot').description('LLBot'),
-  ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
-  historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
-  webQQMessageCacheLimit: Schema.natural().min(1).max(1000).default(100).description('每个 WebQQ 会话保留的最近消息缓存数量'),
-  webQQImageCacheEnabled: Schema.boolean().default(true).description('启用 WebQQ 图片代理内存缓存，会额外占用服务器内存'),
-  webQQImageCacheLimitMB: Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB'),
-  webQQImageCacheItemLimitMB: Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB'),
-  webQQMarkRecalledMessages: Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息'),
-  webQQTheme: Schema.union([
-    Schema.const('fresh').description('清爽'),
-    Schema.const('frosted').description('毛玻璃'),
-    Schema.const('glass').description('玻璃'),
-  ]).default('fresh').role('radio').description('WebQQ 主题'),
-  webQQChatStyle: Schema.union([
-    Schema.const('qq').description('传统 QQ'),
-    Schema.const('telegram').description('Telegram'),
-  ]).default('qq').role('radio').description('WebQQ 聊天页面样式'),
-  webQQColorMode: Schema.union([
-    Schema.const('auto').description('自动'),
-    Schema.const('light').description('明亮'),
-    Schema.const('dark').description('暗色'),
-  ]).default('auto').role('radio').description('WebQQ 颜色模式'),
-  webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
-  useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
-  hideWebQQGroupLevel: Schema.boolean().default(false).description('隐藏 WebQQ 消息中的群等级徽标'),
-  showWebQQAffinity: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度'),
-  showWebQQRelationship: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 关系'),
-  webQQAffinityScopeId: Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用'),
-  showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
-  webQQStorageBackend: Schema.union([
-    Schema.const('browser').description('浏览器'),
-    Schema.const('koishi').description('Koishi 数据库'),
-  ]).default('browser').role('radio').description('WebQQ 状态存储后端'),
-})
+export const Config: Schema<Config> = Schema.intersect([
+  Schema.object({
+    onebotSelfId: Schema.string().description('用于读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人'),
+    onebotProtocol: Schema.union([
+      Schema.const('napcat').description('NapCat'),
+      Schema.const('llbot').description('LLBot'),
+    ]).default('napcat').role('radio').description('WebQQ 读取接口使用的 OneBot 实现协议'),
+  }).description('连接设置'),
+
+  Schema.object({
+    historyLimit: Schema.natural().min(1).max(100).default(100).description('每次加载聊天历史的消息数量'),
+    webQQMessageCacheLimit: Schema.natural().min(1).max(1000).default(100).description('每个 WebQQ 会话保留的最近消息缓存数量'),
+    webQQStorageBackend: Schema.union([
+      Schema.const('koishi').description('Koishi 数据库'),
+      Schema.const('browser').description('浏览器'),
+    ]).default('koishi').role('radio').description('WebQQ 状态存储后端'),
+    webQQImageCacheEnabled: Schema.boolean().default(true).description('启用 WebQQ 图片代理内存缓存，会额外占用服务器内存'),
+    webQQImageCacheLimitMB: Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB'),
+    webQQImageCacheItemLimitMB: Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB'),
+  }).description('历史与缓存'),
+
+  Schema.object({
+    webQQTheme: Schema.union([
+      Schema.const('fresh').description('清爽'),
+      Schema.const('frosted').description('毛玻璃'),
+    ]).default('fresh').role('radio').description('WebQQ 主题'),
+    webQQChatStyle: Schema.union([
+      Schema.const('telegram').description('Telegram'),
+      Schema.const('qq').description('QQ'),
+    ]).default('telegram').role('radio').description('WebQQ 聊天页面样式'),
+    webQQColorMode: Schema.union([
+      Schema.const('auto').description('自动'),
+      Schema.const('light').description('明亮'),
+      Schema.const('dark').description('暗色'),
+    ]).default('auto').role('radio').description('WebQQ 颜色模式'),
+    webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
+    useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
+  }).description('界面外观'),
+
+  Schema.object({
+    webQQMarkRecalledMessages: Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息'),
+    hideWebQQGroupLevel: Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标'),
+    showWebQQAffinity: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度'),
+    showWebQQRelationship: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 关系'),
+    webQQAffinityScopeId: Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用'),
+    showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
+  }).description('消息显示'),
+
+  Schema.object({
+    debug: Schema.boolean().default(false).description('显示前端调试信息'),
+  }).description('开发者选项'),
+])

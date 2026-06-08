@@ -216,14 +216,14 @@ export interface WebQQContacts {
   recent?: WebQQRecentContact[]
 }
 
-export type WebQQTheme = 'fresh' | 'frosted' | 'glass'
+export type WebQQTheme = 'fresh' | 'frosted'
 export type WebQQChatStyle = 'qq' | 'telegram'
 export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
 export const capsule = ref<CapsuleData>()
 export const debug = ref(false)
-export const hideWebQQGroupLevel = ref(false)
+export const hideWebQQGroupLevel = ref(true)
 export const showWebQQAffinity = ref(false)
 export const showWebQQCapsuleUnread = ref(true)
 export const showWebQQRelationship = ref(false)
@@ -231,8 +231,8 @@ export const useBotAvatarThemeColor = ref(false)
 export const webQQTotalUnread = ref(0)
 export const webQQAccentColor = ref('#2563eb')
 export const webQQAvatarAccentColor = ref('')
-export const webQQChatStyle = ref<WebQQChatStyle>('qq')
+export const webQQChatStyle = ref<WebQQChatStyle>('telegram')
 export const webQQColorMode = ref<WebQQColorMode>('auto')
 export const webQQMessageCacheLimit = ref(100)
-export const webQQStorageBackend = ref<WebQQStorageBackend>('browser')
+export const webQQStorageBackend = ref<WebQQStorageBackend>('koishi')
 export const webQQTheme = ref<WebQQTheme>('fresh')
