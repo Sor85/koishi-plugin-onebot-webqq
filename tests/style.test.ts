@@ -190,6 +190,34 @@ describe('chat capsule styles', () => {
     expect(missingRequirements).toEqual([])
   })
 
+  it('uses glass bubble colors for the WebQQ return-to-bottom button in light and dark modes', () => {
+    const scrollBottomBody = ruleBody('.onebot-webqq-webqq__scroll-bottom')
+    const darkScrollBottomBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__scroll-bottom')
+    const autoDarkScrollBottomBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__scroll-bottom')
+    const missingRequirements = [
+      scrollBottomBody.includes('background: rgba(255, 255, 255, 0.9)')
+        ? ''
+        : '返回底部按钮亮色模式没有使用白色毛玻璃气泡背景',
+      scrollBottomBody.includes('backdrop-filter: saturate(180%) blur(20px)')
+        ? ''
+        : '返回底部按钮亮色模式缺少毛玻璃效果',
+      scrollBottomBody.includes('-webkit-backdrop-filter: saturate(180%) blur(20px)')
+        ? ''
+        : '返回底部按钮亮色模式缺少 Safari 毛玻璃效果',
+      darkScrollBottomBody.includes('background: rgba(30, 41, 59, 0.96)')
+        ? ''
+        : '返回底部按钮强制暗色模式没有使用黑色气泡背景',
+      darkScrollBottomBody.includes('backdrop-filter: saturate(180%) blur(20px)')
+        ? ''
+        : '返回底部按钮强制暗色模式缺少毛玻璃效果',
+      autoDarkScrollBottomBody.includes('background: rgba(30, 41, 59, 0.96)')
+        ? ''
+        : '返回底部按钮自动暗色模式没有使用黑色气泡背景',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('animates the WebQQ return-to-bottom button without ignoring reduced motion', () => {
     const transitionBody = ruleBody(`.webqq-scroll-bottom-enter-active,
 .webqq-scroll-bottom-leave-active`)

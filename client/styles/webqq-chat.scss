@@ -116,11 +116,13 @@
   width: 34px;
   min-height: 34px;
   padding: 0;
-  color: #ffffff;
-  background: var(--onebot-webqq-webqq-accent);
-  border: 0;
+  color: var(--onebot-webqq-webqq-accent);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 50%;
-  box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   cursor: pointer;
 }
 
