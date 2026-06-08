@@ -1435,7 +1435,8 @@ describe('webqq observer view', () => {
         : '语音元素没有挂载隐藏 audio 播放源',
       webqqMessageListView.includes('onebot-webqq-webqq__record-player') &&
         webqqMessageListView.includes('toggleRecordPlayback(message, run.element, runIndex)') &&
-        webqqMessageListView.includes('class="onebot-webqq-webqq__record-wave"')
+        webqqMessageListView.includes('class="onebot-webqq-webqq__record-wave"') &&
+        webqqMessageListView.includes('viewBox="0 0 24 18"')
         ? ''
         : '语音元素没有使用 LLBot 风格的自定义播放胶囊',
       webqqMessageListView.includes('controls')

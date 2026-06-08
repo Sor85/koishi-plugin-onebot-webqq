@@ -137,12 +137,12 @@
                       <svg v-else class="onebot-webqq-webqq__record-play-icon is-play" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M8 5v14l11-7Z"></path>
                       </svg>
-                      <svg class="onebot-webqq-webqq__record-wave" viewBox="0 0 42 20" aria-hidden="true">
-                        <rect x="2" y="6" width="3" height="8" rx="1.5"></rect>
-                        <rect x="9" y="3" width="3" height="14" rx="1.5"></rect>
-                        <rect x="16" y="1" width="3" height="18" rx="1.5"></rect>
-                        <rect x="23" y="4" width="3" height="12" rx="1.5"></rect>
-                        <rect x="30" y="7" width="3" height="6" rx="1.5"></rect>
+                      <svg class="onebot-webqq-webqq__record-wave" viewBox="0 0 24 18" aria-hidden="true">
+                        <rect x="2" y="6" width="2.5" height="6" rx="1.25"></rect>
+                        <rect x="7" y="3" width="2.5" height="12" rx="1.25"></rect>
+                        <rect x="12" y="1" width="2.5" height="16" rx="1.25"></rect>
+                        <rect x="17" y="4" width="2.5" height="10" rx="1.25"></rect>
+                        <rect x="21" y="6" width="2.5" height="6" rx="1.25"></rect>
                       </svg>
                       <span class="onebot-webqq-webqq__record-duration">{{ formatRecordDuration(run.element.duration || 0) }}</span>
                     </button>
@@ -361,7 +361,7 @@ function formatRecordDuration(duration: number) {
 
 function getRecordPlayerStyle(element: WebQQMessageElement) {
   const duration = Math.max(0, Math.round(element.duration || 0))
-  const width = Math.min(200, Math.max(86, 86 + duration * 3))
+  const width = Math.min(200, Math.max(102, 102 + duration * 3))
   return { width: `${width}px` }
 }
 
