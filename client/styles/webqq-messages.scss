@@ -421,18 +421,16 @@
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction {
   --onebot-webqq-webqq-reaction-avatar-size: 18px;
-  --onebot-webqq-webqq-reaction-bg: #4fa3e0;
   gap: 4px;
   padding: 0 0 0 4px;
   min-height: unset;
   color: #fff;
-  background: #4fa3e0;
+  background: var(--onebot-webqq-webqq-reaction-bg);
   border-color: transparent;
 }
 
 .onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction {
-  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 70%, #fff 30%);
-  background: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 70%, #fff 30%);
+  background: var(--onebot-webqq-webqq-reaction-bg);
 }
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-users {
@@ -484,12 +482,14 @@
 }
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble {
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%);
   gap: 2px;
   margin: 1px 0;
   border-radius: 18px;
 }
 
 .onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__bubble {
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #0f172a 12%);
 }
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-cluster-first:not(.is-outgoing) .onebot-webqq-webqq__bubble {

@@ -237,6 +237,7 @@
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__bubble {
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%);
   color: #e5edf7;
   background: rgba(30, 41, 59, 0.96);
 }
@@ -252,6 +253,7 @@
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%);
   color: #ffffff;
   background: var(--onebot-webqq-webqq-accent);
   box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
@@ -352,6 +354,7 @@
   }
 
   .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__bubble {
+    --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%);
     color: #e5edf7;
     background: rgba(30, 41, 59, 0.96);
   }
@@ -367,6 +370,7 @@
   }
 
   .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
+    --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%);
     color: #ffffff;
     background: var(--onebot-webqq-webqq-accent);
     box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
