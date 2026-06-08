@@ -59,7 +59,7 @@ export const name = 'onebot-webqq'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {
-  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
+  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character', 'ffmpeg'],
 }
 
 declare module '@koishijs/console' {

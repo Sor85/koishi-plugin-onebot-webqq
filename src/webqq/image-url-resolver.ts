@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import { readFile } from 'fs/promises'
 import type { WebQQImageUrlResolver } from './live-elements'
-import { getImageContentType, isRemoteImageSource } from './live-elements'
+import { detectMediaContentType, getImageContentType, isRemoteImageSource } from './live-elements'
 
 export interface WebQQImageContext {
   params: Record<string, string>
@@ -16,6 +16,7 @@ export interface WebQQImageServer {
 
 interface WebQQImageUrlResolverContext {
   server?: WebQQImageServer
+  ffmpeg?: { builder(): { input(buf: Buffer): { outputOption(...opts: string[]): { run(type: 'buffer'): Promise<Buffer> } } } }
 }
 
 interface WebQQImageUrlResolverLogger {
@@ -38,6 +39,8 @@ interface CachedWebQQImage {
 const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
 const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
+
+const BROWSER_INCOMPATIBLE_AUDIO = new Set(['audio/amr', 'application/octet-stream'])
 
 export function createWebQQImageUrlResolver(
   ctx: WebQQImageUrlResolverContext,
@@ -88,6 +91,16 @@ export function createWebQQImageUrlResolver(
     }
   }
 
+  async function transcodeIfNeeded(body: Buffer, contentType: string): Promise<{ body: Buffer, contentType: string }> {
+    if (!ctx.ffmpeg || !BROWSER_INCOMPATIBLE_AUDIO.has(contentType)) return { body, contentType }
+    try {
+      const transcoded = await ctx.ffmpeg.builder().input(body).outputOption('-c:a', 'libopus', '-f', 'ogg').run('buffer')
+      return { body: transcoded, contentType: 'audio/ogg' }
+    } catch {
+      return { body, contentType }
+    }
+  }
+
   ctx.server?.get('/onebot-webqq/webqq/image/:id', async (routerCtx) => {
     const id = routerCtx.params.id
     const file = files.get(id)
@@ -110,15 +123,17 @@ export function createWebQQImageUrlResolver(
       const response = await fetch(file)
       routerCtx.status = response.status
       if (!response.ok) return
-      const contentType = response.headers.get('content-type') || getImageContentType(file)
-      const body = Buffer.from(await response.arrayBuffer())
+      const rawBody = Buffer.from(await response.arrayBuffer())
+      const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(file)
+      const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
       setImageHeaders(routerCtx, id, contentType)
       routerCtx.body = body
       cacheImage(id, body, contentType)
       return
     }
-    const contentType = getImageContentType(file)
-    const body = await readFile(file)
+    const rawBody = await readFile(file)
+    const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
+    const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
     setImageHeaders(routerCtx, id, contentType)
     routerCtx.body = body
     cacheImage(id, body, contentType)

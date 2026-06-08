@@ -101,6 +101,15 @@ export function isRemoteImageSource(file: string) {
   return /^https?:\/\//.test(file)
 }
 
+export function detectMediaContentType(buf: Buffer): string | undefined {
+  if (buf[0] === 0x23 && buf[1] === 0x21 && buf[2] === 0x41 && buf[3] === 0x4d && buf[4] === 0x52) return 'audio/amr'
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'audio/mpeg'
+  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return 'audio/mpeg'
+  if (buf[0] === 0x4f && buf[1] === 0x67 && buf[2] === 0x67 && buf[3] === 0x53) return 'audio/ogg'
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46) return 'audio/wav'
+  return undefined
+}
+
 export function getImageContentType(file: string) {
   switch (extname(file).toLowerCase()) {
     case '.jpg':
