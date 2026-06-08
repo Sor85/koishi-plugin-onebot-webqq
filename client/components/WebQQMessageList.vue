@@ -13,8 +13,12 @@
   </template>
   <template v-else>
     <template v-for="(message, index) in visibleMessages" :key="message.id || message.sequence">
+      <div v-if="message.event" class="chat-capsule-webqq__message-event">
+        {{ message.summary }}
+      </div>
       <div
-        :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message) }]"
+        v-else
+        :class="['chat-capsule-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message), 'is-recalled': message.recalled }]"
       >
         <span class="chat-capsule-webqq__message-avatar-wrap">
           <img class="chat-capsule-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
@@ -94,13 +98,38 @@
                 </button>
                 <span v-else>{{ run.element.text || message.summary }}</span>
               </template>
+              <div v-if="message.reactions?.length && chatStyle === 'telegram'" class="chat-capsule-webqq__message-reactions">
+                <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
+                  <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
+                  <template v-else>{{ reaction.label }}</template>
+                  <span v-if="getReactionUsers(reaction).length" class="chat-capsule-webqq__message-reaction-users">
+                    <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
+                      <img class="chat-capsule-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
+                    </span>
+                  </span>
+                  <span v-if="shouldShowReactionCount(reaction)" class="chat-capsule-webqq__message-reaction-count">{{ reaction.count }}</span>
+                </span>
+              </div>
             </div>
+            <div v-if="message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))" class="chat-capsule-webqq__message-reactions">
+              <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="chat-capsule-webqq__message-reaction">
+                <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
+                <template v-else>{{ reaction.label }}</template>
+                <span v-if="getReactionUsers(reaction).length" class="chat-capsule-webqq__message-reaction-users">
+                  <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
+                    <img class="chat-capsule-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
+                  </span>
+                </span>
+                <span v-if="shouldShowReactionCount(reaction)" class="chat-capsule-webqq__message-reaction-count">{{ reaction.count }}</span>
+              </span>
+            </div>
+            <div v-if="message.recalled" class="chat-capsule-webqq__message-recall-status">已撤回</div>
             <div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>
           </div>
         </div>
       </div>
       <div
-        v-if="getThinkingMessage(index)"
+        v-if="!message.event && getThinkingMessage(index)"
         class="chat-capsule-webqq__thinking-row"
       >
         <button
@@ -142,7 +171,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { WebQQForwardItem, WebQQMessage } from '../state'
+import type { WebQQForwardItem, WebQQMessage, WebQQMessageReactionUser } from '../state'
 import type { WebQQElementRun, WebQQMessageElement, WebQQThinkingMessage } from '../utils/webqq-message-view'
 
 const props = defineProps<{
@@ -150,6 +179,7 @@ const props = defineProps<{
   errorText: string
   hasCurrentChat: boolean
   visibleMessages: WebQQMessage[]
+  chatStyle: string
   showWebQQAffinity: boolean
   showWebQQRelationship: boolean
   hideWebQQGroupLevel: boolean
@@ -190,6 +220,23 @@ function isThinkingMessageExpanded(index: number) {
 function getThinkingDurationText(index: number) {
   const message = getThinkingMessage(index)
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
+}
+
+type WebQQMessageReaction = NonNullable<WebQQMessage['reactions']>[number]
+
+function getReactionUsers(reaction: WebQQMessageReaction): WebQQMessageReactionUser[] {
+  if (reaction.users?.length) return reaction.users
+  return reaction.userId && reaction.userAvatar
+    ? [{ userId: reaction.userId, userAvatar: reaction.userAvatar }]
+    : []
+}
+
+function shouldShowReactionCount(reaction: WebQQMessageReaction) {
+  return reaction.count > Math.max(getReactionUsers(reaction).length, 1)
+}
+
+function getReactionUserZIndex(reaction: WebQQMessageReaction, userIndex: number) {
+  return getReactionUsers(reaction).length - userIndex
 }
 
 function toggleThinking(index: number) {

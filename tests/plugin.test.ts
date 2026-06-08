@@ -27,6 +27,7 @@ import {
   createWebQQGroupLeaveNotice,
 } from '../src/webqq/event-notices'
 import {
+  applyWebQQReactionToLiveMessages,
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
 } from '../src/webqq/live-cache'
@@ -63,12 +64,15 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
   const modelExtend = vi.fn((_table: string, _fields: unknown, _options?: unknown) => {})
   const hasConsole = options.console ?? true
 
-  const base: Pick<ChatCapsuleContext, 'on' | 'before'> = {
+  const base: Pick<ChatCapsuleContext, 'on' | 'before' | 'setInterval'> = {
     on(event, listener) {
       ;(listeners[event] ||= []).push(listener)
     },
     before(event, listener) {
       ;(listeners[`before:${event}`] ||= []).push(listener)
+    },
+    setInterval() {
+      return () => {}
     },
   }
 
@@ -231,6 +235,27 @@ describe('chat capsule plugin wiring', () => {
         summary: 'hello',
         elements: [{ type: 'text', text: 'hello' }],
       },
+    })
+  })
+
+  it('uses raw OneBot message ids and sequences for WebQQ live messages', async () => {
+    const payload = await createWebQQLiveMessage(createSession({
+      messageId: 'koishi-id',
+      content: 'hello',
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          message_id: 'onebot-id',
+          message_seq: 31318,
+        },
+      },
+    }) as unknown as Session, 'incoming')
+
+    expect(payload?.message).toMatchObject({
+      id: 'onebot-id',
+      sequence: '31318',
     })
   })
 
@@ -616,6 +641,556 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('marks recalled WebQQ live messages by default', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await listeners['message-deleted'][0](createSession({
+      bot,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        operator: { id: '30000', name: 'Alice' },
+        message: { id: 'new-1' },
+      },
+    }))
+
+    const recallCall = broadcast.mock.calls.find(([event]) => event === 'chat-capsule/webqq/recall')
+    expect(recallCall?.[1]).toMatchObject({
+      type: 'group',
+      peerId: '20000',
+      messageId: 'new-1',
+      mode: 'mark',
+    })
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'new-1',
+        recalled: true,
+      }),
+    ])
+  })
+
+  it('removes recalled WebQQ messages and appends recall events when recall marking is disabled', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx, { webQQMarkRecalledMessages: false })
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await listeners['message-deleted'][0](createSession({
+      bot,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        operator: { id: '30000', name: 'Alice' },
+        member: { name: '蒸汽机' },
+        message: { id: 'new-1' },
+      },
+    }))
+
+    const recallCall = broadcast.mock.calls.find(([event]) => event === 'chat-capsule/webqq/recall')
+    expect(recallCall?.[1]).toMatchObject({
+      type: 'group',
+      peerId: '20000',
+      messageId: 'new-1',
+      mode: 'remove',
+      eventMessage: {
+        summary: '蒸汽机 撤回了一条消息',
+        event: {
+          type: 'recall',
+          targetMessageId: 'new-1',
+        },
+      },
+    })
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '蒸汽机 撤回了一条消息',
+        event: {
+          type: 'recall',
+          targetMessageId: 'new-1',
+        },
+      }),
+    ])
+  })
+
+  it('broadcasts WebQQ poke, mute, and reaction events', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_group_member_info: vi.fn(async ({ user_id }: { user_id: number | string }) => ({
+          user_id,
+          card: user_id === 30000 ? 'Alice Card' : 'Bob Card',
+          nickname: user_id === 30000 ? 'Alice Nick' : 'Bob Nick',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    const emitReaction = (data: Record<string, unknown>) => socketListener?.({ data: JSON.stringify(data) })
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        member: { name: 'Alice Card' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await listeners['internal/session'][0](createSession({
+      bot,
+      channelId: undefined,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          notice_type: 'notify',
+          sub_type: 'poke',
+          group_id: '20000',
+          user_id: '30000',
+          target_id: '40000',
+        },
+      },
+    }))
+    await listeners['internal/session'][0](createSession({
+      bot,
+      channelId: undefined,
+      timestamp: 1710000003000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000003000,
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          notice_type: 'group_ban',
+          sub_type: 'ban',
+          group_id: '20000',
+          user_id: '40000',
+          operator_id: '30000',
+          duration: 600,
+        },
+      },
+    }))
+    // 贴上：count 为该表情全量人数（2 人），emoji_id 76 经 qface 转为「赞」
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      operator_id: '40000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 2 }],
+      is_add: true,
+    })
+
+    const webqqMessages = broadcast.mock.calls
+      .filter(([event]) => event === 'chat-capsule/webqq/message')
+      .map(([, payload]) => payload)
+    expect(webqqMessages).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          summary: 'Alice Card 戳了戳 Bob Card',
+          event: { type: 'poke' },
+        }),
+      }),
+      expect.objectContaining({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          summary: 'Alice Card 禁言了 Bob Card 10 分钟',
+          event: { type: 'mute' },
+        }),
+      }),
+      expect.objectContaining({
+        type: 'group',
+        peerId: '20000',
+        message: expect.objectContaining({
+          id: 'new-1',
+          reactions: [{
+            emojiId: '76',
+            label: '赞',
+            count: 2,
+            userId: '40000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+            users: [{
+              userId: '40000',
+              userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+            }],
+          }],
+        }),
+      }),
+    ]))
+    const loadMessages = addListener.mock.calls.find(([event]) => event === 'chat-capsule/webqq/messages')?.[1]
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '50000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 3 }],
+      is_add: true,
+    })
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        summary: 'Alice Card 戳了戳 Bob Card',
+        event: { type: 'poke' },
+      }),
+      expect.objectContaining({
+        summary: 'Alice Card 禁言了 Bob Card 10 分钟',
+        event: { type: 'mute' },
+      }),
+      expect.objectContaining({
+        id: 'new-1',
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          count: 3,
+          userId: '50000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=50000&s=640',
+          users: [{
+            userId: '40000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          }, {
+            userId: '50000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=50000&s=640',
+          }],
+        }],
+      }),
+    ]))
+
+    // 取消其中一人时保留剩余用户；count 归零后移除该表情，移空后 reactions 字段消失
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '40000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 2 }],
+      is_add: false,
+    })
+    const afterPartialCancelMessages = await loadMessages?.({ type: 'group', peerId: '20000', limit: 20 }) as Array<{ id: string; reactions?: unknown }>
+    expect(afterPartialCancelMessages.find((item) => item.id === 'new-1')).toEqual(expect.objectContaining({
+      reactions: [{
+        emojiId: '76',
+        label: '赞',
+        count: 2,
+        userId: '40000',
+        userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+        users: [{
+          userId: '50000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=50000&s=640',
+        }],
+      }],
+    }))
+
+    emitReaction({
+      post_type: 'notice',
+      notice_type: 'group_msg_emoji_like',
+      group_id: '20000',
+      user_id: '50000',
+      message_id: 'new-1',
+      likes: [{ emoji_id: '76', count: 0 }],
+      is_add: false,
+    })
+    const finalMessages = await loadMessages?.({ type: 'group', peerId: '20000', limit: 20 }) as Array<{ id: string; reactions?: unknown }>
+    expect(finalMessages.find((item) => item.id === 'new-1')).not.toHaveProperty('reactions')
+  })
+
+  it('loads the target message when a WebQQ reaction is not in the live cache', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_msg: vi.fn(async ({ message_id }: { message_id: string }) => ({
+          message_id,
+          message_seq: 31318,
+          time: 1710000001,
+          group_id: 20000,
+          user_id: 30000,
+          sender: {
+            user_id: 30000,
+            nickname: 'Alice',
+            card: 'Alice Card',
+          },
+          message: [{ type: 'text', data: { text: 'history target' } }],
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    expect(socketListener).toBeDefined()
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'onebot-id',
+        likes: [{ emoji_id: '76', count: 1 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.get_msg).toHaveBeenCalledWith({ message_id: 'onebot-id' })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'onebot-id',
+        sequence: '31318',
+        summary: 'history target',
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          count: 1,
+          userId: '40000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          users: [{
+            userId: '40000',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          }],
+        }],
+      }),
+    }, { authority: 1 })
+  })
+
+  it('fills WebQQ reaction users from the emoji like list', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        fetch_emoji_like: vi.fn(async () => ({
+          emojiLikesList: [{
+            tinyId: '40000',
+            nickName: 'Ning',
+            headUrl: 'https://example.com/40000.png',
+          }, {
+            tinyId: '50000',
+            nickName: 'Other',
+            headUrl: 'https://example.com/50000.png',
+          }],
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'new-1',
+        likes: [{ emoji_id: '76', count: 2 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.fetch_emoji_like).toHaveBeenCalledWith({
+      message_id: 'new-1',
+      emoji_id: '76',
+      count: 2,
+    })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'new-1',
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          count: 2,
+          userId: '40000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          users: [{
+            userId: '40000',
+            userName: 'Ning',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          }, {
+            userId: '50000',
+            userName: 'Other',
+            userAvatar: 'https://example.com/50000.png',
+          }],
+        }],
+      }),
+    }, { authority: 1 })
+  })
+
+  it('matches WebQQ reactions by message sequence when available', () => {
+    const message: WebQQMessage = {
+      id: 'onebot-id',
+      sequence: '31318',
+      time: 1710000001000,
+      senderId: '30000',
+      senderName: 'Alice',
+      senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+      direction: 'incoming',
+      summary: 'history target',
+      elements: [{ type: 'text', text: 'history target' }],
+    }
+
+    expect(applyWebQQReactionToLiveMessages([message], '31318', {
+      emojiId: '76',
+      label: '赞',
+      count: 1,
+    }, true)).toEqual([{
+      ...message,
+      reactions: [{
+        emojiId: '76',
+        label: '赞',
+        count: 1,
+        users: [],
+      }],
+    }])
+  })
+
   it('keeps ChatLuna message input building outside the plugin entry', () => {
     const session = createSession({
       event: {
@@ -701,6 +1276,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.natural().min(1).max(4096).default(100).description('WebQQ 图片代理内存缓存总上限，单位 MB')")
     expect(configSource).toContain("webQQImageCacheItemLimitMB?: number")
     expect(configSource).toContain("Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB')")
+    expect(configSource).toContain("webQQMarkRecalledMessages?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息')")
     expect(configSource).not.toContain("Schema.const('s3')")
     expect(configSource).not.toContain('webQQS3')
     expect(configSource).not.toContain('@aws-sdk/client-s3')

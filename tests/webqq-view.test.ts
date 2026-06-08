@@ -15,6 +15,7 @@ import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary, type ConversationSummary } from '../client/stores/webqq-state'
 import { createBotThinkingMessage, type WebQQMessageElement } from '../client/utils/webqq-message-view'
+import { applyWebQQRecallToMessages } from '../client/utils/webqq-recall-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
@@ -726,6 +727,7 @@ describe('webqq observer view', () => {
   })
 
   it('wraps WebQQ message bubbles with their time for Telegram hover layout', () => {
+    expect(webqqView).toContain(':chat-style="webQQChatStyle"')
     expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-body"')
     expect(webqqMessageListView).toContain('<div v-else class="chat-capsule-webqq__bubble">')
     expect(webqqMessageListView).toContain('<div class="chat-capsule-webqq__message-time">{{ formatTime(message.time) }}</div>')
@@ -839,6 +841,34 @@ describe('webqq observer view', () => {
     expect(list.isBotThinkingMessage(list.visibleMessages.value[0])).toBe(false)
   })
 
+  it('applies WebQQ recall payloads to message lists', () => {
+    const message = createWebQQMessage({ id: 'message-1', sequence: 'message-1' })
+    const recallEvent = createWebQQMessage({
+      id: 'recall:message-1',
+      sequence: 'recall:message-1',
+      time: 1710000000001,
+      summary: 'Alice 撤回了一条消息',
+      event: {
+        type: 'recall',
+        targetMessageId: 'message-1',
+      },
+    })
+
+    expect(applyWebQQRecallToMessages([message], {
+      type: 'group',
+      peerId: '20000',
+      messageId: 'message-1',
+      mode: 'mark',
+    })).toEqual([{ ...message, recalled: true }])
+    expect(applyWebQQRecallToMessages([message], {
+      type: 'group',
+      peerId: '20000',
+      messageId: 'message-1',
+      mode: 'remove',
+      eventMessage: recallEvent,
+    })).toEqual([recallEvent])
+  })
+
   it('shows cached WebQQ messages while remote history refreshes', async () => {
     const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
     const messages = ref<WebQQMessage[]>([])
@@ -886,7 +916,7 @@ describe('webqq observer view', () => {
   })
 
   it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {
-    const thinkingRowStart = '<div\n        v-if="getThinkingMessage(index)"'
+    const thinkingRowStart = '<div\n        v-if="!message.event && getThinkingMessage(index)"'
     const messageContentSource = sourceBetween(
       webqqMessageListView,
       'class="chat-capsule-webqq__message-content"',
@@ -899,6 +929,48 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('getThinkingMessage(index)')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
     expect(webqqMessageListView).toContain('toggleThinking(index)')
+  })
+
+  it('renders WebQQ recall events and recalled message marks', () => {
+    expect(clientState).toContain('recalled?: boolean')
+    expect(clientState).toContain("event?: {")
+    expect(clientState).toContain("type: 'recall'")
+    expect(clientState).toContain("type: 'recall' | 'poke' | 'mute' | 'reaction'")
+    expect(clientState).toContain('export interface WebQQMessageReactionUser')
+    expect(clientState).toContain('users?: WebQQMessageReactionUser[]')
+    expect(clientState).toContain('reactions?: WebQQMessageReaction[]')
+    expect(clientState).toContain('emojiUrl?: string')
+    expect(clientState).toContain('userAvatar?: string')
+    expect(webqqMessageListView).toContain('chatStyle: string')
+    expect(webqqMessageListView).toContain("message.event")
+    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-event')
+    expect(webqqMessageListView).toContain('class="chat-capsule-webqq__message-recall-status"')
+    expect(webqqMessageListView).toContain('已撤回')
+    expect(webqqMessageListView).toContain("'is-recalled': message.recalled")
+    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reactions')
+    expect(webqqMessageListView).toContain('message.reactions')
+    expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle === 'telegram'")
+    expect(webqqMessageListView).toContain("message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))")
+    expect(webqqMessageListView).toContain('getReactionUsers(reaction)')
+    expect(webqqMessageListView).toContain('getReactionUserZIndex(reaction, userIndex)')
+    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reaction-users')
+    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reaction-avatar')
+    expect(webqqMessageListView).toContain('chat-capsule-webqq__message-reaction-avatar-image')
+    expect(webqqMessageListView).toContain('reaction.emojiUrl')
+    expect(webqqMessageListView).toContain(':src="withProxy(reaction.emojiUrl)"')
+    expect(webqqMessageListView).toContain('reaction.userAvatar')
+    expect(webqqMessageListView).toContain(':src="withProxy(user.userAvatar)"')
+    expect(webqqMessageListView).toContain(':title="user.userName || user.userId"')
+    expect(webqqMessageListView).toContain('reaction.label')
+    expect(style).toContain('.chat-capsule-webqq__message.is-recalled')
+    expect(style).toContain('.chat-capsule-webqq__message-recall-status')
+    expect(style).toContain('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')
+    expect(style).toContain('.chat-capsule-webqq__message-reactions')
+    expect(style).toContain('.chat-capsule-webqq__message-reaction')
+    expect(style).toContain('.chat-capsule-webqq__bubble .chat-capsule-webqq__message-reactions')
+    expect(style).toContain('.chat-capsule-webqq__message-reaction-users')
+    expect(style).toContain('.chat-capsule-webqq__message-reaction-emoji')
+    expect(style).toContain('.chat-capsule-webqq__message-reaction-avatar')
   })
 
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {

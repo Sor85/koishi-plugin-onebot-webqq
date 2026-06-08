@@ -220,11 +220,13 @@ describe('chat capsule styles', () => {
 
   it('sizes WebQQ message avatars beside bubbles', () => {
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('display: flex')
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('--chat-capsule-webqq-message-avatar-size: 32px')
     expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('position: relative')
-    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('width: 32px')
-    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('height: 32px')
-    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
-    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('width: var(--chat-capsule-webqq-message-avatar-size)')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar-wrap')).toContain('height: var(--chat-capsule-webqq-message-avatar-size)')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: var(--chat-capsule-webqq-message-avatar-size)')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('height: var(--chat-capsule-webqq-message-avatar-size)')
+    expect(ruleBodyIncluding('.chat-capsule-webqq__message-avatar')).toContain('border-radius: 50%')
     expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('position: absolute')
     expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('top: -10px')
     expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('right: -12px')
@@ -233,6 +235,40 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('background: #ec4899')
     expect(ruleBody('.chat-capsule-webqq__message-affinity')).toContain('box-shadow: 0 2px 6px rgba(190, 24, 93, 0.24)')
     expect(ruleBody('.chat-capsule-webqq__message-affinity-icon')).toContain('fill: currentColor')
+  })
+
+  it('keeps WebQQ reaction avatars compact inside reaction pills', () => {
+    const avatarBody = ruleBody('.chat-capsule-webqq__message-reaction-avatar')
+    const avatarImageBody = ruleBody('.chat-capsule-webqq__message-reaction-avatar-image')
+
+    expect(ruleBody('.chat-capsule-webqq__message-reaction')).toContain('--chat-capsule-webqq-reaction-avatar-size: 26px')
+    expect(style).toContain('width: var(--chat-capsule-webqq-reaction-avatar-size)')
+    expect(style).toContain('height: var(--chat-capsule-webqq-reaction-avatar-size)')
+    expect(avatarBody).toContain('aspect-ratio: 1 / 1')
+    expect(avatarBody).toContain('overflow: hidden')
+    expect(avatarBody).toContain('border-radius: 50%')
+    expect(avatarImageBody).toContain('width: 100%')
+    expect(avatarImageBody).toContain('height: 100%')
+    expect(avatarImageBody).toContain('border-radius: inherit')
+    expect(avatarImageBody).toContain('object-fit: cover')
+    expect(style).toContain('img:not(.chat-capsule-webqq__message-reaction-avatar-image)')
+    expect(style).toContain('box-sizing: border-box')
+    expect(style).toContain('box-shadow: 0 0 0 2px var(--chat-capsule-webqq-reaction-bg')
+  })
+
+  it('stacks multiple WebQQ reaction user avatars', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-reaction-users')).toContain('display: inline-flex')
+    expect(style).toContain(`.chat-capsule-webqq__message-reaction-avatar {
+  position: relative`)
+    expect(ruleBody('.chat-capsule-webqq__message-reaction-users .chat-capsule-webqq__message-reaction-avatar + .chat-capsule-webqq__message-reaction-avatar')).toContain('margin-left: -6px')
+  })
+
+  it('renders WebQQ reaction emoji images at a stable inline size', () => {
+    const emojiBody = ruleBody('.chat-capsule-webqq__message-reaction-emoji')
+
+    expect(emojiBody).toContain('width: 18px')
+    expect(emojiBody).toContain('height: 18px')
+    expect(emojiBody).toContain('object-fit: contain')
   })
 
   it('stacks WebQQ rich message elements vertically inside the bubble', () => {
@@ -312,6 +348,32 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message:hover .chat-capsule-webqq__message-time')).toContain('opacity: 1')
   })
 
+  it('places Telegram-style WebQQ reactions inside message bubbles', () => {
+    const bubbleBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble')
+    const reactionBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reactions')
+
+    expect(bubbleBody).toContain('gap: 2px')
+    expect(reactionBody).toContain('margin-top: 0')
+    expect(reactionBody).toContain('margin-bottom: -5px')
+    expect(reactionBody).toContain('align-self: flex-start')
+  })
+
+  it('makes Telegram-style WebQQ reaction pills compact and bubble-tinted', () => {
+    const bubbleBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble')
+    const outgoingReactionBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .is-outgoing .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction')
+    const reactionBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction')
+    const usersBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction-users')
+
+    expect(bubbleBody).toContain('gap: 2px')
+    expect(reactionBody).toContain('--chat-capsule-webqq-reaction-bg: #4fa3e0')
+    expect(outgoingReactionBody).toContain('--chat-capsule-webqq-reaction-bg: color-mix(in srgb, var(--chat-capsule-webqq-accent) 70%, #fff 30%)')
+    expect(reactionBody).toContain('gap: 4px')
+    expect(reactionBody).toContain('min-height: unset')
+    expect(reactionBody).toContain('padding: 0 0 0 4px')
+    expect(reactionBody).toContain('background: #4fa3e0')
+    expect(usersBody).toContain('margin-right: 0')
+  })
+
   it('shows QQ-style WebQQ message times beside bubbles on hover', () => {
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-body')).toContain('flex-direction: row')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-body')).toContain('align-items: flex-end')
@@ -323,6 +385,16 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-time')).toContain('opacity: 0')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-time')).toContain('white-space: nowrap')
     expect(ruleBody('.chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message:hover .chat-capsule-webqq__message-time')).toContain('opacity: 1')
+  })
+
+  it('shows compact WebQQ recall status and event capsules', () => {
+    expect(ruleBody('.chat-capsule-webqq__message-event')).toContain('width: fit-content')
+    expect(ruleBody('.chat-capsule-webqq__message-event')).toContain('max-width: 74%')
+    expect(ruleBody('.chat-capsule-webqq__message-recall-status')).toContain('opacity: 0')
+    expect(ruleBody('.chat-capsule-webqq__message-recall-status')).toContain('visibility: hidden')
+    expect(ruleBody('.chat-capsule-webqq__message-recall-status')).toContain('white-space: nowrap')
+    expect(ruleBodyIncluding('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')).toContain('opacity: 1')
+    expect(ruleBodyIncluding('.chat-capsule-webqq__message.is-recalled:hover .chat-capsule-webqq__message-recall-status')).toContain('visibility: visible')
   })
 
   it('keeps WebQQ contact message times in the top-right corner', () => {
@@ -631,7 +703,8 @@ describe('chat capsule styles', () => {
   it('aligns completed WebQQ thinking after outgoing bubbles instead of the avatar edge', () => {
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('gap: 8px')
     expect(ruleBody('.chat-capsule-webqq__message')).toContain('flex-direction: row-reverse')
-    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: 32px')
+    expect(ruleBody('.chat-capsule-webqq__message')).toContain('--chat-capsule-webqq-message-avatar-size: 32px')
+    expect(ruleBody('.chat-capsule-webqq__message-avatar')).toContain('width: var(--chat-capsule-webqq-message-avatar-size)')
     expect(ruleBody('.chat-capsule-webqq__thinking-row')).toContain('margin: -12px 40px 16px auto')
   })
 

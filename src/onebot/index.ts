@@ -1,4 +1,5 @@
 import {
+  getActionData,
   getStringField,
   isRecord,
   toArrayResult,
@@ -51,6 +52,7 @@ import type {
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageReactionUser,
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecentContact,
@@ -71,10 +73,13 @@ export type {
   WebQQLiveMessage,
   WebQQMessage,
   WebQQMessageElement,
+  WebQQMessageReaction,
+  WebQQMessageReactionUser,
   WebQQMessageQuery,
   WebQQNotice,
   WebQQNoticeAction,
   WebQQProtocol,
+  WebQQRecallPayload,
   WebQQRecentContact,
 } from './types'
 
@@ -133,6 +138,22 @@ async function loadRecentContacts(bot: OneBotBot, friends: WebQQFriend[], groups
   }
 }
 
+function supportsAction(bot: OneBotBot, action: string) {
+  return typeof bot.internal._request === 'function' || typeof bot.internal[action] === 'function'
+}
+
+function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefined {
+  const item = isRecord(raw) ? raw : {}
+  const userId = getStringField(item, ['tinyId'])
+  if (!userId) return
+  const userName = getStringField(item, ['nickName', 'nickname', 'name'])
+  return {
+    userId,
+    ...(userName ? { userName } : {}),
+    userAvatar: getStringField(item, ['headUrl']) || getUserAvatar(userId),
+  }
+}
+
 // 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   const getBot = () => selectBot(ctx, options)
@@ -145,6 +166,25 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     async resolveForward(id: string) {
       return resolveOneBotForward(getBot(), id, imageUrlResolver)
+    },
+
+    async resolveMessage(id: string) {
+      const bot = getBot()
+      return normalizeMessage(getActionData(await callAction(bot, 'get_msg', { message_id: toOneBotId(id) })), bot, imageUrlResolver)
+    },
+
+    supportsReactionUsers() {
+      return supportsAction(getBot(), 'fetch_emoji_like')
+    },
+
+    async loadReactionUsers(messageId: string, emojiId: string, count: number): Promise<WebQQMessageReactionUser[]> {
+      const bot = getBot()
+      const result = await callAction(bot, 'fetch_emoji_like', {
+        message_id: toOneBotId(messageId),
+        emoji_id: emojiId,
+        count,
+      })
+      return toArrayResult(result, 'emojiLikesList').map(normalizeEmojiLikeUser).filter((user): user is WebQQMessageReactionUser => !!user)
     },
 
     async resolveImage(file: string) {
