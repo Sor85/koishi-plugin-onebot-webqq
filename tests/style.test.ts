@@ -241,7 +241,7 @@ describe('chat capsule styles', () => {
     const avatarBody = ruleBody('.chat-capsule-webqq__message-reaction-avatar')
     const avatarImageBody = ruleBody('.chat-capsule-webqq__message-reaction-avatar-image')
 
-    expect(ruleBody('.chat-capsule-webqq__message-reaction')).toContain('--chat-capsule-webqq-reaction-avatar-size: calc(var(--chat-capsule-webqq-message-avatar-size) * 0.75)')
+    expect(ruleBody('.chat-capsule-webqq__message-reaction')).toContain('--chat-capsule-webqq-reaction-avatar-size: 26px')
     expect(style).toContain('width: var(--chat-capsule-webqq-reaction-avatar-size)')
     expect(style).toContain('height: var(--chat-capsule-webqq-reaction-avatar-size)')
     expect(avatarBody).toContain('aspect-ratio: 1 / 1')
@@ -360,17 +360,18 @@ describe('chat capsule styles', () => {
 
   it('makes Telegram-style WebQQ reaction pills compact and bubble-tinted', () => {
     const bubbleBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble')
-    const outgoingBubbleBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .is-outgoing .chat-capsule-webqq__bubble')
+    const outgoingReactionBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .is-outgoing .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction')
     const reactionBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction')
     const usersBody = ruleBody('.chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction-users')
 
-    expect(bubbleBody).toContain('--chat-capsule-webqq-reaction-bg: rgba(226, 232, 240, 0.82)')
-    expect(outgoingBubbleBody).toContain('--chat-capsule-webqq-reaction-bg: color-mix(in srgb, var(--chat-capsule-webqq-accent) 78%, #000 22%)')
-    expect(reactionBody).toContain('gap: 2px')
-    expect(reactionBody).toContain('min-height: calc(var(--chat-capsule-webqq-reaction-avatar-size) + 6px)')
-    expect(reactionBody).toContain('padding: 2px 4px 2px 6px')
-    expect(reactionBody).toContain('background: var(--chat-capsule-webqq-reaction-bg')
-    expect(usersBody).toContain('margin-right: -1px')
+    expect(bubbleBody).toContain('gap: 2px')
+    expect(reactionBody).toContain('--chat-capsule-webqq-reaction-bg: #4fa3e0')
+    expect(outgoingReactionBody).toContain('--chat-capsule-webqq-reaction-bg: color-mix(in srgb, var(--chat-capsule-webqq-accent) 70%, #fff 30%)')
+    expect(reactionBody).toContain('gap: 4px')
+    expect(reactionBody).toContain('min-height: unset')
+    expect(reactionBody).toContain('padding: 0 0 0 4px')
+    expect(reactionBody).toContain('background: #4fa3e0')
+    expect(usersBody).toContain('margin-right: 0')
   })
 
   it('shows QQ-style WebQQ message times beside bubbles on hover', () => {
