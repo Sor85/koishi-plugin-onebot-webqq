@@ -679,6 +679,16 @@ describe('chat capsule styles', () => {
     expect(forwardWidthOverrideBody).toContain('max-width: 100%')
   })
 
+  it('highlights the WebQQ message targeted by a clicked quote', () => {
+    const targetBody = ruleBody('.onebot-webqq-webqq__message.is-quote-target .onebot-webqq-webqq__bubble')
+    const clickableQuoteBody = ruleBody('.onebot-webqq-webqq__quote.is-clickable')
+
+    expect(targetBody, '缺少被引用消息的高亮气泡样式').toContain('animation:')
+    expect(targetBody).toContain('onebot-webqq-webqq-quote-target')
+    expect(clickableQuoteBody, '可点击引用块缺少按钮式交互样式').toContain('cursor: pointer')
+    expect(clickableQuoteBody).toContain('text-align: left')
+  })
+
   it('centers the WebQQ forward entry as a fixed bottom row without top-heavy padding', () => {
     const entryBody = ruleBody('.onebot-webqq-webqq__forward-entry')
 

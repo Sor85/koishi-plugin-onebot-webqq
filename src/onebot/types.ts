@@ -34,6 +34,7 @@ export interface WebQQMessageElement {
   type: 'text' | 'image' | 'quote' | 'forward' | 'card' | 'face' | 'file' | 'record' | 'video' | 'unknown'
   title?: string
   text?: string
+  targetMessageId?: string
   url?: string
   imageUrl?: string
   source?: string

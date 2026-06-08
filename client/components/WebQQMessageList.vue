@@ -18,7 +18,8 @@
       </div>
       <div
         v-else
-        :class="['onebot-webqq-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message), 'is-recalled': message.recalled }]"
+        :ref="(element) => setMessageElementRef(message, element)"
+        :class="['onebot-webqq-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message), 'is-recalled': message.recalled, 'is-quote-target': isHighlightedMessage(message) }]"
       >
         <span class="onebot-webqq-webqq__message-avatar-wrap">
           <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
@@ -61,6 +62,16 @@
                     <span v-else>{{ element.text || message.summary }}</span>
                   </template>
                 </span>
+                <button
+                  v-else-if="run.element.type === 'quote' && run.element.targetMessageId"
+                  class="onebot-webqq-webqq__quote is-clickable"
+                  type="button"
+                  aria-label="跳转到引用消息"
+                  @click.stop="scrollToQuotedMessage(run.element.targetMessageId)"
+                >
+                  <strong v-if="run.element.title" class="onebot-webqq-webqq__quote-title">{{ run.element.title }}</strong>
+                  <span>{{ run.element.text || '[引用消息]' }}</span>
+                </button>
                 <div v-else-if="run.element.type === 'quote'" class="onebot-webqq-webqq__quote">
                   <strong v-if="run.element.title" class="onebot-webqq-webqq__quote-title">{{ run.element.title }}</strong>
                   <span>{{ run.element.text || '[引用消息]' }}</span>
@@ -171,6 +182,7 @@
 </template>
 
 <script lang="ts" setup>
+import { onBeforeUnmount, onBeforeUpdate, ref } from 'vue'
 import type { WebQQForwardItem, WebQQMessage, WebQQMessageReactionUser } from '../state'
 import type { WebQQElementRun, WebQQMessageElement, WebQQThinkingMessage } from '../utils/webqq-message-view'
 
@@ -207,6 +219,46 @@ const emit = defineEmits<{
   'open-forward': [element: WebQQMessageElement]
   'toggle-thinking': [message: WebQQThinkingMessage]
 }>()
+
+const messageElementRefs = new Map<string, HTMLElement>()
+const highlightedMessageKey = ref('')
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
+
+function getMessageDomKey(message: WebQQMessage) {
+  return message.id || message.sequence
+}
+
+onBeforeUpdate(() => {
+  messageElementRefs.clear()
+})
+
+onBeforeUnmount(() => {
+  if (highlightTimer) clearTimeout(highlightTimer)
+})
+
+function setMessageElementRef(message: WebQQMessage, element: Element | null) {
+  if (!(element instanceof HTMLElement)) return
+  const key = getMessageDomKey(message)
+  if (key) messageElementRefs.set(key, element)
+}
+
+function isHighlightedMessage(message: WebQQMessage) {
+  return !!highlightedMessageKey.value && highlightedMessageKey.value === getMessageDomKey(message)
+}
+
+function scrollToQuotedMessage(targetMessageId: string) {
+  const target = props.visibleMessages.find((message) => message.id === targetMessageId || message.sequence === targetMessageId)
+  if (!target) return
+  const targetKey = getMessageDomKey(target)
+  const element = messageElementRefs.get(targetKey)
+  if (!element) return
+  if (highlightTimer) clearTimeout(highlightTimer)
+  highlightedMessageKey.value = getMessageDomKey(target)
+  element.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  highlightTimer = setTimeout(() => {
+    if (highlightedMessageKey.value === targetKey) highlightedMessageKey.value = ''
+  }, 1400)
+}
 
 function getThinkingMessage(index: number) {
   return props.getLastOutgoingClusterThinkingMessage(index)

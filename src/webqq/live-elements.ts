@@ -167,14 +167,16 @@ async function normalizeLiveQuoteField(session: Session, resolveQuote?: WebQQQuo
   const id = readRecordText(quote, ['id', 'messageId', 'message_id'])
   if (!text && id && resolveQuote) {
     try {
-      return await resolveQuote(id)
+      const resolved = await resolveQuote(id)
+      return { ...resolved, targetMessageId: resolved.targetMessageId || id }
     } catch {
-      return { type: 'quote', text: '[引用消息]' }
+      return { type: 'quote', text: '[引用消息]', targetMessageId: id }
     }
   }
   return {
     type: 'quote',
     ...(title ? { title } : {}),
+    ...(id ? { targetMessageId: id } : {}),
     text: text || '[引用消息]',
   }
 }
@@ -202,14 +204,16 @@ async function normalizeLiveElement(
     const id = readElementText(attrs.id || attrs.messageId || attrs.message_id)
     if (!text && id && resolveQuote) {
       try {
-        return await resolveQuote(id)
+        const resolved = await resolveQuote(id)
+        return { ...resolved, targetMessageId: resolved.targetMessageId || id }
       } catch {
-        return { type: 'quote', text: '[引用消息]' }
+        return { type: 'quote', text: '[引用消息]', targetMessageId: id }
       }
     }
     return {
       type: 'quote',
       ...(title ? { title } : {}),
+      ...(id ? { targetMessageId: id } : {}),
       text: text || '[引用消息]',
     }
   }

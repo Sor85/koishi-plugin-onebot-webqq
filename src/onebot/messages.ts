@@ -36,6 +36,7 @@ export async function resolveOneBotQuote(bot: OneBotBot, id: string, imageUrlRes
   return {
     type: 'quote',
     ...(title ? { title } : {}),
+    targetMessageId: id,
     text: summarizeElements(elements),
   }
 }
@@ -121,7 +122,7 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
       try {
         return await resolveOneBotQuote(bot, id, imageUrlResolver)
       } catch {
-        return { type: 'quote', text: '[引用消息]' }
+        return { type: 'quote', text: '[引用消息]', targetMessageId: id }
       }
     }
     const sender = isRecord(data.sender) ? data.sender : data

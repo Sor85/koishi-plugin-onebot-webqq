@@ -2691,7 +2691,7 @@ describe('chat capsule plugin wiring', () => {
       { type: 'text', text: '好哦，已经把他禁言一分钟啦' },
     ])
     expect(mediaPayload?.message.elements).toEqual([
-      { type: 'quote', title: '笨蛋喵喵小尼', text: '[图片]作业.zip' },
+      { type: 'quote', title: '笨蛋喵喵小尼', text: '[图片]作业.zip', targetMessageId: 'quoted-markup-2' },
       { type: 'text', text: '@宁宁 这个苹果可以吗' },
     ])
   })
@@ -2726,7 +2726,7 @@ describe('chat capsule plugin wiring', () => {
         id: 'quote-field-1',
         summary: '这还差不多',
         elements: [
-          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头', targetMessageId: 'quoted-field-1' },
           { type: 'text', text: '这还差不多' },
         ],
       }),
@@ -2788,7 +2788,7 @@ describe('chat capsule plugin wiring', () => {
         direction: 'outgoing',
         summary: '这还差不多',
         elements: [
-          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头', targetMessageId: 'quoted-1' },
           { type: 'text', text: '这还差不多' },
         ],
       }),

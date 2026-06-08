@@ -816,7 +816,7 @@ describe('onebot webqq adapter', () => {
       expect.objectContaining({
         summary: '这还差不多',
         elements: [
-          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头' },
+          { type: 'quote', title: '彩虹猫', text: '宁宁摸摸头', targetMessageId: 'quoted-1' },
           { type: 'text', text: '这还差不多' },
         ],
       }),
@@ -864,7 +864,7 @@ describe('onebot webqq adapter', () => {
       expect.objectContaining({
         summary: '收到',
         elements: [
-          { type: 'quote', title: '彩虹猫', text: '@宁宁摸摸头' },
+          { type: 'quote', title: '彩虹猫', text: '@宁宁摸摸头', targetMessageId: 'quoted-xml-1' },
           { type: 'text', text: '收到' },
         ],
       }),

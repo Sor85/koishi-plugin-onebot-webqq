@@ -567,6 +567,29 @@
   cursor: pointer;
 }
 
+.onebot-webqq-webqq__quote.is-clickable {
+  text-align: left;
+  cursor: pointer;
+}
+
+.onebot-webqq-webqq__message.is-quote-target .onebot-webqq-webqq__bubble {
+  animation: onebot-webqq-webqq-quote-target 1.4s ease-out;
+}
+
+@keyframes onebot-webqq-webqq-quote-target {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.36), 0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+
+  32% {
+    box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.22), 0 8px 18px rgba(37, 99, 235, 0.18);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0), 0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+}
+
 .onebot-webqq-webqq__forward:disabled {
   cursor: default;
 }

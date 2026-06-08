@@ -1399,6 +1399,40 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__quote-title')
   })
 
+  it('lets clickable WebQQ quote blocks scroll to the original message in the current list', () => {
+    const missingRequirements = [
+      clientState.includes('targetMessageId?: string')
+        ? ''
+        : 'WebQQMessageElement 缺少引用目标消息 ID 字段',
+      webqqMessageListView.includes(':ref="(element) => setMessageElementRef(message, element)"')
+        ? ''
+        : '消息行没有注册 DOM 引用，引用点击后无法定位原消息',
+      webqqMessageListView.includes("run.element.type === 'quote' && run.element.targetMessageId")
+        ? ''
+        : '带 targetMessageId 的 quote 没有渲染为可点击控件',
+      webqqMessageListView.includes('scrollToQuotedMessage(run.element.targetMessageId)')
+        ? ''
+        : '引用块点击没有调用跳转函数',
+      webqqMessageListView.includes('function scrollToQuotedMessage(targetMessageId: string)')
+        ? ''
+        : '缺少按引用目标 ID 跳转的函数',
+      webqqMessageListView.includes('message.id === targetMessageId || message.sequence === targetMessageId')
+        ? ''
+        : '跳转函数没有同时匹配消息 ID 和 sequence',
+      webqqMessageListView.includes("scrollIntoView({ block: 'center', behavior: 'smooth' })")
+        ? ''
+        : '跳转函数没有把原消息平滑滚动到视图中间',
+      webqqMessageListView.includes('highlightedMessageKey.value = getMessageDomKey(target)')
+        ? ''
+        : '跳转后没有记录高亮目标消息',
+      webqqMessageListView.includes("'is-quote-target': isHighlightedMessage(message)")
+        ? ''
+        : '消息行没有绑定引用目标高亮 class',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('renders forward message elements as block previews inside WebQQ bubbles', () => {
     const backendForwardItemSource = sourceBetween(
       onebotTypesSource,
