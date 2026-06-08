@@ -80,8 +80,13 @@ function readWebQQReactionLabel(emojiId: string) {
   return /^\d+$/.test(emojiId) ? '[表情]' : emojiId
 }
 
+const QFACE_BASE = 'https://koishi.js.org/QFace'
+
 function readWebQQReactionEmojiUrl(emojiId: string) {
-  return qface.getUrl(emojiId) || ''
+  if (qface.getUrl(emojiId)) return qface.getUrl(emojiId)
+  // qface data.json 只收录了部分 ID，对未收录的数字 ID 直接构造 URL
+  if (/^\d+$/.test(emojiId)) return `${QFACE_BASE}/gif/s${emojiId}.gif`
+  return ''
 }
 
 function createWebQQEventMessage(

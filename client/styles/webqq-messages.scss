@@ -203,12 +203,12 @@
 }
 
 .chat-capsule-webqq__message-reaction {
-  --chat-capsule-webqq-reaction-avatar-size: calc(var(--chat-capsule-webqq-message-avatar-size) * 0.75);
+  --chat-capsule-webqq-reaction-avatar-size: 26px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  min-height: calc(var(--chat-capsule-webqq-reaction-avatar-size) + 6px);
-  padding: 2px 7px;
+  min-height: calc(var(--chat-capsule-webqq-reaction-avatar-size) + 8px);
+  padding: 3px 8px;
   border-radius: 999px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
   background: rgba(255, 255, 255, 0.78);
@@ -250,8 +250,8 @@
 }
 
 .chat-capsule-webqq__message-reaction-emoji {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   object-fit: contain;
 }
@@ -420,15 +420,22 @@
 }
 
 .chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction {
-  gap: 2px;
-  min-height: calc(var(--chat-capsule-webqq-reaction-avatar-size) + 6px);
-  padding: 2px 4px 2px 6px;
-  background: var(--chat-capsule-webqq-reaction-bg, rgba(226, 232, 240, 0.82));
-  border-color: var(--chat-capsule-webqq-reaction-border, rgba(148, 163, 184, 0.28));
+  --chat-capsule-webqq-reaction-avatar-size: 26px;
+  --chat-capsule-webqq-reaction-bg: #4fa3e0;
+  gap: 4px;
+  padding: 3px 6px 3px 8px;
+  color: #fff;
+  background: #4fa3e0;
+  border-color: transparent;
+}
+
+.chat-capsule-webqq.is-chat-style-telegram .is-outgoing .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction {
+  --chat-capsule-webqq-reaction-bg: color-mix(in srgb, var(--chat-capsule-webqq-accent) 70%, #fff 30%);
+  background: color-mix(in srgb, var(--chat-capsule-webqq-accent) 70%, #fff 30%);
 }
 
 .chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble .chat-capsule-webqq__message-reaction-users {
-  margin-right: -1px;
+  margin-right: 0;
 }
 
 .chat-capsule-webqq.is-chat-style-qq .chat-capsule-webqq__message-body {
@@ -453,17 +460,12 @@
 }
 
 .chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__bubble {
-  --chat-capsule-webqq-reaction-bg: rgba(226, 232, 240, 0.82);
-  --chat-capsule-webqq-reaction-border: rgba(148, 163, 184, 0.28);
-
   gap: 2px;
   margin: 1px 0;
   border-radius: 18px;
 }
 
 .chat-capsule-webqq.is-chat-style-telegram .is-outgoing .chat-capsule-webqq__bubble {
-  --chat-capsule-webqq-reaction-bg: color-mix(in srgb, var(--chat-capsule-webqq-accent) 78%, #000 22%);
-  --chat-capsule-webqq-reaction-border: rgba(255, 255, 255, 0.2);
 }
 
 .chat-capsule-webqq.is-chat-style-telegram .chat-capsule-webqq__message.is-cluster-first:not(.is-outgoing) .chat-capsule-webqq__bubble {
