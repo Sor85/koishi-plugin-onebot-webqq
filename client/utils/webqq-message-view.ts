@@ -104,7 +104,7 @@ export function formatThinkingDuration(durationMs: number) {
 }
 
 export function isInlineWebQQElement(element: WebQQMessageElement) {
-  return element.type !== 'quote' && element.type !== 'image' && element.type !== 'forward' && element.type !== 'card'
+  return element.type !== 'quote' && element.type !== 'image' && element.type !== 'forward' && element.type !== 'card' && element.type !== 'record'
 }
 
 export function getWebQQElementRuns(elements: WebQQMessageElement[]) {
@@ -132,6 +132,7 @@ export function getForwardPreviewText(item: WebQQForwardItem) {
     if (element.type === 'forward') return '[合并转发]'
     if (element.type === 'card') return element.title || element.text || '[卡片消息]'
     if (element.type === 'face') return element.text || '[表情]'
+    if (element.type === 'record') return element.text || '[语音]'
     return element.text || '[消息]'
   }).filter(Boolean).join('') || '[消息]'
 }

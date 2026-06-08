@@ -51,7 +51,7 @@
                 <img :src="withProxy(message.elements[0].url)" alt="图片" @load="emit('image-load')">
               </button>
             </div>
-            <div v-else class="onebot-webqq-webqq__bubble">
+            <div v-else :class="['onebot-webqq-webqq__bubble', { 'is-record-only': isRecordOnlyMessage(message) }]">
               <span v-if="isBotThinkingMessage(message)" class="onebot-webqq-webqq__thinking-dots" aria-label="机器人正在思考">
                 <span v-for="dot in 3" :key="dot" class="onebot-webqq-webqq__thinking-dot"></span>
               </span>
@@ -107,6 +107,63 @@
                 <button v-else-if="run.element.type === 'image' && run.element.url" class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="emit('open-image', run.element.url)">
                   <img :src="withProxy(run.element.url)" alt="图片" @load="emit('image-load')">
                 </button>
+                <div v-else-if="run.element.type === 'record'" class="onebot-webqq-webqq__record">
+                  <div class="onebot-webqq-webqq__record-row">
+                    <audio
+                      v-if="run.element.url"
+                      :ref="(element) => setRecordAudioRef(message, run.element, runIndex, element)"
+                      class="onebot-webqq-webqq__record-audio"
+                      :src="withProxy(run.element.url)"
+                      preload="none"
+                      @ended="handleRecordEnded(message, run.element, runIndex)"
+                      @pause="handleRecordPause(message, run.element, runIndex)"
+                      @play="handleRecordPlay(message, run.element, runIndex)"
+                    ></audio>
+                    <button
+                      :class="['onebot-webqq-webqq__record-player', { 'is-playing': isRecordPlaying(message, run.element, runIndex), 'is-loading': isRecordLoading(message, run.element, runIndex) }]"
+                      type="button"
+                      :disabled="!run.element.url || isRecordLoading(message, run.element, runIndex)"
+                      :style="getRecordPlayerStyle(run.element)"
+                      aria-label="播放语音"
+                      @click.stop="toggleRecordPlayback(message, run.element, runIndex)"
+                    >
+                      <svg v-if="isRecordLoading(message, run.element, runIndex)" class="onebot-webqq-webqq__record-play-icon is-loading" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3a9 9 0 1 1-9 9"></path>
+                      </svg>
+                      <svg v-else-if="isRecordPlaying(message, run.element, runIndex)" class="onebot-webqq-webqq__record-play-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="7" y="5" width="3.5" height="14" rx="1"></rect>
+                        <rect x="13.5" y="5" width="3.5" height="14" rx="1"></rect>
+                      </svg>
+                      <svg v-else class="onebot-webqq-webqq__record-play-icon is-play" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 5v14l11-7Z"></path>
+                      </svg>
+                      <svg class="onebot-webqq-webqq__record-wave" viewBox="0 0 42 20" aria-hidden="true">
+                        <rect x="2" y="6" width="3" height="8" rx="1.5"></rect>
+                        <rect x="9" y="3" width="3" height="14" rx="1.5"></rect>
+                        <rect x="16" y="1" width="3" height="18" rx="1.5"></rect>
+                        <rect x="23" y="4" width="3" height="12" rx="1.5"></rect>
+                        <rect x="30" y="7" width="3" height="6" rx="1.5"></rect>
+                      </svg>
+                      <span class="onebot-webqq-webqq__record-duration">{{ formatRecordDuration(run.element.duration || 0) }}</span>
+                    </button>
+                    <button
+                      v-if="message.id && !getRecordTranscript(message, run.element, runIndex)"
+                      class="onebot-webqq-webqq__record-transcribe"
+                      type="button"
+                      :disabled="isRecordTranscribing(message, run.element, runIndex)"
+                      aria-label="语音转文字"
+                      @click.stop="transcribeRecordMessage(message, run.element, runIndex)"
+                    >
+                      <svg v-if="isRecordTranscribing(message, run.element, runIndex)" class="onebot-webqq-webqq__record-transcribe-icon is-loading" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3a9 9 0 1 1-9 9"></path>
+                      </svg>
+                      <span v-else>文</span>
+                    </button>
+                  </div>
+                  <div v-if="getRecordTranscript(message, run.element, runIndex)" class="onebot-webqq-webqq__record-transcript">
+                    {{ getRecordTranscript(message, run.element, runIndex) }}
+                  </div>
+                </div>
                 <span v-else>{{ run.element.text || message.summary }}</span>
               </template>
               <div v-if="message.reactions?.length && chatStyle === 'telegram'" class="onebot-webqq-webqq__message-reactions">
@@ -207,6 +264,7 @@ const props = defineProps<{
   getForwardPreviewItems: (element: WebQQMessageElement) => WebQQForwardItem[]
   getForwardItemName: (item: WebQQForwardItem) => string
   getForwardPreviewText: (item: WebQQForwardItem) => string
+  transcribeRecord: (messageId: string) => Promise<string>
   formatTime: (timestamp: number) => string
   getLastOutgoingClusterThinkingMessage: (index: number) => WebQQThinkingMessage | undefined
   isThinkingExpanded: (message: WebQQThinkingMessage) => boolean
@@ -221,11 +279,20 @@ const emit = defineEmits<{
 }>()
 
 const messageElementRefs = new Map<string, HTMLElement>()
+const recordAudioRefs = new Map<string, HTMLAudioElement>()
 const highlightedMessageKey = ref('')
+const playingRecordKey = ref('')
+const loadingRecordKey = ref('')
+const recordTranscripts = ref<Record<string, string>>({})
+const transcribingRecordKeys = ref<Record<string, boolean>>({})
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
 
 function getMessageDomKey(message: WebQQMessage) {
   return message.id || message.sequence
+}
+
+function getRecordKey(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  return `${getMessageDomKey(message)}:${runIndex}:${element.url || element.duration || element.text || ''}`
 }
 
 onBeforeUpdate(() => {
@@ -234,12 +301,23 @@ onBeforeUpdate(() => {
 
 onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
+  for (const audio of recordAudioRefs.values()) audio.pause()
+  recordAudioRefs.clear()
 })
 
 function setMessageElementRef(message: WebQQMessage, element: Element | null) {
   if (!(element instanceof HTMLElement)) return
   const key = getMessageDomKey(message)
   if (key) messageElementRefs.set(key, element)
+}
+
+function setRecordAudioRef(message: WebQQMessage, element: WebQQMessageElement, runIndex: number, audio: Element | null) {
+  const key = getRecordKey(message, element, runIndex)
+  if (audio instanceof HTMLAudioElement) {
+    recordAudioRefs.set(key, audio)
+  } else {
+    recordAudioRefs.delete(key)
+  }
 }
 
 function isHighlightedMessage(message: WebQQMessage) {
@@ -272,6 +350,90 @@ function isThinkingMessageExpanded(index: number) {
 function getThinkingDurationText(index: number) {
   const message = getThinkingMessage(index)
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
+}
+
+function formatRecordDuration(duration: number) {
+  const totalSeconds = Math.max(0, Math.round(duration))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = String(totalSeconds % 60).padStart(2, '0')
+  return minutes > 0 ? `${minutes}:${seconds}` : `${totalSeconds}"`
+}
+
+function getRecordPlayerStyle(element: WebQQMessageElement) {
+  const duration = Math.max(0, Math.round(element.duration || 0))
+  const width = Math.min(200, Math.max(86, 86 + duration * 3))
+  return { width: `${width}px` }
+}
+
+function getRecordTranscript(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  return element.transcript || recordTranscripts.value[getRecordKey(message, element, runIndex)] || ''
+}
+
+function isRecordOnlyMessage(message: WebQQMessage) {
+  return message.elements.length === 1 && message.elements[0].type === 'record'
+}
+
+function isRecordPlaying(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  return playingRecordKey.value === getRecordKey(message, element, runIndex)
+}
+
+function isRecordLoading(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  return loadingRecordKey.value === getRecordKey(message, element, runIndex)
+}
+
+function handleRecordPlay(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  playingRecordKey.value = getRecordKey(message, element, runIndex)
+}
+
+function handleRecordPause(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  const key = getRecordKey(message, element, runIndex)
+  if (playingRecordKey.value === key) playingRecordKey.value = ''
+}
+
+function handleRecordEnded(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  handleRecordPause(message, element, runIndex)
+}
+
+async function toggleRecordPlayback(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  const key = getRecordKey(message, element, runIndex)
+  const audio = recordAudioRefs.get(key)
+  if (!audio || loadingRecordKey.value === key) return
+  if (playingRecordKey.value === key) {
+    audio.pause()
+    playingRecordKey.value = ''
+    return
+  }
+  if (playingRecordKey.value) recordAudioRefs.get(playingRecordKey.value)?.pause()
+  loadingRecordKey.value = key
+  try {
+    await audio.play()
+    playingRecordKey.value = key
+  } catch {
+    if (playingRecordKey.value === key) playingRecordKey.value = ''
+  } finally {
+    if (loadingRecordKey.value === key) loadingRecordKey.value = ''
+  }
+}
+
+function isRecordTranscribing(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  return !!transcribingRecordKeys.value[getRecordKey(message, element, runIndex)]
+}
+
+async function transcribeRecordMessage(message: WebQQMessage, element: WebQQMessageElement, runIndex: number) {
+  if (!message.id || getRecordTranscript(message, element, runIndex)) return
+  const key = getRecordKey(message, element, runIndex)
+  if (transcribingRecordKeys.value[key]) return
+  transcribingRecordKeys.value = { ...transcribingRecordKeys.value, [key]: true }
+  try {
+    const text = await props.transcribeRecord(message.id)
+    recordTranscripts.value = { ...recordTranscripts.value, [key]: text || '（无法识别）' }
+  } catch {
+    recordTranscripts.value = { ...recordTranscripts.value, [key]: '转换失败' }
+  } finally {
+    const nextTranscribingRecordKeys = { ...transcribingRecordKeys.value }
+    delete nextTranscribingRecordKeys[key]
+    transcribingRecordKeys.value = nextTranscribingRecordKeys
+  }
 }
 
 type WebQQMessageReaction = NonNullable<WebQQMessage['reactions']>[number]

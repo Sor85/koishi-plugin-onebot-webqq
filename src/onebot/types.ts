@@ -35,6 +35,8 @@ export interface WebQQMessageElement {
   title?: string
   text?: string
   targetMessageId?: string
+  duration?: number
+  transcript?: string
   url?: string
   imageUrl?: string
   source?: string
@@ -181,6 +183,10 @@ export interface WebQQMessageQuery {
   peerId: string
   limit?: number
   beforeSequence?: string
+}
+
+export interface WebQQRecordTranscriptionQuery {
+  messageId: string
 }
 
 export interface OneBotWebQQOptions {

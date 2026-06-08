@@ -95,6 +95,7 @@ export type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQ
 export type WebQQImageUrlResolver = (file: string) => string
 export type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
 export type WebQQForwardResolver = (id: string) => Promise<WebQQMessageElement>
+export type WebQQRecordResolver = WebQQImageResolver
 
 export function isRemoteImageSource(file: string) {
   return /^https?:\/\//.test(file)
@@ -113,6 +114,20 @@ export function getImageContentType(file: string) {
       return 'image/bmp'
     case '.svg':
       return 'image/svg+xml'
+    case '.mp3':
+      return 'audio/mpeg'
+    case '.wav':
+      return 'audio/wav'
+    case '.m4a':
+      return 'audio/mp4'
+    case '.ogg':
+      return 'audio/ogg'
+    case '.opus':
+      return 'audio/ogg'
+    case '.amr':
+      return 'audio/amr'
+    case '.silk':
+      return 'application/octet-stream'
     default:
       return 'image/png'
   }
@@ -140,6 +155,32 @@ async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolve
     return { type: 'image', url: resolveImage ? (await resolveImage(file)).url : '' }
   } catch {
     return { type: 'image' }
+  }
+}
+
+async function normalizeLiveRecordElement(attrs: Record<string, unknown>, resolveRecord?: WebQQRecordResolver): Promise<WebQQMessageElement> {
+  const duration = Number(readElementText(attrs.duration || attrs.time || attrs.seconds)) || 0
+  const transcript = readRecordText(attrs, ['text', 'transcript'])
+  const base = {
+    type: 'record' as const,
+    text: '[语音]',
+    ...(duration ? { duration } : {}),
+    ...(transcript ? { transcript } : {}),
+  }
+  const url = readElementText(attrs.src || attrs.url || attrs.temp_url)
+  if (url) {
+    try {
+      return { ...base, url: resolveRecord ? (await resolveRecord(url, 'url')).url : url }
+    } catch {
+      return { ...base, url }
+    }
+  }
+  const file = readElementText(attrs.file || attrs.file_id || attrs.resource_id || attrs.path)
+  if (!file) return base
+  try {
+    return { ...base, url: resolveRecord ? (await resolveRecord(file)).url : '' }
+  } catch {
+    return base
   }
 }
 
@@ -186,6 +227,7 @@ async function normalizeLiveElement(
   resolveImage?: WebQQImageResolver,
   resolveQuote?: WebQQQuoteResolver,
   resolveForward?: WebQQForwardResolver,
+  resolveRecord?: WebQQRecordResolver,
 ): Promise<WebQQMessageElement | undefined> {
   if (typeof raw === 'string') return { type: 'text', text: raw }
   if (!isRecord(raw)) return undefined
@@ -237,7 +279,7 @@ async function normalizeLiveElement(
   }
   if (type === 'face') return normalizeLiveFaceElement(attrs)
   if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
-  if (type === 'audio' || type === 'record') return { type: 'record', text: '[语音]' }
+  if (type === 'audio' || type === 'record') return normalizeLiveRecordElement(attrs, resolveRecord)
   if (type === 'video') return { type: 'video', text: '[视频]' }
   return { type: 'unknown', text: '[消息]' }
 }
@@ -247,10 +289,11 @@ export async function normalizeLiveElements(
   resolveImage?: WebQQImageResolver,
   resolveQuote?: WebQQQuoteResolver,
   resolveForward?: WebQQForwardResolver,
+  resolveRecord?: WebQQRecordResolver,
 ): Promise<WebQQMessageElement[]> {
   const quote = await normalizeLiveQuoteField(session, resolveQuote)
   const elements = (await Promise.all((session.elements ?? session.event.message?.elements ?? [])
-    .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote, resolveForward))))
+    .map((element) => normalizeLiveElement(element, resolveImage, resolveQuote, resolveForward, resolveRecord))))
     .filter((element): element is WebQQMessageElement => !!element)
   if (quote) elements.unshift(quote)
   if (elements.length) return elements

@@ -5,6 +5,7 @@ import type {
   WebQQMessageQuery,
   WebQQNotice,
   WebQQNoticeAction,
+  WebQQRecordTranscriptionQuery,
 } from '../onebot'
 import type { createOneBotWebQQService } from '../onebot'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
@@ -63,6 +64,9 @@ export function registerWebQQConsoleListeners(
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/group-info', (query: WebQQGroupInfoQuery) => {
     return webqq.loadGroupInfo(query)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/record/transcribe', (query: WebQQRecordTranscriptionQuery) => {
+    return webqq.transcribeRecord(query.messageId)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/notices', () => {
     return webqq.loadNotices([...friendRequestNotices.values(), ...groupLeaveNotices.values()])

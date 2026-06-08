@@ -679,6 +679,22 @@ describe('chat capsule styles', () => {
     expect(forwardWidthOverrideBody).toContain('max-width: 100%')
   })
 
+  it('styles WebQQ record messages as compact playable voice bubbles', () => {
+    const recordBody = ruleBody('.onebot-webqq-webqq__record')
+    const audioBody = ruleBody('.onebot-webqq-webqq__record-audio')
+    const playerBody = ruleBody('.onebot-webqq-webqq__record-player')
+    const waveBody = ruleBody('.onebot-webqq-webqq__record-wave')
+    const transcriptBody = ruleBody('.onebot-webqq-webqq__record-transcript')
+
+    expect(recordBody, '缺少语音消息容器样式').toContain('display: flex')
+    expect(recordBody).toContain('gap:')
+    expect(audioBody, '语音 audio 应作为隐藏播放源存在').toContain('display: none')
+    expect(playerBody, '缺少 LLBot 风格语音胶囊样式').toContain('border-radius: 999px')
+    expect(playerBody).toContain('background:')
+    expect(waveBody, '缺少语音波形样式').toContain('fill:')
+    expect(transcriptBody, '缺少语音转文字结果样式').toContain('font-size:')
+  })
+
   it('highlights the WebQQ message targeted by a clicked quote', () => {
     const targetBody = ruleBody('.onebot-webqq-webqq__message.is-quote-target .onebot-webqq-webqq__bubble')
     const clickableQuoteBody = ruleBody('.onebot-webqq-webqq__quote.is-clickable')

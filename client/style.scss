@@ -69,6 +69,12 @@
     animation: none;
   }
 
+  .onebot-webqq-webqq__record-player.is-playing .onebot-webqq-webqq__record-wave rect,
+  .onebot-webqq-webqq__record-play-icon.is-loading,
+  .onebot-webqq-webqq__record-transcribe-icon.is-loading {
+    animation: none;
+  }
+
   .webqq-scroll-bottom-enter-active,
   .webqq-scroll-bottom-leave-active {
     transition: none;

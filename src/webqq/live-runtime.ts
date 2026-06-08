@@ -238,6 +238,16 @@ export function createWebQQLiveRuntime(options: {
       },
       async (id) => options.webqq.resolveQuote(id),
       async (id) => options.webqq.resolveForward(id),
+      async (file, source) => {
+        if (source === 'url') {
+          const url = options.imageUrlResolver(file) || file
+          options.logger?.info('webqq record url %s', JSON.stringify({ direction, url: file, proxyUrl: url }))
+          return { url, debug: { url: file } }
+        }
+        const record = await options.webqq.resolveRecord(file)
+        options.logger?.info('webqq record %s', JSON.stringify({ direction, file, result: record.debug, url: record.url }))
+        return record
+      },
     )
     if (!payload) return
     payload = attachPendingWebQQThinking({

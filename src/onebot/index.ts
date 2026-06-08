@@ -33,6 +33,10 @@ import {
   resolveOneBotImage,
 } from './images'
 import {
+  resolveOneBotRecord,
+  transcribeOneBotRecord,
+} from './records'
+import {
   summarizeElements,
 } from './message-elements'
 import {
@@ -52,6 +56,7 @@ import type {
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQRecordTranscriptionQuery,
   WebQQMessageReactionUser,
   WebQQNotice,
   WebQQNoticeAction,
@@ -80,6 +85,7 @@ export type {
   WebQQNoticeAction,
   WebQQProtocol,
   WebQQRecallPayload,
+  WebQQRecordTranscriptionQuery,
   WebQQRecentContact,
 } from './types'
 
@@ -189,6 +195,14 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     async resolveImage(file: string) {
       return resolveOneBotImage(getBot(), file, imageUrlResolver)
+    },
+
+    async resolveRecord(file: string) {
+      return resolveOneBotRecord(getBot(), file, imageUrlResolver)
+    },
+
+    async transcribeRecord(messageId: WebQQRecordTranscriptionQuery['messageId']) {
+      return transcribeOneBotRecord(getBot(), messageId)
     },
 
     async loadContacts(): Promise<WebQQContacts> {

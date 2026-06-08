@@ -7,6 +7,7 @@ import {
   type WebQQForwardResolver,
   type WebQQImageResolver,
   type WebQQQuoteResolver,
+  type WebQQRecordResolver,
 } from './live-elements'
 import {
   getWebQQUserAvatar,
@@ -28,13 +29,14 @@ export async function createWebQQLiveMessage(
   resolveImage?: WebQQImageResolver,
   resolveQuote?: WebQQQuoteResolver,
   resolveForward?: WebQQForwardResolver,
+  resolveRecord?: WebQQRecordResolver,
 ): Promise<WebQQLiveMessage | undefined> {
   if ((session.bot.platform || session.platform) !== 'onebot') return
   const peer = readWebQQPeer(session)
   if (!peer) return
   if (!(session.elements ?? session.event.message?.elements)?.length && !session.quote && !session.event.message?.quote && !session.content?.trim()) return
   const bot = readBotProfile(session)
-  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote, resolveForward)
+  const elements = await normalizeLiveElements(session, resolveImage, resolveQuote, resolveForward, resolveRecord)
   const senderId = direction === 'outgoing'
     ? bot.selfId
     : session.userId || session.event.user?.id || 'unknown'

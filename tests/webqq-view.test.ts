@@ -764,7 +764,7 @@ describe('webqq observer view', () => {
   it('wraps WebQQ message bubbles with their time for Telegram hover layout', () => {
     expect(webqqView).toContain(':chat-style="webQQChatStyle"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-body"')
-    expect(webqqMessageListView).toContain('<div v-else class="onebot-webqq-webqq__bubble">')
+    expect(webqqMessageListView).toContain('onebot-webqq-webqq__bubble')
     expect(webqqMessageListView).toContain('<div class="onebot-webqq-webqq__message-time">{{ formatTime(message.time) }}</div>')
   })
 
@@ -1048,7 +1048,7 @@ describe('webqq observer view', () => {
   it('renders consecutive inline WebQQ elements inside one inline container', () => {
     const bubbleSource = sourceBetween(
       webqqMessageListView,
-      '<div v-else class="onebot-webqq-webqq__bubble">',
+      '<div v-else :class="[\'onebot-webqq-webqq__bubble\'',
       '<div class="onebot-webqq-webqq__message-time"',
     )
 
@@ -1397,6 +1397,59 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('element.type === \'quote\'')
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__quote')
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__quote-title')
+  })
+
+  it('renders playable WebQQ record messages with voice transcription controls', () => {
+    const clientElementSource = sourceBetween(
+      clientState,
+      'export interface WebQQMessageElement {',
+      'export interface WebQQMessageReaction {',
+    )
+    const backendElementSource = sourceBetween(
+      onebotTypesSource,
+      'export interface WebQQMessageElement {',
+      'export interface WebQQMessageReaction {',
+    )
+    const missingRequirements = [
+      backendElementSource.includes('duration?: number') && clientElementSource.includes('duration?: number')
+        ? ''
+        : 'WebQQMessageElement 缺少语音时长字段',
+      backendElementSource.includes('transcript?: string') && clientElementSource.includes('transcript?: string')
+        ? ''
+        : 'WebQQMessageElement 缺少语音转文字字段',
+      webqqApi.includes("send('onebot-webqq/webqq/record/transcribe'")
+        ? ''
+        : '前端 API 缺少语音转文字请求',
+      webqqView.includes(':transcribe-record="requestWebQQRecordTranscription"')
+        ? ''
+        : 'WebQQObserver 没有把语音转文字 API 传给消息列表',
+      webqqMessageListView.includes("run.element.type === 'record'")
+        ? ''
+        : '消息列表没有渲染 record 语音元素',
+      webqqMessageListView.includes('class="onebot-webqq-webqq__record"')
+        ? ''
+        : '语音元素缺少独立样式容器',
+      webqqMessageListView.includes('class="onebot-webqq-webqq__record-audio"') &&
+        webqqMessageListView.includes(':ref="(element) => setRecordAudioRef(message, run.element, runIndex, element)"')
+        ? ''
+        : '语音元素没有挂载隐藏 audio 播放源',
+      webqqMessageListView.includes('onebot-webqq-webqq__record-player') &&
+        webqqMessageListView.includes('toggleRecordPlayback(message, run.element, runIndex)') &&
+        webqqMessageListView.includes('class="onebot-webqq-webqq__record-wave"')
+        ? ''
+        : '语音元素没有使用 LLBot 风格的自定义播放胶囊',
+      webqqMessageListView.includes('controls')
+        ? '语音元素不能继续显示浏览器原生 audio controls'
+        : '',
+      webqqMessageListView.includes('transcribeRecordMessage(message, run.element, runIndex)')
+        ? ''
+        : '语音元素没有触发转文字函数',
+      webqqMessageListView.includes('getRecordTranscript(message, run.element, runIndex)')
+        ? ''
+        : '语音元素没有显示已有或新转换的文字',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('lets clickable WebQQ quote blocks scroll to the original message in the current list', () => {
