@@ -123,6 +123,7 @@ export function createWebQQImageUrlResolver(
     routerCtx.body = body
     cacheImage(id, body, contentType)
   })
+
   return (file: string) => {
     if (!ctx.server) return ''
     const cached = ids.get(file)

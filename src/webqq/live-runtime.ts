@@ -81,12 +81,30 @@ function readWebQQReactionLabel(emojiId: string) {
 }
 
 const QFACE_BASE = 'https://koishi.js.org/QFace'
+const qqEmojiUrlCache = new Map<string, string>()
+let qqEmojiIndexLoaded = false
+
+async function loadQQEmojiIndex() {
+  if (qqEmojiIndexLoaded) return
+  qqEmojiIndexLoaded = true
+  try {
+    const res = await fetch(`${QFACE_BASE}/assets/qq_emoji/_index.json`)
+    if (!res.ok) return
+    const list: unknown[] = await res.json()
+    for (const item of list) {
+      if (!isRecord(item)) continue
+      const id = String(item.emojiId ?? '')
+      if (!id) continue
+      const assets = Array.isArray(item.assets) ? item.assets : []
+      const asset = assets.find((a: unknown) => isRecord(a) && a.type === 2) ?? assets.find((a: unknown) => isRecord(a) && a.type === 0)
+      if (asset && isRecord(asset) && asset.path) qqEmojiUrlCache.set(id, `${QFACE_BASE}/${asset.path}`)
+    }
+  } catch { /* ignore */ }
+}
 
 function readWebQQReactionEmojiUrl(emojiId: string) {
-  if (qface.getUrl(emojiId)) return qface.getUrl(emojiId)
-  // qface data.json 只收录了部分 ID，对未收录的数字 ID 直接构造 URL
-  if (/^\d+$/.test(emojiId)) return `${QFACE_BASE}/gif/s${emojiId}.gif`
-  return ''
+  if (!/^\d+$/.test(emojiId)) return ''
+  return qqEmojiUrlCache.get(emojiId) ?? `/chat-capsule/webqq/face/${emojiId}`
 }
 
 function createWebQQEventMessage(
@@ -125,6 +143,7 @@ export function createWebQQLiveRuntime(options: {
   getThinkingDurationMs: () => number
   getThinkingUsage: () => WebQQThinking['usage'] | undefined
 }) {
+  loadQQEmojiIndex()
   const liveMessages = new Map<string, WebQQMessage[]>()
   const pendingWebQQThinking = new Map<string, WebQQThinking>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
