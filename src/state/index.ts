@@ -182,6 +182,23 @@ export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsage
   return true
 }
 
+function copyIdleConversation(conversation: CapsuleSnapshot['conversation'], activityText?: string) {
+  return {
+    channelId: conversation.channelId,
+    channelName: conversation.channelName,
+    timestamp: conversation.timestamp,
+    ...(activityText ? {
+      activityText,
+    } : {}),
+    ...(conversation.usage ? {
+      usage: conversation.usage,
+    } : {}),
+    ...(conversation.thinkingDurationMs != null ? {
+      thinkingDurationMs: conversation.thinkingDurationMs,
+    } : {}),
+  }
+}
+
 // 清除当前对话状态，保留最近的 bot、群聊和计数上下文。
 export function clearConversationActivity(capsule: CapsuleState, now = Date.now()) {
   const state = getState(capsule)
@@ -193,18 +210,31 @@ export function clearConversationActivity(capsule: CapsuleState, now = Date.now(
   state.thinkingStartedAt = undefined
   state.current = {
     ...state.current,
-    conversation: {
-      channelId: conversation.channelId,
-      channelName: conversation.channelName,
-      timestamp: conversation.timestamp,
-      ...(conversation.usage ? {
-        usage: conversation.usage,
-      } : {}),
+    conversation: copyIdleConversation({
+      ...conversation,
       ...(thinkingDurationMs != null ? {
         thinkingDurationMs,
       } : {}),
-    },
+    }),
   }
+}
+
+// 日程插件只应该填充空闲文案，不能覆盖正在思考或正在对话的用户态。
+export function recordIdleActivity(capsule: CapsuleState, activityText: string) {
+  const state = getState(capsule)
+  const text = activityText.trim()
+  if (!state.current || !text) return false
+
+  const conversation = state.current.conversation
+  if (conversation.activityText === '正在思考' || conversation.userId || conversation.userName) return false
+  if (conversation.activityText === text) return false
+
+  state.thinkingStartedAt = undefined
+  state.current = {
+    ...state.current,
+    conversation: copyIdleConversation(conversation, text),
+  }
+  return true
 }
 
 // 记录插件启动后的发送消息计数。

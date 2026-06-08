@@ -7,6 +7,7 @@ import {
   CapsuleSnapshot,
   clearConversationActivity,
   createCapsuleState,
+  recordIdleActivity,
   recordConversationActivity,
   recordIncomingMessage,
   recordModelUsage,
@@ -59,7 +60,7 @@ export const name = 'onebot-webqq'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {
-  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character', 'ffmpeg'],
+  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character', 'ffmpeg', 'chatluna_schedule'],
 }
 
 declare module '@koishijs/console' {
@@ -114,6 +115,23 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
   let currentThinkingStartedAt: number | undefined
+  const readScheduleActivity = async (session?: Session) => {
+    const service = ctx.chatluna_schedule
+    if (!service) return ''
+    const activity = (await service.getCurrentActivity?.(session))?.trim()
+    if (activity) return activity
+    return (await service.getCurrentSummary?.(session))?.trim() || ''
+  }
+  const refreshIdleScheduleActivity = async (source: string, session?: Session) => {
+    try {
+      const activity = await readScheduleActivity(session)
+      if (!activity || !recordIdleActivity(state, activity)) return
+      logSnapshot(source)
+      broadcast()
+    } catch (error) {
+      logger?.info(`${source}-error %s`, error instanceof Error ? error.message : String(error))
+    }
+  }
 
   ctx.model?.extend(chatCapsuleStorageTable, {
     id: 'string(128)',
@@ -148,6 +166,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     currentThinkingStartedAt = undefined
     logSnapshot(source)
     broadcast()
+    void refreshIdleScheduleActivity(`${source}-schedule`)
   }
   const getCurrentThinkingDurationMs = () => {
     return currentThinkingStartedAt == null ? 0 : Math.max(0, Date.now() - currentThinkingStartedAt)
@@ -168,7 +187,12 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     logSnapshot('message')
     broadcast()
     await liveRuntime.recordWebQQLiveMessage(session)
+    await refreshIdleScheduleActivity('message-schedule', session)
   })
+
+  ctx.setInterval(() => {
+    void refreshIdleScheduleActivity('schedule-activity')
+  }, 60 * 1000)
 
   ctx.on('message-deleted', async (session) => {
     await liveRuntime.recordWebQQRecall(session)

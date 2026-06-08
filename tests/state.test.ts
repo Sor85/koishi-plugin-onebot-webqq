@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clearConversationActivity,
   createCapsuleState,
+  recordIdleActivity,
   recordModelUsage,
   recordConversationActivity,
   recordIncomingMessage,
@@ -200,6 +201,61 @@ describe('chat capsule state', () => {
       channelId: '20000',
       channelName: 'General',
       timestamp: 1710000000006,
+    })
+  })
+
+  it('records idle activity without exposing a user', () => {
+    const state = createCapsuleState()
+
+    recordIncomingMessage(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+        name: 'General',
+      },
+      user: {
+        id: '30000',
+        name: 'Alice',
+      },
+      timestamp: 1710000000007,
+    })
+
+    expect(recordIdleActivity(state, '晨间整理今日计划')).toBe(true)
+    expect(state.snapshot()?.conversation).toEqual({
+      channelId: '20000',
+      channelName: 'General',
+      activityText: '晨间整理今日计划',
+      timestamp: 1710000000007,
+    })
+    expect(recordIdleActivity(state, '晨间整理今日计划')).toBe(false)
+  })
+
+  it('does not let idle activity replace an active conversation', () => {
+    const state = createCapsuleState()
+
+    recordConversationActivity(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+      },
+      channel: {
+        id: '20000',
+        name: 'General',
+      },
+      user: {
+        id: '30000',
+        name: 'Alice',
+      },
+      timestamp: 1710000000008,
+    }, '正在思考')
+
+    expect(recordIdleActivity(state, '晨间整理今日计划')).toBe(false)
+    expect(state.snapshot()?.conversation).toMatchObject({
+      userName: 'Alice',
+      activityText: '正在思考',
     })
   })
 

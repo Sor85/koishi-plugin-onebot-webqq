@@ -104,8 +104,9 @@ describe('chat capsule view', () => {
   it('splits thinking status and current user into separate lines', () => {
     expect(capsuleView).toContain("const titleStatusText = computed(() => isThinking.value ? activityText.value : '')")
     expect(capsuleView).toContain("const userActivityText = computed(() => userName.value ? `正在与 ${userName.value} 对话` : '')")
+    expect(capsuleView).toContain("const idleActivityText = computed(() => !isThinking.value && !userName.value ? activityText.value : '')")
     expect(capsuleView).toContain('if (userActivityText.value) return userActivityText.value')
-    expect(capsuleView).toContain("return '空闲中'")
+    expect(capsuleView).toContain("return idleActivityText.value || '空闲中'")
     expect(capsuleView).toContain('v-if="titleStatusText"')
     expect(capsuleView).toContain('{{ titleStatusText }}')
     expect(capsuleView).toContain('v-if="displayActivityText"')
