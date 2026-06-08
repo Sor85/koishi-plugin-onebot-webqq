@@ -1,38 +1,38 @@
 <template>
-  <div v-if="shouldShowCapsule" ref="capsuleHost" class="chat-capsule-host">
-    <div :class="['chat-capsule', `is-color-${webQQColorMode}`]" aria-live="polite">
+  <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host">
+    <div :class="['onebot-webqq', `is-color-${webQQColorMode}`]" aria-live="polite">
       <button
-        class="chat-capsule__avatar-button"
+        class="onebot-webqq__avatar-button"
         type="button"
         :aria-label="capsuleButtonLabel"
         :aria-expanded="webqqOpen"
         @click="toggleWebQQ"
       >
-        <span class="chat-capsule__avatar">
+        <span class="onebot-webqq__avatar">
           <img v-if="displayBotAvatar" :src="withProxy(displayBotAvatar)" :alt="displayBotName">
           <k-icon v-else name="robot" />
-          <span :class="['chat-capsule__status', statusClass]"></span>
-          <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="chat-capsule__avatar-unread">{{ capsuleUnreadText }}</span>
+          <span :class="['onebot-webqq__status', statusClass]"></span>
+          <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
         </span>
       </button>
-      <Transition name="chat-capsule-avatar-guide">
+      <Transition name="onebot-webqq-avatar-guide">
         <span
           v-if="webQQAvatarGuideVisible && !webqqOpen"
-          class="chat-capsule__avatar-guide"
+          class="onebot-webqq__avatar-guide"
           aria-hidden="true"
         >
-          <span class="chat-capsule__avatar-guide-ring"></span>
+          <span class="onebot-webqq__avatar-guide-ring"></span>
         </span>
       </Transition>
-      <div class="chat-capsule__body" @click="showWebQQAvatarGuide()">
-        <div class="chat-capsule__title-line">
-          <div class="chat-capsule__title" :title="displayBotName">
+      <div class="onebot-webqq__body" @click="showWebQQAvatarGuide()">
+        <div class="onebot-webqq__title-line">
+          <div class="onebot-webqq__title" :title="displayBotName">
             {{ displayBotName }}
           </div>
-          <span v-if="titleStatusText" class="chat-capsule__title-status is-thinking">{{ titleStatusText }}</span>
+          <span v-if="titleStatusText" class="onebot-webqq__title-status is-thinking">{{ titleStatusText }}</span>
         </div>
-        <div class="chat-capsule__meta" :title="metaTitle">
-          <span v-if="displayActivityText" class="chat-capsule__activity">{{ displayActivityText }}</span>
+        <div class="onebot-webqq__meta" :title="metaTitle">
+          <span v-if="displayActivityText" class="onebot-webqq__activity">{{ displayActivityText }}</span>
         </div>
       </div>
     </div>
@@ -46,8 +46,8 @@ import { Universal, activities, router, store, withProxy } from '@koishijs/clien
 import { capsule, showWebQQCapsuleUnread, webQQColorMode, webQQTotalUnread } from './state'
 import WebQQObserver from './WebQQObserver.vue'
 
-const capsuleProfileStorageKey = 'chat-capsule:bot-profile:v1'
-const webQQAvatarGuideStorageKey = 'chat-capsule:webqq-avatar-guide:v1'
+const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
+const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
 const webqqOpen = ref(false)
 const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()

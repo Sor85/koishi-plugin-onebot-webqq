@@ -1,4 +1,4 @@
-.chat-capsule-webqq__chat {
+.onebot-webqq-webqq__chat {
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -8,7 +8,7 @@
   backdrop-filter: saturate(180%) blur(20px);
 }
 
-.chat-capsule-webqq__chat-main {
+.onebot-webqq-webqq__chat-main {
   min-width: 0;
   min-height: 0;
   flex: 1;
@@ -16,7 +16,7 @@
   flex-direction: column;
 }
 
-.chat-capsule-webqq__chat-header {
+.onebot-webqq-webqq__chat-header {
   min-height: 64px;
   display: flex;
   align-items: center;
@@ -53,7 +53,7 @@
     width: 32px;
     min-height: 32px;
     padding: 0;
-    color: var(--chat-capsule-webqq-accent);
+    color: var(--onebot-webqq-webqq-accent);
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -65,7 +65,7 @@
   }
 }
 
-.chat-capsule-webqq__header-icon {
+.onebot-webqq-webqq__header-icon {
   width: 20px;
   height: 20px;
   fill: none;
@@ -75,14 +75,14 @@
   stroke-linejoin: round;
 }
 
-.chat-capsule-webqq__chat-title {
+.onebot-webqq-webqq__chat-title {
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.chat-capsule-webqq__chat-avatar {
+.onebot-webqq-webqq__chat-avatar {
   width: 38px;
   height: 38px;
   flex-shrink: 0;
@@ -90,14 +90,14 @@
   object-fit: cover;
 }
 
-.chat-capsule-webqq__chat-body {
+.onebot-webqq-webqq__chat-body {
   position: relative;
   min-height: 0;
   flex: 1;
   display: flex;
 }
 
-.chat-capsule-webqq__messages {
+.onebot-webqq-webqq__messages {
   min-height: 0;
   min-width: 0;
   flex: 1;
@@ -105,7 +105,7 @@
   padding: 20px 22px;
 }
 
-.chat-capsule-webqq__scroll-bottom {
+.onebot-webqq-webqq__scroll-bottom {
   position: absolute;
   right: 22px;
   bottom: 18px;
@@ -117,14 +117,14 @@
   min-height: 34px;
   padding: 0;
   color: #ffffff;
-  background: var(--chat-capsule-webqq-accent);
+  background: var(--onebot-webqq-webqq-accent);
   border: 0;
   border-radius: 50%;
-  box-shadow: 0 8px 18px var(--chat-capsule-webqq-accent-shadow);
+  box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
   cursor: pointer;
 }
 
-.chat-capsule-webqq__scroll-bottom-icon {
+.onebot-webqq-webqq__scroll-bottom-icon {
   width: 18px;
   height: 18px;
   fill: none;

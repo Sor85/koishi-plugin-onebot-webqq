@@ -47,8 +47,8 @@ export function registerWebQQConsoleListeners(
     logger,
   } = options
 
-  console.addListener('chat-capsule/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/messages', async (query: WebQQMessageQuery) => {
+  console.addListener('onebot-webqq/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/messages', async (query: WebQQMessageQuery) => {
     const nextQuery = {
       ...query,
       limit: query.limit ?? historyLimit,
@@ -56,13 +56,13 @@ export function registerWebQQConsoleListeners(
     const history = await webqq.loadMessages(nextQuery)
     return attachWebQQAffinityBadges(inner, config, mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit), logger)
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/group-info', (query: WebQQGroupInfoQuery) => {
+  console.addListener('onebot-webqq/webqq/group-info', (query: WebQQGroupInfoQuery) => {
     return webqq.loadGroupInfo(query)
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/notices', () => {
+  console.addListener('onebot-webqq/webqq/notices', () => {
     return webqq.loadNotices([...friendRequestNotices.values(), ...groupLeaveNotices.values()])
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/notice-action', async (action: WebQQNoticeAction) => {
+  console.addListener('onebot-webqq/webqq/notice-action', async (action: WebQQNoticeAction) => {
     await webqq.handleNotice(action)
     if (action.type !== 'friend-request') return
     const notice = friendRequestNotices.get(action.id)
@@ -72,16 +72,16 @@ export function registerWebQQConsoleListeners(
       status: action.approve ? 'approved' : 'rejected',
     })
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/storage/load', () => {
+  console.addListener('onebot-webqq/webqq/storage/load', () => {
     return loadWebQQStorage(inner, config)
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/storage/save', (state: WebQQStoredState) => {
+  console.addListener('onebot-webqq/webqq/storage/save', (state: WebQQStoredState) => {
     return saveWebQQStorage(inner, config, state)
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/messages/cache/load', (query: WebQQMessageCacheQuery) => {
+  console.addListener('onebot-webqq/webqq/messages/cache/load', (query: WebQQMessageCacheQuery) => {
     return loadKoishiWebQQMessageCache(inner, config, query)
   }, consoleAuthOptions)
-  console.addListener('chat-capsule/webqq/messages/cache/save', (payload: WebQQMessageCachePayload) => {
+  console.addListener('onebot-webqq/webqq/messages/cache/save', (payload: WebQQMessageCachePayload) => {
     return saveKoishiWebQQMessageCache(inner, config, payload)
   }, consoleAuthOptions)
 }

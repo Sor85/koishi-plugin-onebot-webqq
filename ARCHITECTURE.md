@@ -38,7 +38,7 @@
 - `src/webqq/affinity.ts`：ChatLuna 好感度记录读取和 WebQQ 消息徽标补齐
 - `src/webqq/event-notices.ts`：WebQQ 事件通知构造 helper，负责把 Koishi 好友申请和群成员退出事件转换为 WebQQNotice
 - `src/webqq/group-sender-metadata.ts`：WebQQ 群成员身份 metadata 查询 helper，负责 OneBot 群成员信息 action 调用和返回值整理
-- `src/webqq/image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/chat-capsule/webqq/image/:id` 代理路由并生成缓存 URL
+- `src/webqq/image-url-resolver.ts`：WebQQ 图片代理 URL helper，负责注册 `/onebot-webqq/webqq/image/:id` 代理路由并生成缓存 URL
 - `src/webqq/live-cache.ts`：WebQQ live 消息缓存纯 helper，负责会话 key、消息去重合并、排序和 limit 裁剪
 - `src/webqq/live-elements.ts`：WebQQ live 元素标准化 helper，负责 Koishi live 元素、引用、图片、卡片和摘要到 WebQQ message element 的转换
 - `src/webqq/live-message.ts`：WebQQ live message payload 构造 helper，负责把 Koishi session 和标准化元素组装为 WebQQ live 消息
@@ -65,7 +65,7 @@
 - `client/utils/webqq-message-view.ts`：WebQQ 消息展示纯函数，负责消息 key、消息合并、未读数、时间、临时思考消息构造、思考耗时、completed thinking 聚合、消息元素分组、合并转发预览文案、消息聚类 class、群成员名称和发送者徽标判断
 - `client/utils/webqq-notice-view.ts`：WebQQ 通知展示纯函数，负责通知排序、申请备注拆行、已处理状态文案和可处理状态判断
 - `client/utils/webqq-theme-view.ts`：WebQQ 主题色展示纯函数，负责 accent 颜色校验、头像主题色优先级和 CSS 变量对象生成
-- `client/api/webqq.ts`：前端 WebQQ Console RPC thin wrapper，负责封装 `send('chat-capsule/webqq/...')` 调用和默认返回值
+- `client/api/webqq.ts`：前端 WebQQ Console RPC thin wrapper，负责封装 `send('onebot-webqq/webqq/...')` 调用和默认返回值
 - `client/Capsule.vue`：右下角胶囊外壳和 WebQQ 面板开关
 - `client/components/WebQQSidebar.vue`：WebQQ 侧栏展示组件，负责 tab、搜索、通知入口和联系人列表组合
 - `client/components/WebQQMessageList.vue`：WebQQ 消息列表展示组件，负责消息气泡、图片、引用、卡片、合并转发预览和 completed thinking 展示

@@ -1,23 +1,23 @@
 <template>
-  <aside class="chat-capsule-webqq__sidebar">
-    <div class="chat-capsule-webqq__tabs-row">
-      <div class="chat-capsule-webqq__tabs">
+  <aside class="onebot-webqq-webqq__sidebar">
+    <div class="onebot-webqq-webqq__tabs-row">
+      <div class="onebot-webqq-webqq__tabs">
         <button :class="{ 'is-active': activeTab === 'recent' }" type="button" @click="emit('select-tab', 'recent')">
-          <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <svg class="onebot-webqq-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="9"></circle>
             <path d="M12 7v5l3 2"></path>
           </svg>
           最近
         </button>
         <button :class="{ 'is-active': activeTab === 'friends' }" type="button" @click="emit('select-tab', 'friends')">
-          <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <svg class="onebot-webqq-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="8" r="4"></circle>
             <path d="M5 21a7 7 0 0 1 14 0"></path>
           </svg>
           好友
         </button>
         <button :class="{ 'is-active': activeTab === 'groups' }" type="button" @click="emit('select-tab', 'groups')">
-          <svg class="chat-capsule-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <svg class="onebot-webqq-webqq__tab-icon" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="9" cy="8" r="3.5"></circle>
             <circle cx="17" cy="9" r="3"></circle>
             <path d="M2.5 21a6.5 6.5 0 0 1 13 0"></path>
@@ -26,9 +26,9 @@
           群组
         </button>
       </div>
-      <span class="chat-capsule-webqq__notify-wrap" @click.stop>
-        <button :class="['chat-capsule-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="emit('open-notices')">
-          <svg class="chat-capsule-webqq__notify-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <span class="onebot-webqq-webqq__notify-wrap" @click.stop>
+        <button :class="['onebot-webqq-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="emit('open-notices')">
+          <svg class="onebot-webqq-webqq__notify-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 18a3 3 0 0 1-6 0"></path>
             <path d="M19 16H5c1.4-1.4 2-3.2 2-5.5a5 5 0 0 1 10 0c0 2.3.6 4.1 2 5.5Z"></path>
           </svg>
@@ -46,8 +46,8 @@
         />
       </span>
     </div>
-    <div v-if="activeTab !== 'recent'" class="chat-capsule-webqq__search">
-      <svg class="chat-capsule-webqq__search-icon" viewBox="0 0 24 24" aria-hidden="true">
+    <div v-if="activeTab !== 'recent'" class="onebot-webqq-webqq__search">
+      <svg class="onebot-webqq-webqq__search-icon" viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="11" cy="11" r="7"></circle>
         <path d="m16 16 4 4"></path>
       </svg>

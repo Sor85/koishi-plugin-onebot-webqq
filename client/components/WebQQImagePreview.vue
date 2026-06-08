@@ -1,7 +1,7 @@
 <template>
   <div
     ref="imagePreview"
-    class="chat-capsule-webqq__image-preview"
+    class="onebot-webqq-webqq__image-preview"
     role="dialog"
     aria-modal="true"
     aria-label="图片预览"
@@ -9,8 +9,8 @@
     @click.stop.self="emit('close')"
     @keydown.esc="emit('close')"
   >
-    <button class="chat-capsule-webqq__image-preview-close" type="button" aria-label="关闭图片预览" @click="emit('close')">
-      <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+    <button class="onebot-webqq-webqq__image-preview-close" type="button" aria-label="关闭图片预览" @click="emit('close')">
+      <svg class="onebot-webqq-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M6 6l12 12"></path>
         <path d="M18 6L6 18"></path>
       </svg>

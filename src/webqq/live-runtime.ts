@@ -166,13 +166,13 @@ export function createWebQQLiveRuntime(options: {
     const key = getWebQQLiveMessageKey(payload)
     const messages = mergeWebQQLiveMessages(liveMessages.get(key) ?? [], [payload.message], 100)
     liveMessages.set(key, messages)
-    options.ctx.console?.broadcast('chat-capsule/webqq/message', payload, options.consoleAuthOptions)
+    options.ctx.console?.broadcast('onebot-webqq/webqq/message', payload, options.consoleAuthOptions)
   }
   const broadcastWebQQRecallPayload = (payload: WebQQRecallPayload) => {
     const key = getWebQQLiveMessageKey(payload)
     const messages = applyWebQQRecallToLiveMessages(liveMessages.get(key) ?? [], payload, 100)
     liveMessages.set(key, messages)
-    options.ctx.console?.broadcast('chat-capsule/webqq/recall', payload, options.consoleAuthOptions)
+    options.ctx.console?.broadcast('onebot-webqq/webqq/recall', payload, options.consoleAuthOptions)
   }
   const attachPendingWebQQThinking = (payload: WebQQLiveMessage): WebQQLiveMessage => {
     if (payload.message.direction !== 'outgoing') return payload
@@ -428,7 +428,7 @@ export function createWebQQLiveRuntime(options: {
     const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entryWithUsers, reaction.isAdd)
     if (applied) {
       liveMessages.set(key, applied.messages)
-      options.ctx.console?.broadcast('chat-capsule/webqq/message', { ...peer, message: applied.message }, options.consoleAuthOptions)
+      options.ctx.console?.broadcast('onebot-webqq/webqq/message', { ...peer, message: applied.message }, options.consoleAuthOptions)
       return
     }
     // 目标消息可能是前端已加载的历史消息，而不是后端 live cache 中的实时消息。

@@ -1,5 +1,5 @@
 <template>
-  <div :class="['chat-capsule-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`, `is-color-${webQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div :class="['onebot-webqq-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`, `is-color-${webQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <WebQQSidebar
       v-model:search-query="searchQuery"
       v-model:notice-menu-tab="noticeMenuTab"
@@ -29,26 +29,26 @@
       @open-notices="openNotices"
       @handle-notice="handleNotice"
     />
-    <section class="chat-capsule-webqq__chat">
-      <div class="chat-capsule-webqq__chat-main">
-        <header class="chat-capsule-webqq__chat-header">
-          <div class="chat-capsule-webqq__chat-title">
-            <img v-if="currentAvatar" class="chat-capsule-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
+    <section class="onebot-webqq-webqq__chat">
+      <div class="onebot-webqq-webqq__chat-main">
+        <header class="onebot-webqq-webqq__chat-header">
+          <div class="onebot-webqq-webqq__chat-title">
+            <img v-if="currentAvatar" class="onebot-webqq-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
             <div>
               <strong>{{ currentTitle }}</strong>
               <span>{{ currentSubtitle }}</span>
             </div>
           </div>
           <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" aria-label="更多群信息" @click="toggleGroupInfo">
-            <svg class="chat-capsule-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <svg class="onebot-webqq-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="1"></circle>
               <circle cx="19" cy="12" r="1"></circle>
               <circle cx="5" cy="12" r="1"></circle>
             </svg>
           </button>
         </header>
-        <div class="chat-capsule-webqq__chat-body">
-          <div ref="messagePane" class="chat-capsule-webqq__messages" @scroll="updateMessageTracking">
+        <div class="onebot-webqq-webqq__chat-body">
+          <div ref="messagePane" class="onebot-webqq-webqq__messages" @scroll="updateMessageTracking">
             <WebQQMessageList
               :loading="loading"
               :error-text="errorText"
@@ -83,12 +83,12 @@
           <Transition name="webqq-scroll-bottom">
             <button
               v-if="!trackingMessages && visibleMessages.length"
-              class="chat-capsule-webqq__scroll-bottom"
+              class="onebot-webqq-webqq__scroll-bottom"
               type="button"
               aria-label="返回底部"
               @click="returnMessagesToBottom"
             >
-              <svg class="chat-capsule-webqq__scroll-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="onebot-webqq-webqq__scroll-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 5v14"></path>
                 <path d="m7 14 5 5 5-5"></path>
               </svg>

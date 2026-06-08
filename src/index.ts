@@ -63,18 +63,18 @@ export const inject = {
 
 declare module '@koishijs/console' {
   interface Events {
-    'chat-capsule/update'(data: CapsuleSnapshot | undefined): void
-    'chat-capsule/webqq/message'(data: WebQQLiveMessage): void
-    'chat-capsule/webqq/recall'(data: WebQQRecallPayload): void
-    'chat-capsule/webqq/contacts'(): Promise<WebQQContacts>
-    'chat-capsule/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
-    'chat-capsule/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
-    'chat-capsule/webqq/notices'(): Promise<WebQQNotice[]>
-    'chat-capsule/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
-    'chat-capsule/webqq/storage/load'(): Promise<WebQQStoredState>
-    'chat-capsule/webqq/storage/save'(state: WebQQStoredState): Promise<void>
-    'chat-capsule/webqq/messages/cache/load'(query: WebQQMessageCacheQuery): Promise<WebQQMessage[]>
-    'chat-capsule/webqq/messages/cache/save'(payload: WebQQMessageCachePayload): Promise<void>
+    'onebot-webqq/update'(data: CapsuleSnapshot | undefined): void
+    'onebot-webqq/webqq/message'(data: WebQQLiveMessage): void
+    'onebot-webqq/webqq/recall'(data: WebQQRecallPayload): void
+    'onebot-webqq/webqq/contacts'(): Promise<WebQQContacts>
+    'onebot-webqq/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
+    'onebot-webqq/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
+    'onebot-webqq/webqq/notices'(): Promise<WebQQNotice[]>
+    'onebot-webqq/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
+    'onebot-webqq/webqq/storage/load'(): Promise<WebQQStoredState>
+    'onebot-webqq/webqq/storage/save'(state: WebQQStoredState): Promise<void>
+    'onebot-webqq/webqq/messages/cache/load'(query: WebQQMessageCacheQuery): Promise<WebQQMessage[]>
+    'onebot-webqq/webqq/messages/cache/save'(payload: WebQQMessageCachePayload): Promise<void>
   }
 }
 
@@ -95,7 +95,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const state = createCapsuleState()
   const historyLimit = config.historyLimit ?? 100
   const debug = !!config.debug
-  const logger = debug ? ctx.logger?.('chat-capsule') : undefined
+  const logger = debug ? ctx.logger?.('onebot-webqq') : undefined
   const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger, {
     cacheEnabled: config.webQQImageCacheEnabled ?? true,
     cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024,
@@ -108,7 +108,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   })
   const consoleAuthOptions = { authority: 1 }
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
-  const broadcast = () => ctx.console?.broadcast('chat-capsule/update', state.snapshot(), consoleAuthOptions)
+  const broadcast = () => ctx.console?.broadcast('onebot-webqq/update', state.snapshot(), consoleAuthOptions)
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
   let currentThinkingStartedAt: number | undefined

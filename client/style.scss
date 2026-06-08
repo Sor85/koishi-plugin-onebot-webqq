@@ -9,7 +9,7 @@
 @use './styles/webqq-message-effects';
 @use './styles/theme-colors';
 
-@keyframes chat-capsule-thinking-shimmer {
+@keyframes onebot-webqq-thinking-shimmer {
   0% {
     background-position: 120% 0;
   }
@@ -19,7 +19,7 @@
   }
 }
 
-@keyframes chat-capsule-avatar-guide-ring {
+@keyframes onebot-webqq-avatar-guide-ring {
   0%,
   100% {
     opacity: 0.72;
@@ -32,7 +32,7 @@
   }
 }
 
-@keyframes chat-capsule-avatar-guide-halo {
+@keyframes onebot-webqq-avatar-guide-halo {
   0% {
     opacity: 0.38;
     transform: scale(0.92);
@@ -50,22 +50,22 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chat-capsule__activity.is-thinking {
+  .onebot-webqq__activity.is-thinking {
     animation: none;
     background-position: 50% 0;
   }
 
-  .chat-capsule__avatar-guide-ring,
-  .chat-capsule__avatar-guide-ring::after {
+  .onebot-webqq__avatar-guide-ring,
+  .onebot-webqq__avatar-guide-ring::after {
     animation: none;
   }
 
-  .chat-capsule-avatar-guide-enter-active,
-  .chat-capsule-avatar-guide-leave-active {
+  .onebot-webqq-avatar-guide-enter-active,
+  .onebot-webqq-avatar-guide-leave-active {
     transition: none;
   }
 
-  .chat-capsule-webqq__thinking-dot {
+  .onebot-webqq-webqq__thinking-dot {
     animation: none;
   }
 
@@ -76,18 +76,18 @@
 }
 
 @media screen and (max-width: 768px) {
-  .chat-capsule {
+  .onebot-webqq {
     right: 16px;
     bottom: 52px;
   }
 
-  .chat-capsule-webqq {
+  .onebot-webqq-webqq {
     right: 16px;
     bottom: 112px;
     grid-template-columns: 1fr;
   }
 
-  .chat-capsule-webqq__sidebar {
+  .onebot-webqq-webqq__sidebar {
     max-height: 240px;
     border-right: 0;
     border-bottom: 1px solid var(--k-color-divider, #e0e4e8);

@@ -38,7 +38,7 @@ export function useWebQQLiveMessages(options: {
       (!options.isVisible() || !options.trackingMessages.value)
   }
 
-  receive('chat-capsule/webqq/message', (payload: WebQQLiveMessage) => {
+  receive('onebot-webqq/webqq/message', (payload: WebQQLiveMessage) => {
     options.rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
     options.updateConversationSummary(payload.type, payload.peerId, payload.message)
     if (
@@ -57,7 +57,7 @@ export function useWebQQLiveMessages(options: {
     options.saveCachedMessages(payload.type, payload.peerId, options.messages.value).catch(() => {})
   })
 
-  receive('chat-capsule/webqq/recall', (payload: WebQQRecallPayload) => {
+  receive('onebot-webqq/webqq/recall', (payload: WebQQRecallPayload) => {
     if (!isCurrentChat(payload)) {
       if (shouldIncreaseRecallUnread(payload)) options.increaseUnreadCount(payload.type, payload.peerId)
       saveWebQQRecall(payload).catch(() => {})

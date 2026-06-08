@@ -3,7 +3,7 @@ import type { WebQQMessage, WebQQStorageBackend } from '../state'
 import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from '../webqq-message-cache'
 import type { ConversationSummary, WebQQStoredState } from './webqq-state'
 
-const webQQStorageKey = 'chat-capsule:webqq:v1'
+const webQQStorageKey = 'onebot-webqq:webqq:v1'
 
 function readStoredConversationSummaries(value: unknown) {
   const summaries: Record<string, ConversationSummary> = {}
@@ -58,7 +58,7 @@ export function loadBrowserWebQQStoredState(storageBackend: WebQQStorageBackend)
 
 export function persistWebQQStoredState(storageBackend: WebQQStorageBackend, state: WebQQStoredState) {
   if (storageBackend !== 'browser') {
-    send('chat-capsule/webqq/storage/save', state).catch(() => {})
+    send('onebot-webqq/webqq/storage/save', state).catch(() => {})
     return
   }
   if (typeof localStorage === 'undefined') return
@@ -70,7 +70,7 @@ export function persistWebQQStoredState(storageBackend: WebQQStorageBackend, sta
 export async function loadRemoteWebQQStoredState(storageBackend: WebQQStorageBackend) {
   if (storageBackend === 'browser') return
   try {
-    return normalizeWebQQStoredState(await send('chat-capsule/webqq/storage/load'))
+    return normalizeWebQQStoredState(await send('onebot-webqq/webqq/storage/load'))
   } catch {
     return
   }
@@ -84,7 +84,7 @@ function normalizeCachedWebQQMessages(value: unknown) {
 export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string, storageBackend: WebQQStorageBackend) {
   if (storageBackend === 'koishi') {
     try {
-      return normalizeCachedWebQQMessages(await send('chat-capsule/webqq/messages/cache/load', { type, peerId }))
+      return normalizeCachedWebQQMessages(await send('onebot-webqq/webqq/messages/cache/load', { type, peerId }))
     } catch {
       return []
     }
@@ -94,7 +94,7 @@ export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: 
 
 export async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[], storageBackend: WebQQStorageBackend, messageCacheLimit: number) {
   if (storageBackend === 'koishi') {
-    await send('chat-capsule/webqq/messages/cache/save', { type, peerId, messages }).catch(() => {})
+    await send('onebot-webqq/webqq/messages/cache/save', { type, peerId, messages }).catch(() => {})
     return
   }
   await saveBrowserWebQQMessages(type, peerId, messages, messageCacheLimit)

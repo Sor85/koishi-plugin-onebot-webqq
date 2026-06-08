@@ -22,9 +22,9 @@ export function getWebQQEffectiveAccentColor(useBotAvatarColor: boolean, avatarA
 
 export function getWebQQAccentStyle(accentColor: string) {
   return {
-    '--chat-capsule-webqq-accent': accentColor,
-    '--chat-capsule-webqq-accent-soft': hexToRgba(accentColor, 0.14),
-    '--chat-capsule-webqq-accent-hover': hexToRgba(accentColor, 0.18),
-    '--chat-capsule-webqq-accent-shadow': hexToRgba(accentColor, 0.24),
+    '--onebot-webqq-webqq-accent': accentColor,
+    '--onebot-webqq-webqq-accent-soft': hexToRgba(accentColor, 0.14),
+    '--onebot-webqq-webqq-accent-hover': hexToRgba(accentColor, 0.18),
+    '--onebot-webqq-webqq-accent-shadow': hexToRgba(accentColor, 0.24),
   }
 }
