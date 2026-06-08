@@ -333,6 +333,43 @@ export function createWebQQLiveRuntime(options: {
   const getReactionTargetIds = (reaction: WebQQRawReaction) => {
     return [reaction.messageSeq, reaction.messageId].filter((id, index, array): id is string => !!id && array.indexOf(id) === index)
   }
+  const getKnownReactionUserCount = (messages: WebQQMessage[], targetIds: string[], reaction: WebQQRawReaction) => {
+    const userIds = new Set<string>()
+    for (const message of messages) {
+      if (!targetIds.includes(message.id) && !targetIds.includes(message.sequence)) continue
+      const current = message.reactions?.find((item) => item.emojiId === reaction.emojiId)
+      if (current?.userId) userIds.add(current.userId)
+      for (const user of current?.users ?? []) userIds.add(user.userId)
+    }
+    if (reaction.userId) {
+      if (reaction.isAdd) userIds.add(reaction.userId)
+      else userIds.delete(reaction.userId)
+    }
+    return userIds.size
+  }
+  const shouldResolveWebQQReactionUsers = (reaction: WebQQRawReaction, targetIds: string[]) => {
+    if (reaction.count <= 0 || !reaction.messageId) return false
+    if (!options.webqq.supportsReactionUsers()) return false
+    const key = getWebQQLiveMessageKey({ type: 'group', peerId: reaction.groupId })
+    const knownUserCount = getKnownReactionUserCount(liveMessages.get(key) ?? [], targetIds, reaction)
+    return knownUserCount < reaction.count
+  }
+  const resolveWebQQReactionUsers = async (reaction: WebQQRawReaction, entry: WebQQMessageReaction) => {
+    try {
+      // `group_msg_emoji_like` 只带本次操作者和总数；人数更多时要拉完整列表，
+      // 否则 Telegram 风格只能显示一个头像再跟 count，无法展示所有贴表情用户。
+      const users = await options.webqq.loadReactionUsers(reaction.messageId, reaction.emojiId, reaction.count)
+      const nextUsers = users.map((user) => {
+        // 同一个操作者在事件里已有稳定的 OneBot user_id 头像，避免被补查列表里的临时 headUrl 覆盖。
+        if (!entry.userId || user.userId !== entry.userId || !entry.userAvatar) return user
+        return { ...user, userAvatar: entry.userAvatar }
+      })
+      return nextUsers.length ? { ...entry, users: nextUsers } : entry
+    } catch (error) {
+      options.logger?.info('webqq reaction users resolve failed %s', error instanceof Error ? error.message : String(error))
+      return entry
+    }
+  }
   const applyWebQQReaction = (messages: WebQQMessage[], targetIds: string[], entry: WebQQMessageReaction, isAdd: boolean) => {
     for (const targetId of targetIds) {
       const nextMessages = applyWebQQReactionToLiveMessages(messages, targetId, entry, isAdd)
@@ -354,12 +391,14 @@ export function createWebQQLiveRuntime(options: {
       ...(reaction.userId ? {
         userId: reaction.userId,
         userAvatar,
-        users: [{ userId: reaction.userId, userAvatar }],
       } : {}),
     }
-    const key = getWebQQLiveMessageKey(peer)
     const targetIds = getReactionTargetIds(reaction)
-    const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entry, reaction.isAdd)
+    const entryWithUsers = shouldResolveWebQQReactionUsers(reaction, targetIds)
+      ? await resolveWebQQReactionUsers(reaction, entry)
+      : entry
+    const key = getWebQQLiveMessageKey(peer)
+    const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entryWithUsers, reaction.isAdd)
     if (applied) {
       liveMessages.set(key, applied.messages)
       options.ctx.console?.broadcast('chat-capsule/webqq/message', { ...peer, message: applied.message }, options.consoleAuthOptions)
@@ -373,7 +412,7 @@ export function createWebQQLiveRuntime(options: {
       const targetApplied = applyWebQQReaction(
         [targetMessage],
         [...targetIds, targetMessage.id, targetMessage.sequence],
-        entry,
+        entryWithUsers,
         reaction.isAdd,
       )
       if (targetApplied) {

@@ -22,6 +22,7 @@ function getReactionUsers(reaction: WebQQMessageReaction) {
 }
 
 function mergeReactionUsers(current: WebQQMessageReaction | undefined, reaction: WebQQMessageReaction, isAdd: boolean) {
+  if (reaction.users?.length) return reaction.count > 0 ? reaction.users.slice(-reaction.count) : []
   const user = reaction.userId && reaction.userAvatar
     ? { userId: reaction.userId, userAvatar: reaction.userAvatar }
     : undefined

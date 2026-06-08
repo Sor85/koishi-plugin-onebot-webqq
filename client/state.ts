@@ -75,6 +75,7 @@ export interface WebQQMessageReaction {
 
 export interface WebQQMessageReactionUser {
   userId: string
+  userName?: string
   userAvatar: string
 }
 

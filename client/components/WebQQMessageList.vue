@@ -103,7 +103,9 @@
                   <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
                   <template v-else>{{ reaction.label }}</template>
                   <span v-if="getReactionUsers(reaction).length" class="chat-capsule-webqq__message-reaction-users">
-                    <img v-for="user in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(user.userAvatar)" :alt="user.userId">
+                    <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
+                      <img class="chat-capsule-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
+                    </span>
                   </span>
                   <span v-if="shouldShowReactionCount(reaction)" class="chat-capsule-webqq__message-reaction-count">{{ reaction.count }}</span>
                 </span>
@@ -114,7 +116,9 @@
                 <img v-if="reaction.emojiUrl" class="chat-capsule-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
                 <template v-else>{{ reaction.label }}</template>
                 <span v-if="getReactionUsers(reaction).length" class="chat-capsule-webqq__message-reaction-users">
-                  <img v-for="user in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :src="withProxy(user.userAvatar)" :alt="user.userId">
+                  <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="chat-capsule-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
+                    <img class="chat-capsule-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
+                  </span>
                 </span>
                 <span v-if="shouldShowReactionCount(reaction)" class="chat-capsule-webqq__message-reaction-count">{{ reaction.count }}</span>
               </span>
@@ -229,6 +233,10 @@ function getReactionUsers(reaction: WebQQMessageReaction): WebQQMessageReactionU
 
 function shouldShowReactionCount(reaction: WebQQMessageReaction) {
   return reaction.count > Math.max(getReactionUsers(reaction).length, 1)
+}
+
+function getReactionUserZIndex(reaction: WebQQMessageReaction, userIndex: number) {
+  return getReactionUsers(reaction).length - userIndex
 }
 
 function toggleThinking(index: number) {

@@ -1070,6 +1070,104 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('fills WebQQ reaction users from the emoji like list', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        fetch_emoji_like: vi.fn(async () => ({
+          emojiLikesList: [{
+            tinyId: '40000',
+            nickName: 'Ning',
+            headUrl: 'https://example.com/40000.png',
+          }, {
+            tinyId: '50000',
+            nickName: 'Other',
+            headUrl: 'https://example.com/50000.png',
+          }],
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'new-1',
+        likes: [{ emoji_id: '76', count: 2 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.fetch_emoji_like).toHaveBeenCalledWith({
+      message_id: 'new-1',
+      emoji_id: '76',
+      count: 2,
+    })
+    expect(broadcast).toHaveBeenCalledWith('chat-capsule/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'new-1',
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          emojiUrl: 'https://koishi.js.org/QFace/gif/s76.gif',
+          count: 2,
+          userId: '40000',
+          userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          users: [{
+            userId: '40000',
+            userName: 'Ning',
+            userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+          }, {
+            userId: '50000',
+            userName: 'Other',
+            userAvatar: 'https://example.com/50000.png',
+          }],
+        }],
+      }),
+    }, { authority: 1 })
+  })
+
   it('matches WebQQ reactions by message sequence when available', () => {
     const message: WebQQMessage = {
       id: 'onebot-id',
