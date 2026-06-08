@@ -15,8 +15,7 @@
   },
   "files": [
     "lib",
-    "dist",
-    "client"
+    "dist"
   ],
   "license": "MIT",
   "homepage": "https://github.com/Sor85/koishi-plugin-onebot-webqq",
@@ -26,12 +25,12 @@
   },
   "scripts": {
     "clean": "shx rm -rf lib dist",
-    "build": "yarn build:server && yarn build:client",
-    "build:types": "tsc -p tsconfig.json",
-    "build:server": "yarn build:types && tsup src/index.ts --format cjs --sourcemap --out-dir lib --clean false",
+    "build": "yarn clean && yarn build:server && yarn build:client",
+    "build:types": "tsc -p tsconfig.json --emitDeclarationOnly",
+    "build:server": "yarn build:types && tsup src/index.ts --format cjs --out-dir lib --clean false",
     "build:client": "vite build --config vite.config.mts",
     "test": "vitest run tests",
-    "prepublishOnly": "yarn clean && yarn build"
+    "prepublishOnly": "yarn build"
   },
   "keywords": [
     "bot",
