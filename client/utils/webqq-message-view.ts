@@ -17,14 +17,23 @@ export function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
 
+function hasMessageContent(message: WebQQMessage) {
+  return !!message.summary || message.elements.length > 0
+}
+
 export function mergeWebQQMessage(current: WebQQMessage | undefined, next: WebQQMessage) {
   if (!current) return next
-  if (!next.thinking && !current.thinking) return { ...current, ...next }
-  return {
+  const merged = {
     ...current,
     ...next,
-    thinking: next.thinking || current.thinking,
   }
+  if (current.thinking || next.thinking) merged.thinking = next.thinking || current.thinking
+  // 贴表情更新有时只带 reaction 状态，不带原消息正文；不能让它覆盖已缓存的撤回原文。
+  if (hasMessageContent(current) && !hasMessageContent(next)) {
+    merged.summary = current.summary
+    merged.elements = current.elements
+  }
+  return merged
 }
 
 export function mergeMessages(currentMessages: WebQQMessage[], nextMessages: WebQQMessage[]) {

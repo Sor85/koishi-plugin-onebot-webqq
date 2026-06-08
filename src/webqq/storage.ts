@@ -112,6 +112,10 @@ function getWebQQMessageStorageId(query: WebQQMessageCacheQuery) {
   return `messages:${query.type}:${query.peerId}`
 }
 
+function getWebQQRecalledMessageStorageId(query: WebQQMessageCacheQuery) {
+  return `recalled-messages:${query.type}:${query.peerId}`
+}
+
 function readWebQQStoredMessages(value: unknown) {
   if (!isRecord(value) || !Array.isArray(value.messages)) return []
   return value.messages.filter(isRecord) as unknown as WebQQMessage[]
@@ -144,6 +148,24 @@ export async function saveKoishiWebQQMessageCache(ctx: WebQQStorageContext, conf
   const messages = payload.messages.slice(-messageCacheLimit)
   await database.upsert(chatCapsuleStorageTable, [{
     id: getWebQQMessageStorageId(payload),
+    payload: { messages },
+    updatedAt: new Date(),
+  }])
+}
+
+export async function loadKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, query: WebQQMessageCacheQuery) {
+  if (!ctx.database) return []
+  const [row] = await ctx.database.get(chatCapsuleStorageTable, { id: getWebQQRecalledMessageStorageId(query) })
+  return readWebQQStoredMessages(isRecord(row) ? row.payload : undefined)
+}
+
+export async function saveKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload) {
+  if (!ctx.database) return
+  const messageCacheLimit = config.webQQMessageCacheLimit ?? defaultWebQQMessageCacheLimit
+  const messages = payload.messages.filter((message) => message.recalled).slice(-messageCacheLimit)
+  if (!messages.length) return
+  await ctx.database.upsert(chatCapsuleStorageTable, [{
+    id: getWebQQRecalledMessageStorageId(payload),
     payload: { messages },
     updatedAt: new Date(),
   }])

@@ -28,6 +28,10 @@ import {
   replaceWebQQMessageSenderMetadata,
   type WebQQSenderMetadata,
 } from './sender-metadata'
+import {
+  loadKoishiWebQQRecalledMessageCache,
+  saveKoishiWebQQRecalledMessageCache,
+} from './storage'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>
@@ -173,6 +177,18 @@ export function createWebQQLiveRuntime(options: {
     const messages = applyWebQQRecallToLiveMessages(liveMessages.get(key) ?? [], payload, 100)
     liveMessages.set(key, messages)
     options.ctx.console?.broadcast('onebot-webqq/webqq/recall', payload, options.consoleAuthOptions)
+    return messages
+  }
+  const persistMarkedWebQQRecall = async (peer: { type: WebQQChatType; peerId: string }, message: WebQQMessage) => {
+    try {
+      const cachedMessages = await loadKoishiWebQQRecalledMessageCache(options.ctx, peer)
+      await saveKoishiWebQQRecalledMessageCache(options.ctx, options.config, {
+        ...peer,
+        messages: mergeWebQQLiveMessages(cachedMessages, [{ ...message, recalled: true }]),
+      })
+    } catch (error) {
+      options.logger?.info('webqq recalled message cache failed %s', error instanceof Error ? error.message : String(error))
+    }
   }
   const attachPendingWebQQThinking = (payload: WebQQLiveMessage): WebQQLiveMessage => {
     if (payload.message.direction !== 'outgoing') return payload
@@ -270,7 +286,7 @@ export function createWebQQLiveRuntime(options: {
       },
     })
   }
-  const recordWebQQRecall = (session: Session | undefined) => {
+  const recordWebQQRecall = async (session: Session | undefined) => {
     if (!session || (session.bot.platform || session.platform) !== 'onebot') return
     const peer = readWebQQPeer(session)
     if (!peer) return
@@ -295,12 +311,18 @@ export function createWebQQLiveRuntime(options: {
       },
       elements: [{ type: 'unknown', text: summary }],
     }
-    broadcastWebQQRecallPayload({
+    const messages = broadcastWebQQRecallPayload({
       ...peer,
       messageId,
       mode: markRecalledMessage ? 'mark' : 'remove',
       ...(markRecalledMessage ? {} : { eventMessage }),
     })
+    if (!markRecalledMessage) return
+    const recalledMessage = messages.find((message) =>
+      (message.id === messageId || message.sequence === messageId) && message.recalled)
+    // OneBot 历史接口通常不会再返回已撤回原消息；后端 live cache 也会在 Koishi 重启后丢失。
+    // 因此在标记撤回模式下把原消息另存一份显示缓存，历史加载时再合并回来。
+    if (recalledMessage) await persistMarkedWebQQRecall(peer, recalledMessage)
   }
   const recordWebQQNotice = async (session: Session | undefined) => {
     if (!session || (session.bot.platform || session.platform) !== 'onebot') return

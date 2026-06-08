@@ -14,7 +14,7 @@ import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary, type ConversationSummary } from '../client/stores/webqq-state'
-import { createBotThinkingMessage, type WebQQMessageElement } from '../client/utils/webqq-message-view'
+import { createBotThinkingMessage, mergeMessages, type WebQQMessageElement } from '../client/utils/webqq-message-view'
 import { applyWebQQRecallToMessages } from '../client/utils/webqq-recall-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
@@ -570,9 +570,44 @@ describe('webqq observer view', () => {
 
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
     expect(webqqMessageView).toContain('function mergeWebQQMessage')
-    expect(webqqMessageView).toContain('thinking: next.thinking || current.thinking')
+    expect(webqqMessageView).toContain('merged.thinking = next.thinking || current.thinking')
     expect(webqqMessageHistoryStore).toContain('options.messages.value = mergeMessages(options.messages.value, remoteMessages)')
     expect(webqqMessageHistoryStore).toContain('options.saveCachedMessages')
+  })
+
+  it('preserves recalled message content when reaction-only updates merge into cached messages', () => {
+    const recalledMessage = createWebQQMessage({
+      id: 'message-1',
+      sequence: '31318',
+      summary: 'hello',
+      elements: [{ type: 'text', text: 'hello' }],
+      recalled: true,
+    })
+    const reactionOnlyUpdate = createWebQQMessage({
+      id: 'message-1',
+      sequence: '31318',
+      summary: '',
+      elements: [],
+      reactions: [{
+        emojiId: '76',
+        label: '赞',
+        count: 1,
+      }],
+    })
+
+    expect(mergeMessages([recalledMessage], [reactionOnlyUpdate])).toEqual([
+      expect.objectContaining({
+        id: 'message-1',
+        summary: 'hello',
+        elements: [{ type: 'text', text: 'hello' }],
+        recalled: true,
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          count: 1,
+        }],
+      }),
+    ])
   })
 
   it('renders WebQQ friends under backend categories', () => {

@@ -10,6 +10,21 @@ function getMessageKey(message: WebQQMessage) {
   return message.id || message.sequence || `${message.senderId}:${message.time}:${message.summary}`
 }
 
+function hasMessageContent(message: WebQQMessage) {
+  return !!message.summary || message.elements.length > 0
+}
+
+function mergeWebQQLiveMessage(current: WebQQMessage | undefined, next: WebQQMessage) {
+  if (!current) return next
+  const merged = { ...current, ...next }
+  // 贴表情事件可能只补 reactions，不带原消息正文；保留旧正文可避免撤回缓存重启后只剩表情。
+  if (hasMessageContent(current) && !hasMessageContent(next)) {
+    merged.summary = current.summary
+    merged.elements = current.elements
+  }
+  return merged
+}
+
 function isMessageTarget(message: WebQQMessage, messageId: string) {
   return message.id === messageId || message.sequence === messageId
 }
@@ -36,7 +51,8 @@ function mergeReactionUsers(current: WebQQMessageReaction | undefined, reaction:
 export function mergeWebQQLiveMessages(history: WebQQMessage[], live: WebQQMessage[] = [], limit?: number) {
   const messages = new Map<string, WebQQMessage>()
   for (const message of [...history, ...live]) {
-    messages.set(getMessageKey(message), message)
+    const key = getMessageKey(message)
+    messages.set(key, mergeWebQQLiveMessage(messages.get(key), message))
   }
   const merged = [...messages.values()].sort((a, b) => a.time - b.time)
   return limit ? merged.slice(-limit) : merged

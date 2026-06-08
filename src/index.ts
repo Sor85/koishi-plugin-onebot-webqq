@@ -168,8 +168,8 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     await liveRuntime.recordWebQQLiveMessage(session)
   })
 
-  ctx.on('message-deleted', (session) => {
-    liveRuntime.recordWebQQRecall(session)
+  ctx.on('message-deleted', async (session) => {
+    await liveRuntime.recordWebQQRecall(session)
   })
 
   ctx.on('internal/session', async (session) => {

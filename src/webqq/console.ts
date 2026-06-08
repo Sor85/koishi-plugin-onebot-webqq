@@ -12,6 +12,7 @@ import { attachWebQQAffinityBadges } from './affinity'
 import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
 import {
   loadKoishiWebQQMessageCache,
+  loadKoishiWebQQRecalledMessageCache,
   loadWebQQStorage,
   saveKoishiWebQQMessageCache,
   saveWebQQStorage,
@@ -54,7 +55,11 @@ export function registerWebQQConsoleListeners(
       limit: query.limit ?? historyLimit,
     }
     const history = await webqq.loadMessages(nextQuery)
-    return attachWebQQAffinityBadges(inner, config, mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit), logger)
+    const messages = mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit)
+    const recalledMessages = config.webQQMarkRecalledMessages ?? true
+      ? await loadKoishiWebQQRecalledMessageCache(inner, nextQuery)
+      : []
+    return attachWebQQAffinityBadges(inner, config, mergeWebQQLiveMessages(messages, recalledMessages), logger)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/group-info', (query: WebQQGroupInfoQuery) => {
     return webqq.loadGroupInfo(query)

@@ -641,6 +641,45 @@ describe('chat capsule plugin wiring', () => {
     ])
   })
 
+  it('preserves recalled WebQQ live message content when reaction-only updates merge into cache', () => {
+    const recalledMessage: WebQQMessage = {
+      id: 'same',
+      sequence: '31318',
+      time: 1710000001000,
+      senderId: '30000',
+      senderName: 'Alice',
+      senderAvatar: 'https://example.com/avatar.png',
+      direction: 'incoming',
+      summary: 'hello',
+      elements: [{ type: 'text', text: 'hello' }],
+      recalled: true,
+    }
+    const reactionOnlyUpdate: WebQQMessage = {
+      ...recalledMessage,
+      summary: '',
+      elements: [],
+      reactions: [{
+        emojiId: '76',
+        label: '赞',
+        count: 1,
+      }],
+    }
+
+    expect(mergeWebQQLiveMessages([recalledMessage], [reactionOnlyUpdate])).toEqual([
+      expect.objectContaining({
+        id: 'same',
+        summary: 'hello',
+        elements: [{ type: 'text', text: 'hello' }],
+        recalled: true,
+        reactions: [{
+          emojiId: '76',
+          label: '赞',
+          count: 1,
+        }],
+      }),
+    ])
+  })
+
   it('marks recalled WebQQ live messages by default', async () => {
     const bot = {
       platform: 'onebot',
@@ -702,6 +741,95 @@ describe('chat capsule plugin wiring', () => {
         recalled: true,
       }),
     ])
+  })
+
+  it('persists marked recalled WebQQ messages across Koishi restarts', async () => {
+    const rows = new Map<string, unknown>()
+    const database = {
+      get: vi.fn(async (_table: string, query: Record<string, unknown>) => {
+        const row = rows.get(String(query.id))
+        return row ? [row] : []
+      }),
+      upsert: vi.fn(async (_table: string, nextRows: Array<{ id: string }>) => {
+        for (const row of nextRows) rows.set(row.id, row)
+      }),
+    }
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const first = createFakeContext({ bots: [bot], database })
+
+    plugin.apply(first.ctx)
+    await first.listeners.message[0](createSession({
+      bot,
+      timestamp: 1710000001000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    await first.listeners['message-deleted'][0](createSession({
+      bot,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        operator: { id: '30000', name: 'Alice' },
+        message: { id: 'new-1' },
+      },
+    }))
+
+    expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [
+      expect.objectContaining({
+        id: 'recalled-messages:group:20000',
+        payload: {
+          messages: [
+            expect.objectContaining({
+              id: 'new-1',
+              recalled: true,
+            }),
+          ],
+        },
+      }),
+    ])
+
+    const second = createFakeContext({ bots: [bot], database })
+    plugin.apply(second.ctx)
+    const loadMessages = second.addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
+
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'new-1',
+        recalled: true,
+      }),
+    ])
+
+    const disabled = createFakeContext({ bots: [bot], database })
+    plugin.apply(disabled.ctx, { webQQMarkRecalledMessages: false })
+    const loadMessagesWithoutMarking = disabled.addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
+
+    await expect(loadMessagesWithoutMarking?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
   })
 
   it('removes recalled WebQQ messages and appends recall events when recall marking is disabled', async () => {
