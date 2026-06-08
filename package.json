@@ -50,7 +50,8 @@
       "optional": [
         "console",
         "database",
-        "ffmpeg"
+        "ffmpeg",
+        "chatluna_schedule"
       ]
     }
   },

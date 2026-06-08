@@ -55,7 +55,7 @@ type TestLogger = {
   info: ReturnType<typeof vi.fn>
 }
 
-function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; bots?: unknown[]; server?: boolean; database?: Record<string, unknown> } = {}) {
+function createFakeContext(options: { console?: boolean; character?: Record<string, unknown>; schedule?: Record<string, unknown>; bots?: unknown[]; server?: boolean; database?: Record<string, unknown> } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
   const broadcast = vi.fn((_type: string, _body: CapsuleSnapshot | undefined, _options?: { authority?: number }) => {})
@@ -87,6 +87,7 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
       },
       ...(options.server ? { server: { get: serverGet } } : {}),
       ...(options.character ? { chatluna_character: options.character } : {}),
+      ...(options.schedule ? { chatluna_schedule: options.schedule } : {}),
       ...(options.database ? { database: options.database, model: { extend: modelExtend } } : {}),
       inject(services, callback) {
         if ('console' in services) callback(ctx)
@@ -101,6 +102,7 @@ function createFakeContext(options: { console?: boolean; character?: Record<stri
     ...(options.bots ? { bots: options.bots } : {}),
     ...(options.server ? { server: { get: serverGet } } : {}),
     ...(options.character ? { chatluna_character: options.character } : {}),
+    ...(options.schedule ? { chatluna_schedule: options.schedule } : {}),
     ...(options.database ? { database: options.database, model: { extend: modelExtend } } : {}),
     inject(services, callback) {
       if ('chatluna_character' in services && options.character) callback(ctx)
@@ -148,7 +150,7 @@ describe('chat capsule plugin wiring', () => {
   it('exports plugin name and optional console injection', () => {
     expect(plugin.name).toBe('onebot-webqq')
     expect(plugin.inject).toEqual({
-      optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
+      optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character', 'ffmpeg', 'chatluna_schedule'],
     })
   })
 
@@ -157,6 +159,7 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain('interface ConsoleService')
     expect(pluginSource).not.toContain('interface ChatCapsuleContext')
     expect(pluginContextSource).toContain('export interface ChatCapsuleContext')
+    expect(pluginContextSource).toContain('export interface ChatLunaScheduleService')
     expect(pluginContextSource).toContain('export interface ChatLunaModelUsage')
   })
 
@@ -3210,6 +3213,28 @@ describe('chat capsule plugin wiring', () => {
       channelName: 'Guild Name',
       timestamp: 1710000000000,
       thinkingDurationMs: expect.any(Number),
+    })
+  })
+
+  it('shows ChatLuna schedule activity while idle', async () => {
+    const schedule = {
+      getCurrentActivity: vi.fn(async () => '晨间整理今日计划'),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ schedule })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession())
+
+    const updateCalls = broadcast.mock.calls.filter(([type]) => type === 'onebot-webqq/update')
+    expect(schedule.getCurrentActivity).toHaveBeenCalledWith(expect.objectContaining({
+      selfId: '10000',
+      channelId: '20000',
+    }))
+    expect(updateCalls.at(-1)?.[1]?.conversation).toEqual({
+      channelId: '20000',
+      channelName: 'Guild Name',
+      activityText: '晨间整理今日计划',
+      timestamp: 1710000000000,
     })
   })
 

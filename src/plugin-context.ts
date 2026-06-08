@@ -27,6 +27,11 @@ export interface ChatLunaCharacterService {
   releaseResponseLock(session: Session): Promise<void>
 }
 
+export interface ChatLunaScheduleService {
+  getCurrentActivity?(session?: Session): Promise<string>
+  getCurrentSummary?(session?: Session): Promise<string>
+}
+
 export interface ChatLunaModelUsage {
   source?: string
   context?: {
@@ -46,6 +51,7 @@ export interface ChatCapsuleContext {
   model?: ModelService
   ffmpeg?: { builder(): { input(buf: Buffer): { outputOption(...opts: string[]): { run(type: 'buffer'): Promise<Buffer> } } } }
   chatluna_character?: ChatLunaCharacterService
+  chatluna_schedule?: ChatLunaScheduleService
   bots?: unknown[]
   logger?(name: string): DebugLogger
   on(event: string, listener: (...args: any[]) => void): unknown

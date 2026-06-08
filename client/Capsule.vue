@@ -69,9 +69,10 @@ const isThinking = computed(() => activityText.value === '正在思考')
 const titleStatusText = computed(() => isThinking.value ? activityText.value : '')
 const userName = computed(() => capsule.value?.conversation.userName || '')
 const userActivityText = computed(() => userName.value ? `正在与 ${userName.value} 对话` : '')
+const idleActivityText = computed(() => !isThinking.value && !userName.value ? activityText.value : '')
 const displayActivityText = computed(() => {
   if (userActivityText.value) return userActivityText.value
-  return '空闲中'
+  return idleActivityText.value || '空闲中'
 })
 
 const metaTitle = computed(() => displayActivityText.value)
