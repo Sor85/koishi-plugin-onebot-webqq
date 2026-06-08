@@ -703,6 +703,110 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('renders history record segments with playable audio urls and duration', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 3,
+            message_seq: 13,
+            time: 1710000002,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'record', data: { temp_url: 'https://example.com/voice.mp3', duration: 4, text: '你好' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] }, {
+      imageUrlResolver: (file) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`,
+    })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '[语音]',
+        elements: [{
+          type: 'record',
+          text: '[语音]',
+          url: '/onebot-webqq/webqq/image/https%3A%2F%2Fexample.com%2Fvoice.mp3',
+          duration: 4,
+          transcript: '你好',
+        }],
+      }),
+    ])
+  })
+
+  it('resolves record file ids from history messages through get_record as mp3', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 4,
+            message_seq: 14,
+            time: 1710000003,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'record', data: { file: 'voice.silk', duration: '7' } }],
+          }],
+        })),
+        get_record: vi.fn(async () => ({
+          file: '/tmp/voice.mp3',
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] }, {
+      imageUrlResolver: (file) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`,
+    })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: '[语音]',
+        elements: [{
+          type: 'record',
+          text: '[语音]',
+          url: '/onebot-webqq/webqq/image/%2Ftmp%2Fvoice.mp3',
+          duration: 7,
+        }],
+      }),
+    ])
+    expect(bot.internal.get_record).toHaveBeenCalledWith({
+      file: 'voice.silk',
+      out_format: 'mp3',
+    })
+  })
+
+  it('transcribes record messages through the OneBot voice_msg_to_text action', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        voice_msg_to_text: vi.fn(async () => ({
+          text: '语音内容',
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.transcribeRecord('12345')).resolves.toBe('语音内容')
+    expect(bot.internal.voice_msg_to_text).toHaveBeenCalledWith({
+      message_id: 12345,
+    })
+  })
+
   it('converts local get_image file paths to browser-accessible image URLs', async () => {
     const bot = {
       platform: 'onebot',

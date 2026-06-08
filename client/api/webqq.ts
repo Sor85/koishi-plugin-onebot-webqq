@@ -15,6 +15,10 @@ export async function requestWebQQMessages(query: WebQQMessageQuery) {
   return await send('onebot-webqq/webqq/messages', query) as WebQQMessage[] || []
 }
 
+export async function requestWebQQRecordTranscription(messageId: string) {
+  return await send('onebot-webqq/webqq/record/transcribe', { messageId }) as string || ''
+}
+
 export async function requestWebQQGroupInfo(groupId: string) {
   return await send('onebot-webqq/webqq/group-info', { groupId }) as WebQQGroupInfo || { announcements: [], members: [] }
 }

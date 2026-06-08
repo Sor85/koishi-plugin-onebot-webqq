@@ -176,6 +176,7 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqConsoleSource).toContain('export function registerWebQQConsoleListeners')
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/contacts'")
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages'")
+    expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/record/transcribe'")
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages/cache/save'")
   })
 
@@ -1449,6 +1450,7 @@ describe('chat capsule plugin wiring', () => {
         get_group_list: vi.fn(async () => []),
         get_group_msg_history: vi.fn(async () => ({ messages: [] })),
         get_group_member_list: vi.fn(async () => []),
+        voice_msg_to_text: vi.fn(async () => ({ text: '语音内容' })),
       },
     }
     const { ctx, addListener } = createFakeContext({ bots: [bot] })
@@ -1458,6 +1460,7 @@ describe('chat capsule plugin wiring', () => {
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/contacts', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/group-info', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/record/transcribe', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/notices', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/notice-action', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/storage/load', expect.any(Function), { authority: 1 })
@@ -1469,10 +1472,13 @@ describe('chat capsule plugin wiring', () => {
     const loadContacts = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/contacts')?.[1]
     const loadMessages = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/messages')?.[1]
     const loadGroupInfo = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/group-info')?.[1]
+    const transcribeRecord = addListener.mock.calls.find(([event]) => event === 'onebot-webqq/webqq/record/transcribe')?.[1]
 
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
     await expect(loadGroupInfo?.({ groupId: '20000' })).resolves.toEqual({ announcements: [], members: [] })
+    await expect(transcribeRecord?.({ messageId: '12345' })).resolves.toBe('语音内容')
+    expect(bot.internal.voice_msg_to_text).toHaveBeenCalledWith({ message_id: 12345 })
   })
 
   it('loads and saves WebQQ state and message cache through the Koishi database backend', async () => {
@@ -2478,6 +2484,62 @@ describe('chat capsule plugin wiring', () => {
         id: 'image-1',
         summary: '[图片]',
         elements: [{ type: 'image', url: 'https://example.com/live.jpg' }],
+      }),
+    }, { authority: 1 })
+  })
+
+  it('resolves live OneBot record messages before broadcasting playable WebQQ updates', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_record: vi.fn(async () => ({
+          url: 'https://example.com/live.mp3',
+        })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners.message[0](createSession({
+      bot,
+      userId: '10000',
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'record-1',
+          elements: [{ type: 'record', attrs: { file: 'live.silk', duration: 5 } }],
+        },
+      },
+    }))
+
+    expect(bot.internal.get_record).toHaveBeenCalledWith({
+      file: 'live.silk',
+      out_format: 'mp3',
+    })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: 'record-1',
+        summary: '[语音]',
+        elements: [{
+          type: 'record',
+          text: '[语音]',
+          duration: 5,
+          url: 'https://example.com/live.mp3',
+        }],
       }),
     }, { authority: 1 })
   })

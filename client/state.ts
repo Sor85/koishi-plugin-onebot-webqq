@@ -58,6 +58,8 @@ export interface WebQQMessageElement {
   title?: string
   text?: string
   targetMessageId?: string
+  duration?: number
+  transcript?: string
   url?: string
   imageUrl?: string
   source?: string

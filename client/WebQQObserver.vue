@@ -70,6 +70,7 @@
               :get-forward-preview-items="getForwardPreviewItems"
               :get-forward-item-name="getForwardItemName"
               :get-forward-preview-text="getForwardPreviewText"
+              :transcribe-record="requestWebQQRecordTranscription"
               :format-time="formatTime"
               :get-last-outgoing-cluster-thinking-message="getLastOutgoingClusterThinkingMessage"
               :is-thinking-expanded="isThinkingExpanded"
@@ -137,7 +138,7 @@ import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
-import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices } from './api/webqq'
+import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './state'
 import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'

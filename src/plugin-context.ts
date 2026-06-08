@@ -44,6 +44,7 @@ export interface ChatCapsuleContext {
   server?: WebQQImageServer
   database?: DatabaseService
   model?: ModelService
+  ffmpeg?: { builder(): { input(buf: Buffer): { outputOption(...opts: string[]): { run(type: 'buffer'): Promise<Buffer> } } } }
   chatluna_character?: ChatLunaCharacterService
   bots?: unknown[]
   logger?(name: string): DebugLogger

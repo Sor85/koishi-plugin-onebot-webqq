@@ -20,6 +20,9 @@ import {
   normalizeImageElement,
 } from './images'
 import {
+  normalizeRecordElement,
+} from './records'
+import {
   normalizeFaceElement,
   summarizeElements,
 } from './message-elements'
@@ -146,7 +149,7 @@ async function normalizeSegment(raw: unknown, bot: OneBotBot, imageUrlResolver?:
   }
   if (type === 'json' || type === 'lightapp' || type === 'xml') return normalizeCardElement(data)
   if (type === 'file') return { type: 'file', text: getStringField(data, ['name', 'file']) || '[文件]' }
-  if (type === 'record') return { type: 'record', text: '[语音]' }
+  if (type === 'record') return normalizeRecordElement(data, bot, imageUrlResolver)
   if (type === 'video') return { type: 'video', text: '[视频]' }
   return { type: 'unknown', text: '[消息]' }
 }

@@ -23,6 +23,7 @@ import {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecallPayload,
+  WebQQRecordTranscriptionQuery,
 } from './onebot'
 import { registerWebQQReactionInterceptor } from './onebot/raw-event'
 import {
@@ -58,7 +59,7 @@ export const name = 'onebot-webqq'
 
 // 声明控制台为可选服务，缺失时只保留后端状态监听。
 export const inject = {
-  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character'],
+  optional: ['console', 'server', 'database', 'chatluna', 'chatluna_character', 'ffmpeg'],
 }
 
 declare module '@koishijs/console' {
@@ -69,6 +70,7 @@ declare module '@koishijs/console' {
     'onebot-webqq/webqq/contacts'(): Promise<WebQQContacts>
     'onebot-webqq/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
     'onebot-webqq/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
+    'onebot-webqq/webqq/record/transcribe'(query: WebQQRecordTranscriptionQuery): Promise<string>
     'onebot-webqq/webqq/notices'(): Promise<WebQQNotice[]>
     'onebot-webqq/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
     'onebot-webqq/webqq/storage/load'(): Promise<WebQQStoredState>
