@@ -97,14 +97,17 @@ async function loadQQEmojiIndex() {
       if (!id) continue
       const assets = Array.isArray(item.assets) ? item.assets : []
       const asset = assets.find((a: unknown) => isRecord(a) && a.type === 2) ?? assets.find((a: unknown) => isRecord(a) && a.type === 0)
-      if (asset && isRecord(asset) && asset.path) qqEmojiUrlCache.set(id, `${QFACE_BASE}/${asset.path}`)
+      if (!asset || !isRecord(asset) || !asset.path) continue
+      const url = `${QFACE_BASE}/${asset.path}`
+      qqEmojiUrlCache.set(id, url)
+      // 同时以 qcid（decimal codepoint）为 key，对应 OneBot 上报的数字形 Unicode emoji ID
+      if (typeof item.qcid === 'number' && item.qcid > 0) qqEmojiUrlCache.set(String(item.qcid), url)
     }
   } catch { /* ignore */ }
 }
 
 function readWebQQReactionEmojiUrl(emojiId: string) {
-  if (!/^\d+$/.test(emojiId)) return ''
-  return qqEmojiUrlCache.get(emojiId) ?? `/chat-capsule/webqq/face/${emojiId}`
+  return qqEmojiUrlCache.get(emojiId) ?? ''
 }
 
 function createWebQQEventMessage(
