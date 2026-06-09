@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import type { CapsuleData, ConversationSummary, WebQQMessage } from '../client/state'
+import type { CapsuleData, ConversationSummary, WebQQGroupInfo, WebQQMessage } from '../client/state'
 import { useWebQQContacts } from '../client/stores/webqq-contacts'
 import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
 import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
@@ -1251,6 +1251,7 @@ describe('webqq observer view', () => {
     expect(webqqGroupInfoPanel).not.toContain('<strong>{{ announcement.title }}</strong>')
     expect(webqqGroupInfoPanel).toContain('v-for="member in visibleMembers"')
     expect(webqqGroupInfoPanel).toContain('placeholder="搜索群昵称或 QQ 号"')
+    expect(webqqGroupInfoPanel).toContain('loading && !hasGroupInfo')
     expect(webqqGroupInfoStore).toContain('const visibleGroupMembers = computed')
     expect(webqqGroupInfoStore).toContain('getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value)')
     expect(webqqContactView).toContain('sortWebQQGroupMembers(visibleMembers)')
@@ -1288,6 +1289,48 @@ describe('webqq observer view', () => {
     expect(requests).toEqual(['load'])
     groupInfo.groupInfoSearchQuery.value = '1'
     expect(groupInfo.visibleGroupMembers.value.map((member) => member.userId)).toEqual(['1'])
+  })
+
+  it('uses cached group info immediately while refreshing the current group', async () => {
+    const currentChat = ref<WebQQChatSelection>(createGroupChatSelection({ peerId: '20000' }))
+    const cachedInfo: WebQQGroupInfo = {
+      announcements: [{ id: 'old', title: '旧公告', content: '旧公告' }],
+      members: [{ userId: '1', nickname: 'Alice', card: '', avatar: '' }],
+    }
+    const otherGroupInfo: WebQQGroupInfo = {
+      announcements: [{ id: 'other', title: '其他群公告', content: '其他群公告' }],
+      members: [{ userId: '2', nickname: 'Bob', card: '', avatar: '' }],
+    }
+    const refreshedInfo: WebQQGroupInfo = {
+      announcements: [{ id: 'new', title: '新公告', content: '新公告' }],
+      members: [{ userId: '3', nickname: 'Carol', card: '', avatar: '' }],
+    }
+    let refreshCurrentGroup!: (value: WebQQGroupInfo) => void
+    const refreshPromise = new Promise<WebQQGroupInfo>((resolve) => {
+      refreshCurrentGroup = resolve
+    })
+    const responses = [
+      Promise.resolve(cachedInfo),
+      Promise.resolve(otherGroupInfo),
+      refreshPromise,
+    ]
+    const groupInfo = useWebQQGroupInfo(currentChat, {
+      requestGroupInfo: () => responses.shift() ?? Promise.resolve({ announcements: [], members: [] }),
+    })
+
+    await groupInfo.loadGroupInfo()
+    expect(groupInfo.groupInfo.value).toEqual(cachedInfo)
+    currentChat.value = createGroupChatSelection({ peerId: '30000' })
+    await groupInfo.loadGroupInfo()
+    expect(groupInfo.groupInfo.value).toEqual(otherGroupInfo)
+
+    currentChat.value = createGroupChatSelection({ peerId: '20000' })
+    const refresh = groupInfo.loadGroupInfo()
+    expect(groupInfo.groupInfoLoading.value).toBe(true)
+    expect(groupInfo.groupInfo.value).toEqual(cachedInfo)
+    refreshCurrentGroup(refreshedInfo)
+    await refresh
+    expect(groupInfo.groupInfo.value).toEqual(refreshedInfo)
   })
 
   it('uses an inline SVG three-dot button as the only group info toggle', () => {

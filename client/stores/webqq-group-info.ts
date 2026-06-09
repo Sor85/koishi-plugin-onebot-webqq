@@ -5,6 +5,8 @@ import { getVisibleGroupMembers, type WebQQChatSelection } from '../utils/webqq-
 export function useWebQQGroupInfo(currentChat: Ref<WebQQChatSelection | undefined>, options: {
   requestGroupInfo: () => Promise<WebQQGroupInfo>
 }) {
+  const groupInfoCache: Record<string, WebQQGroupInfo> = {}
+  const groupInfoRequestTokens: Record<string, number> = {}
   const groupInfoOpen = ref(false)
   const groupInfoLoading = ref(false)
   const groupInfoErrorText = ref('')
@@ -12,16 +14,44 @@ export function useWebQQGroupInfo(currentChat: Ref<WebQQChatSelection | undefine
   const groupInfo = ref<WebQQGroupInfo>({ announcements: [], members: [] })
   const visibleGroupMembers = computed(() => getVisibleGroupMembers(groupInfo.value.members, groupInfoSearchQuery.value))
 
+  function getCurrentGroupId() {
+    return currentChat.value?.type === 'group' ? currentChat.value.peerId : ''
+  }
+
+  function createEmptyGroupInfo(): WebQQGroupInfo {
+    return { announcements: [], members: [] }
+  }
+
+  function hasCachedGroupInfo(groupId: string) {
+    return Object.prototype.hasOwnProperty.call(groupInfoCache, groupId)
+  }
+
+  function isLatestGroupInfoRequest(groupId: string, token: number) {
+    return groupInfoRequestTokens[groupId] === token
+  }
+
   async function loadGroupInfo() {
-    if (currentChat.value?.type !== 'group') return
+    const groupId = getCurrentGroupId()
+    if (!groupId) return
+    groupInfo.value = hasCachedGroupInfo(groupId) ? groupInfoCache[groupId] : createEmptyGroupInfo()
+    const requestToken = (groupInfoRequestTokens[groupId] || 0) + 1
+    groupInfoRequestTokens[groupId] = requestToken
     groupInfoLoading.value = true
     groupInfoErrorText.value = ''
     try {
-      groupInfo.value = await options.requestGroupInfo()
+      const nextGroupInfo = await options.requestGroupInfo()
+      if (!isLatestGroupInfoRequest(groupId, requestToken)) return
+      groupInfoCache[groupId] = nextGroupInfo
+      // 群信息刷新可能跨越快速切群，只有当前群仍匹配时才替换页面数据，避免旧请求把其他群的信息写回来。
+      if (getCurrentGroupId() === groupId) groupInfo.value = nextGroupInfo
     } catch (error) {
-      groupInfoErrorText.value = error instanceof Error ? error.message : '加载群信息失败'
+      if (isLatestGroupInfoRequest(groupId, requestToken) && getCurrentGroupId() === groupId) {
+        groupInfoErrorText.value = error instanceof Error ? error.message : '加载群信息失败'
+      }
     } finally {
-      groupInfoLoading.value = false
+      if (isLatestGroupInfoRequest(groupId, requestToken) && getCurrentGroupId() === groupId) {
+        groupInfoLoading.value = false
+      }
     }
   }
 
