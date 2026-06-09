@@ -32,6 +32,12 @@ import {
 } from '../src/webqq/live-cache'
 import { createMessageInput } from '../src/chatluna/message-input'
 
+const dnsMock = vi.hoisted(() => ({
+  lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+}))
+
+vi.mock('dns/promises', () => dnsMock)
+
 const koishiMock = vi.hoisted(() => {
   function createSchemaNode() {
     const node = {
@@ -418,6 +424,70 @@ describe('chat capsule plugin wiring', () => {
       await handler(routerCtx)
 
       expect(fetchMock).not.toHaveBeenCalled()
+      expect(routerCtx.status).toBe(403)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('rejects WebQQ image proxy targets that resolve to private addresses', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    dnsMock.lookup.mockResolvedValueOnce([{ address: '169.254.169.254', family: 4 }])
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://rebind.example.com/private.png')
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(routerCtx.status).toBe(403)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('rejects WebQQ image proxy redirects to private addresses', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 302,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'location' ? 'http://169.254.169.254/private.png' : null),
+      },
+      arrayBuffer: async () => Uint8Array.from([]).buffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/redirect.png')
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
       expect(routerCtx.status).toBe(403)
       expect(routerCtx.body).toBeUndefined()
     } finally {

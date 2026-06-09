@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto'
+import * as dns from 'dns/promises'
 import { readFile } from 'fs/promises'
 import { isIP } from 'net'
 import { extname } from 'path'
@@ -41,6 +42,7 @@ const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
 const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
 const WEBQQ_IMAGE_MAPPING_LIMIT = 1000
+const WEBQQ_IMAGE_REDIRECT_LIMIT = 5
 
 const BROWSER_INCOMPATIBLE_AUDIO = new Set(['audio/amr', 'application/octet-stream'])
 const LOCAL_HOSTNAMES = new Set(['localhost', 'localhost.localdomain'])
@@ -130,14 +132,28 @@ function isPrivateOrLocalHostname(hostname: string) {
   return false
 }
 
-function canProxyRemoteImageSource(file: string) {
+async function canProxyRemoteImageSource(file: string) {
   try {
     const url = new URL(file)
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
-    return !isPrivateOrLocalHostname(url.hostname)
+    if (isPrivateOrLocalHostname(url.hostname)) return false
+    const addresses = await dns.lookup(url.hostname, { all: true, verbatim: true })
+    return addresses.length > 0 && addresses.every((address) => !isPrivateOrLocalHostname(address.address))
   } catch {
     return false
   }
+}
+
+async function fetchRemoteImage(file: string, redirectCount = 0): Promise<{ response: Response, file: string } | undefined> {
+  if (redirectCount > WEBQQ_IMAGE_REDIRECT_LIMIT) return
+  if (!await canProxyRemoteImageSource(file)) return
+  const response = await fetch(file, { redirect: 'manual' })
+  const location = response.status >= 300 && response.status < 400
+    ? response.headers.get('location')
+    : ''
+  if (!location) return { response, file }
+  const nextFile = new URL(location, file).toString()
+  return fetchRemoteImage(nextFile, redirectCount + 1)
 }
 
 function readContentLength(response: Response) {
@@ -272,12 +288,14 @@ export function createWebQQImageUrlResolver(
     try {
       logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
       if (isRemoteImageSource(file)) {
-        // 入站消息里的远程 URL 由聊天发送方控制；这里必须在 fetch 前拦截内网地址，避免控制台预览触发 SSRF。
-        if (!canProxyRemoteImageSource(file)) {
+        // 入站消息里的远程 URL 由聊天发送方控制；这里必须校验 DNS 最终 IP，
+        // 并逐跳禁用自动重定向，避免域名重绑定或 302 跳转把控制台预览打到内网。
+        const resolved = await fetchRemoteImage(file)
+        if (!resolved) {
           routerCtx.status = 403
           return
         }
-        const response = await fetch(file)
+        const { response, file: resolvedFile } = resolved
         routerCtx.status = response.status
         if (!response.ok) return
         const rawBody = await readRemoteImageBody(response, cacheItemLimitBytes)
@@ -285,7 +303,7 @@ export function createWebQQImageUrlResolver(
           routerCtx.status = 413
           return
         }
-        const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(file)
+        const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(resolvedFile)
         const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
         setImageHeaders(routerCtx, id, contentType)
         routerCtx.body = body
