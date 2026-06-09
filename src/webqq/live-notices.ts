@@ -1,13 +1,9 @@
 import type { Session } from 'koishi'
-import type { WebQQChatType, WebQQLiveMessage, WebQQMessage } from '../onebot'
+import type { WebQQLiveMessage } from '../onebot'
 import { isRecord, readRecordText } from '../shared/structured-text'
 import { readWebQQGroupMemberName } from './group-sender-metadata'
-import {
-  getWebQQUserAvatar,
-  readWebQQPeer,
-} from './session'
-
-type WebQQEventPeer = { type: WebQQChatType; peerId: string }
+import { createWebQQEventMessage } from './live-message'
+import { readWebQQPeer } from './session'
 
 function readRawEventData(session: Session) {
   const data = (session.event as { _data?: unknown })._data
@@ -39,32 +35,6 @@ function formatMuteDuration(seconds: number) {
   if (seconds % 3600 === 0) return `${seconds / 3600} 小时`
   if (seconds % 60 === 0) return `${seconds / 60} 分钟`
   return `${seconds} 秒`
-}
-
-function createWebQQEventMessage(
-  peer: WebQQEventPeer,
-  time: number,
-  type: NonNullable<WebQQMessage['event']>['type'],
-  summary: string,
-  senderId: string,
-  senderName: string,
-  targetMessageId?: string,
-): WebQQMessage {
-  return {
-    id: `${type}:${peer.type}:${peer.peerId}:${time}:${senderId}:${targetMessageId || ''}`,
-    sequence: `${type}:${time}:${targetMessageId || senderId}`,
-    time,
-    senderId,
-    senderName,
-    senderAvatar: getWebQQUserAvatar(senderId),
-    direction: 'incoming',
-    summary,
-    event: {
-      type,
-      ...(targetMessageId ? { targetMessageId } : {}),
-    },
-    elements: [{ type: 'unknown', text: summary }],
-  }
 }
 
 export function createWebQQNoticeRuntime(options: {

@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import type { WebQQLiveMessage, WebQQMessage } from '../onebot'
+import type { WebQQChatType, WebQQLiveMessage, WebQQMessage } from '../onebot'
 import { isRecord, readRecordText } from '../shared/structured-text'
 import {
   normalizeLiveElements,
@@ -21,6 +21,34 @@ import {
 function readRawMessageData(session: Session) {
   const data = (session.event as { _data?: unknown })._data
   return isRecord(data) ? data : {}
+}
+
+export type WebQQEventPeer = { type: WebQQChatType; peerId: string }
+
+export function createWebQQEventMessage(
+  peer: WebQQEventPeer,
+  time: number,
+  type: NonNullable<WebQQMessage['event']>['type'],
+  summary: string,
+  senderId: string,
+  senderName: string,
+  targetMessageId?: string,
+): WebQQMessage {
+  return {
+    id: `${type}:${peer.type}:${peer.peerId}:${time}:${senderId}:${targetMessageId || ''}`,
+    sequence: `${type}:${time}:${targetMessageId || senderId}`,
+    time,
+    senderId,
+    senderName,
+    senderAvatar: getWebQQUserAvatar(senderId),
+    direction: 'incoming',
+    summary,
+    event: {
+      type,
+      ...(targetMessageId ? { targetMessageId } : {}),
+    },
+    elements: [{ type: 'unknown', text: summary }],
+  }
 }
 
 export async function createWebQQLiveMessage(

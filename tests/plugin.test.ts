@@ -257,6 +257,10 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqLiveNoticesSource).toContain('const recordWebQQNotice = async')
     expect(webqqLiveReactionsSource).toContain('export function createWebQQReactionRuntime')
     expect(webqqLiveReactionsSource).toContain('const recordWebQQReaction = async')
+    expect(webqqLiveMessageSource).toContain('export function createWebQQEventMessage')
+    expect(webqqLiveNoticesSource).toContain('createWebQQEventMessage(peer')
+    expect(webqqLiveReactionsSource).toContain('createWebQQEventMessage(peer')
+    expect(webqqLiveReactionsSource).not.toContain('id: `reaction:${peer.type}:${peer.peerId}:${time}:${reaction.userId}:${reaction.messageId}`')
   })
 
   it('keeps WebQQ live element normalization outside the plugin entry', () => {
@@ -1447,6 +1451,71 @@ describe('chat capsule plugin wiring', () => {
             userAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
           }],
         }],
+      }),
+    }, { authority: 1 })
+  })
+
+  it('broadcasts a WebQQ reaction event when the target message cannot be resolved', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        get_msg: vi.fn(async () => {
+          throw new Error('missing')
+        }),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'missing-id',
+        likes: [{ emoji_id: '76', count: 1 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.get_msg).toHaveBeenCalledWith({ message_id: 'missing-id' })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: expect.stringMatching(/^reaction:group:20000:\d+:40000:missing-id$/),
+        sequence: expect.stringMatching(/^reaction:\d+:missing-id$/),
+        senderId: '40000',
+        senderName: '40000',
+        senderAvatar: 'https://q1.qlogo.cn/g?b=qq&nk=40000&s=640',
+        direction: 'incoming',
+        summary: '40000 给一条消息贴了 赞',
+        event: {
+          type: 'reaction',
+          targetMessageId: 'missing-id',
+        },
+        elements: [{ type: 'unknown', text: '40000 给一条消息贴了 赞' }],
       }),
     }, { authority: 1 })
   })

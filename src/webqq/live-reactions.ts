@@ -4,6 +4,7 @@ import type { WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQMessage
 import type { WebQQRawReaction } from '../onebot/raw-event'
 import { isRecord } from '../shared/structured-text'
 import { applyWebQQReactionToLiveMessages, getWebQQLiveMessageKey } from './live-cache'
+import { createWebQQEventMessage } from './live-message'
 import { getWebQQUserAvatar } from './session'
 
 interface WebQQReactionService {
@@ -163,21 +164,7 @@ export function createWebQQReactionRuntime(options: {
     const time = Date.now()
     options.broadcastWebQQLivePayload({
       ...peer,
-      message: {
-        id: `reaction:${peer.type}:${peer.peerId}:${time}:${reaction.userId}:${reaction.messageId}`,
-        sequence: `reaction:${time}:${reaction.messageId}`,
-        time,
-        senderId: reaction.userId,
-        senderName,
-        senderAvatar: getWebQQUserAvatar(reaction.userId),
-        direction: 'incoming',
-        summary,
-        event: {
-          type: 'reaction',
-          targetMessageId: reaction.messageId,
-        },
-        elements: [{ type: 'unknown', text: summary }],
-      },
+      message: createWebQQEventMessage(peer, time, 'reaction', summary, reaction.userId, senderName, reaction.messageId),
     })
   }
 
