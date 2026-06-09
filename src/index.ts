@@ -7,6 +7,7 @@ import {
   CapsuleSnapshot,
   clearConversationActivity,
   createCapsuleState,
+  getCurrentThinkingDurationMs,
   recordIdleActivity,
   recordConversationActivity,
   recordIncomingMessage,
@@ -114,7 +115,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const broadcast = () => ctx.console?.broadcast('onebot-webqq/update', state.snapshot(), consoleAuthOptions)
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
-  let currentThinkingStartedAt: number | undefined
   const readScheduleActivity = async (session?: Session) => {
     const service = ctx.chatluna_schedule
     if (!service) return ''
@@ -143,7 +143,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
 
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const thinkingStartedAt = Date.now()
-    currentThinkingStartedAt = thinkingStartedAt
     const input = createMessageInput(session, message)
     input.user.name = readMemberName(session) || input.user.name
     recordConversationActivity(state, input, '正在思考', { conversationId, now: thinkingStartedAt })
@@ -163,13 +162,9 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   }
   const clearActivity = (source: string) => {
     clearConversationActivity(state)
-    currentThinkingStartedAt = undefined
     logSnapshot(source)
     broadcast()
     void refreshIdleScheduleActivity(`${source}-schedule`)
-  }
-  const getCurrentThinkingDurationMs = () => {
-    return currentThinkingStartedAt == null ? 0 : Math.max(0, Date.now() - currentThinkingStartedAt)
   }
   const liveRuntime = createWebQQLiveRuntime({
     ctx,
@@ -178,7 +173,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     imageUrlResolver,
     consoleAuthOptions,
     logger,
-    getThinkingDurationMs: getCurrentThinkingDurationMs,
+    getThinkingDurationMs: () => getCurrentThinkingDurationMs(state),
     getThinkingUsage: () => state.snapshot()?.conversation.usage,
   })
 

@@ -96,29 +96,31 @@ function createSnapshot(input: CapsuleMessageInput, counters: MutableCapsuleStat
   }
 }
 
+function copyActiveConversation(conversation: CapsuleSnapshot['conversation']) {
+  return {
+    userId: conversation.userId,
+    userName: conversation.userName,
+    senderRole: conversation.senderRole,
+    senderLevel: conversation.senderLevel,
+    senderTitle: conversation.senderTitle,
+    activityText: conversation.activityText,
+    ...(conversation.conversationId ? {
+      conversationId: conversation.conversationId,
+    } : {}),
+    ...(conversation.usage ? {
+      usage: conversation.usage,
+    } : {}),
+    ...(conversation.thinkingDurationMs != null ? {
+      thinkingDurationMs: conversation.thinkingDurationMs,
+    } : {}),
+  }
+}
+
 // 记录收到的消息上下文；空闲态不暴露最后发言用户。
 export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessageInput) {
   const state = getState(capsule)
   state.counters.received += 1
-  const currentActivity = state.current?.conversation.activityText
-    ? {
-        userId: state.current.conversation.userId,
-        userName: state.current.conversation.userName,
-        senderRole: state.current.conversation.senderRole,
-        senderLevel: state.current.conversation.senderLevel,
-        senderTitle: state.current.conversation.senderTitle,
-        activityText: state.current.conversation.activityText,
-        ...(state.current.conversation.conversationId ? {
-          conversationId: state.current.conversation.conversationId,
-        } : {}),
-        ...(state.current.conversation.usage ? {
-          usage: state.current.conversation.usage,
-        } : {}),
-        ...(state.current.conversation.thinkingDurationMs != null ? {
-          thinkingDurationMs: state.current.conversation.thinkingDurationMs,
-        } : {}),
-      }
-    : {}
+  const currentActivity = state.current?.conversation.activityText ? copyActiveConversation(state.current.conversation) : {}
   const snapshot = createSnapshot(input, state.counters)
   state.current = {
     ...snapshot,
@@ -182,6 +184,15 @@ export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsage
   return true
 }
 
+function readThinkingDurationMs(state: MutableCapsuleState, now: number) {
+  if (state.thinkingStartedAt == null) return state.current?.conversation.thinkingDurationMs
+  return Math.max(0, now - state.thinkingStartedAt)
+}
+
+export function getCurrentThinkingDurationMs(capsule: CapsuleState, now = Date.now()) {
+  return readThinkingDurationMs(getState(capsule), now) ?? 0
+}
+
 function copyIdleConversation(conversation: CapsuleSnapshot['conversation'], activityText?: string) {
   return {
     channelId: conversation.channelId,
@@ -204,9 +215,7 @@ export function clearConversationActivity(capsule: CapsuleState, now = Date.now(
   const state = getState(capsule)
   if (!state.current) return
   const conversation = state.current.conversation
-  const thinkingDurationMs = state.thinkingStartedAt == null
-    ? conversation.thinkingDurationMs
-    : Math.max(0, now - state.thinkingStartedAt)
+  const thinkingDurationMs = readThinkingDurationMs(state, now)
   state.thinkingStartedAt = undefined
   state.current = {
     ...state.current,

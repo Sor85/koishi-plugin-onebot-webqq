@@ -85,8 +85,11 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).toContain("from './actions'")
     expect(onebotSource).not.toContain('function selectBot(')
     expect(onebotSource).not.toContain('async function callAction(')
+    expect(onebotSource).not.toContain('function supportsAction(')
+    expect(onebotSource).toContain('supportsOneBotAction')
     expect(onebotActionsSource).toContain('export function selectBot')
     expect(onebotActionsSource).toContain('export async function callAction')
+    expect(onebotActionsSource).toContain('export function supportsOneBotAction')
   })
 
   it('keeps OneBot image resolving outside the adapter entry', () => {

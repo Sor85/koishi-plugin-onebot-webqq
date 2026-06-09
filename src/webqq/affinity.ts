@@ -113,11 +113,9 @@ async function readWebQQAffinityBadges(
   const userIds = [...new Set(messages.map((message) => message.senderId).filter(Boolean))]
   if (!userIds.length) return new Map<string, WebQQAffinityBadge>()
   try {
-    const rows = await loadWebQQAffinityRecords(ctx, config, userIds)
+    const records = await loadWebQQAffinityRecords(ctx, config, userIds)
     const badges = new Map<string, WebQQAffinityBadge>()
-    for (const row of rows) {
-      const record = readWebQQAffinityRecord(row)
-      if (!record) continue
+    for (const record of records) {
       badges.set(record.userId, createWebQQAffinityBadge(record, config))
     }
     return badges

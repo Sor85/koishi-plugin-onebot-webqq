@@ -23,7 +23,8 @@ function getOneBotBots(ctx: OneBotContext) {
   })
 }
 
-function supportsOneBotAction(bot: OneBotBot) {
+export function supportsOneBotAction(bot: OneBotBot, action?: string) {
+  if (action) return typeof bot.internal._request === 'function' || typeof bot.internal[action] === 'function'
   return typeof bot.internal._request === 'function' ||
     typeof bot.internal.get_friend_list === 'function' ||
     typeof bot.internal.get_group_list === 'function' ||

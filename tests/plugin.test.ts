@@ -70,6 +70,8 @@ const webqqLiveElementsSource = await readFile(new URL('../src/webqq/live-elemen
 const webqqLiveCacheSource = await readFile(new URL('../src/webqq/live-cache.ts', import.meta.url), 'utf8')
 const webqqLiveMessageSource = await readFile(new URL('../src/webqq/live-message.ts', import.meta.url), 'utf8')
 const webqqLiveRuntimeSource = await readFile(new URL('../src/webqq/live-runtime.ts', import.meta.url), 'utf8')
+const webqqLiveNoticesSource = await readFile(new URL('../src/webqq/live-notices.ts', import.meta.url), 'utf8')
+const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/live-reactions.ts', import.meta.url), 'utf8')
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender-metadata.ts', import.meta.url), 'utf8')
 const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/group-sender-metadata.ts', import.meta.url), 'utf8')
@@ -241,6 +243,14 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqLiveRuntimeSource).toContain('const pendingWebQQThinking = new Map')
     expect(webqqLiveRuntimeSource).toContain('const liveSenderMetadata = new Map')
     expect(webqqLiveRuntimeSource).toContain('const broadcastWebQQLivePayload =')
+    expect(webqqLiveRuntimeSource).toContain("from './live-notices'")
+    expect(webqqLiveRuntimeSource).toContain("from './live-reactions'")
+    expect(webqqLiveRuntimeSource).not.toContain('const recordWebQQNotice = async')
+    expect(webqqLiveRuntimeSource).not.toContain('const recordWebQQReaction = async')
+    expect(webqqLiveNoticesSource).toContain('export function createWebQQNoticeRuntime')
+    expect(webqqLiveNoticesSource).toContain('const recordWebQQNotice = async')
+    expect(webqqLiveReactionsSource).toContain('export function createWebQQReactionRuntime')
+    expect(webqqLiveReactionsSource).toContain('const recordWebQQReaction = async')
   })
 
   it('keeps WebQQ live element normalization outside the plugin entry', () => {

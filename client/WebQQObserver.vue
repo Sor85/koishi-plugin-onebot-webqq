@@ -58,20 +58,10 @@
               :show-web-q-q-affinity="showWebQQAffinity"
               :show-web-q-q-relationship="showWebQQRelationship"
               :hide-web-q-q-group-level="hideWebQQGroupLevel"
-              :with-proxy="withProxy"
               :is-bot-thinking-message="isBotThinkingMessage"
               :get-message-cluster-class="getMessageClusterClass"
               :is-merged-message="isMergedMessage"
-              :get-sender-authority-text="getSenderAuthorityText"
-              :get-sender-authority-class="getSenderAuthorityClass"
-              :format-sender-level="formatSenderLevel"
-              :is-image-only-message="isImageOnlyMessage"
-              :get-web-q-q-element-runs="getWebQQElementRuns"
-              :get-forward-preview-items="getForwardPreviewItems"
-              :get-forward-item-name="getForwardItemName"
-              :get-forward-preview-text="getForwardPreviewText"
               :transcribe-record="requestWebQQRecordTranscription"
-              :format-time="formatTime"
               :get-last-outgoing-cluster-thinking-message="getLastOutgoingClusterThinkingMessage"
               :is-thinking-expanded="isThinkingExpanded"
               :format-thinking-duration="formatThinkingDuration"
@@ -158,17 +148,9 @@ import { useWebQQThinkingExpansion } from './stores/webqq-thinking-expansion'
 import {
   formatListTime,
   formatNoticeTime,
-  formatSenderLevel,
   formatThinkingDuration,
-  formatTime,
-  getForwardItemName,
-  getForwardPreviewText,
   getGroupMemberName,
-  getSenderAuthorityClass,
-  getSenderAuthorityText,
   getUnreadText,
-  getWebQQElementRuns,
-  isImageOnlyMessage,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
@@ -252,7 +234,6 @@ const {
   forwardDialog,
   forwardDialogItems,
   getForwardItemAvatar,
-  getForwardPreviewItems,
   isMergedForwardItem,
   getForwardItemClusterClass,
   openForwardDialog: openWebQQForwardDialog,

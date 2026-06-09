@@ -9,10 +9,12 @@
         <div v-if="loading" class="onebot-webqq-webqq__group-empty">加载中</div>
         <div v-else-if="errorText" class="onebot-webqq-webqq__group-empty is-error">{{ errorText }}</div>
         <div v-else-if="!groupInfo.announcements.length" class="onebot-webqq-webqq__group-empty">暂无群公告</div>
-        <article v-for="announcement in groupInfo.announcements" v-else :key="announcement.id" class="onebot-webqq-webqq__group-announcement">
-          <p>{{ announcement.content }}</p>
-          <time v-if="announcement.time">{{ formatNoticeTime(announcement.time) }}</time>
-        </article>
+        <template v-else>
+          <article v-for="announcement in groupInfo.announcements" :key="announcement.id" class="onebot-webqq-webqq__group-announcement">
+            <p>{{ announcement.content }}</p>
+            <time v-if="announcement.time">{{ formatNoticeTime(announcement.time) }}</time>
+          </article>
+        </template>
       </section>
       <section class="onebot-webqq-webqq__group-members">
         <h3>群成员</h3>
