@@ -19,7 +19,6 @@
       :get-unread-text="getUnreadText"
       :get-contact-subtitle="getContactSubtitle"
       :get-contact-time="getContactTime"
-      :format-list-time="formatListTime"
       :format-notice-time="formatNoticeTime"
       :get-group-subtitle="getGroupSubtitle"
       @select-tab="selectTab"
@@ -128,16 +127,13 @@ import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
-import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
+import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './state'
-import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
-import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQLiveMessages } from './stores/webqq-live-messages'
-import { useWebQQMessageCache } from './stores/webqq-message-cache'
 import { useWebQQMessageHistory } from './stores/webqq-message-history'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
 import { useWebQQMessageList } from './stores/webqq-message-list'
@@ -145,8 +141,8 @@ import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from './stores/webqq-thinking-expansion'
+import { loadCachedWebQQMessages as loadStoredWebQQMessages, saveCachedWebQQMessages as saveStoredWebQQMessages } from './stores/webqq-storage'
 import {
-  formatListTime,
   formatNoticeTime,
   formatThinkingDuration,
   getGroupMemberName,
@@ -190,11 +186,26 @@ const {
   selectRecent: selectWebQQRecent,
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
-const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend, webQQMessageCacheLimit)
-const { imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const loading = ref(false)
 const errorText = ref('')
+const imagePreviewUrl = ref('')
+
+async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
+  return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)
+}
+
+async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[]) {
+  await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value)
+}
+
+function openImagePreview(url: string) {
+  imagePreviewUrl.value = withProxy(url)
+}
+
+function closeImagePreview() {
+  imagePreviewUrl.value = ''
+}
 
 const {
   noticeOpen,

@@ -1,8 +1,10 @@
 import type { Session } from 'koishi'
-import { extname } from 'path'
 import type { WebQQMessageElement } from '../onebot'
+import { normalizeCardElement } from '../onebot/card'
+import { normalizeFaceElement, summarizeElements } from '../onebot/messages'
 import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from '../onebot/text'
 import { isRecord, readRecordText, readStructuredText } from '../shared/structured-text'
+import { isRemoteImageSource } from './image-url-resolver'
 
 function readElementText(value: unknown) {
   return value == null ? '' : String(value)
@@ -34,58 +36,6 @@ function normalizeLiveQuoteMarkupText(value: string) {
     .trim()
 }
 
-function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
-  if (isRecord(value)) return value
-  if (typeof value !== 'string') return
-  try {
-    const parsed = JSON.parse(value)
-    return isRecord(parsed) ? parsed : undefined
-  } catch {
-    return undefined
-  }
-}
-
-function readCardMeta(payload: Record<string, unknown>) {
-  const meta = isRecord(payload.meta) ? payload.meta : undefined
-  if (!meta) return undefined
-  const view = readRecordText(payload, ['view'])
-  if (view && isRecord(meta[view])) return meta[view]
-  return Object.values(meta).find(isRecord)
-}
-
-function normalizeCardElement(attrs: Record<string, unknown>): WebQQMessageElement {
-  const payload = parseJsonRecord(attrs.data) ||
-    parseJsonRecord(attrs.content) ||
-    parseJsonRecord(attrs.json) ||
-    parseJsonRecord(attrs)
-  const meta = payload ? readCardMeta(payload) : undefined
-  const card = meta ?? payload ?? attrs
-  const title = readRecordText(card, ['title']) ||
-    (payload ? readRecordText(payload, ['title', 'prompt']) : '') ||
-    '卡片消息'
-  const text = readRecordText(card, ['desc', 'summary', 'content']) ||
-    (payload ? readRecordText(payload, ['desc', 'prompt']) : '') ||
-    '[卡片消息]'
-  const url = readRecordText(card, ['jumpUrl', 'jump_url', 'url', 'source_url'])
-  const imageUrl = readRecordText(card, ['preview', 'image', 'imageUrl', 'image_url', 'picUrl', 'pic_url', 'icon', 'source_icon'])
-  const source = readRecordText(card, ['tag', 'source', 'app'])
-  return {
-    type: 'card',
-    title,
-    text,
-    ...(url ? { url } : {}),
-    ...(imageUrl ? { imageUrl } : {}),
-    ...(source ? { source } : {}),
-  }
-}
-
-function normalizeLiveFaceElement(attrs: Record<string, unknown>) {
-  const summary = readRecordText(attrs, ['summary', 'text', 'name'])
-  if (summary) return { type: 'face' as const, text: summary }
-  const id = readRecordText(attrs, ['emoji_id', 'emojiId', 'id'])
-  return { type: 'face' as const, text: id ? `[表情 ${id}]` : '[表情]' }
-}
-
 export type WebQQResolvedImage = {
   url: string
   debug?: unknown
@@ -96,51 +46,6 @@ export type WebQQImageUrlResolver = (file: string) => string
 export type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
 export type WebQQForwardResolver = (id: string) => Promise<WebQQMessageElement>
 export type WebQQRecordResolver = WebQQImageResolver
-
-export function isRemoteImageSource(file: string) {
-  return /^https?:\/\//.test(file)
-}
-
-export function detectMediaContentType(buf: Buffer): string | undefined {
-  if (buf[0] === 0x23 && buf[1] === 0x21 && buf[2] === 0x41 && buf[3] === 0x4d && buf[4] === 0x52) return 'audio/amr'
-  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'audio/mpeg'
-  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return 'audio/mpeg'
-  if (buf[0] === 0x4f && buf[1] === 0x67 && buf[2] === 0x67 && buf[3] === 0x53) return 'audio/ogg'
-  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46) return 'audio/wav'
-  return undefined
-}
-
-export function getImageContentType(file: string) {
-  switch (extname(file).toLowerCase()) {
-    case '.jpg':
-    case '.jpeg':
-      return 'image/jpeg'
-    case '.gif':
-      return 'image/gif'
-    case '.webp':
-      return 'image/webp'
-    case '.bmp':
-      return 'image/bmp'
-    case '.svg':
-      return 'image/svg+xml'
-    case '.mp3':
-      return 'audio/mpeg'
-    case '.wav':
-      return 'audio/wav'
-    case '.m4a':
-      return 'audio/mp4'
-    case '.ogg':
-      return 'audio/ogg'
-    case '.opus':
-      return 'audio/ogg'
-    case '.amr':
-      return 'audio/amr'
-    case '.silk':
-      return 'application/octet-stream'
-    default:
-      return 'image/png'
-  }
-}
 
 async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement> {
   const url = readElementText(attrs.src || attrs.url)
@@ -284,9 +189,9 @@ async function normalizeLiveElement(
   if (type === 'json' || type === 'lightapp' || type === 'xml') return normalizeCardElement(attrs)
   if (type === 'mface') {
     if (readRecordText(attrs, ['src', 'url', 'file', 'file_id'])) return normalizeLiveImageElement(attrs, resolveImage)
-    return normalizeLiveFaceElement(attrs)
+    return normalizeFaceElement(attrs)
   }
-  if (type === 'face') return normalizeLiveFaceElement(attrs)
+  if (type === 'face') return normalizeFaceElement(attrs)
   if (type === 'file') return { type: 'file', text: readElementText(attrs.name || attrs.file) || '[文件]' }
   if (type === 'audio' || type === 'record') return normalizeLiveRecordElement(attrs, resolveRecord)
   if (type === 'video') return { type: 'video', text: '[视频]' }
@@ -310,15 +215,4 @@ export async function normalizeLiveElements(
   return content ? [{ type: 'text', text: content }] : [{ type: 'unknown', text: '[消息]' }]
 }
 
-export function summarizeWebQQElements(elements: WebQQMessageElement[]) {
-  const summary = elements.map((element) => {
-    if (element.type === 'text') return element.text
-    if (element.type === 'image') return '[图片]'
-    if (element.type === 'quote') return ''
-    if (element.type === 'forward') return '[合并转发]'
-    if (element.type === 'card') return element.title && element.title !== '卡片消息' ? element.title : element.text || '[卡片消息]'
-    if (element.type === 'face') return element.text || '[表情]'
-    return element.text || '[消息]'
-  }).filter(Boolean).join('').replace(/\s+/g, ' ').trim()
-  return summary || '[消息]'
-}
+export { summarizeElements as summarizeWebQQElements }

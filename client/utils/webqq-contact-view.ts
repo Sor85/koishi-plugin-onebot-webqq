@@ -1,5 +1,4 @@
-import { sortWebQQGroupMembers, type WebQQContacts, type WebQQFriend, type WebQQGroup, type WebQQGroupMember } from '../state'
-import type { ConversationSummary } from '../stores/webqq-state'
+import { sortWebQQGroupMembers, type ConversationSummary, type WebQQContacts, type WebQQFriend, type WebQQGroup, type WebQQGroupMember } from '../state'
 
 export type WebQQChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }

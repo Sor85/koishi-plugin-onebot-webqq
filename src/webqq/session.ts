@@ -1,5 +1,6 @@
 import type { Session } from 'koishi'
 import type { WebQQMessage } from '../onebot'
+import { getGroupAvatar, getUserAvatar } from '../onebot/data'
 import { readWebQQSenderMetadata } from './sender-metadata'
 
 export function readBotProfile(session: Session) {
@@ -26,11 +27,11 @@ export function readUserName(session: Session) {
 }
 
 export function getWebQQUserAvatar(userId: string) {
-  return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640` : ''
+  return getUserAvatar(userId)
 }
 
 export function getWebQQGroupAvatar(groupId: string) {
-  return groupId ? `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/` : ''
+  return getGroupAvatar(groupId)
 }
 
 export function readWebQQPeer(session: Session) {

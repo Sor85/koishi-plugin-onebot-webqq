@@ -180,6 +180,14 @@ export interface WebQQRecentContact {
   time: number
 }
 
+export type ConversationSummary = { summary: string; time: number }
+export type WebQQChatType = 'friend' | 'group'
+
+export type WebQQStoredState = {
+  conversationSummaries: Record<string, ConversationSummary>
+  conversationUnreadCounts: Record<string, number>
+}
+
 const webQQGroupRoleRanks: Record<string, number> = {
   群主: 0,
   管理员: 1,

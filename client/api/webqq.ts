@@ -22,6 +22,15 @@ export interface WebQQMessageQuery {
   beforeSequence?: string
 }
 
+const webQQContactsRetryLimit = 10
+const webQQContactsRetryDelayMs = 800
+
+function waitWebQQContactsRetry() {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, webQQContactsRetryDelayMs)
+  })
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
@@ -364,6 +373,17 @@ function normalizeWebQQNotice(value: unknown): WebQQNotice | undefined {
 
 export async function requestWebQQContacts() {
   return normalizeWebQQContacts(await send('onebot-webqq/webqq/contacts'))
+}
+
+export async function requestWebQQContactsWithRetry(requestContacts: () => Promise<WebQQContacts>) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await requestContacts()
+    } catch (error) {
+      if (attempt >= webQQContactsRetryLimit) throw error
+      await waitWebQQContactsRetry()
+    }
+  }
 }
 
 export async function requestWebQQMessages(query: WebQQMessageQuery) {

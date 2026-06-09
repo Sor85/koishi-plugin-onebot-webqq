@@ -1,11 +1,12 @@
 import type { WebQQGroupAnnouncement, WebQQGroupMember } from './types'
 import {
   getStringField,
+  getUserAvatar,
   isRecord,
+  normalizeGroupRole,
   toTimestampMs,
 } from './data'
 import { getTextValue } from './text'
-import { getUserAvatar, normalizeGroupRole } from './display'
 
 export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
   const item = isRecord(raw) ? raw : {}

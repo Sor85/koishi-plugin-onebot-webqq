@@ -16,7 +16,7 @@
           <strong>{{ item.name }}</strong>
           <small>{{ getContactSubtitle(item.type, item.peerId, item.summary || item.subtitle) }}</small>
         </span>
-        <time v-if="getContactTime(item.type, item.peerId, item.time)" class="onebot-webqq-webqq__contact-time">{{ formatListTime(getContactTime(item.type, item.peerId, item.time)) }}</time>
+        <time v-if="getContactTime(item.type, item.peerId, item.time)" class="onebot-webqq-webqq__contact-time">{{ formatTime(getContactTime(item.type, item.peerId, item.time)) }}</time>
       </button>
       <div v-if="!recentItems.length" class="onebot-webqq-webqq__empty-list">
         暂无最近会话
@@ -40,7 +40,7 @@
             <strong>{{ friend.name }}</strong>
             <small>{{ getContactSubtitle('friend', friend.userId, friend.nickname) }}</small>
           </span>
-          <time v-if="getContactTime('friend', friend.userId)" class="onebot-webqq-webqq__contact-time">{{ formatListTime(getContactTime('friend', friend.userId)) }}</time>
+          <time v-if="getContactTime('friend', friend.userId)" class="onebot-webqq-webqq__contact-time">{{ formatTime(getContactTime('friend', friend.userId)) }}</time>
         </button>
       </section>
       <div v-if="!visibleFriends.length" class="onebot-webqq-webqq__empty-list">
@@ -63,7 +63,7 @@
           <strong>{{ group.name }}</strong>
           <small>{{ getContactSubtitle('group', group.groupId, getGroupSubtitle(group)) }}</small>
         </span>
-        <time v-if="getContactTime('group', group.groupId)" class="onebot-webqq-webqq__contact-time">{{ formatListTime(getContactTime('group', group.groupId)) }}</time>
+        <time v-if="getContactTime('group', group.groupId)" class="onebot-webqq-webqq__contact-time">{{ formatTime(getContactTime('group', group.groupId)) }}</time>
       </button>
       <div v-if="!visibleGroups.length" class="onebot-webqq-webqq__empty-list">
         暂无群组
@@ -75,6 +75,7 @@
 <script lang="ts" setup>
 import type { WebQQFriend, WebQQGroup } from '../state'
 import type { WebQQFriendCategoryView, WebQQRecentItem } from '../utils/webqq-contact-view'
+import { formatTime } from '../utils/webqq-message-view'
 
 type WebQQContactType = 'friend' | 'group'
 type WebQQTab = 'recent' | 'friends' | 'groups'
@@ -91,7 +92,6 @@ defineProps<{
   getUnreadText: (count: number) => string
   getContactSubtitle: (type: WebQQContactType, peerId: string, fallback: string) => string
   getContactTime: (type: WebQQContactType, peerId: string, fallback?: number) => number
-  formatListTime: (timestamp: number) => string
   getGroupSubtitle: (group: WebQQGroup) => string
 }>()
 

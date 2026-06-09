@@ -6,13 +6,11 @@ const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.met
 const onebotDataSource = await readFile(new URL('../src/onebot/data.ts', import.meta.url), 'utf8')
 const onebotTextSource = await readFile(new URL('../src/onebot/text.ts', import.meta.url), 'utf8')
 const onebotCardSource = await readFile(new URL('../src/onebot/card.ts', import.meta.url), 'utf8')
-const onebotDisplaySource = await readFile(new URL('../src/onebot/display.ts', import.meta.url), 'utf8')
 const onebotNoticesSource = await readFile(new URL('../src/onebot/notices.ts', import.meta.url), 'utf8')
 const onebotGroupInfoSource = await readFile(new URL('../src/onebot/group-info.ts', import.meta.url), 'utf8')
 const onebotContactsSource = await readFile(new URL('../src/onebot/contacts.ts', import.meta.url), 'utf8')
 const onebotActionsSource = await readFile(new URL('../src/onebot/actions.ts', import.meta.url), 'utf8')
 const onebotImagesSource = await readFile(new URL('../src/onebot/images.ts', import.meta.url), 'utf8')
-const onebotMessageElementsSource = await readFile(new URL('../src/onebot/message-elements.ts', import.meta.url), 'utf8')
 const onebotMessagesSource = await readFile(new URL('../src/onebot/messages.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', import.meta.url), 'utf8')
 
@@ -29,8 +27,9 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).toContain("from './data'")
     expect(onebotSource).not.toContain('function toArrayResult(')
     expect(onebotSource).not.toContain('function getActionData(')
-    expect(onebotDataSource).toContain('export function toArrayResult')
-    expect(onebotDataSource).toContain('export function getActionData')
+    expect(onebotDataSource).toContain("from '../shared/structured-text'")
+    expect(onebotDataSource).toContain('toArrayResult,')
+    expect(onebotDataSource).toContain('getActionData,')
   })
 
   it('keeps OneBot text markup helpers outside the adapter entry', () => {
@@ -48,12 +47,12 @@ describe('onebot webqq adapter', () => {
     expect(onebotCardSource).toContain('export function normalizeCardElement')
   })
 
-  it('keeps OneBot display field helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './display'")
+  it('keeps OneBot display field helpers in shared OneBot data helpers', () => {
+    expect(onebotSource).not.toContain("from './display'")
     expect(onebotSource).not.toContain('function getUserAvatar(')
     expect(onebotSource).not.toContain('function normalizeGroupRole(')
-    expect(onebotDisplaySource).toContain('export function getUserAvatar')
-    expect(onebotDisplaySource).toContain('export function normalizeGroupRole')
+    expect(onebotDataSource).toContain('export function getUserAvatar')
+    expect(onebotDataSource).toContain('export function normalizeGroupRole')
   })
 
   it('keeps OneBot group notice normalization outside the adapter entry', () => {
@@ -100,12 +99,12 @@ describe('onebot webqq adapter', () => {
     expect(onebotImagesSource).toContain('export async function resolveOneBotImage')
   })
 
-  it('keeps OneBot message element display helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './message-elements'")
+  it('keeps OneBot message element display helpers with message normalization', () => {
+    expect(onebotSource).not.toContain("from './message-elements'")
     expect(onebotSource).not.toContain('function normalizeFaceElement(')
     expect(onebotSource).not.toContain('function summarizeElements(')
-    expect(onebotMessageElementsSource).toContain('export function normalizeFaceElement')
-    expect(onebotMessageElementsSource).toContain('export function summarizeElements')
+    expect(onebotMessagesSource).toContain('export function normalizeFaceElement')
+    expect(onebotMessagesSource).toContain('export function summarizeElements')
   })
 
   it('keeps OneBot message normalization outside the adapter entry', () => {

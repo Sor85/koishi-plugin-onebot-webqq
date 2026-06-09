@@ -1,11 +1,12 @@
 import type { WebQQChatType, WebQQFriend, WebQQFriendCategory, WebQQGroup } from './types'
 import {
+  getGroupAvatar,
   getNumberField,
   getStringField,
+  getUserAvatar,
   isRecord,
   toArrayResult,
 } from './data'
-import { getGroupAvatar, getUserAvatar } from './display'
 
 export function normalizeFriend(raw: unknown, category?: { id: string; name: string }): WebQQFriend {
   const item = isRecord(raw) ? raw : {}

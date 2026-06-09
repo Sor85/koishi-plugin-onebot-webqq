@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 describe('project namespace', () => {
@@ -9,6 +9,7 @@ describe('project namespace', () => {
       .trim()
       .split('\n')
       .filter(Boolean)
+      .filter((file) => existsSync(file))
 
     const filesWithPreviousNamespace = trackedFiles.filter((file) =>
       readFileSync(file, 'utf8').includes(previousNamespace)

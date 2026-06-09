@@ -5,9 +5,9 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChatCapsuleContext, ChatLunaCharacterService, ConsoleEvents, ConsoleService, DatabaseService } from '../src/plugin-context'
 import type { CapsuleSnapshot } from '../src/state'
 import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
-import { getImageContentType, summarizeWebQQElements } from '../src/webqq/live-elements'
+import { summarizeWebQQElements } from '../src/webqq/live-elements'
 import { createWebQQLiveMessage } from '../src/webqq/live-message'
-import { createWebQQImageUrlResolver } from '../src/webqq/image-url-resolver'
+import { createWebQQImageUrlResolver, getImageContentType } from '../src/webqq/image-url-resolver'
 import {
   getWebQQUserAvatar,
   readBotProfile,
@@ -265,7 +265,9 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain('function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('async function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('export async function normalizeLiveElements(')
-    expect(webqqLiveElementsSource).toContain('export function summarizeWebQQElements')
+    expect(webqqLiveElementsSource).toContain('summarizeElements as summarizeWebQQElements')
+    expect(webqqLiveElementsSource).toContain("from './image-url-resolver'")
+    expect(webqqImageUrlResolverSource).toContain('export function getImageContentType')
     expect(summarizeWebQQElements(elements)).toBe('[图片]春日影')
     expect(getImageContentType('cover.webp')).toBe('image/webp')
   })

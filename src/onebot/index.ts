@@ -1,6 +1,9 @@
 import {
   getActionData,
+  getGroupAvatar,
+  getGroupSubtitle,
   getStringField,
+  getUserAvatar,
   isRecord,
   toArrayResult,
   toOneBotId,
@@ -14,11 +17,6 @@ import {
   type OneBotContext,
 } from './actions'
 import { getTextValue } from './text'
-import {
-  getGroupAvatar,
-  getGroupSubtitle,
-  getUserAvatar,
-} from './display'
 import { normalizeGroupNotices } from './notices'
 import {
   normalizeGroupAnnouncement,
@@ -38,13 +36,11 @@ import {
   transcribeOneBotRecord,
 } from './records'
 import {
-  summarizeElements,
-} from './message-elements'
-import {
   normalizeMessage,
   normalizeMessageElements,
   resolveOneBotForward,
   resolveOneBotQuote,
+  summarizeElements,
 } from './messages'
 import type {
   OneBotWebQQOptions,

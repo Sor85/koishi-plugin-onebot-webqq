@@ -1,12 +1,12 @@
 import type { WebQQNotice } from './types'
 import {
   getBooleanField,
+  getGroupAvatar,
   getStringField,
   isRecord,
   toArrayResult,
   toTimestampMs,
 } from './data'
-import { getGroupAvatar } from './display'
 
 function isHandledGroupNotice(raw: unknown) {
   if (!isRecord(raw)) return false

@@ -1,7 +1,6 @@
 import { send } from '@koishijs/client'
-import type { WebQQMessage, WebQQStorageBackend } from '../state'
+import type { ConversationSummary, WebQQMessage, WebQQStorageBackend, WebQQStoredState } from '../state'
 import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from '../webqq-message-cache'
-import type { ConversationSummary, WebQQStoredState } from './webqq-state'
 
 const webQQStorageKey = 'onebot-webqq:webqq:v1'
 

@@ -1,4 +1,5 @@
 import type { WebQQMessage } from '../onebot'
+import { normalizeGroupRole } from '../onebot/data'
 import { readRecordText } from '../shared/structured-text'
 
 export interface WebQQSenderMetadata {
@@ -7,54 +8,51 @@ export interface WebQQSenderMetadata {
   senderTitle?: string
 }
 
-function normalizeGroupRole(role: string) {
-  if (role === 'owner') return '群主'
-  if (role === 'admin' || role === 'administrator') return '管理员'
-  return ''
-}
+const senderMetadataTargets = ['senderRole', 'senderLevel', 'senderTitle'] as const
+const senderMetadataFields = [
+  { target: 'senderLevel' as const, keys: ['level', 'sender_level', 'senderLevel'] },
+  { target: 'senderTitle' as const, keys: ['title', 'special_title', 'specialTitle'] },
+]
 
 export function readWebQQSenderMetadata(source: unknown): WebQQSenderMetadata {
   const role = normalizeGroupRole(readRecordText(source, ['role']))
-  const level = readRecordText(source, ['level', 'sender_level', 'senderLevel'])
-  const title = readRecordText(source, ['title', 'special_title', 'specialTitle'])
-  return {
-    ...(role ? { senderRole: role } : {}),
-    ...(level ? { senderLevel: level } : {}),
-    ...(title ? { senderTitle: title } : {}),
+  const metadata: WebQQSenderMetadata = role ? { senderRole: role } : {}
+  for (const field of senderMetadataFields) {
+    const value = readRecordText(source, field.keys)
+    if (value) metadata[field.target] = value
   }
+  return metadata
 }
 
 export function hasWebQQSenderMetadata(metadata: WebQQSenderMetadata) {
-  return !!(metadata.senderRole || metadata.senderLevel || metadata.senderTitle)
+  return senderMetadataTargets.some((target) => !!metadata[target])
 }
 
 export function readWebQQMessageSenderMetadata(message: WebQQMessage): WebQQSenderMetadata {
-  return {
-    ...(message.senderRole ? { senderRole: message.senderRole } : {}),
-    ...(message.senderLevel ? { senderLevel: message.senderLevel } : {}),
-    ...(message.senderTitle ? { senderTitle: message.senderTitle } : {}),
+  const metadata: WebQQSenderMetadata = {}
+  for (const target of senderMetadataTargets) {
+    if (message[target]) metadata[target] = message[target]
   }
+  return metadata
 }
 
 export function isSameWebQQSenderMetadata(left: WebQQSenderMetadata | undefined, right: WebQQSenderMetadata) {
-  return !!left &&
-    left.senderRole === right.senderRole &&
-    left.senderLevel === right.senderLevel &&
-    left.senderTitle === right.senderTitle
+  return !!left && senderMetadataTargets.every((target) => left[target] === right[target])
 }
 
 export function fillWebQQMessageSenderMetadata(message: WebQQMessage, metadata?: WebQQSenderMetadata) {
   if (!metadata) return message
-  return {
-    ...message,
-    ...(!message.senderRole && metadata.senderRole ? { senderRole: metadata.senderRole } : {}),
-    ...(!message.senderLevel && metadata.senderLevel ? { senderLevel: metadata.senderLevel } : {}),
-    ...(!message.senderTitle && metadata.senderTitle ? { senderTitle: metadata.senderTitle } : {}),
+  const next = { ...message }
+  if (!next.senderRole && metadata.senderRole) next.senderRole = metadata.senderRole
+  for (const field of senderMetadataFields) {
+    if (!next[field.target] && metadata[field.target]) next[field.target] = metadata[field.target]
   }
+  return next
 }
 
 export function replaceWebQQMessageSenderMetadata(message: WebQQMessage, metadata: WebQQSenderMetadata) {
-  const { senderRole: _senderRole, senderLevel: _senderLevel, senderTitle: _senderTitle, ...next } = message
+  const next = { ...message }
+  for (const target of senderMetadataTargets) delete next[target]
   return {
     ...next,
     ...metadata,

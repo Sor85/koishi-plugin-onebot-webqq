@@ -64,15 +64,14 @@ const capsuleButtonLabel = computed(() => {
     ? `打开 WebQQ 观察窗，${capsuleUnreadText.value} 条未读消息`
     : '打开 WebQQ 观察窗'
 })
-const activityText = computed(() => capsule.value?.conversation.activityText || '')
-const isThinking = computed(() => activityText.value === '正在思考')
-const titleStatusText = computed(() => isThinking.value ? activityText.value : '')
-const userName = computed(() => capsule.value?.conversation.userName || '')
-const userActivityText = computed(() => userName.value ? `正在与 ${userName.value} 对话` : '')
-const idleActivityText = computed(() => !isThinking.value && !userName.value ? activityText.value : '')
+const titleStatusText = computed(() => capsule.value?.conversation.activityText === '正在思考' ? '正在思考' : '')
 const displayActivityText = computed(() => {
-  if (userActivityText.value) return userActivityText.value
-  return idleActivityText.value || '空闲中'
+  const conversation = capsule.value?.conversation
+  if (!conversation) return '空闲中'
+  if (conversation.userName) return `正在与 ${conversation.userName} 对话`
+  return conversation.activityText && conversation.activityText !== '正在思考'
+    ? conversation.activityText
+    : '空闲中'
 })
 
 const metaTitle = computed(() => displayActivityText.value)

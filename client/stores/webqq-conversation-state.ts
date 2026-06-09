@@ -1,8 +1,9 @@
 import { computed, ref, type Ref } from 'vue'
-import type { WebQQMessage, WebQQStorageBackend } from '../state'
+import type { ConversationSummary, WebQQChatType, WebQQMessage, WebQQStorageBackend, WebQQStoredState } from '../state'
 import {
   getContactSubtitle as getContactSubtitleFromView,
   getContactTime as getContactTimeFromView,
+  getChatKey,
   getUnreadCount as getUnreadCountFromView,
 } from '../utils/webqq-contact-view'
 import {
@@ -10,12 +11,33 @@ import {
   loadRemoteWebQQStoredState as loadRemoteWebQQStoredStateFromBackend,
   persistWebQQStoredState,
 } from './webqq-storage'
-import {
-  clearConversationUnreadCount,
-  increaseConversationUnreadCount,
-  setConversationSummary,
-  type WebQQStoredState,
-} from './webqq-state'
+
+export function setConversationSummary(conversationSummaries: Record<string, ConversationSummary>, type: WebQQChatType, peerId: string, message: WebQQMessage | undefined) {
+  if (!message) return conversationSummaries
+  return {
+    ...conversationSummaries,
+    [getChatKey(type, peerId)]: {
+      summary: message.summary,
+      time: message.time,
+    },
+  }
+}
+
+export function increaseConversationUnreadCount(conversationUnreadCounts: Record<string, number>, type: WebQQChatType, peerId: string) {
+  const key = getChatKey(type, peerId)
+  return {
+    ...conversationUnreadCounts,
+    [key]: (conversationUnreadCounts[key] || 0) + 1,
+  }
+}
+
+export function clearConversationUnreadCount(conversationUnreadCounts: Record<string, number>, type: WebQQChatType, peerId: string) {
+  const key = getChatKey(type, peerId)
+  if (!conversationUnreadCounts[key]) return conversationUnreadCounts
+  const next = { ...conversationUnreadCounts }
+  delete next[key]
+  return next
+}
 
 export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBackend>) {
   const stored = loadBrowserWebQQStoredState(storageBackend.value)
