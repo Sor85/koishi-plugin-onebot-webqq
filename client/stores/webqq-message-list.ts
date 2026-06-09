@@ -1,10 +1,11 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import type { CapsuleData, WebQQMessage } from '../state'
 import type { WebQQChatSelection } from '../utils/webqq-contact-view'
 import {
   createBotThinkingMessage,
   getLastOutgoingClusterThinkingMessage as getLastOutgoingClusterThinkingMessageFromView,
   getMessageClusterClass as getMessageClusterClassFromView,
+  hasOutgoingMessageAfter,
   isMergedMessage as isMergedMessageFromView,
   mergeMessages,
   type WebQQThinkingMessage,
@@ -20,7 +21,60 @@ export function useWebQQMessageList(options: {
   scrollMessagesToBottom: () => unknown
 }) {
   const messages = ref<WebQQMessage[]>([])
-  const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage(options.capsule.value, options.currentChat.value, messages.value))
+  const botThinkingMessages = ref<Record<string, WebQQMessage>>({})
+
+  function getCurrentChatKey() {
+    const currentChat = options.currentChat.value
+    return currentChat ? `${currentChat.type}:${currentChat.peerId}` : ''
+  }
+
+  function getCapsuleChatKeyForCurrentChat() {
+    const currentChat = options.currentChat.value
+    const conversation = options.capsule.value?.conversation
+    if (!currentChat || !conversation) return ''
+    const peerId = currentChat.type === 'group'
+      ? conversation.channelId
+      : conversation.userId || conversation.channelId
+    return `${currentChat.type}:${peerId}`
+  }
+
+  function forgetCurrentChatBotThinkingMessage() {
+    const key = getCurrentChatKey()
+    if (!key || !botThinkingMessages.value[key]) return
+    const nextMessages = { ...botThinkingMessages.value }
+    delete nextMessages[key]
+    botThinkingMessages.value = nextMessages
+  }
+
+  function syncBotThinkingMessage() {
+    const key = getCurrentChatKey()
+    if (!key) return
+    const next = createBotThinkingMessage(options.capsule.value, options.currentChat.value, messages.value)
+    if (next) {
+      botThinkingMessages.value = {
+        ...botThinkingMessages.value,
+        [key]: next,
+      }
+      return
+    }
+    // 造不出气泡时只在两种情况下清理：capsule 指向当前会话（本会话确已空闲），
+    // 或当前会话已有更晚的 outgoing（本会话已回复）。其他群/私聊抢占 capsule 时保留等待气泡。
+    const cached = botThinkingMessages.value[key]
+    if (getCapsuleChatKeyForCurrentChat() === key || (cached && hasOutgoingMessageAfter(messages.value, cached.time))) {
+      forgetCurrentChatBotThinkingMessage()
+    }
+  }
+
+  watch([
+    () => options.capsule.value,
+    () => options.currentChat.value,
+    () => messages.value,
+  ], syncBotThinkingMessage, { immediate: true, flush: 'sync' })
+
+  const botThinkingMessage = computed<WebQQMessage | undefined>(() => {
+    const key = getCurrentChatKey()
+    return key ? botThinkingMessages.value[key] : undefined
+  })
   const visibleMessages = computed(() => {
     const cachedMessages = messages.value.map(options.applyMessageSenderMetadata)
     return botThinkingMessage.value ? [...cachedMessages, options.applyMessageSenderMetadata(botThinkingMessage.value)] : cachedMessages

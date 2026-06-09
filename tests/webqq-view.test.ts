@@ -278,9 +278,11 @@ describe('webqq observer view', () => {
     expect(style).toContain('@keyframes onebot-webqq-webqq-thinking-dot')
   })
 
-  it('shows the temporary bot thinking bubble only for the capsule current WebQQ conversation', () => {
-    expect(webqqMessageListStore).toContain('const botThinkingMessage = computed<WebQQMessage | undefined>(() => createBotThinkingMessage')
+  it('keeps temporary bot thinking bubbles scoped to WebQQ conversations', () => {
+    expect(webqqMessageListStore).toContain('const botThinkingMessages = ref<Record<string, WebQQMessage>>({})')
+    expect(webqqMessageListStore).toContain('function syncBotThinkingMessage()')
     expect(webqqMessageListStore).toContain('createBotThinkingMessage(options.capsule.value, options.currentChat.value, messages.value)')
+    expect(webqqMessageListStore).toContain('getCapsuleChatKeyForCurrentChat() === key')
     expect(webqqMessageView).toContain('const conversation = capsule?.conversation')
     expect(webqqMessageView).toContain("conversation.activityText !== '正在思考'")
     expect(webqqMessageView).toContain('conversation.channelId')
@@ -880,6 +882,36 @@ describe('webqq observer view', () => {
     expect(list.messages.value).toHaveLength(1)
     expect(scrollEvents).toEqual(['scroll'])
     expect(list.isBotThinkingMessage(list.visibleMessages.value[0])).toBe(false)
+  })
+
+  it('keeps the current WebQQ chat thinking bubble when another chat starts thinking', () => {
+    const capsule = ref<CapsuleData | undefined>(createCapsuleData())
+    const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
+    const list = useWebQQMessageList({
+      capsule,
+      currentChat,
+      chatStyle: ref('telegram'),
+      messageCacheLimit: ref(100),
+      applyMessageSenderMetadata: (message) => message,
+      shouldScrollToBottom: () => false,
+      scrollMessagesToBottom: () => {},
+    })
+
+    expect(list.botThinkingMessage.value?.id).toBe('thinking:group:20000:1710000000000')
+
+    capsule.value = createCapsuleData({
+      channelId: '20001',
+      channelName: '别的群',
+      userId: '40000',
+      userName: 'Bob',
+      timestamp: 1710000001000,
+    })
+
+    expect(list.botThinkingMessage.value?.id).toBe('thinking:group:20000:1710000000000')
+
+    list.appendMessage(createWebQQMessage({ id: 'reply-a', sequence: 'reply-a', time: 1710000002000 }))
+
+    expect(list.botThinkingMessage.value).toBeUndefined()
   })
 
   it('limits the in-memory current WebQQ message list to the configured cache limit', () => {
