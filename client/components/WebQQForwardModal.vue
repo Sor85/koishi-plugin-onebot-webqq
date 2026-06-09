@@ -20,7 +20,10 @@
       </header>
       <div class="onebot-webqq-webqq__forward-modal-body">
         <article v-for="(item, itemIndex) in items" :key="`forward:${itemIndex}`" :class="['onebot-webqq-webqq__message', 'is-incoming', getForwardItemClusterClass(itemIndex), { 'is-merged': isMergedForwardItem(itemIndex) }]">
-          <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(getForwardItemAvatar(item))" :alt="getForwardItemName(item)">
+          <!-- Telegram 合并项依赖 wrapper 保留头像占位并隐藏重复头像，弹窗需和普通消息保持同一结构。 -->
+          <span class="onebot-webqq-webqq__message-avatar-wrap">
+            <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(getForwardItemAvatar(item))" :alt="getForwardItemName(item)">
+          </span>
           <div class="onebot-webqq-webqq__message-content">
             <div v-if="!isMergedForwardItem(itemIndex)" class="onebot-webqq-webqq__sender-line">
               <span class="onebot-webqq-webqq__message-name">{{ getForwardItemName(item) }}</span>

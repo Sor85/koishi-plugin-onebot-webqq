@@ -1743,6 +1743,7 @@ describe('webqq observer view', () => {
     expect(webqqForwardModal).toContain("{{ dialog.title || '合并转发' }}")
     expect(webqqForwardModal).toContain('v-for="(item, itemIndex) in items"')
     expect(webqqForwardModal).toContain(':class="[\'onebot-webqq-webqq__message\', \'is-incoming\', getForwardItemClusterClass(itemIndex), { \'is-merged\': isMergedForwardItem(itemIndex) }]"')
+    expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__message-avatar-wrap"')
     expect(webqqForwardModal).toContain('class="onebot-webqq-webqq__message-avatar"')
     expect(webqqForwardModal).toContain(':src="withProxy(getForwardItemAvatar(item))"')
     expect(webqqForwardModal).toContain(':alt="getForwardItemName(item)"')
