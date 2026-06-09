@@ -1,4 +1,4 @@
-import Schema from 'schemastery'
+import { Schema } from 'koishi'
 import type { WebQQProtocol } from './onebot'
 
 export interface Config {

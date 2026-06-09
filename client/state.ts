@@ -180,6 +180,14 @@ export interface WebQQRecentContact {
   time: number
 }
 
+export type ConversationSummary = { summary: string; time: number }
+export type WebQQChatType = 'friend' | 'group'
+
+export type WebQQStoredState = {
+  conversationSummaries: Record<string, ConversationSummary>
+  conversationUnreadCounts: Record<string, number>
+}
+
 const webQQGroupRoleRanks: Record<string, number> = {
   群主: 0,
   管理员: 1,
@@ -236,3 +244,21 @@ export const webQQColorMode = ref<WebQQColorMode>('auto')
 export const webQQMessageCacheLimit = ref(100)
 export const webQQStorageBackend = ref<WebQQStorageBackend>('koishi')
 export const webQQTheme = ref<WebQQTheme>('fresh')
+
+export function resetWebQQClientState() {
+  capsule.value = undefined
+  debug.value = false
+  hideWebQQGroupLevel.value = true
+  showWebQQAffinity.value = false
+  showWebQQCapsuleUnread.value = true
+  showWebQQRelationship.value = false
+  useBotAvatarThemeColor.value = false
+  webQQTotalUnread.value = 0
+  webQQAccentColor.value = '#2563eb'
+  webQQAvatarAccentColor.value = ''
+  webQQChatStyle.value = 'telegram'
+  webQQColorMode.value = 'auto'
+  webQQMessageCacheLimit.value = 100
+  webQQStorageBackend.value = 'koishi'
+  webQQTheme.value = 'fresh'
+}

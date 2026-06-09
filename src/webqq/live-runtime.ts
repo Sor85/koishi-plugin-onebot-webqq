@@ -1,14 +1,11 @@
 import type { Session } from 'koishi'
-import * as qface from 'qface'
 import type { Config as PluginConfig } from '../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../chatluna/thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../chatluna/thinking'
-import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQRecallPayload } from '../onebot'
-import type { WebQQRawReaction } from '../onebot/raw-event'
+import type { createOneBotWebQQService, WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from '../onebot'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
-import { isRecord, readRecordText } from '../shared/structured-text'
 import { attachWebQQAffinityBadges } from './affinity'
-import { applyWebQQReactionToLiveMessages, applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
+import { applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
 import { createWebQQLiveMessage } from './live-message'
 import type { WebQQImageUrlResolver } from './live-elements'
 import {
@@ -17,7 +14,6 @@ import {
   getWebQQUserAvatar,
 } from './session'
 import {
-  readWebQQGroupMemberName,
   readWebQQGroupSenderMetadata,
 } from './group-sender-metadata'
 import {
@@ -32,9 +28,13 @@ import {
   loadKoishiWebQQRecalledMessageCache,
   saveKoishiWebQQRecalledMessageCache,
 } from './storage'
+import { createWebQQNoticeRuntime } from './live-notices'
+import { createWebQQReactionRuntime } from './live-reactions'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>
+const WEBQQ_LIVE_CONVERSATION_LIMIT = 100
+const WEBQQ_LIVE_SENDER_METADATA_LIMIT = 1000
 
 export type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
 
@@ -42,102 +42,6 @@ function readRawRecallMessageId(session: Session) {
   const data = (session.event as { _data?: Record<string, unknown> })._data
   const value = data?.message_id ?? data?.messageId ?? data?.msg_id ?? data?.msgId
   return value == null ? '' : String(value)
-}
-
-function readRawEventData(session: Session) {
-  const data = (session.event as { _data?: unknown })._data
-  return isRecord(data) ? data : {}
-}
-
-function readWebQQNoticePeer(session: Session) {
-  const groupId = readRecordText(readRawEventData(session), ['group_id', 'groupId'])
-  if (groupId) return { type: 'group' as const, peerId: groupId }
-  return readWebQQPeer(session)
-}
-
-function readSessionUserName(session: Session, fallbackId = '') {
-  return session.event.member?.name || session.event.operator?.name || session.event.user?.name || session.username || fallbackId || '有人'
-}
-
-async function readWebQQNoticeMemberName(session: Session, userId: string, fallbackName: string, genericName: string) {
-  if (userId) {
-    try {
-      const name = await readWebQQGroupMemberName(session, userId, true)
-      if (name) return name
-    } catch {}
-  }
-  return fallbackName && fallbackName !== userId && !/^\d+$/.test(fallbackName) ? fallbackName : genericName
-}
-
-function formatMuteDuration(seconds: number) {
-  if (!seconds) return ''
-  if (seconds % 3600 === 0) return `${seconds / 3600} 小时`
-  if (seconds % 60 === 0) return `${seconds / 60} 分钟`
-  return `${seconds} 秒`
-}
-
-// QQ 表情贴上报的 emoji_id 多为数字 ID，用 qface 转成可读名（如「赞」）；
-// 取不到时回退原值（unicode emoji 可直接显示，纯数字 ID 兜底为 [表情]）。
-function readWebQQReactionLabel(emojiId: string) {
-  const name = qface.get(emojiId)?.QDes?.replace(/^\//, '')
-  if (name) return name
-  return /^\d+$/.test(emojiId) ? '[表情]' : emojiId
-}
-
-const QFACE_BASE = 'https://koishi.js.org/QFace'
-const qqEmojiUrlCache = new Map<string, string>()
-let qqEmojiIndexLoaded = false
-
-async function loadQQEmojiIndex() {
-  if (qqEmojiIndexLoaded) return
-  qqEmojiIndexLoaded = true
-  try {
-    const res = await fetch(`${QFACE_BASE}/assets/qq_emoji/_index.json`)
-    if (!res.ok) return
-    const list: unknown[] = await res.json()
-    for (const item of list) {
-      if (!isRecord(item)) continue
-      const id = String(item.emojiId ?? '')
-      if (!id) continue
-      const assets = Array.isArray(item.assets) ? item.assets : []
-      const asset = assets.find((a: unknown) => isRecord(a) && a.type === 2) ?? assets.find((a: unknown) => isRecord(a) && a.type === 0)
-      if (!asset || !isRecord(asset) || !asset.path) continue
-      const url = `${QFACE_BASE}/${asset.path}`
-      qqEmojiUrlCache.set(id, url)
-      // 同时以 qcid（decimal codepoint）为 key，对应 OneBot 上报的数字形 Unicode emoji ID
-      if (typeof item.qcid === 'number' && item.qcid > 0) qqEmojiUrlCache.set(String(item.qcid), url)
-    }
-  } catch { /* ignore */ }
-}
-
-function readWebQQReactionEmojiUrl(emojiId: string) {
-  return qqEmojiUrlCache.get(emojiId) ?? ''
-}
-
-function createWebQQEventMessage(
-  peer: { type: WebQQChatType; peerId: string },
-  time: number,
-  type: NonNullable<WebQQMessage['event']>['type'],
-  summary: string,
-  senderId: string,
-  senderName: string,
-  targetMessageId?: string,
-): WebQQMessage {
-  return {
-    id: `${type}:${peer.type}:${peer.peerId}:${time}:${senderId}:${targetMessageId || ''}`,
-    sequence: `${type}:${time}:${targetMessageId || senderId}`,
-    time,
-    senderId,
-    senderName,
-    senderAvatar: getWebQQUserAvatar(senderId),
-    direction: 'incoming',
-    summary,
-    event: {
-      type,
-      ...(targetMessageId ? { targetMessageId } : {}),
-    },
-    elements: [{ type: 'unknown', text: summary }],
-  }
 }
 
 export function createWebQQLiveRuntime(options: {
@@ -150,10 +54,32 @@ export function createWebQQLiveRuntime(options: {
   getThinkingDurationMs: () => number
   getThinkingUsage: () => WebQQThinking['usage'] | undefined
 }) {
-  loadQQEmojiIndex()
   const liveMessages = new Map<string, WebQQMessage[]>()
   const pendingWebQQThinking = new Map<string, WebQQThinking>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
+
+  function trimOldestMapEntries<TKey, TValue>(map: Map<TKey, TValue>, limit: number, onEvict?: (key: TKey) => void) {
+    while (map.size > limit) {
+      const oldestKey = map.keys().next().value
+      if (oldestKey == null) break
+      map.delete(oldestKey)
+      onEvict?.(oldestKey)
+    }
+  }
+
+  function rememberLiveMessages(key: string, messages: WebQQMessage[]) {
+    liveMessages.delete(key)
+    liveMessages.set(key, messages)
+    trimOldestMapEntries(liveMessages, WEBQQ_LIVE_CONVERSATION_LIMIT, (evictedKey) => {
+      pendingWebQQThinking.delete(evictedKey)
+    })
+  }
+
+  function rememberPendingWebQQThinking(key: string, thinking: WebQQThinking) {
+    pendingWebQQThinking.delete(key)
+    pendingWebQQThinking.set(key, thinking)
+    trimOldestMapEntries(pendingWebQQThinking, WEBQQ_LIVE_CONVERSATION_LIMIT)
+  }
 
   const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
   const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
@@ -163,19 +89,21 @@ export function createWebQQLiveRuntime(options: {
     if (type !== 'group' || !hasWebQQSenderMetadata(metadata)) return false
     const key = getLiveSenderMetadataKey(peerId, userId)
     if (isSameWebQQSenderMetadata(liveSenderMetadata.get(key), metadata)) return false
+    liveSenderMetadata.delete(key)
     liveSenderMetadata.set(key, metadata)
+    trimOldestMapEntries(liveSenderMetadata, WEBQQ_LIVE_SENDER_METADATA_LIMIT)
     return true
   }
   const broadcastWebQQLivePayload = (payload: WebQQLiveMessage) => {
     const key = getWebQQLiveMessageKey(payload)
     const messages = mergeWebQQLiveMessages(liveMessages.get(key) ?? [], [payload.message], 100)
-    liveMessages.set(key, messages)
+    rememberLiveMessages(key, messages)
     options.ctx.console?.broadcast('onebot-webqq/webqq/message', payload, options.consoleAuthOptions)
   }
   const broadcastWebQQRecallPayload = (payload: WebQQRecallPayload) => {
     const key = getWebQQLiveMessageKey(payload)
     const messages = applyWebQQRecallToLiveMessages(liveMessages.get(key) ?? [], payload, 100)
-    liveMessages.set(key, messages)
+    rememberLiveMessages(key, messages)
     options.ctx.console?.broadcast('onebot-webqq/webqq/recall', payload, options.consoleAuthOptions)
     return messages
   }
@@ -284,7 +212,7 @@ export function createWebQQLiveRuntime(options: {
     const messages = liveMessages.get(key)
     const message = messages?.slice().reverse().find((item) => item.direction === 'outgoing')
     if (!message) {
-      pendingWebQQThinking.set(key, thinking)
+      rememberPendingWebQQThinking(key, thinking)
       return
     }
     pendingWebQQThinking.delete(key)
@@ -334,166 +262,20 @@ export function createWebQQLiveRuntime(options: {
     // 因此在标记撤回模式下把原消息另存一份显示缓存，历史加载时再合并回来。
     if (recalledMessage) await persistMarkedWebQQRecall(peer, recalledMessage)
   }
-  const recordWebQQNotice = async (session: Session | undefined) => {
-    if (!session || (session.bot.platform || session.platform) !== 'onebot') return
-    const data = readRawEventData(session)
-    const noticeType = readRecordText(data, ['notice_type', 'noticeType'])
-    const subType = readRecordText(data, ['sub_type', 'subType'])
-    if (noticeType !== 'group_ban' && !(noticeType === 'notify' && subType === 'poke')) return
-    const peer = readWebQQNoticePeer(session)
-    if (!peer) return
-    if (noticeType === 'notify' && subType === 'poke') {
-      const senderId = readRecordText(data, ['user_id', 'userId', 'sender_id', 'senderId']) || session.userId || session.event.user?.id || ''
-      const targetId = readRecordText(data, ['target_id', 'targetId']) || session.event.operator?.id || ''
-      const senderName = await readWebQQNoticeMemberName(
-        session,
-        senderId,
-        readRecordText(data, ['sender_nickname', 'senderNickname', 'user_name', 'userName']) || readSessionUserName(session, senderId),
-        '某成员',
-      )
-      const targetName = await readWebQQNoticeMemberName(
-        session,
-        targetId,
-        readRecordText(data, ['target_nickname', 'targetNickname', 'target_name', 'targetName']),
-        '对方',
-      )
-      broadcastWebQQLivePayload({
-        ...peer,
-        message: createWebQQEventMessage(peer, session.timestamp, 'poke', `${senderName} 戳了戳 ${targetName}`, senderId, readSessionUserName(session, senderId)),
-      })
-      return
-    }
-    if (noticeType === 'group_ban') {
-      const operatorId = readRecordText(data, ['operator_id', 'operatorId']) || session.operatorId || session.event.operator?.id || ''
-      const targetId = readRecordText(data, ['user_id', 'userId', 'target_id', 'targetId']) || session.userId || session.event.user?.id || ''
-      const operatorName = await readWebQQNoticeMemberName(
-        session,
-        operatorId,
-        readRecordText(data, ['operator_name', 'operatorName']) || session.event.operator?.name || '',
-        '管理员',
-      )
-      const targetName = await readWebQQNoticeMemberName(
-        session,
-        targetId,
-        readRecordText(data, ['user_name', 'userName', 'target_name', 'targetName']) || session.event.user?.name || '',
-        '对方',
-      )
-      const duration = Number(data.duration) || 0
-      const durationText = formatMuteDuration(duration)
-      const summary = subType === 'lift_ban'
-        ? `${operatorName} 解除了 ${targetName} 的禁言`
-        : `${operatorName} 禁言了 ${targetName}${durationText ? ` ${durationText}` : ''}`
-      broadcastWebQQLivePayload({
-        ...peer,
-        message: createWebQQEventMessage(peer, session.timestamp, 'mute', summary, operatorId, readSessionUserName(session, operatorId)),
-      })
-    }
-  }
-  const getReactionTargetIds = (reaction: WebQQRawReaction) => {
-    return [reaction.messageSeq, reaction.messageId].filter((id, index, array): id is string => !!id && array.indexOf(id) === index)
-  }
-  const getKnownReactionUserCount = (messages: WebQQMessage[], targetIds: string[], reaction: WebQQRawReaction) => {
-    const userIds = new Set<string>()
-    for (const message of messages) {
-      if (!targetIds.includes(message.id) && !targetIds.includes(message.sequence)) continue
-      const current = message.reactions?.find((item) => item.emojiId === reaction.emojiId)
-      if (current?.userId) userIds.add(current.userId)
-      for (const user of current?.users ?? []) userIds.add(user.userId)
-    }
-    if (reaction.userId) {
-      if (reaction.isAdd) userIds.add(reaction.userId)
-      else userIds.delete(reaction.userId)
-    }
-    return userIds.size
-  }
-  const shouldResolveWebQQReactionUsers = (reaction: WebQQRawReaction, targetIds: string[]) => {
-    if (reaction.count <= 0 || !reaction.messageId) return false
-    if (!options.webqq.supportsReactionUsers()) return false
-    const key = getWebQQLiveMessageKey({ type: 'group', peerId: reaction.groupId })
-    const knownUserCount = getKnownReactionUserCount(liveMessages.get(key) ?? [], targetIds, reaction)
-    return knownUserCount < reaction.count
-  }
-  const resolveWebQQReactionUsers = async (reaction: WebQQRawReaction, entry: WebQQMessageReaction) => {
-    try {
-      // `group_msg_emoji_like` 只带本次操作者和总数；人数更多时要拉完整列表，
-      // 否则 Telegram 风格只能显示一个头像再跟 count，无法展示所有贴表情用户。
-      const users = await options.webqq.loadReactionUsers(reaction.messageId, reaction.emojiId, reaction.count)
-      const nextUsers = users.map((user) => {
-        // 同一个操作者在事件里已有稳定的 OneBot user_id 头像，避免被补查列表里的临时 headUrl 覆盖。
-        if (!entry.userId || user.userId !== entry.userId || !entry.userAvatar) return user
-        return { ...user, userAvatar: entry.userAvatar }
-      })
-      return nextUsers.length ? { ...entry, users: nextUsers } : entry
-    } catch (error) {
-      options.logger?.info('webqq reaction users resolve failed %s', error instanceof Error ? error.message : String(error))
-      return entry
-    }
-  }
-  const applyWebQQReaction = (messages: WebQQMessage[], targetIds: string[], entry: WebQQMessageReaction, isAdd: boolean) => {
-    for (const targetId of targetIds) {
-      const nextMessages = applyWebQQReactionToLiveMessages(messages, targetId, entry, isAdd)
-      if (!nextMessages) continue
-      const message = nextMessages.find((item) => item.id === targetId || item.sequence === targetId)
-      if (message) return { messages: nextMessages, message }
-    }
-  }
-  const recordWebQQReaction = async (reaction: WebQQRawReaction) => {
-    const peer = { type: 'group' as const, peerId: reaction.groupId }
-    const label = readWebQQReactionLabel(reaction.emojiId)
-    const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)
-    const userAvatar = reaction.userId ? getWebQQUserAvatar(reaction.userId) : ''
-    const entry: WebQQMessageReaction = {
-      emojiId: reaction.emojiId,
-      label,
-      ...(emojiUrl ? { emojiUrl } : {}),
-      count: reaction.count,
-      ...(reaction.userId ? {
-        userId: reaction.userId,
-        userAvatar,
-      } : {}),
-    }
-    const targetIds = getReactionTargetIds(reaction)
-    const entryWithUsers = shouldResolveWebQQReactionUsers(reaction, targetIds)
-      ? await resolveWebQQReactionUsers(reaction, entry)
-      : entry
-    const key = getWebQQLiveMessageKey(peer)
-    const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entryWithUsers, reaction.isAdd)
-    if (applied) {
-      liveMessages.set(key, applied.messages)
-      options.ctx.console?.broadcast('onebot-webqq/webqq/message', { ...peer, message: applied.message }, options.consoleAuthOptions)
-      return
-    }
-    // 目标消息可能是前端已加载的历史消息，而不是后端 live cache 中的实时消息。
-    // OneBot reaction 只有短 message_id 时，拉一次 get_msg 得到同一条消息和 message_seq，
-    // 再广播带 reaction 的原消息，让前端用正常消息合并逻辑更新气泡。
-    try {
-      const targetMessage = await options.webqq.resolveMessage(reaction.messageId)
-      const targetApplied = applyWebQQReaction(
-        [targetMessage],
-        [...targetIds, targetMessage.id, targetMessage.sequence],
-        entryWithUsers,
-        reaction.isAdd,
-      )
-      if (targetApplied) {
-        broadcastWebQQLivePayload({ ...peer, message: targetApplied.message })
-      }
-      return
-    } catch (error) {
-      options.logger?.info('webqq reaction target resolve failed %s', error instanceof Error ? error.message : String(error))
-    }
-    if (!reaction.isAdd) return
-    const senderName = reaction.userId || '有人'
-    broadcastWebQQLivePayload({
-      ...peer,
-      message: createWebQQEventMessage(peer, Date.now(), 'reaction', `${senderName} 给一条消息贴了 ${label}`, reaction.userId, senderName, reaction.messageId),
-    })
-  }
+  const noticeRuntime = createWebQQNoticeRuntime({ broadcastWebQQLivePayload })
+  const reactionRuntime = createWebQQReactionRuntime({
+    liveMessages,
+    webqq: options.webqq,
+    logger: options.logger,
+    broadcastWebQQLivePayload,
+    rememberLiveMessages,
+  })
 
   return {
     liveMessages,
     recordWebQQLiveMessage,
-    recordWebQQNotice,
-    recordWebQQReaction,
+    recordWebQQNotice: noticeRuntime.recordWebQQNotice,
+    recordWebQQReaction: reactionRuntime.recordWebQQReaction,
     recordWebQQRecall,
     updateLastOutgoingWebQQThinking,
   }

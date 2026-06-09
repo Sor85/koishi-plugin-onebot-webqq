@@ -302,6 +302,14 @@
   flex: 0 0 auto;
 }
 
+.onebot-webqq-webqq__record-transcribe-icon:not(.is-loading) {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 .onebot-webqq-webqq__record-transcript {
   max-width: min(250px, 100%);
   padding: 6px 9px;

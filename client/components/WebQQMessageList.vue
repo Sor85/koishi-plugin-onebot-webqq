@@ -47,150 +47,143 @@
           </div>
           <div class="onebot-webqq-webqq__message-body">
             <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media">
-              <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="emit('open-image', message.elements[0].url)">
-                <img :src="withProxy(message.elements[0].url)" alt="图片" @load="emit('image-load')">
+              <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
+                <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
               </button>
             </div>
             <div v-else :class="['onebot-webqq-webqq__bubble', { 'is-record-only': isRecordOnlyMessage(message) }]">
               <span v-if="isBotThinkingMessage(message)" class="onebot-webqq-webqq__thinking-dots" aria-label="机器人正在思考">
                 <span v-for="dot in 3" :key="dot" class="onebot-webqq-webqq__thinking-dot"></span>
               </span>
-              <template v-else v-for="(run, runIndex) in getWebQQElementRuns(message.elements)" :key="`${message.id}:run:${runIndex}`">
-                <span v-if="run.type === 'inline'" class="onebot-webqq-webqq__inline-run">
-                  <template v-for="element in run.elements" :key="`${message.id}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
-                    <span v-if="element.type === 'text'">{{ element.text }}</span>
-                    <span v-else>{{ element.text || message.summary }}</span>
-                  </template>
-                </span>
-                <button
-                  v-else-if="run.element.type === 'quote' && run.element.targetMessageId"
-                  class="onebot-webqq-webqq__quote is-clickable"
-                  type="button"
-                  aria-label="跳转到引用消息"
-                  @click.stop="scrollToQuotedMessage(run.element.targetMessageId)"
-                >
-                  <strong v-if="run.element.title" class="onebot-webqq-webqq__quote-title">{{ run.element.title }}</strong>
-                  <span>{{ run.element.text || '[引用消息]' }}</span>
-                </button>
-                <div v-else-if="run.element.type === 'quote'" class="onebot-webqq-webqq__quote">
-                  <strong v-if="run.element.title" class="onebot-webqq-webqq__quote-title">{{ run.element.title }}</strong>
-                  <span>{{ run.element.text || '[引用消息]' }}</span>
-                </div>
-                <button
-                  v-else-if="run.element.type === 'forward'"
-                  class="onebot-webqq-webqq__quote onebot-webqq-webqq__forward"
-                  type="button"
-                  :disabled="!run.element.items?.length"
-                  aria-label="查看合并转发消息"
-                  @click.stop="emit('open-forward', run.element)"
-                >
-                  <strong class="onebot-webqq-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
-                  <template v-if="run.element.items?.length">
-                    <span v-for="(item, itemIndex) in getForwardPreviewItems(run.element)" :key="`${message.id}:forward:${runIndex}:${itemIndex}`">
-                      {{ getForwardItemName(item) }}：{{ getForwardPreviewText(item) }}
-                    </span>
-                    <span class="onebot-webqq-webqq__forward-entry">查看{{ run.element.items.length }}条转发消息</span>
-                  </template>
-                  <span v-else>{{ run.element.text || '[合并转发]' }}</span>
-                </button>
-                <div
-                  v-else-if="run.element.type === 'card'"
-                  class="onebot-webqq-webqq__card"
-                >
-                  <img v-if="run.element.imageUrl" class="onebot-webqq-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
-                  <span class="onebot-webqq-webqq__card-content">
-                    <strong class="onebot-webqq-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
-                    <span v-if="run.element.text" class="onebot-webqq-webqq__card-desc">{{ run.element.text }}</span>
-                    <span v-if="run.element.source" class="onebot-webqq-webqq__card-source">{{ run.element.source }}</span>
+              <template v-else>
+                <template v-for="(run, runIndex) in getWebQQElementRuns(message.elements)" :key="`${message.id}:run:${runIndex}`">
+                  <span v-if="run.type === 'inline'" class="onebot-webqq-webqq__inline-run">
+                    <template v-for="element in run.elements" :key="`${message.id}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
+                      <span v-if="element.type === 'text'">{{ element.text }}</span>
+                      <span v-else>{{ element.text || message.summary }}</span>
+                    </template>
                   </span>
-                </div>
-                <button v-else-if="run.element.type === 'image' && run.element.url" class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="emit('open-image', run.element.url)">
-                  <img :src="withProxy(run.element.url)" alt="图片" @load="emit('image-load')">
-                </button>
-                <div v-else-if="run.element.type === 'record'" class="onebot-webqq-webqq__record">
-                  <div class="onebot-webqq-webqq__record-row">
-                    <audio
-                      v-if="run.element.url"
-                      :ref="(element) => setRecordAudioRef(message, run.element, runIndex, element)"
-                      class="onebot-webqq-webqq__record-audio"
-                      :src="withProxy(run.element.url)"
-                      preload="none"
-                      @ended="handleRecordEnded(message, run.element, runIndex)"
-                      @pause="handleRecordPause(message, run.element, runIndex)"
-                      @play="handleRecordPlay(message, run.element, runIndex)"
-                    ></audio>
-                    <button
-                      :class="['onebot-webqq-webqq__record-player', { 'is-playing': isRecordPlaying(message, run.element, runIndex), 'is-loading': isRecordLoading(message, run.element, runIndex) }]"
-                      type="button"
-                      :disabled="!run.element.url || isRecordLoading(message, run.element, runIndex)"
-                      :style="getRecordPlayerStyle(run.element)"
-                      aria-label="播放语音"
-                      @click.stop="toggleRecordPlayback(message, run.element, runIndex)"
-                    >
-                      <svg v-if="isRecordLoading(message, run.element, runIndex)" class="onebot-webqq-webqq__record-play-icon is-loading" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 3a9 9 0 1 1-9 9"></path>
-                      </svg>
-                      <svg v-else-if="isRecordPlaying(message, run.element, runIndex)" class="onebot-webqq-webqq__record-play-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="7" y="5" width="3.5" height="14" rx="1"></rect>
-                        <rect x="13.5" y="5" width="3.5" height="14" rx="1"></rect>
-                      </svg>
-                      <svg v-else class="onebot-webqq-webqq__record-play-icon is-play" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M8 5v14l11-7Z"></path>
-                      </svg>
-                      <svg class="onebot-webqq-webqq__record-wave" viewBox="0 0 24 18" aria-hidden="true">
-                        <rect x="2" y="6" width="2.5" height="6" rx="1.25"></rect>
-                        <rect x="7" y="3" width="2.5" height="12" rx="1.25"></rect>
-                        <rect x="12" y="1" width="2.5" height="16" rx="1.25"></rect>
-                        <rect x="17" y="4" width="2.5" height="10" rx="1.25"></rect>
-                        <rect x="21" y="6" width="2.5" height="6" rx="1.25"></rect>
-                      </svg>
-                      <span class="onebot-webqq-webqq__record-duration">{{ formatRecordDuration(run.element.duration || 0) }}</span>
-                    </button>
-                    <button
-                      v-if="message.id && !getRecordTranscript(message, run.element, runIndex)"
-                      class="onebot-webqq-webqq__record-transcribe"
-                      type="button"
-                      :disabled="isRecordTranscribing(message, run.element, runIndex)"
-                      aria-label="语音转文字"
-                      @click.stop="transcribeRecordMessage(message, run.element, runIndex)"
-                    >
-                      <svg v-if="isRecordTranscribing(message, run.element, runIndex)" class="onebot-webqq-webqq__record-transcribe-icon is-loading" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 3a9 9 0 1 1-9 9"></path>
-                      </svg>
-                      <span v-else>文</span>
-                    </button>
+                  <button
+                    v-else-if="run.element.type === 'quote' && run.element.targetMessageId"
+                    class="onebot-webqq-webqq__quote is-clickable"
+                    type="button"
+                    aria-label="跳转到引用消息"
+                    @click.stop="scrollToQuotedMessage(run.element.targetMessageId)"
+                  >
+                    <strong v-if="run.element.title" class="onebot-webqq-webqq__quote-title">{{ run.element.title }}</strong>
+                    <span>{{ run.element.text || '[引用消息]' }}</span>
+                  </button>
+                  <div v-else-if="run.element.type === 'quote'" class="onebot-webqq-webqq__quote">
+                    <strong v-if="run.element.title" class="onebot-webqq-webqq__quote-title">{{ run.element.title }}</strong>
+                    <span>{{ run.element.text || '[引用消息]' }}</span>
                   </div>
-                  <div v-if="getRecordTranscript(message, run.element, runIndex)" class="onebot-webqq-webqq__record-transcript">
-                    {{ getRecordTranscript(message, run.element, runIndex) }}
+                  <button
+                    v-else-if="run.element.type === 'forward'"
+                    class="onebot-webqq-webqq__quote onebot-webqq-webqq__forward"
+                    type="button"
+                    :disabled="!run.element.items?.length"
+                    aria-label="查看合并转发消息"
+                    @click.stop="emit('open-forward', run.element)"
+                  >
+                    <strong class="onebot-webqq-webqq__quote-title">{{ run.element.title || '合并转发' }}</strong>
+                    <template v-if="run.element.items?.length">
+                      <span v-for="(item, itemIndex) in getForwardPreviewItems(run.element)" :key="`${message.id}:forward:${runIndex}:${itemIndex}`">
+                        {{ getForwardItemName(item) }}：{{ getForwardPreviewText(item) }}
+                      </span>
+                      <span class="onebot-webqq-webqq__forward-entry">查看{{ run.element.items.length }}条转发消息</span>
+                    </template>
+                    <span v-else>{{ run.element.text || '[合并转发]' }}</span>
+                  </button>
+                  <div
+                    v-else-if="run.element.type === 'card'"
+                    class="onebot-webqq-webqq__card"
+                  >
+                    <img v-if="run.element.imageUrl" class="onebot-webqq-webqq__card-cover" :src="withProxy(run.element.imageUrl)" alt="">
+                    <span class="onebot-webqq-webqq__card-content">
+                      <strong class="onebot-webqq-webqq__card-title">{{ run.element.title || '卡片消息' }}</strong>
+                      <span v-if="run.element.text" class="onebot-webqq-webqq__card-desc">{{ run.element.text }}</span>
+                      <span v-if="run.element.source" class="onebot-webqq-webqq__card-source">{{ run.element.source }}</span>
+                    </span>
                   </div>
-                </div>
-                <span v-else>{{ run.element.text || message.summary }}</span>
+                  <button v-else-if="run.element.type === 'image' && run.element.url" class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="emit('open-image', run.element.url)">
+                    <img :src="withProxy(run.element.url)" alt="图片" @load="emit('image-load')">
+                  </button>
+                  <div v-else-if="run.element.type === 'record'" class="onebot-webqq-webqq__record">
+                    <div class="onebot-webqq-webqq__record-row">
+                      <audio
+                        v-if="run.element.url"
+                        :ref="(element) => setRecordAudioRef(message, run.element, runIndex, element)"
+                        class="onebot-webqq-webqq__record-audio"
+                        :src="withProxy(run.element.url)"
+                        preload="none"
+                        @ended="handleRecordEnded(message, run.element, runIndex)"
+                        @pause="handleRecordPause(message, run.element, runIndex)"
+                        @play="handleRecordPlay(message, run.element, runIndex)"
+                      ></audio>
+                      <button
+                        :class="['onebot-webqq-webqq__record-player', { 'is-playing': isRecordPlaying(message, run.element, runIndex), 'is-loading': isRecordLoading(message, run.element, runIndex) }]"
+                        type="button"
+                        :disabled="!run.element.url || isRecordLoading(message, run.element, runIndex)"
+                        :style="getRecordPlayerStyle(run.element)"
+                        aria-label="播放语音"
+                        @click.stop="toggleRecordPlayback(message, run.element, runIndex)"
+                      >
+                        <svg v-if="isRecordLoading(message, run.element, runIndex)" class="onebot-webqq-webqq__record-play-icon is-loading" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 3a9 9 0 1 1-9 9"></path>
+                        </svg>
+                        <svg v-else-if="isRecordPlaying(message, run.element, runIndex)" class="onebot-webqq-webqq__record-play-icon" viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="7" y="5" width="3.5" height="14" rx="1"></rect>
+                          <rect x="13.5" y="5" width="3.5" height="14" rx="1"></rect>
+                        </svg>
+                        <svg v-else class="onebot-webqq-webqq__record-play-icon is-play" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M8 5v14l11-7Z"></path>
+                        </svg>
+                        <svg class="onebot-webqq-webqq__record-wave" viewBox="0 0 24 18" aria-hidden="true">
+                          <rect x="2" y="6" width="2.5" height="6" rx="1.25"></rect>
+                          <rect x="7" y="3" width="2.5" height="12" rx="1.25"></rect>
+                          <rect x="12" y="1" width="2.5" height="16" rx="1.25"></rect>
+                          <rect x="17" y="4" width="2.5" height="10" rx="1.25"></rect>
+                          <rect x="21" y="6" width="2.5" height="6" rx="1.25"></rect>
+                        </svg>
+                        <span class="onebot-webqq-webqq__record-duration">{{ formatRecordDuration(run.element.duration || 0) }}</span>
+                      </button>
+                      <button
+                        v-if="message.id && !getRecordTranscript(message, run.element, runIndex)"
+                        class="onebot-webqq-webqq__record-transcribe"
+                        type="button"
+                        :disabled="isRecordTranscribing(message, run.element, runIndex)"
+                        aria-label="语音转文字"
+                        @click.stop="transcribeRecordMessage(message, run.element, runIndex)"
+                      >
+                        <svg v-if="isRecordTranscribing(message, run.element, runIndex)" class="onebot-webqq-webqq__record-transcribe-icon is-loading" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 3a9 9 0 1 1-9 9"></path>
+                        </svg>
+                        <svg v-else class="onebot-webqq-webqq__record-transcribe-icon" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 5h16"></path>
+                          <path d="M8 5c0 6 1.5 10 4 13"></path>
+                          <path d="M16 5c0 6-1.5 10-4 13"></path>
+                          <path d="M7 14h10"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div v-if="getRecordTranscript(message, run.element, runIndex)" class="onebot-webqq-webqq__record-transcript">
+                      {{ getRecordTranscript(message, run.element, runIndex) }}
+                    </div>
+                  </div>
+                  <span v-else>{{ run.element.text || message.summary }}</span>
+                </template>
               </template>
-              <div v-if="message.reactions?.length && chatStyle === 'telegram'" class="onebot-webqq-webqq__message-reactions">
-                <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="onebot-webqq-webqq__message-reaction">
-                  <img v-if="reaction.emojiUrl" class="onebot-webqq-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
-                  <template v-else>{{ reaction.label }}</template>
-                  <span v-if="shouldShowReactionUsers(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-users">
-                    <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="onebot-webqq-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
-                      <img class="onebot-webqq-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
-                    </span>
-                  </span>
-                  <span v-if="shouldShowReactionCount(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-count">{{ reaction.count }}</span>
-                </span>
-              </div>
+              <WebQQMessageReactions
+                v-if="message.reactions?.length && chatStyle === 'telegram'"
+                :reactions="message.reactions ?? []"
+                :chat-style="chatStyle"
+              />
             </div>
-            <div v-if="message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))" class="onebot-webqq-webqq__message-reactions">
-              <span v-for="reaction in message.reactions" :key="reaction.emojiId" class="onebot-webqq-webqq__message-reaction">
-                <img v-if="reaction.emojiUrl" class="onebot-webqq-webqq__message-reaction-emoji" :src="withProxy(reaction.emojiUrl)" :alt="reaction.label">
-                <template v-else>{{ reaction.label }}</template>
-                <span v-if="shouldShowReactionUsers(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-users">
-                  <span v-for="(user, userIndex) in getReactionUsers(reaction)" :key="user.userId" class="onebot-webqq-webqq__message-reaction-avatar" :title="user.userName || user.userId" :style="{ zIndex: getReactionUserZIndex(reaction, userIndex) }">
-                    <img class="onebot-webqq-webqq__message-reaction-avatar-image" :src="withProxy(user.userAvatar)" :alt="user.userName || user.userId">
-                  </span>
-                </span>
-                <span v-if="shouldShowReactionCount(reaction, chatStyle)" class="onebot-webqq-webqq__message-reaction-count">{{ reaction.count }}</span>
-              </span>
-            </div>
+            <WebQQMessageReactions
+              v-if="message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))"
+              :reactions="message.reactions ?? []"
+              :chat-style="chatStyle"
+            />
             <div v-if="message.recalled" class="onebot-webqq-webqq__message-recall-status">已撤回</div>
             <div class="onebot-webqq-webqq__message-time">{{ formatTime(message.time) }}</div>
           </div>
@@ -239,33 +232,37 @@
 </template>
 
 <script lang="ts" setup>
-import { onBeforeUnmount, onBeforeUpdate, ref } from 'vue'
-import type { WebQQForwardItem, WebQQMessage, WebQQMessageReactionUser } from '../state'
-import type { WebQQElementRun, WebQQMessageElement, WebQQThinkingMessage } from '../utils/webqq-message-view'
+import { withProxy } from '@koishijs/client'
+import { onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
+import WebQQMessageReactions from './WebQQMessageReactions.vue'
+import type { WebQQChatStyle, WebQQMessage } from '../state'
+import {
+  formatSenderLevel,
+  formatTime,
+  getForwardItemName,
+  getForwardPreviewItems as readForwardPreviewItems,
+  getForwardPreviewText,
+  getSenderAuthorityClass,
+  getSenderAuthorityText,
+  getWebQQElementRuns,
+  isImageOnlyMessage,
+  type WebQQMessageElement,
+  type WebQQThinkingMessage,
+} from '../utils/webqq-message-view'
 
 const props = defineProps<{
   loading: boolean
   errorText: string
   hasCurrentChat: boolean
   visibleMessages: WebQQMessage[]
-  chatStyle: string
+  chatStyle: WebQQChatStyle
   showWebQQAffinity: boolean
   showWebQQRelationship: boolean
   hideWebQQGroupLevel: boolean
-  withProxy: (url: string) => string
   isBotThinkingMessage: (message: WebQQMessage) => boolean
   getMessageClusterClass: (index: number) => string
   isMergedMessage: (index: number) => boolean
-  getSenderAuthorityText: (message: WebQQMessage) => string
-  getSenderAuthorityClass: (message: WebQQMessage) => string
-  formatSenderLevel: (level: string) => string
-  isImageOnlyMessage: (message: WebQQMessage) => boolean
-  getWebQQElementRuns: (elements: WebQQMessageElement[]) => WebQQElementRun[]
-  getForwardPreviewItems: (element: WebQQMessageElement) => WebQQForwardItem[]
-  getForwardItemName: (item: WebQQForwardItem) => string
-  getForwardPreviewText: (item: WebQQForwardItem) => string
   transcribeRecord: (messageId: string) => Promise<string>
-  formatTime: (timestamp: number) => string
   getLastOutgoingClusterThinkingMessage: (index: number) => WebQQThinkingMessage | undefined
   isThinkingExpanded: (message: WebQQThinkingMessage) => boolean
   formatThinkingDuration: (durationMs: number) => string
@@ -286,6 +283,8 @@ const loadingRecordKey = ref('')
 const recordTranscripts = ref<Record<string, string>>({})
 const transcribingRecordKeys = ref<Record<string, boolean>>({})
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
+type TemplateRefValue = Element | ComponentPublicInstance | null
+const webQQForwardPreviewLimit = 4
 
 function getMessageDomKey(message: WebQQMessage) {
   return message.id || message.sequence
@@ -305,19 +304,32 @@ onBeforeUnmount(() => {
   recordAudioRefs.clear()
 })
 
-function setMessageElementRef(message: WebQQMessage, element: Element | null) {
+function setMessageElementRef(message: WebQQMessage, element: TemplateRefValue) {
   if (!(element instanceof HTMLElement)) return
   const key = getMessageDomKey(message)
   if (key) messageElementRefs.set(key, element)
 }
 
-function setRecordAudioRef(message: WebQQMessage, element: WebQQMessageElement, runIndex: number, audio: Element | null) {
+function setRecordAudioRef(message: WebQQMessage, element: WebQQMessageElement, runIndex: number, audio: TemplateRefValue) {
   const key = getRecordKey(message, element, runIndex)
   if (audio instanceof HTMLAudioElement) {
     recordAudioRefs.set(key, audio)
   } else {
     recordAudioRefs.delete(key)
   }
+}
+
+function getImageOnlyUrl(message: WebQQMessage) {
+  const element = message.elements[0]
+  return element?.type === 'image' ? element.url || '' : ''
+}
+
+function getForwardPreviewItems(element: WebQQMessageElement) {
+  return readForwardPreviewItems(element, webQQForwardPreviewLimit)
+}
+
+function openImage(url: string | undefined) {
+  if (url) emit('open-image', url)
 }
 
 function isHighlightedMessage(message: WebQQMessage) {
@@ -434,28 +446,6 @@ async function transcribeRecordMessage(message: WebQQMessage, element: WebQQMess
     delete nextTranscribingRecordKeys[key]
     transcribingRecordKeys.value = nextTranscribingRecordKeys
   }
-}
-
-type WebQQMessageReaction = NonNullable<WebQQMessage['reactions']>[number]
-
-function getReactionUsers(reaction: WebQQMessageReaction): WebQQMessageReactionUser[] {
-  if (reaction.users?.length) return reaction.users
-  return reaction.userId && reaction.userAvatar
-    ? [{ userId: reaction.userId, userAvatar: reaction.userAvatar }]
-    : []
-}
-
-function shouldShowReactionUsers(reaction: WebQQMessageReaction, chatStyle: string) {
-  return chatStyle === 'telegram' && getReactionUsers(reaction).length > 0
-}
-
-function shouldShowReactionCount(reaction: WebQQMessageReaction, chatStyle: string) {
-  if (chatStyle !== 'telegram') return reaction.count > 1
-  return reaction.count > Math.max(getReactionUsers(reaction).length, 1)
-}
-
-function getReactionUserZIndex(reaction: WebQQMessageReaction, userIndex: number) {
-  return getReactionUsers(reaction).length - userIndex
 }
 
 function toggleThinking(index: number) {

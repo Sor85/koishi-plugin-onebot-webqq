@@ -69,7 +69,6 @@
       :get-unread-text="getUnreadText"
       :get-contact-subtitle="getContactSubtitle"
       :get-contact-time="getContactTime"
-      :format-list-time="formatListTime"
       :get-group-subtitle="getGroupSubtitle"
       @select-recent="emit('select-recent', $event)"
       @select-friend="emit('select-friend', $event)"
@@ -108,7 +107,6 @@ const props = defineProps<{
   getUnreadText: (count: number) => string
   getContactSubtitle: (type: WebQQContactType, peerId: string, fallback: string) => string
   getContactTime: (type: WebQQContactType, peerId: string, fallback?: number) => number
-  formatListTime: (timestamp: number) => string
   formatNoticeTime: (timestamp: number) => string
   getGroupSubtitle: (group: WebQQGroup) => string
 }>()

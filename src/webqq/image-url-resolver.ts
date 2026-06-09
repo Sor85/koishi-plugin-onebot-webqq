@@ -1,7 +1,9 @@
 import { randomUUID } from 'crypto'
+import * as dns from 'dns/promises'
 import { readFile } from 'fs/promises'
+import { isIP } from 'net'
+import { extname } from 'path'
 import type { WebQQImageUrlResolver } from './live-elements'
-import { detectMediaContentType, getImageContentType, isRemoteImageSource } from './live-elements'
 
 export interface WebQQImageContext {
   params: Record<string, string>
@@ -39,8 +41,164 @@ interface CachedWebQQImage {
 const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
 const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
+const WEBQQ_IMAGE_MAPPING_LIMIT = 1000
+const WEBQQ_IMAGE_REDIRECT_LIMIT = 5
 
 const BROWSER_INCOMPATIBLE_AUDIO = new Set(['audio/amr', 'application/octet-stream'])
+const LOCAL_HOSTNAMES = new Set(['localhost', 'localhost.localdomain'])
+
+export function isRemoteImageSource(file: string) {
+  return /^https?:\/\//.test(file)
+}
+
+export function detectMediaContentType(buf: Buffer): string | undefined {
+  if (buf[0] === 0x23 && buf[1] === 0x21 && buf[2] === 0x41 && buf[3] === 0x4d && buf[4] === 0x52) return 'audio/amr'
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'audio/mpeg'
+  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return 'audio/mpeg'
+  if (buf[0] === 0x4f && buf[1] === 0x67 && buf[2] === 0x67 && buf[3] === 0x53) return 'audio/ogg'
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46) return 'audio/wav'
+  return undefined
+}
+
+export function getImageContentType(file: string) {
+  switch (extname(file).toLowerCase()) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg'
+    case '.gif':
+      return 'image/gif'
+    case '.webp':
+      return 'image/webp'
+    case '.bmp':
+      return 'image/bmp'
+    case '.svg':
+      return 'image/svg+xml'
+    case '.mp3':
+      return 'audio/mpeg'
+    case '.wav':
+      return 'audio/wav'
+    case '.m4a':
+      return 'audio/mp4'
+    case '.ogg':
+    case '.opus':
+      return 'audio/ogg'
+    case '.amr':
+      return 'audio/amr'
+    case '.silk':
+      return 'application/octet-stream'
+    default:
+      return 'image/png'
+  }
+}
+
+function readIPv4Parts(hostname: string) {
+  const parts = hostname.split('.').map((part) => Number(part))
+  return parts.length === 4 && parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) ? parts : undefined
+}
+
+function isPrivateIPv4(hostname: string) {
+  const parts = readIPv4Parts(hostname)
+  if (!parts) return false
+  const [a, b] = parts
+  return a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && (b === 0 || b === 168)) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    a >= 224
+}
+
+function isFakeIPRangeIPv4(hostname: string) {
+  const parts = readIPv4Parts(hostname)
+  if (!parts) return false
+  const [a, b] = parts
+  return a === 198 && (b === 18 || b === 19)
+}
+
+function isPrivateIPv6(hostname: string) {
+  if (hostname === '::' || hostname === '::1') return true
+  const mappedIPv4 = hostname.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)
+  if (mappedIPv4) return isPrivateIPv4(mappedIPv4[1])
+  const first = Number.parseInt(hostname.split(':')[0] || '0', 16)
+  if (!Number.isFinite(first)) return false
+  return first === 0 ||
+    (first & 0xfe00) === 0xfc00 ||
+    (first & 0xffc0) === 0xfe80 ||
+    (first & 0xff00) === 0xff00
+}
+
+function isPrivateOrLocalHostname(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/^\[(.*)\]$/, '$1')
+  if (LOCAL_HOSTNAMES.has(normalized) || normalized.endsWith('.localhost')) return true
+  const ipVersion = isIP(normalized)
+  if (ipVersion === 4) return isPrivateIPv4(normalized)
+  if (ipVersion === 6) return isPrivateIPv6(normalized)
+  return false
+}
+
+async function canProxyRemoteImageSource(file: string) {
+  try {
+    const url = new URL(file)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
+    if (isPrivateOrLocalHostname(url.hostname)) return false
+    const addresses = await dns.lookup(url.hostname, { all: true, verbatim: true })
+    return addresses.length > 0 && addresses.every((address) => {
+      // Clash/TUN fake-ip DNS commonly maps public domains to 198.18/15.
+      // The URL hostname was already checked to be a domain, so this branch keeps real QQ CDN
+      // images working without allowing direct http://198.18.x.x/ private-target probes.
+      if (isFakeIPRangeIPv4(address.address)) return true
+      return !isPrivateOrLocalHostname(address.address)
+    })
+  } catch {
+    return false
+  }
+}
+
+async function fetchRemoteImage(file: string, redirectCount = 0): Promise<{ response: Response, file: string } | undefined> {
+  if (redirectCount > WEBQQ_IMAGE_REDIRECT_LIMIT) return
+  if (!await canProxyRemoteImageSource(file)) return
+  const response = await fetch(file, { redirect: 'manual' })
+  const location = response.status >= 300 && response.status < 400
+    ? response.headers.get('location')
+    : ''
+  if (!location) return { response, file }
+  const nextFile = new URL(location, file).toString()
+  return fetchRemoteImage(nextFile, redirectCount + 1)
+}
+
+function readContentLength(response: Response) {
+  const value = response.headers.get('content-length')
+  if (!value) return undefined
+  const length = Number(value)
+  return Number.isFinite(length) && length >= 0 ? length : undefined
+}
+
+async function readRemoteImageBody(response: Response, limitBytes: number) {
+  const contentLength = readContentLength(response)
+  if (contentLength != null && contentLength > limitBytes) return undefined
+  if (!response.body) {
+    const body = Buffer.from(await response.arrayBuffer())
+    return body.length <= limitBytes ? body : undefined
+  }
+
+  const reader = response.body.getReader()
+  const chunks: Buffer[] = []
+  let total = 0
+  while (true) {
+    const chunk = await reader.read()
+    if (chunk.done) break
+    total += chunk.value.byteLength
+    if (total > limitBytes) {
+      await reader.cancel()
+      return undefined
+    }
+    chunks.push(Buffer.from(chunk.value))
+  }
+  return Buffer.concat(chunks, total)
+}
 
 export function createWebQQImageUrlResolver(
   ctx: WebQQImageUrlResolverContext,
@@ -61,11 +219,35 @@ export function createWebQQImageUrlResolver(
     routerCtx.set('etag', `"${id}"`)
   }
 
+  function evictCachedImage(id: string) {
+    const cached = imageCache.get(id)
+    if (cached) imageCacheSize -= cached.size
+    imageCache.delete(id)
+  }
+
+  function trimImageMappings() {
+    while (files.size > WEBQQ_IMAGE_MAPPING_LIMIT) {
+      const oldestId = files.keys().next().value
+      if (!oldestId) break
+      const file = files.get(oldestId)
+      files.delete(oldestId)
+      if (file) ids.delete(file)
+      evictCachedImage(oldestId)
+    }
+  }
+
+  function rememberImageMapping(id: string, file: string) {
+    files.delete(id)
+    ids.delete(file)
+    files.set(id, file)
+    ids.set(file, id)
+    trimImageMappings()
+  }
+
   function cacheImage(id: string, body: Buffer, contentType: string) {
     if (!cacheEnabled || body.length > cacheItemLimitBytes) return
 
-    const cached = imageCache.get(id)
-    if (cached) imageCacheSize -= cached.size
+    evictCachedImage(id)
 
     imageCache.set(id, {
       body,
@@ -85,9 +267,7 @@ export function createWebQQImageUrlResolver(
         }
       }
       if (!oldestId) break
-      const oldest = imageCache.get(oldestId)
-      if (oldest) imageCacheSize -= oldest.size
-      imageCache.delete(oldestId)
+      evictCachedImage(oldestId)
     }
   }
 
@@ -118,34 +298,52 @@ export function createWebQQImageUrlResolver(
         return
       }
     }
-    logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
-    if (isRemoteImageSource(file)) {
-      const response = await fetch(file)
-      routerCtx.status = response.status
-      if (!response.ok) return
-      const rawBody = Buffer.from(await response.arrayBuffer())
-      const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(file)
+    try {
+      logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
+      if (isRemoteImageSource(file)) {
+        // 入站消息里的远程 URL 由聊天发送方控制；这里必须校验 DNS 最终 IP，
+        // 并逐跳禁用自动重定向，避免域名重绑定或 302 跳转把控制台预览打到内网。
+        const resolved = await fetchRemoteImage(file)
+        if (!resolved) {
+          routerCtx.status = 403
+          return
+        }
+        const { response, file: resolvedFile } = resolved
+        routerCtx.status = response.status
+        if (!response.ok) return
+        const rawBody = await readRemoteImageBody(response, cacheItemLimitBytes)
+        if (!rawBody) {
+          routerCtx.status = 413
+          return
+        }
+        const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(resolvedFile)
+        const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
+        setImageHeaders(routerCtx, id, contentType)
+        routerCtx.body = body
+        cacheImage(id, body, contentType)
+        return
+      }
+      const rawBody = await readFile(file)
+      const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
       const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
       setImageHeaders(routerCtx, id, contentType)
       routerCtx.body = body
       cacheImage(id, body, contentType)
-      return
+    } catch (error) {
+      logger?.info('webqq image proxy failed %s', JSON.stringify({ id, file, error: error instanceof Error ? error.message : String(error) }))
+      routerCtx.status = 502
     }
-    const rawBody = await readFile(file)
-    const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
-    const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
-    setImageHeaders(routerCtx, id, contentType)
-    routerCtx.body = body
-    cacheImage(id, body, contentType)
   })
 
   return (file: string) => {
     if (!ctx.server) return ''
     const cached = ids.get(file)
-    if (cached) return `/onebot-webqq/webqq/image/${cached}`
+    if (cached) {
+      rememberImageMapping(cached, file)
+      return `/onebot-webqq/webqq/image/${cached}`
+    }
     const id = randomUUID()
-    files.set(id, file)
-    ids.set(file, id)
+    rememberImageMapping(id, file)
     return `/onebot-webqq/webqq/image/${id}`
   }
 }

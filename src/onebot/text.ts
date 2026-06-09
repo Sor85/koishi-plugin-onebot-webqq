@@ -44,7 +44,7 @@ export function normalizeMentionMarkupText(value: string) {
     ? text
     : decodedText
   const hasMentionMarkup = /\[CQ:at,[^\]]+\]/i.test(source) || /<(?:[\w-]+:)?(?:at|qqbot-at-user)\b/i.test(source)
-  if (!hasMentionMarkup) return text
+  if (!hasMentionMarkup) return decodedText
   const normalized = source
     .replace(/\[CQ:at,([^\]]+)\]/gi, (_source: string, attrs: string) => {
       const target = readMarkupAttribute(attrs, mentionAttributeKeys)

@@ -1,6 +1,9 @@
 import {
   getActionData,
+  getGroupAvatar,
+  getGroupSubtitle,
   getStringField,
+  getUserAvatar,
   isRecord,
   toArrayResult,
   toOneBotId,
@@ -9,15 +12,11 @@ import {
 import {
   callAction,
   selectBot,
+  supportsOneBotAction,
   type OneBotBot,
   type OneBotContext,
 } from './actions'
 import { getTextValue } from './text'
-import {
-  getGroupAvatar,
-  getGroupSubtitle,
-  getUserAvatar,
-} from './display'
 import { normalizeGroupNotices } from './notices'
 import {
   normalizeGroupAnnouncement,
@@ -37,13 +36,11 @@ import {
   transcribeOneBotRecord,
 } from './records'
 import {
-  summarizeElements,
-} from './message-elements'
-import {
   normalizeMessage,
   normalizeMessageElements,
   resolveOneBotForward,
   resolveOneBotQuote,
+  summarizeElements,
 } from './messages'
 import type {
   OneBotWebQQOptions,
@@ -144,10 +141,6 @@ async function loadRecentContacts(bot: OneBotBot, friends: WebQQFriend[], groups
   }
 }
 
-function supportsAction(bot: OneBotBot, action: string) {
-  return typeof bot.internal._request === 'function' || typeof bot.internal[action] === 'function'
-}
-
 function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefined {
   const item = isRecord(raw) ? raw : {}
   const userId = getStringField(item, ['tinyId'])
@@ -180,7 +173,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     },
 
     supportsReactionUsers() {
-      return supportsAction(getBot(), 'fetch_emoji_like')
+      return supportsOneBotAction(getBot(), 'fetch_emoji_like')
     },
 
     async loadReactionUsers(messageId: string, emojiId: string, count: number): Promise<WebQQMessageReactionUser[]> {

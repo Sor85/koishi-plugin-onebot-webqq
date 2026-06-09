@@ -1,51 +1,28 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
+export {
+  getActionData,
+  getBooleanField,
+  getNumberField,
+  getStringField,
+  isRecord,
+  toArrayResult,
+  toOneBotId,
+  toTimestampMs,
+} from '../shared/structured-text'
+
+export function getUserAvatar(userId: string) {
+  return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${userId}&s=640` : ''
 }
 
-export function toOneBotId(value: string) {
-  return /^\d+$/.test(value) ? Number(value) : value
+export function getGroupAvatar(groupId: string) {
+  return groupId ? `https://p.qlogo.cn/gh/${groupId}/${groupId}/640/` : ''
 }
 
-export function toTimestampMs(value: unknown) {
-  const time = Number(value) || 0
-  return time > 100000000000 ? time : time * 1000
-}
-
-export function getStringField(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = source[key]
-    if (value != null && String(value).trim()) return String(value)
-  }
+export function normalizeGroupRole(role: string) {
+  if (role === 'owner') return '群主'
+  if (role === 'admin' || role === 'administrator') return '管理员'
   return ''
 }
 
-export function getNumberField(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = Number(source[key])
-    if (Number.isFinite(value)) return value
-  }
-  return 0
-}
-
-export function getBooleanField(source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = source[key]
-    if (value === true || value === 'true' || value === 1) return true
-    if (value === false || value === 'false' || value === 0) return false
-  }
-  return undefined
-}
-
-export function toArrayResult(result: unknown, key: string) {
-  if (Array.isArray(result)) return result
-  if (!isRecord(result)) return []
-  if (Array.isArray(result[key])) return result[key]
-  if (isRecord(result.data) && Array.isArray(result.data[key])) return result.data[key]
-  if (Array.isArray(result.data)) return result.data
-  return []
-}
-
-export function getActionData(result: unknown) {
-  const item = isRecord(result) ? result : {}
-  return isRecord(item.data) ? item.data : item
+export function getGroupSubtitle(group: { groupId: string; memberCount: number }) {
+  return `群聊 ${group.groupId} · ${group.memberCount} 人`
 }

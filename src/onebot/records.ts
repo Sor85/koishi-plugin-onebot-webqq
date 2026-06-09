@@ -1,6 +1,7 @@
 import type { WebQQMessageElement } from './types'
 import { callAction, type OneBotBot } from './actions'
 import { getActionData, getNumberField, getStringField, isRecord, toOneBotId } from './data'
+import { assertSafeOneBotMediaFile } from './images'
 
 function resolveRecordUrl(result: unknown, mediaUrlResolver?: (file: string) => string) {
   const source = getActionData(result)
@@ -20,6 +21,7 @@ function readRecordDebug(result: unknown) {
 
 export async function resolveOneBotRecord(bot: OneBotBot, file: string, mediaUrlResolver?: (file: string) => string) {
   // OneBot 的 record 文件常是 silk/amr；请求 mp3 可以让浏览器端 audio 更稳定地播放。
+  assertSafeOneBotMediaFile(file)
   const result = await callAction(bot, 'get_record', { file, out_format: 'mp3' })
   return {
     url: resolveRecordUrl(result, mediaUrlResolver),

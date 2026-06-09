@@ -19,7 +19,6 @@
       :get-unread-text="getUnreadText"
       :get-contact-subtitle="getContactSubtitle"
       :get-contact-time="getContactTime"
-      :format-list-time="formatListTime"
       :format-notice-time="formatNoticeTime"
       :get-group-subtitle="getGroupSubtitle"
       @select-tab="selectTab"
@@ -58,20 +57,10 @@
               :show-web-q-q-affinity="showWebQQAffinity"
               :show-web-q-q-relationship="showWebQQRelationship"
               :hide-web-q-q-group-level="hideWebQQGroupLevel"
-              :with-proxy="withProxy"
               :is-bot-thinking-message="isBotThinkingMessage"
               :get-message-cluster-class="getMessageClusterClass"
               :is-merged-message="isMergedMessage"
-              :get-sender-authority-text="getSenderAuthorityText"
-              :get-sender-authority-class="getSenderAuthorityClass"
-              :format-sender-level="formatSenderLevel"
-              :is-image-only-message="isImageOnlyMessage"
-              :get-web-q-q-element-runs="getWebQQElementRuns"
-              :get-forward-preview-items="getForwardPreviewItems"
-              :get-forward-item-name="getForwardItemName"
-              :get-forward-preview-text="getForwardPreviewText"
               :transcribe-record="requestWebQQRecordTranscription"
-              :format-time="formatTime"
               :get-last-outgoing-cluster-thinking-message="getLastOutgoingClusterThinkingMessage"
               :is-thinking-expanded="isThinkingExpanded"
               :format-thinking-duration="formatThinkingDuration"
@@ -131,23 +120,20 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
-import { approveWebQQNotice, requestWebQQContacts, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
+import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
 import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTotalUnread } from './state'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './state'
-import { requestWebQQContactsWithRetry } from './stores/webqq-contact-loader'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
-import { useWebQQImagePreview } from './stores/webqq-image-preview'
 import { useWebQQLiveMessages } from './stores/webqq-live-messages'
-import { useWebQQMessageCache } from './stores/webqq-message-cache'
 import { useWebQQMessageHistory } from './stores/webqq-message-history'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
 import { useWebQQMessageList } from './stores/webqq-message-list'
@@ -155,20 +141,12 @@ import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
 import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from './stores/webqq-thinking-expansion'
+import { loadCachedWebQQMessages as loadStoredWebQQMessages, saveCachedWebQQMessages as saveStoredWebQQMessages } from './stores/webqq-storage'
 import {
-  formatListTime,
   formatNoticeTime,
-  formatSenderLevel,
   formatThinkingDuration,
-  formatTime,
-  getForwardItemName,
-  getForwardPreviewText,
   getGroupMemberName,
-  getSenderAuthorityClass,
-  getSenderAuthorityText,
   getUnreadText,
-  getWebQQElementRuns,
-  isImageOnlyMessage,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
@@ -208,11 +186,26 @@ const {
   selectRecent: selectWebQQRecent,
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
-const { loadCachedWebQQMessages, saveCachedWebQQMessages } = useWebQQMessageCache(webQQStorageBackend, webQQMessageCacheLimit)
-const { imagePreviewUrl, openImagePreview, closeImagePreview } = useWebQQImagePreview(withProxy)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const loading = ref(false)
 const errorText = ref('')
+const imagePreviewUrl = ref('')
+
+async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
+  return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)
+}
+
+async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[]) {
+  await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value)
+}
+
+function openImagePreview(url: string) {
+  imagePreviewUrl.value = withProxy(url)
+}
+
+function closeImagePreview() {
+  imagePreviewUrl.value = ''
+}
 
 const {
   noticeOpen,
@@ -252,7 +245,6 @@ const {
   forwardDialog,
   forwardDialogItems,
   getForwardItemAvatar,
-  getForwardPreviewItems,
   isMergedForwardItem,
   getForwardItemClusterClass,
   openForwardDialog: openWebQQForwardDialog,
@@ -296,6 +288,7 @@ const {
   capsule,
   currentChat,
   chatStyle: webQQChatStyle,
+  messageCacheLimit: webQQMessageCacheLimit,
   applyMessageSenderMetadata,
   shouldScrollToBottom: () => trackingMessages.value,
   scrollMessagesToBottom,
@@ -311,6 +304,7 @@ messageHistory = useWebQQMessageHistory({
   requestMessages: requestWebQQMessages,
   loadCachedMessages: loadCachedWebQQMessages,
   saveCachedMessages: saveCachedWebQQMessages,
+  messageCacheLimit: webQQMessageCacheLimit,
   rememberMessageSenderMetadata,
   updateConversationSummary,
   scrollMessagesToBottom,
@@ -363,7 +357,7 @@ function selectRecent(item: RecentItem) {
   loadMessages()
 }
 
-useWebQQLiveMessages({
+const disposeWebQQLiveMessages = useWebQQLiveMessages({
   isVisible: () => props.visible,
   currentChat,
   trackingMessages,
@@ -375,6 +369,8 @@ useWebQQLiveMessages({
   loadCachedMessages: loadCachedWebQQMessages,
   saveCachedMessages: saveCachedWebQQMessages,
 })
+
+onBeforeUnmount(() => disposeWebQQLiveMessages())
 
 watch(() => props.visible, (visible) => {
   if (!visible) return

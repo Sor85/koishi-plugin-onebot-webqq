@@ -1,6 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import type { WebQQContacts, WebQQFriend, WebQQGroup } from '../state'
-import type { ConversationSummary } from './webqq-state'
+import type { ConversationSummary, WebQQContacts, WebQQFriend, WebQQGroup } from '../state'
 import {
   createFriendChatSelection,
   createGroupChatSelection,

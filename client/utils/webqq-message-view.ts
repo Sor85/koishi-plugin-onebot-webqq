@@ -222,10 +222,6 @@ export function formatTime(timestamp: number) {
   })
 }
 
-export function formatListTime(timestamp: number) {
-  return formatTime(timestamp)
-}
-
 function padNoticeTimePart(value: number) {
   return String(value).padStart(2, '0')
 }

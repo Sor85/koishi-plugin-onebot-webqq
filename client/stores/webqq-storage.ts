@@ -1,7 +1,6 @@
 import { send } from '@koishijs/client'
-import type { WebQQMessage, WebQQStorageBackend } from '../state'
+import type { ConversationSummary, WebQQMessage, WebQQStorageBackend, WebQQStoredState } from '../state'
 import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from '../webqq-message-cache'
-import type { ConversationSummary, WebQQStoredState } from './webqq-state'
 
 const webQQStorageKey = 'onebot-webqq:webqq:v1'
 
@@ -93,9 +92,10 @@ export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: 
 }
 
 export async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[], storageBackend: WebQQStorageBackend, messageCacheLimit: number) {
+  const cachedMessages = messages.slice(-messageCacheLimit)
   if (storageBackend === 'koishi') {
-    await send('onebot-webqq/webqq/messages/cache/save', { type, peerId, messages }).catch(() => {})
+    await send('onebot-webqq/webqq/messages/cache/save', { type, peerId, messages: cachedMessages }).catch(() => {})
     return
   }
-  await saveBrowserWebQQMessages(type, peerId, messages, messageCacheLimit)
+  await saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit)
 }

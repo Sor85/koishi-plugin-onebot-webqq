@@ -1,7 +1,7 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
 import Capsule from './Capsule.vue'
-import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
+import { capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
 import './style.scss'
 
 interface ClientData {
@@ -111,6 +111,11 @@ function updateWebQQAvatarThemeColor(data?: CapsuleData) {
   }).catch(() => {})
 }
 
+function resetClientEntryState() {
+  lastCheckedAvatar = ''
+  resetWebQQClientState()
+}
+
 export default function (ctx: Context, data?: Ref<ClientData>) {
   capsule.value = data?.value?.capsule
   debug.value = !!data?.value?.debug
@@ -131,11 +136,20 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
     console.debug('[onebot-webqq] entry data', data?.value)
   }
 
-  receive('onebot-webqq/update', (value) => {
-    capsule.value = value as CapsuleData | undefined
-    updateWebQQAvatarThemeColor(capsule.value)
-    if (debug.value) {
-      console.debug('[onebot-webqq] update', value)
+  ctx.effect(() => {
+    const disposeUpdateReceive = receive('onebot-webqq/update', (value) => {
+      capsule.value = value as CapsuleData | undefined
+      updateWebQQAvatarThemeColor(capsule.value)
+      if (debug.value) {
+        console.debug('[onebot-webqq] update', value)
+      }
+    })
+
+    return () => {
+      // Koishi client receive 旧实现没有 disposer；插件卸载时覆盖为空回调，避免 update 事件继续持有旧的全局 ref 闭包。
+      if (typeof disposeUpdateReceive === 'function') disposeUpdateReceive()
+      else receive('onebot-webqq/update', () => {})
+      resetClientEntryState()
     }
   })
 

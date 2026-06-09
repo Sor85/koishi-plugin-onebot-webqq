@@ -6,18 +6,20 @@
     <div class="onebot-webqq-webqq__group-info-body">
       <section class="onebot-webqq-webqq__group-announcements">
         <h3>群公告</h3>
-        <div v-if="loading" class="onebot-webqq-webqq__group-empty">加载中</div>
+        <div v-if="loading && !hasGroupInfo" class="onebot-webqq-webqq__group-empty">加载中</div>
         <div v-else-if="errorText" class="onebot-webqq-webqq__group-empty is-error">{{ errorText }}</div>
         <div v-else-if="!groupInfo.announcements.length" class="onebot-webqq-webqq__group-empty">暂无群公告</div>
-        <article v-for="announcement in groupInfo.announcements" v-else :key="announcement.id" class="onebot-webqq-webqq__group-announcement">
-          <p>{{ announcement.content }}</p>
-          <time v-if="announcement.time">{{ formatNoticeTime(announcement.time) }}</time>
-        </article>
+        <template v-else>
+          <article v-for="announcement in groupInfo.announcements" :key="announcement.id" class="onebot-webqq-webqq__group-announcement">
+            <p>{{ announcement.content }}</p>
+            <time v-if="announcement.time">{{ formatNoticeTime(announcement.time) }}</time>
+          </article>
+        </template>
       </section>
       <section class="onebot-webqq-webqq__group-members">
         <h3>群成员</h3>
         <input :value="searchQuery" type="text" placeholder="搜索群昵称或 QQ 号" @input="updateSearchQuery">
-        <div v-if="loading" class="onebot-webqq-webqq__group-empty">加载中</div>
+        <div v-if="loading && !hasGroupInfo" class="onebot-webqq-webqq__group-empty">加载中</div>
         <div v-else-if="errorText" class="onebot-webqq-webqq__group-empty is-error">{{ errorText }}</div>
         <div v-else-if="!visibleMembers.length" class="onebot-webqq-webqq__group-empty">暂无群成员</div>
         <div v-else class="onebot-webqq-webqq__group-member-list">
@@ -36,9 +38,10 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue'
 import type { WebQQGroupInfo, WebQQGroupMember } from '../state'
 
-defineProps<{
+const props = defineProps<{
   loading: boolean
   errorText: string
   groupInfo: WebQQGroupInfo
@@ -48,6 +51,8 @@ defineProps<{
   formatNoticeTime: (time: number) => string
   getGroupMemberName: (member: WebQQGroupMember) => string
 }>()
+
+const hasGroupInfo = computed(() => props.groupInfo.announcements.length > 0 || props.groupInfo.members.length > 0)
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]

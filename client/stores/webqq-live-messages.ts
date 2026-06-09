@@ -17,14 +17,30 @@ export function useWebQQLiveMessages(options: {
   loadCachedMessages: (type: WebQQLiveMessage['type'], peerId: string) => Promise<WebQQMessage[]>
   saveCachedMessages: (type: WebQQLiveMessage['type'], peerId: string, messages: WebQQMessage[]) => Promise<void>
 }) {
+  const cacheWriteQueue = new Map<string, Promise<void>>()
+
+  function enqueueCachedMessagesUpdate(type: WebQQLiveMessage['type'], peerId: string, update: (messages: WebQQMessage[]) => WebQQMessage[]) {
+    const key = `${type}:${peerId}`
+    const previous = cacheWriteQueue.get(key)
+    const run = async () => {
+      const cachedMessages = await options.loadCachedMessages(type, peerId)
+      await options.saveCachedMessages(type, peerId, update(cachedMessages))
+    }
+    const next = previous ? previous.catch(() => {}).then(run) : run()
+    cacheWriteQueue.set(key, next)
+    const clear = () => {
+      if (cacheWriteQueue.get(key) === next) cacheWriteQueue.delete(key)
+    }
+    next.then(clear, clear)
+    return next
+  }
+
   async function saveLiveWebQQMessage(payload: WebQQLiveMessage) {
-    const cachedMessages = await options.loadCachedMessages(payload.type, payload.peerId)
-    await options.saveCachedMessages(payload.type, payload.peerId, mergeMessages(cachedMessages, [payload.message]))
+    await enqueueCachedMessagesUpdate(payload.type, payload.peerId, (cachedMessages) => mergeMessages(cachedMessages, [payload.message]))
   }
 
   async function saveWebQQRecall(payload: WebQQRecallPayload) {
-    const cachedMessages = await options.loadCachedMessages(payload.type, payload.peerId)
-    await options.saveCachedMessages(payload.type, payload.peerId, applyWebQQRecallToMessages(cachedMessages, payload))
+    await enqueueCachedMessagesUpdate(payload.type, payload.peerId, (cachedMessages) => applyWebQQRecallToMessages(cachedMessages, payload))
   }
 
   function isCurrentChat(payload: Pick<WebQQRecallPayload, 'type' | 'peerId'>) {
@@ -38,7 +54,7 @@ export function useWebQQLiveMessages(options: {
       (!options.isVisible() || !options.trackingMessages.value)
   }
 
-  receive('onebot-webqq/webqq/message', (payload: WebQQLiveMessage) => {
+  const disposeMessageReceive = receive('onebot-webqq/webqq/message', (payload: WebQQLiveMessage) => {
     options.rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
     options.updateConversationSummary(payload.type, payload.peerId, payload.message)
     if (
@@ -57,7 +73,7 @@ export function useWebQQLiveMessages(options: {
     options.saveCachedMessages(payload.type, payload.peerId, options.messages.value).catch(() => {})
   })
 
-  receive('onebot-webqq/webqq/recall', (payload: WebQQRecallPayload) => {
+  const disposeRecallReceive = receive('onebot-webqq/webqq/recall', (payload: WebQQRecallPayload) => {
     if (!isCurrentChat(payload)) {
       if (shouldIncreaseRecallUnread(payload)) options.increaseUnreadCount(payload.type, payload.peerId)
       saveWebQQRecall(payload).catch(() => {})
@@ -69,4 +85,13 @@ export function useWebQQLiveMessages(options: {
     if (latestMessage) options.updateConversationSummary(payload.type, payload.peerId, latestMessage)
     options.saveCachedMessages(payload.type, payload.peerId, options.messages.value).catch(() => {})
   })
+
+  return () => {
+    cacheWriteQueue.clear()
+    // Koishi client 的 receive 旧实现只保存单个事件回调且不返回 disposer；卸载时覆盖为空回调，避免残留闭包继续持有当前会话状态。
+    if (typeof disposeMessageReceive === 'function') disposeMessageReceive()
+    else receive('onebot-webqq/webqq/message', () => {})
+    if (typeof disposeRecallReceive === 'function') disposeRecallReceive()
+    else receive('onebot-webqq/webqq/recall', () => {})
+  }
 }

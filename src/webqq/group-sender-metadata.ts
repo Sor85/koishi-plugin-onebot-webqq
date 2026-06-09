@@ -1,19 +1,10 @@
 import type { Session } from 'koishi'
-import { isRecord, readRecordText } from '../shared/structured-text'
+import { getActionData, isRecord, readRecordText, toOneBotId } from '../shared/structured-text'
 import {
   hasWebQQSenderMetadata,
   readWebQQSenderMetadata,
   type WebQQSenderMetadata,
 } from './sender-metadata'
-
-function toOneBotId(value: string) {
-  return /^\d+$/.test(value) ? Number(value) : value
-}
-
-function getActionData(result: unknown) {
-  const item = isRecord(result) ? result : {}
-  return isRecord(item.data) ? item.data : item
-}
 
 async function readWebQQGroupMemberInfo(session: Session, userId: string, noCache: boolean) {
   if ((session.bot.platform || session.platform) !== 'onebot') return

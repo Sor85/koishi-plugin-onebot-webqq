@@ -62,5 +62,4 @@ export interface CapsuleSnapshot {
     received: number
     sent: number
   }
-  thinkingStartedAt?: number
 }
