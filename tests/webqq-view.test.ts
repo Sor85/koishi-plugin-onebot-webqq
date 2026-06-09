@@ -976,7 +976,43 @@ describe('webqq observer view', () => {
     expect(savedMessages[0].map((message) => message.id)).toEqual(['cached', 'remote'])
   })
 
-  it('does not mark older WebQQ history exhausted when the backend repeats a page', async () => {
+  it('keeps prepended older WebQQ history beyond the current message cache limit', async () => {
+    const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
+    const messages = ref<WebQQMessage[]>([
+      createWebQQMessage({ id: 'newer-1', sequence: 'newer-1', time: 2, summary: 'newer-1' }),
+      createWebQQMessage({ id: 'newer-2', sequence: 'newer-2', time: 3, summary: 'newer-2' }),
+    ])
+    const loading = ref(false)
+    const errorText = ref('')
+    const trackingMessages = ref(false)
+    const messagePane = ref<HTMLElement>()
+    const savedMessages: WebQQMessage[][] = []
+    const history = useWebQQMessageHistory({
+      currentChat,
+      messages,
+      loading,
+      errorText,
+      trackingMessages,
+      messagePane,
+      requestMessages: async () => [createWebQQMessage({ id: 'older', sequence: 'older', time: 1, summary: 'older' })],
+      loadCachedMessages: async () => [],
+      saveCachedMessages: async (_type, _peerId, nextMessages) => {
+        savedMessages.push(nextMessages)
+      },
+      messageCacheLimit: ref(2),
+      rememberMessageSenderMetadata: () => {},
+      updateConversationSummary: () => {},
+      scrollMessagesToBottom: async () => {},
+    })
+
+    await history.loadOlderMessages()
+
+    expect(messages.value.map((message) => message.id)).toEqual(['older', 'newer-1', 'newer-2'])
+    expect(savedMessages[0].map((message) => message.id)).toEqual(['older', 'newer-1', 'newer-2'])
+    expect(history.historyExhausted.value).toBe(false)
+  })
+
+  it('marks older WebQQ history exhausted when the backend repeats a page', async () => {
     const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
     const messages = ref<WebQQMessage[]>([
       createWebQQMessage({ id: 'oldest', sequence: 'oldest', time: 1, summary: 'oldest' }),
@@ -985,10 +1021,7 @@ describe('webqq observer view', () => {
     const errorText = ref('')
     const trackingMessages = ref(false)
     const messagePane = ref<HTMLElement>()
-    const pages = [
-      [createWebQQMessage({ id: 'oldest', sequence: 'oldest', time: 1, summary: 'oldest' })],
-      [],
-    ]
+    const requestMessages = vi.fn(async () => [createWebQQMessage({ id: 'oldest', sequence: 'oldest', time: 1, summary: 'oldest' })])
     const history = useWebQQMessageHistory({
       currentChat,
       messages,
@@ -996,7 +1029,7 @@ describe('webqq observer view', () => {
       errorText,
       trackingMessages,
       messagePane,
-      requestMessages: async () => pages.shift() ?? [],
+      requestMessages,
       loadCachedMessages: async () => [],
       saveCachedMessages: async () => {},
       messageCacheLimit: ref(100),
@@ -1008,10 +1041,11 @@ describe('webqq observer view', () => {
     await history.loadOlderMessages()
 
     expect(messages.value.map((message) => message.id)).toEqual(['oldest'])
-    expect(history.historyExhausted.value).toBe(false)
+    expect(history.historyExhausted.value).toBe(true)
 
     await history.loadOlderMessages()
 
+    expect(requestMessages).toHaveBeenCalledTimes(1)
     expect(history.historyExhausted.value).toBe(true)
   })
 

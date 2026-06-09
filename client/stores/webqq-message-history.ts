@@ -98,10 +98,13 @@ export function useWebQQMessageHistory(options: {
         beforeSequence: options.messages.value[0]?.sequence,
       })
       options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, olderMessages)
-      options.messages.value = limitMessages(mergeMessages(olderMessages, options.messages.value))
+      const previousLength = options.messages.value.length
+      const nextMessages = mergeMessages(olderMessages, options.messages.value)
+      // 上滑分页是在扩展当前历史窗口；这里不能套最近消息上限，否则满 100 条后更早页会被立刻裁掉并反复请求同一页。
+      options.messages.value = nextMessages
       options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
       await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
-      historyExhausted.value = olderMessages.length === 0
+      historyExhausted.value = olderMessages.length === 0 || nextMessages.length === previousLength
       await nextTick()
       if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
     } catch (error) {
