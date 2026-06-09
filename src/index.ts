@@ -45,11 +45,11 @@ import {
 import { readWebQQBotGroupSenderMetadata } from './webqq/group-sender-metadata'
 import {
   createWebQQLiveRuntime,
-  type ChatLunaCharacterAfterChatPayload,
 } from './webqq/live-runtime'
 import { createMessageInput, type ChatLunaMessage } from './chatluna/message-input'
 import type {
   ChatCapsuleContext,
+  ChatLunaCharacterAfterChatPayload,
   ChatLunaModelUsage,
 } from './plugin-context'
 
@@ -219,6 +219,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   })
 
   ctx.on('chatluna/before-chat', async (conversationId, message, _variables, _chatInterface, session) => {
+    if (!session) return
     await recordGenerating(session, message, conversationId)
   })
 
@@ -285,6 +286,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   })
 
   ctx.on('chatluna_character/message_collect', async (session, messages) => {
+    if (!session) return
     await recordGenerating(session, messages?.at(-1))
   })
 }

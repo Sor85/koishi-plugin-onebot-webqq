@@ -1,6 +1,6 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
+import { isRecord } from '../shared/structured-text'
+
+export { isRecord } from '../shared/structured-text'
 
 export function toOneBotId(value: string) {
   return /^\d+$/.test(value) ? Number(value) : value

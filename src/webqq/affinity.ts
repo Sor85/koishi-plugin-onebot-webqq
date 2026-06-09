@@ -1,5 +1,6 @@
 import type { Config } from '../config'
 import type { WebQQMessage } from '../onebot'
+import { isRecord, readRecordText } from '../shared/structured-text'
 
 interface WebQQAffinityContext {
   database?: {
@@ -38,19 +39,6 @@ const defaultWebQQRelationshipLevels: WebQQRelationshipLevel[] = [
   { min: 121, max: 180, relation: '友好' },
   { min: 181, max: 9999, relation: '亲密' },
 ]
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
-}
-
-function readRecordText(source: unknown, keys: string[]) {
-  if (!isRecord(source)) return ''
-  for (const key of keys) {
-    const value = source[key]
-    if (value != null && String(value).trim()) return String(value)
-  }
-  return ''
-}
 
 function readRecordNumber(source: unknown, key: string): number | undefined {
   if (!isRecord(source)) return
@@ -101,10 +89,11 @@ async function loadWebQQAffinityRecords(
 ) {
   const scopeId = config.webQQAffinityScopeId?.trim()
   if (scopeId) {
-    return ctx.database?.get(chatLunaAffinityTable, {
+    const rows = await ctx.database?.get(chatLunaAffinityTable, {
       scopeId,
       userId: { $in: userIds },
     }) ?? []
+    return rows.map(readWebQQAffinityRecord).filter((record): record is WebQQAffinityRecord => !!record)
   }
   const rows = await ctx.database?.get(chatLunaAffinityTable, {}) ?? []
   const records = rows.map(readWebQQAffinityRecord).filter((record): record is WebQQAffinityRecord => !!record)
