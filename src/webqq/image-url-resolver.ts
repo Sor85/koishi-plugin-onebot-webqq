@@ -40,6 +40,7 @@ interface CachedWebQQImage {
 const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
 const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
+const WEBQQ_IMAGE_MAPPING_LIMIT = 1000
 
 const BROWSER_INCOMPATIBLE_AUDIO = new Set(['audio/amr', 'application/octet-stream'])
 const LOCAL_HOSTNAMES = new Set(['localhost', 'localhost.localdomain'])
@@ -145,11 +146,35 @@ export function createWebQQImageUrlResolver(
     routerCtx.set('etag', `"${id}"`)
   }
 
+  function evictCachedImage(id: string) {
+    const cached = imageCache.get(id)
+    if (cached) imageCacheSize -= cached.size
+    imageCache.delete(id)
+  }
+
+  function trimImageMappings() {
+    while (files.size > WEBQQ_IMAGE_MAPPING_LIMIT) {
+      const oldestId = files.keys().next().value
+      if (!oldestId) break
+      const file = files.get(oldestId)
+      files.delete(oldestId)
+      if (file) ids.delete(file)
+      evictCachedImage(oldestId)
+    }
+  }
+
+  function rememberImageMapping(id: string, file: string) {
+    files.delete(id)
+    ids.delete(file)
+    files.set(id, file)
+    ids.set(file, id)
+    trimImageMappings()
+  }
+
   function cacheImage(id: string, body: Buffer, contentType: string) {
     if (!cacheEnabled || body.length > cacheItemLimitBytes) return
 
-    const cached = imageCache.get(id)
-    if (cached) imageCacheSize -= cached.size
+    evictCachedImage(id)
 
     imageCache.set(id, {
       body,
@@ -169,9 +194,7 @@ export function createWebQQImageUrlResolver(
         }
       }
       if (!oldestId) break
-      const oldest = imageCache.get(oldestId)
-      if (oldest) imageCacheSize -= oldest.size
-      imageCache.delete(oldestId)
+      evictCachedImage(oldestId)
     }
   }
 
@@ -240,10 +263,12 @@ export function createWebQQImageUrlResolver(
   return (file: string) => {
     if (!ctx.server) return ''
     const cached = ids.get(file)
-    if (cached) return `/onebot-webqq/webqq/image/${cached}`
+    if (cached) {
+      rememberImageMapping(cached, file)
+      return `/onebot-webqq/webqq/image/${cached}`
+    }
     const id = randomUUID()
-    files.set(id, file)
-    ids.set(file, id)
+    rememberImageMapping(id, file)
     return `/onebot-webqq/webqq/image/${id}`
   }
 }

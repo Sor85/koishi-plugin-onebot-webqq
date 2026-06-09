@@ -35,6 +35,8 @@ import {
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>
+const WEBQQ_LIVE_CONVERSATION_LIMIT = 100
+const WEBQQ_LIVE_SENDER_METADATA_LIMIT = 1000
 
 export type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
 
@@ -155,6 +157,29 @@ export function createWebQQLiveRuntime(options: {
   const pendingWebQQThinking = new Map<string, WebQQThinking>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
 
+  function trimOldestMapEntries<TKey, TValue>(map: Map<TKey, TValue>, limit: number, onEvict?: (key: TKey) => void) {
+    while (map.size > limit) {
+      const oldestKey = map.keys().next().value
+      if (oldestKey == null) break
+      map.delete(oldestKey)
+      onEvict?.(oldestKey)
+    }
+  }
+
+  function rememberLiveMessages(key: string, messages: WebQQMessage[]) {
+    liveMessages.delete(key)
+    liveMessages.set(key, messages)
+    trimOldestMapEntries(liveMessages, WEBQQ_LIVE_CONVERSATION_LIMIT, (evictedKey) => {
+      pendingWebQQThinking.delete(evictedKey)
+    })
+  }
+
+  function rememberPendingWebQQThinking(key: string, thinking: WebQQThinking) {
+    pendingWebQQThinking.delete(key)
+    pendingWebQQThinking.set(key, thinking)
+    trimOldestMapEntries(pendingWebQQThinking, WEBQQ_LIVE_CONVERSATION_LIMIT)
+  }
+
   const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
   const getLiveSenderMetadata = (type: WebQQChatType, peerId: string, userId: string) => {
     return type === 'group' ? liveSenderMetadata.get(getLiveSenderMetadataKey(peerId, userId)) : undefined
@@ -163,19 +188,21 @@ export function createWebQQLiveRuntime(options: {
     if (type !== 'group' || !hasWebQQSenderMetadata(metadata)) return false
     const key = getLiveSenderMetadataKey(peerId, userId)
     if (isSameWebQQSenderMetadata(liveSenderMetadata.get(key), metadata)) return false
+    liveSenderMetadata.delete(key)
     liveSenderMetadata.set(key, metadata)
+    trimOldestMapEntries(liveSenderMetadata, WEBQQ_LIVE_SENDER_METADATA_LIMIT)
     return true
   }
   const broadcastWebQQLivePayload = (payload: WebQQLiveMessage) => {
     const key = getWebQQLiveMessageKey(payload)
     const messages = mergeWebQQLiveMessages(liveMessages.get(key) ?? [], [payload.message], 100)
-    liveMessages.set(key, messages)
+    rememberLiveMessages(key, messages)
     options.ctx.console?.broadcast('onebot-webqq/webqq/message', payload, options.consoleAuthOptions)
   }
   const broadcastWebQQRecallPayload = (payload: WebQQRecallPayload) => {
     const key = getWebQQLiveMessageKey(payload)
     const messages = applyWebQQRecallToLiveMessages(liveMessages.get(key) ?? [], payload, 100)
-    liveMessages.set(key, messages)
+    rememberLiveMessages(key, messages)
     options.ctx.console?.broadcast('onebot-webqq/webqq/recall', payload, options.consoleAuthOptions)
     return messages
   }
@@ -284,7 +311,7 @@ export function createWebQQLiveRuntime(options: {
     const messages = liveMessages.get(key)
     const message = messages?.slice().reverse().find((item) => item.direction === 'outgoing')
     if (!message) {
-      pendingWebQQThinking.set(key, thinking)
+      rememberPendingWebQQThinking(key, thinking)
       return
     }
     pendingWebQQThinking.delete(key)
@@ -460,7 +487,7 @@ export function createWebQQLiveRuntime(options: {
     // loadReactionUsers 上面可能 await；写回前必须重新读取 live cache，避免用旧快照覆盖期间到达的消息。
     const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entryWithUsers, reaction.isAdd)
     if (applied) {
-      liveMessages.set(key, applied.messages)
+      rememberLiveMessages(key, applied.messages)
       options.ctx.console?.broadcast('onebot-webqq/webqq/message', { ...peer, message: applied.message }, options.consoleAuthOptions)
       return
     }

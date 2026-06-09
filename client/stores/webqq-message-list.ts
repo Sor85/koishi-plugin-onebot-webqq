@@ -14,6 +14,7 @@ export function useWebQQMessageList(options: {
   capsule: Ref<CapsuleData | undefined>
   currentChat: Ref<WebQQChatSelection | undefined>
   chatStyle: Readonly<Ref<string>>
+  messageCacheLimit: Readonly<Ref<number>>
   applyMessageSenderMetadata: (message: WebQQMessage) => WebQQMessage
   shouldScrollToBottom: () => boolean
   scrollMessagesToBottom: () => unknown
@@ -41,8 +42,12 @@ export function useWebQQMessageList(options: {
     return getMessageClusterClassFromView(messages.value, index, options.chatStyle.value)
   }
 
+  function limitMessages(nextMessages: WebQQMessage[]) {
+    return nextMessages.slice(-options.messageCacheLimit.value)
+  }
+
   function appendMessage(message: WebQQMessage) {
-    messages.value = mergeMessages(messages.value, [message])
+    messages.value = limitMessages(mergeMessages(messages.value, [message]))
     if (options.shouldScrollToBottom()) options.scrollMessagesToBottom()
   }
 

@@ -1,13 +1,17 @@
 import { ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WebQQLiveMessage, WebQQMessage } from '../client/state'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
 
-const receiveState = vi.hoisted((): { listeners: Record<string, (payload: unknown) => void> } => ({ listeners: {} }))
+const receiveState = vi.hoisted((): { listeners: Record<string, (payload: unknown) => void>; disposed: string[] } => ({ listeners: {}, disposed: [] }))
 
 vi.mock('@koishijs/client', () => ({
   receive: vi.fn((event: string, listener: (payload: unknown) => void) => {
     receiveState.listeners[event] = listener
+    return () => {
+      if (receiveState.listeners[event] === listener) delete receiveState.listeners[event]
+      receiveState.disposed.push(event)
+    }
   }),
 }))
 
@@ -41,6 +45,11 @@ async function flushPromises() {
 }
 
 describe('webqq live message store', () => {
+  beforeEach(() => {
+    receiveState.listeners = {}
+    receiveState.disposed = []
+  })
+
   it('serializes non-current chat cache writes without dropping live messages', async () => {
     let storedMessages: WebQQMessage[] = []
     const saveCachedMessages = vi.fn(async (_type: WebQQLiveMessage['type'], _peerId: string, messages: WebQQMessage[]) => {
@@ -68,5 +77,32 @@ describe('webqq live message store', () => {
 
     expect(saveCachedMessages).toHaveBeenCalledTimes(2)
     expect(storedMessages.map((message) => message.id)).toEqual(['first', 'second'])
+  })
+
+  it('returns a cleanup function for WebQQ live receive listeners', () => {
+    const dispose = useWebQQLiveMessages({
+      isVisible: () => true,
+      currentChat: ref<WebQQChatSelection | undefined>(undefined),
+      trackingMessages: ref(true),
+      messages: ref<WebQQMessage[]>([]),
+      rememberMessageSenderMetadata: () => {},
+      updateConversationSummary: () => {},
+      increaseUnreadCount: () => {},
+      appendMessage: () => {},
+      loadCachedMessages: async () => [],
+      saveCachedMessages: async () => {},
+    })
+
+    expect(receiveState.listeners['onebot-webqq/webqq/message']).toBeDefined()
+    expect(receiveState.listeners['onebot-webqq/webqq/recall']).toBeDefined()
+
+    dispose()
+
+    expect(receiveState.disposed).toEqual([
+      'onebot-webqq/webqq/message',
+      'onebot-webqq/webqq/recall',
+    ])
+    expect(receiveState.listeners['onebot-webqq/webqq/message']).toBeUndefined()
+    expect(receiveState.listeners['onebot-webqq/webqq/recall']).toBeUndefined()
   })
 })

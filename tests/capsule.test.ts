@@ -178,7 +178,7 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')

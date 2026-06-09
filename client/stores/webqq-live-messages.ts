@@ -54,7 +54,7 @@ export function useWebQQLiveMessages(options: {
       (!options.isVisible() || !options.trackingMessages.value)
   }
 
-  receive('onebot-webqq/webqq/message', (payload: WebQQLiveMessage) => {
+  const disposeMessageReceive = receive('onebot-webqq/webqq/message', (payload: WebQQLiveMessage) => {
     options.rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
     options.updateConversationSummary(payload.type, payload.peerId, payload.message)
     if (
@@ -73,7 +73,7 @@ export function useWebQQLiveMessages(options: {
     options.saveCachedMessages(payload.type, payload.peerId, options.messages.value).catch(() => {})
   })
 
-  receive('onebot-webqq/webqq/recall', (payload: WebQQRecallPayload) => {
+  const disposeRecallReceive = receive('onebot-webqq/webqq/recall', (payload: WebQQRecallPayload) => {
     if (!isCurrentChat(payload)) {
       if (shouldIncreaseRecallUnread(payload)) options.increaseUnreadCount(payload.type, payload.peerId)
       saveWebQQRecall(payload).catch(() => {})
@@ -85,4 +85,13 @@ export function useWebQQLiveMessages(options: {
     if (latestMessage) options.updateConversationSummary(payload.type, payload.peerId, latestMessage)
     options.saveCachedMessages(payload.type, payload.peerId, options.messages.value).catch(() => {})
   })
+
+  return () => {
+    cacheWriteQueue.clear()
+    // Koishi client 的 receive 旧实现只保存单个事件回调且不返回 disposer；卸载时覆盖为空回调，避免残留闭包继续持有当前会话状态。
+    if (typeof disposeMessageReceive === 'function') disposeMessageReceive()
+    else receive('onebot-webqq/webqq/message', () => {})
+    if (typeof disposeRecallReceive === 'function') disposeRecallReceive()
+    else receive('onebot-webqq/webqq/recall', () => {})
+  }
 }

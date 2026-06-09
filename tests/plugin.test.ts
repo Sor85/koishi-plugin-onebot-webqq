@@ -573,6 +573,31 @@ describe('chat capsule plugin wiring', () => {
     }
   })
 
+  it('evicts oldest WebQQ image proxy id mappings to avoid unbounded growth', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+
+    const firstUrl = resolver('/tmp/onebot-webqq-image-0.png')
+    for (let index = 1; index <= 1000; index++) {
+      resolver(`/tmp/onebot-webqq-image-${index}.png`)
+    }
+
+    const handler = serverGet.mock.calls[0][1]
+    const firstCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+      params: { id: firstUrl.split('/').pop() || '' },
+      set: vi.fn(),
+    }
+
+    await handler(firstCtx)
+
+    expect(firstCtx.status).toBe(404)
+    expect(firstCtx.body).toBeUndefined()
+  })
+
   it('keeps WebQQ session display helpers outside the plugin entry', () => {
     const session = createSession() as unknown as Session
 

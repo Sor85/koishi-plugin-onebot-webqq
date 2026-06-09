@@ -14,6 +14,7 @@ export function useWebQQMessageHistory(options: {
   requestMessages: (query: WebQQMessageQuery) => Promise<WebQQMessage[]>
   loadCachedMessages: (type: WebQQMessageQuery['type'], peerId: string) => Promise<WebQQMessage[]>
   saveCachedMessages: (type: WebQQMessageQuery['type'], peerId: string, messages: WebQQMessage[]) => Promise<void>
+  messageCacheLimit: Readonly<Ref<number>>
   rememberMessageSenderMetadata: (type: WebQQMessageQuery['type'], peerId: string, messages: WebQQMessage[]) => void
   updateConversationSummary: (type: WebQQMessageQuery['type'], peerId: string, message?: WebQQMessage) => void
   scrollMessagesToBottom: () => Promise<void>
@@ -30,6 +31,10 @@ export function useWebQQMessageHistory(options: {
     if (!options.errorText.value && options.trackingMessages.value) await options.scrollMessagesToBottom()
   }
 
+  function limitMessages(messages: WebQQMessage[]) {
+    return messages.slice(-options.messageCacheLimit.value)
+  }
+
   async function loadMessages() {
     const currentChat = options.currentChat.value
     if (!currentChat) return
@@ -42,7 +47,7 @@ export function useWebQQMessageHistory(options: {
       try {
         const cachedMessages = await options.loadCachedMessages(currentChat.type, currentChat.peerId)
         if (!isCurrentChat(currentChat)) return
-        options.messages.value = cachedMessages
+        options.messages.value = limitMessages(cachedMessages)
       } catch (error) {
         if (!isCurrentChat(currentChat)) return
         options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
@@ -55,7 +60,7 @@ export function useWebQQMessageHistory(options: {
           peerId: currentChat.peerId,
         })
         if (!isCurrentChat(currentChat)) return
-        options.messages.value = mergeMessages(options.messages.value, remoteMessages)
+        options.messages.value = limitMessages(mergeMessages(options.messages.value, remoteMessages))
         options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, options.messages.value)
         options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
         await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
@@ -93,7 +98,7 @@ export function useWebQQMessageHistory(options: {
         beforeSequence: options.messages.value[0]?.sequence,
       })
       options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, olderMessages)
-      options.messages.value = mergeMessages(olderMessages, options.messages.value)
+      options.messages.value = limitMessages(mergeMessages(olderMessages, options.messages.value))
       options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
       await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
       historyExhausted.value = olderMessages.length === 0

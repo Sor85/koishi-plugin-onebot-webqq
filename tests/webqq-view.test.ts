@@ -243,6 +243,16 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('onebot-webqq-webqq__readonly-bar')
   })
 
+  it('cleans WebQQ live listeners and singleton client state on unmount or plugin dispose', () => {
+    expect(webqqView).toContain('onBeforeUnmount')
+    expect(webqqView).toContain('const disposeWebQQLiveMessages = useWebQQLiveMessages')
+    expect(webqqView).toContain('onBeforeUnmount(() => disposeWebQQLiveMessages())')
+    expect(clientState).toContain('export function resetWebQQClientState()')
+    expect(clientIndex).toContain('resetWebQQClientState()')
+    expect(clientIndex).toContain("receive('onebot-webqq/update', () => {})")
+    expect(clientIndex).toContain("lastCheckedAvatar = ''")
+  })
+
   it('renders a transient outgoing bot thinking message after the real WebQQ messages', () => {
     expect(webqqView).toContain("from './stores/webqq-message-list'")
     expect(webqqMessageListStore).toContain('const visibleMessages = computed')
@@ -562,7 +572,8 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/load'")
     expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/save'")
     expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId)')
-    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, messages, messageCacheLimit)')
+    expect(webqqStorage).toContain('const cachedMessages = messages.slice(-messageCacheLimit)')
+    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit)')
     expect(webqqView).toContain('useWebQQMessageCache(webQQStorageBackend, webQQMessageCacheLimit)')
     expect(webqqMessageCacheStore).toContain('loadStoredWebQQMessages(type, peerId, storageBackend.value)')
     expect(webqqMessageCacheStore).toContain('saveStoredWebQQMessages(type, peerId, messages, storageBackend.value, messageCacheLimit.value)')
@@ -571,7 +582,7 @@ describe('webqq observer view', () => {
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
     expect(webqqMessageView).toContain('function mergeWebQQMessage')
     expect(webqqMessageView).toContain('merged.thinking = next.thinking || current.thinking')
-    expect(webqqMessageHistoryStore).toContain('options.messages.value = mergeMessages(options.messages.value, remoteMessages)')
+    expect(webqqMessageHistoryStore).toContain('options.messages.value = limitMessages(mergeMessages(options.messages.value, remoteMessages))')
     expect(webqqMessageHistoryStore).toContain('options.saveCachedMessages')
   })
 
@@ -865,6 +876,7 @@ describe('webqq observer view', () => {
       capsule: ref<CapsuleData | undefined>(createCapsuleData()),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
       chatStyle: ref('telegram'),
+      messageCacheLimit: ref(100),
       applyMessageSenderMetadata: (message) => message,
       shouldScrollToBottom: () => true,
       scrollMessagesToBottom: () => scrollEvents.push('scroll'),
@@ -876,6 +888,24 @@ describe('webqq observer view', () => {
     expect(list.messages.value).toHaveLength(1)
     expect(scrollEvents).toEqual(['scroll'])
     expect(list.isBotThinkingMessage(list.visibleMessages.value[0])).toBe(false)
+  })
+
+  it('limits the in-memory current WebQQ message list to the configured cache limit', () => {
+    const list = useWebQQMessageList({
+      capsule: ref<CapsuleData | undefined>(),
+      currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
+      chatStyle: ref('telegram'),
+      messageCacheLimit: ref(2),
+      applyMessageSenderMetadata: (message) => message,
+      shouldScrollToBottom: () => false,
+      scrollMessagesToBottom: () => {},
+    })
+
+    list.appendMessage(createWebQQMessage({ id: 'first', sequence: 'first', time: 1 }))
+    list.appendMessage(createWebQQMessage({ id: 'second', sequence: 'second', time: 2 }))
+    list.appendMessage(createWebQQMessage({ id: 'third', sequence: 'third', time: 3 }))
+
+    expect(list.messages.value.map((message) => message.id)).toEqual(['second', 'third'])
   })
 
   it('applies WebQQ recall payloads to message lists', () => {
@@ -932,6 +962,7 @@ describe('webqq observer view', () => {
       saveCachedMessages: async (_type, _peerId, nextMessages) => {
         savedMessages.push(nextMessages)
       },
+      messageCacheLimit: ref(100),
       rememberMessageSenderMetadata: () => {},
       updateConversationSummary: () => {},
       scrollMessagesToBottom: async () => {},
@@ -976,6 +1007,7 @@ describe('webqq observer view', () => {
       requestMessages: async () => pages.shift() ?? [],
       loadCachedMessages: async () => [],
       saveCachedMessages: async () => {},
+      messageCacheLimit: ref(100),
       rememberMessageSenderMetadata: () => {},
       updateConversationSummary: () => {},
       scrollMessagesToBottom: async () => {},
@@ -1423,7 +1455,7 @@ describe('webqq observer view', () => {
       loadMessagesSource.indexOf('await options.requestMessages'),
     )
     expect(loadMessagesSource).toContain('const remoteMessages = await options.requestMessages')
-    expect(loadMessagesSource).toContain('options.messages.value = mergeMessages(options.messages.value, remoteMessages)')
+    expect(loadMessagesSource).toContain('options.messages.value = limitMessages(mergeMessages(options.messages.value, remoteMessages))')
     expect(webqqMessageHistoryStore).toContain('async function scrollLoadedMessagesToBottom()')
   })
 

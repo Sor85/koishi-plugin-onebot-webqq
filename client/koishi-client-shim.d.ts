@@ -3,6 +3,7 @@ declare module '@koishijs/client' {
 
   export interface Context {
     slot(options: { type: string; component: Component; order?: number }): unknown
+    effect(callback: () => void | (() => void)): unknown
   }
 
   export const Universal: {

@@ -131,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
@@ -296,6 +296,7 @@ const {
   capsule,
   currentChat,
   chatStyle: webQQChatStyle,
+  messageCacheLimit: webQQMessageCacheLimit,
   applyMessageSenderMetadata,
   shouldScrollToBottom: () => trackingMessages.value,
   scrollMessagesToBottom,
@@ -311,6 +312,7 @@ messageHistory = useWebQQMessageHistory({
   requestMessages: requestWebQQMessages,
   loadCachedMessages: loadCachedWebQQMessages,
   saveCachedMessages: saveCachedWebQQMessages,
+  messageCacheLimit: webQQMessageCacheLimit,
   rememberMessageSenderMetadata,
   updateConversationSummary,
   scrollMessagesToBottom,
@@ -363,7 +365,7 @@ function selectRecent(item: RecentItem) {
   loadMessages()
 }
 
-useWebQQLiveMessages({
+const disposeWebQQLiveMessages = useWebQQLiveMessages({
   isVisible: () => props.visible,
   currentChat,
   trackingMessages,
@@ -375,6 +377,8 @@ useWebQQLiveMessages({
   loadCachedMessages: loadCachedWebQQMessages,
   saveCachedMessages: saveCachedWebQQMessages,
 })
+
+onBeforeUnmount(() => disposeWebQQLiveMessages())
 
 watch(() => props.visible, (visible) => {
   if (!visible) return
