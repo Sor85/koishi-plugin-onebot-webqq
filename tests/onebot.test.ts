@@ -446,6 +446,37 @@ describe('onebot webqq adapter', () => {
     expect(bot.internal.send_msg).not.toHaveBeenCalled()
   })
 
+  it('decodes text entities in plain OneBot text segments', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 1,
+            message_seq: 11,
+            time: 1710000000,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'text', data: { text: 'A &amp; B &#91;ok&#93;' } }],
+          }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        summary: 'A & B [ok]',
+        elements: [{ type: 'text', text: 'A & B [ok]' }],
+      }),
+    ])
+  })
+
   it('does not expose normal group member roles as sender badges', async () => {
     const bot = {
       platform: 'onebot',

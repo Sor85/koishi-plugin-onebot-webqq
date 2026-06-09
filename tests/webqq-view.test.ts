@@ -940,14 +940,53 @@ describe('webqq observer view', () => {
     await Promise.resolve()
 
     expect(messages.value).toEqual([cachedMessage])
-    expect(loading.value).toBe(false)
+    expect(loading.value).toBe(true)
     expect(savedMessages).toEqual([])
 
     resolveRemoteMessages([remoteMessage])
     await loadingMessages
 
     expect(messages.value.map((message) => message.id)).toEqual(['cached', 'remote'])
+    expect(loading.value).toBe(false)
     expect(savedMessages[0].map((message) => message.id)).toEqual(['cached', 'remote'])
+  })
+
+  it('does not mark older WebQQ history exhausted when the backend repeats a page', async () => {
+    const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
+    const messages = ref<WebQQMessage[]>([
+      createWebQQMessage({ id: 'oldest', sequence: 'oldest', time: 1, summary: 'oldest' }),
+    ])
+    const loading = ref(false)
+    const errorText = ref('')
+    const trackingMessages = ref(false)
+    const messagePane = ref<HTMLElement>()
+    const pages = [
+      [createWebQQMessage({ id: 'oldest', sequence: 'oldest', time: 1, summary: 'oldest' })],
+      [],
+    ]
+    const history = useWebQQMessageHistory({
+      currentChat,
+      messages,
+      loading,
+      errorText,
+      trackingMessages,
+      messagePane,
+      requestMessages: async () => pages.shift() ?? [],
+      loadCachedMessages: async () => [],
+      saveCachedMessages: async () => {},
+      rememberMessageSenderMetadata: () => {},
+      updateConversationSummary: () => {},
+      scrollMessagesToBottom: async () => {},
+    })
+
+    await history.loadOlderMessages()
+
+    expect(messages.value.map((message) => message.id)).toEqual(['oldest'])
+    expect(history.historyExhausted.value).toBe(false)
+
+    await history.loadOlderMessages()
+
+    expect(history.historyExhausted.value).toBe(true)
   })
 
   it('renders completed outgoing thinking after the last bubble in its WebQQ message cluster', () => {
@@ -1377,8 +1416,8 @@ describe('webqq observer view', () => {
       'function shouldLoadOlderMessages()',
     )
 
-    expect(loadMessagesSource).toContain('options.loading.value = false')
-    expect(loadMessagesSource.indexOf('options.loading.value = false')).toBeLessThan(
+    expect(loadMessagesSource).toContain('options.loading.value = true')
+    expect(loadMessagesSource.indexOf('options.loading.value = true')).toBeLessThan(
       loadMessagesSource.indexOf('await options.requestMessages'),
     )
     expect(loadMessagesSource).toContain('const remoteMessages = await options.requestMessages')

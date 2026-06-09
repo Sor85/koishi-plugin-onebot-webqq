@@ -35,36 +35,38 @@ export function useWebQQMessageHistory(options: {
     if (!currentChat) return
     options.trackingMessages.value = true
     historyExhausted.value = false
-    options.loading.value = false
+    options.loading.value = true
     options.errorText.value = ''
     options.messages.value = []
     try {
-      const cachedMessages = await options.loadCachedMessages(currentChat.type, currentChat.peerId)
-      if (!isCurrentChat(currentChat)) return
-      options.messages.value = cachedMessages
-    } catch (error) {
-      if (!isCurrentChat(currentChat)) return
-      options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
-      return
-    }
-    await scrollLoadedMessagesToBottom()
-    try {
-      const remoteMessages = await options.requestMessages({
-        type: currentChat.type,
-        peerId: currentChat.peerId,
-      })
-      if (!isCurrentChat(currentChat)) return
-      options.messages.value = mergeMessages(options.messages.value, remoteMessages)
-      options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, options.messages.value)
-      options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
-      await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
-    } catch (error) {
-      if (!isCurrentChat(currentChat) || options.messages.value.length) return
-      options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
+      try {
+        const cachedMessages = await options.loadCachedMessages(currentChat.type, currentChat.peerId)
+        if (!isCurrentChat(currentChat)) return
+        options.messages.value = cachedMessages
+      } catch (error) {
+        if (!isCurrentChat(currentChat)) return
+        options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
+        return
+      }
+      await scrollLoadedMessagesToBottom()
+      try {
+        const remoteMessages = await options.requestMessages({
+          type: currentChat.type,
+          peerId: currentChat.peerId,
+        })
+        if (!isCurrentChat(currentChat)) return
+        options.messages.value = mergeMessages(options.messages.value, remoteMessages)
+        options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, options.messages.value)
+        options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
+        await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
+      } catch (error) {
+        if (!isCurrentChat(currentChat) || options.messages.value.length) return
+        options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
+      }
+      await scrollLoadedMessagesToBottom()
     } finally {
-      options.loading.value = false
+      if (isCurrentChat(currentChat)) options.loading.value = false
     }
-    await scrollLoadedMessagesToBottom()
   }
 
   function shouldLoadOlderMessages() {
@@ -83,7 +85,6 @@ export function useWebQQMessageHistory(options: {
     if (!currentChat || historyLoading.value || historyExhausted.value) return
     const pane = options.messagePane.value
     const previousScrollHeight = pane?.scrollHeight ?? 0
-    const previousCount = options.messages.value.length
     historyLoading.value = true
     try {
       const olderMessages = await options.requestMessages({
@@ -95,7 +96,7 @@ export function useWebQQMessageHistory(options: {
       options.messages.value = mergeMessages(olderMessages, options.messages.value)
       options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
       await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
-      historyExhausted.value = options.messages.value.length === previousCount
+      historyExhausted.value = olderMessages.length === 0
       await nextTick()
       if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
     } catch (error) {

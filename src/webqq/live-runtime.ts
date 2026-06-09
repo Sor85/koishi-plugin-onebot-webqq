@@ -457,6 +457,7 @@ export function createWebQQLiveRuntime(options: {
       ? await resolveWebQQReactionUsers(reaction, entry)
       : entry
     const key = getWebQQLiveMessageKey(peer)
+    // loadReactionUsers 上面可能 await；写回前必须重新读取 live cache，避免用旧快照覆盖期间到达的消息。
     const applied = applyWebQQReaction(liveMessages.get(key) ?? [], targetIds, entryWithUsers, reaction.isAdd)
     if (applied) {
       liveMessages.set(key, applied.messages)

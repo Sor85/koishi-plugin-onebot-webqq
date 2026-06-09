@@ -17,14 +17,30 @@ export function useWebQQLiveMessages(options: {
   loadCachedMessages: (type: WebQQLiveMessage['type'], peerId: string) => Promise<WebQQMessage[]>
   saveCachedMessages: (type: WebQQLiveMessage['type'], peerId: string, messages: WebQQMessage[]) => Promise<void>
 }) {
+  const cacheWriteQueue = new Map<string, Promise<void>>()
+
+  function enqueueCachedMessagesUpdate(type: WebQQLiveMessage['type'], peerId: string, update: (messages: WebQQMessage[]) => WebQQMessage[]) {
+    const key = `${type}:${peerId}`
+    const previous = cacheWriteQueue.get(key)
+    const run = async () => {
+      const cachedMessages = await options.loadCachedMessages(type, peerId)
+      await options.saveCachedMessages(type, peerId, update(cachedMessages))
+    }
+    const next = previous ? previous.catch(() => {}).then(run) : run()
+    cacheWriteQueue.set(key, next)
+    const clear = () => {
+      if (cacheWriteQueue.get(key) === next) cacheWriteQueue.delete(key)
+    }
+    next.then(clear, clear)
+    return next
+  }
+
   async function saveLiveWebQQMessage(payload: WebQQLiveMessage) {
-    const cachedMessages = await options.loadCachedMessages(payload.type, payload.peerId)
-    await options.saveCachedMessages(payload.type, payload.peerId, mergeMessages(cachedMessages, [payload.message]))
+    await enqueueCachedMessagesUpdate(payload.type, payload.peerId, (cachedMessages) => mergeMessages(cachedMessages, [payload.message]))
   }
 
   async function saveWebQQRecall(payload: WebQQRecallPayload) {
-    const cachedMessages = await options.loadCachedMessages(payload.type, payload.peerId)
-    await options.saveCachedMessages(payload.type, payload.peerId, applyWebQQRecallToMessages(cachedMessages, payload))
+    await enqueueCachedMessagesUpdate(payload.type, payload.peerId, (cachedMessages) => applyWebQQRecallToMessages(cachedMessages, payload))
   }
 
   function isCurrentChat(payload: Pick<WebQQRecallPayload, 'type' | 'peerId'>) {
