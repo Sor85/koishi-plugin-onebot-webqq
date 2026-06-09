@@ -464,6 +464,44 @@ describe('chat capsule plugin wiring', () => {
     }
   })
 
+  it('allows WebQQ image proxy hosts resolved through local fake-ip DNS', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    dnsMock.lookup.mockResolvedValueOnce([{ address: '198.18.1.72', family: 4 }])
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://multimedia.nt.qq.com.cn/image.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(fetchMock).toHaveBeenCalledWith('https://multimedia.nt.qq.com.cn/image.jpg', { redirect: 'manual' })
+      expect(routerCtx.status).toBe(200)
+      expect(routerCtx.set).toHaveBeenCalledWith('content-type', 'image/jpeg')
+      expect(routerCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('rejects WebQQ image proxy redirects to private addresses', async () => {
     const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
     const resolver = createWebQQImageUrlResolver({

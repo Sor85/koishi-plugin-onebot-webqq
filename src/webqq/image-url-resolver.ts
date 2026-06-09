@@ -111,6 +111,13 @@ function isPrivateIPv4(hostname: string) {
     a >= 224
 }
 
+function isFakeIPRangeIPv4(hostname: string) {
+  const parts = readIPv4Parts(hostname)
+  if (!parts) return false
+  const [a, b] = parts
+  return a === 198 && (b === 18 || b === 19)
+}
+
 function isPrivateIPv6(hostname: string) {
   if (hostname === '::' || hostname === '::1') return true
   const mappedIPv4 = hostname.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)
@@ -138,7 +145,13 @@ async function canProxyRemoteImageSource(file: string) {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
     if (isPrivateOrLocalHostname(url.hostname)) return false
     const addresses = await dns.lookup(url.hostname, { all: true, verbatim: true })
-    return addresses.length > 0 && addresses.every((address) => !isPrivateOrLocalHostname(address.address))
+    return addresses.length > 0 && addresses.every((address) => {
+      // Clash/TUN fake-ip DNS commonly maps public domains to 198.18/15.
+      // The URL hostname was already checked to be a domain, so this branch keeps real QQ CDN
+      // images working without allowing direct http://198.18.x.x/ private-target probes.
+      if (isFakeIPRangeIPv4(address.address)) return true
+      return !isPrivateOrLocalHostname(address.address)
+    })
   } catch {
     return false
   }
