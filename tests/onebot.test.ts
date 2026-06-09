@@ -703,6 +703,25 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('rejects unsafe image file values before calling get_image', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_image: vi.fn(async () => ({
+          url: 'https://example.com/unsafe.jpg',
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.resolveImage('/etc/passwd')).rejects.toThrow('不安全')
+
+    expect(bot.internal.get_image).not.toHaveBeenCalled()
+  })
+
   it('renders history record segments with playable audio urls and duration', async () => {
     const bot = {
       platform: 'onebot',
@@ -785,6 +804,25 @@ describe('onebot webqq adapter', () => {
       file: 'voice.silk',
       out_format: 'mp3',
     })
+  })
+
+  it('rejects unsafe record file values before calling get_record', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_record: vi.fn(async () => ({
+          url: 'https://example.com/unsafe.mp3',
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.resolveRecord('file:///etc/passwd')).rejects.toThrow('不安全')
+
+    expect(bot.internal.get_record).not.toHaveBeenCalled()
   })
 
   it('transcribes record messages through the OneBot voice_msg_to_text action', async () => {

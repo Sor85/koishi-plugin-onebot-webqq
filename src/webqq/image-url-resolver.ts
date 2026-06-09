@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import { readFile } from 'fs/promises'
+import { isIP } from 'net'
 import type { WebQQImageUrlResolver } from './live-elements'
 import { detectMediaContentType, getImageContentType, isRemoteImageSource } from './live-elements'
 
@@ -41,6 +42,89 @@ const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
 
 const BROWSER_INCOMPATIBLE_AUDIO = new Set(['audio/amr', 'application/octet-stream'])
+const LOCAL_HOSTNAMES = new Set(['localhost', 'localhost.localdomain'])
+
+function readIPv4Parts(hostname: string) {
+  const parts = hostname.split('.').map((part) => Number(part))
+  return parts.length === 4 && parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) ? parts : undefined
+}
+
+function isPrivateIPv4(hostname: string) {
+  const parts = readIPv4Parts(hostname)
+  if (!parts) return false
+  const [a, b] = parts
+  return a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && (b === 0 || b === 168)) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    a >= 224
+}
+
+function isPrivateIPv6(hostname: string) {
+  if (hostname === '::' || hostname === '::1') return true
+  const mappedIPv4 = hostname.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)
+  if (mappedIPv4) return isPrivateIPv4(mappedIPv4[1])
+  const first = Number.parseInt(hostname.split(':')[0] || '0', 16)
+  if (!Number.isFinite(first)) return false
+  return first === 0 ||
+    (first & 0xfe00) === 0xfc00 ||
+    (first & 0xffc0) === 0xfe80 ||
+    (first & 0xff00) === 0xff00
+}
+
+function isPrivateOrLocalHostname(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/^\[(.*)\]$/, '$1')
+  if (LOCAL_HOSTNAMES.has(normalized) || normalized.endsWith('.localhost')) return true
+  const ipVersion = isIP(normalized)
+  if (ipVersion === 4) return isPrivateIPv4(normalized)
+  if (ipVersion === 6) return isPrivateIPv6(normalized)
+  return false
+}
+
+function canProxyRemoteImageSource(file: string) {
+  try {
+    const url = new URL(file)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
+    return !isPrivateOrLocalHostname(url.hostname)
+  } catch {
+    return false
+  }
+}
+
+function readContentLength(response: Response) {
+  const value = response.headers.get('content-length')
+  if (!value) return undefined
+  const length = Number(value)
+  return Number.isFinite(length) && length >= 0 ? length : undefined
+}
+
+async function readRemoteImageBody(response: Response, limitBytes: number) {
+  const contentLength = readContentLength(response)
+  if (contentLength != null && contentLength > limitBytes) return undefined
+  if (!response.body) {
+    const body = Buffer.from(await response.arrayBuffer())
+    return body.length <= limitBytes ? body : undefined
+  }
+
+  const reader = response.body.getReader()
+  const chunks: Buffer[] = []
+  let total = 0
+  while (true) {
+    const chunk = await reader.read()
+    if (chunk.done) break
+    total += chunk.value.byteLength
+    if (total > limitBytes) {
+      await reader.cancel()
+      return undefined
+    }
+    chunks.push(Buffer.from(chunk.value))
+  }
+  return Buffer.concat(chunks, total)
+}
 
 export function createWebQQImageUrlResolver(
   ctx: WebQQImageUrlResolverContext,
@@ -118,25 +202,39 @@ export function createWebQQImageUrlResolver(
         return
       }
     }
-    logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
-    if (isRemoteImageSource(file)) {
-      const response = await fetch(file)
-      routerCtx.status = response.status
-      if (!response.ok) return
-      const rawBody = Buffer.from(await response.arrayBuffer())
-      const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(file)
+    try {
+      logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
+      if (isRemoteImageSource(file)) {
+        // 入站消息里的远程 URL 由聊天发送方控制；这里必须在 fetch 前拦截内网地址，避免控制台预览触发 SSRF。
+        if (!canProxyRemoteImageSource(file)) {
+          routerCtx.status = 403
+          return
+        }
+        const response = await fetch(file)
+        routerCtx.status = response.status
+        if (!response.ok) return
+        const rawBody = await readRemoteImageBody(response, cacheItemLimitBytes)
+        if (!rawBody) {
+          routerCtx.status = 413
+          return
+        }
+        const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(file)
+        const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
+        setImageHeaders(routerCtx, id, contentType)
+        routerCtx.body = body
+        cacheImage(id, body, contentType)
+        return
+      }
+      const rawBody = await readFile(file)
+      const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
       const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
       setImageHeaders(routerCtx, id, contentType)
       routerCtx.body = body
       cacheImage(id, body, contentType)
-      return
+    } catch (error) {
+      logger?.info('webqq image proxy failed %s', JSON.stringify({ id, file, error: error instanceof Error ? error.message : String(error) }))
+      routerCtx.status = 502
     }
-    const rawBody = await readFile(file)
-    const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
-    const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
-    setImageHeaders(routerCtx, id, contentType)
-    routerCtx.body = body
-    cacheImage(id, body, contentType)
   })
 
   return (file: string) => {

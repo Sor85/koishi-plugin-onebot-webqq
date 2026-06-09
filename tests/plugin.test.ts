@@ -346,6 +346,73 @@ describe('chat capsule plugin wiring', () => {
     }
   })
 
+  it('rejects private WebQQ image proxy targets before fetching', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('http://127.0.0.1/private.png')
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(routerCtx.status).toBe(403)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('rejects WebQQ image proxy responses over the configured item limit before reading the body', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    }, undefined, {
+      cacheItemLimitBytes: 4,
+    })
+    const arrayBuffer = vi.fn(async () => Uint8Array.from([1, 2, 3, 4, 5]).buffer)
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-length' ? '5' : null),
+      },
+      arrayBuffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/large.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(arrayBuffer).not.toHaveBeenCalled()
+      expect(routerCtx.status).toBe(413)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('skips WebQQ image memory cache when disabled', async () => {
     const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
     const resolver = createWebQQImageUrlResolver({

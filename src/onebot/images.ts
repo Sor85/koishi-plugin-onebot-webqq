@@ -6,6 +6,23 @@ function isRemoteUrl(value: string) {
   return /^https?:\/\//.test(value)
 }
 
+const unsafeFileScheme = /^[a-z][a-z0-9+.-]*:/i
+const windowsAbsolutePath = /^[a-z]:[\\/]/i
+
+export function assertSafeOneBotMediaFile(file: string) {
+  const normalized = file.trim().replace(/\\/g, '/')
+  if (!normalized ||
+    normalized.startsWith('/') ||
+    normalized.startsWith('//') ||
+    normalized.startsWith('../') ||
+    normalized.includes('/../') ||
+    normalized.endsWith('/..') ||
+    windowsAbsolutePath.test(file) ||
+    unsafeFileScheme.test(file)) {
+    throw new Error('不安全的 OneBot 媒体文件标识')
+  }
+}
+
 function resolveImageUrl(result: unknown, imageUrlResolver?: (file: string) => string) {
   const item = isRecord(result) ? result : {}
   const source = isRecord(item.data) ? item.data : item
@@ -31,6 +48,8 @@ function readImageDebug(result: unknown) {
 }
 
 export async function resolveOneBotImage(bot: OneBotBot, file: string, imageUrlResolver?: (file: string) => string) {
+  // get_image 的 file 应该是 OneBot 文件 ID；拒绝路径和 scheme，避免上层输入被适配器当成本地文件读取。
+  assertSafeOneBotMediaFile(file)
   const result = await callAction(bot, 'get_image', { file })
   return {
     url: resolveImageUrl(result, imageUrlResolver),
