@@ -627,6 +627,46 @@ describe('chat capsule plugin wiring', () => {
     expect(getWebQQUserAvatar('30000')).toBe('https://q1.qlogo.cn/g?b=qq&nk=30000&s=640')
   })
 
+  it('uses raw OneBot group ids for WebQQ live peers when channel ids are shared', async () => {
+    const first = createSession({
+      channelId: 'shared-channel',
+      content: 'first',
+      event: {
+        guild: { name: 'Shared Guild' },
+        channel: { name: 'Shared Channel' },
+        user: { id: '30000', name: 'Alice' },
+        _data: {
+          group_id: '20000',
+          message_id: 'message-1',
+        },
+      },
+    }) as unknown as Session
+    const second = createSession({
+      channelId: 'shared-channel',
+      content: 'second',
+      event: {
+        guild: { name: 'Shared Guild' },
+        channel: { name: 'Shared Channel' },
+        user: { id: '30001', name: 'Bob' },
+        _data: {
+          group_id: '20001',
+          message_id: 'message-2',
+        },
+      },
+    }) as unknown as Session
+
+    expect(readWebQQPeer(first)).toEqual({ type: 'group', peerId: '20000' })
+    expect(readWebQQPeer(second)).toEqual({ type: 'group', peerId: '20001' })
+    await expect(createWebQQLiveMessage(first, 'incoming')).resolves.toMatchObject({
+      type: 'group',
+      peerId: '20000',
+    })
+    await expect(createWebQQLiveMessage(second, 'incoming')).resolves.toMatchObject({
+      type: 'group',
+      peerId: '20001',
+    })
+  })
+
   it('keeps WebQQ live sender metadata helpers outside the plugin entry', () => {
     const message: WebQQMessage = {
       id: 'live-1',

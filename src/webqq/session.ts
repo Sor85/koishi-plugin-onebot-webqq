@@ -1,6 +1,7 @@
 import type { Session } from 'koishi'
 import type { WebQQMessage } from '../onebot'
 import { getGroupAvatar, getUserAvatar } from '../onebot/data'
+import { isRecord, readRecordText } from '../shared/structured-text'
 import { readWebQQSenderMetadata } from './sender-metadata'
 
 export function readBotProfile(session: Session) {
@@ -34,10 +35,18 @@ export function getWebQQGroupAvatar(groupId: string) {
   return getGroupAvatar(groupId)
 }
 
+function readRawEventData(session: Session) {
+  const data = (session.event as { _data?: unknown })._data
+  return isRecord(data) ? data : {}
+}
+
 export function readWebQQPeer(session: Session) {
-  const isGroup = !!(session.guildId || session.event.guild)
+  const rawGroupId = readRecordText(readRawEventData(session), ['group_id', 'groupId'])
+  const isGroup = !!(rawGroupId || session.guildId || session.event.guild)
   const peerId = isGroup
-    ? session.channelId || session.guildId || session.event.channel?.id || session.event.guild?.id
+    // OneBot 的群号在原始 group_id；部分适配器会把 channelId 做成共享或合成值，
+    // 用它做 WebQQ 会话 key 会把不同群的实时消息并到同一个会话。
+    ? rawGroupId || session.guildId || session.event.guild?.id || session.channelId || session.event.channel?.id
     : session.userId || session.event.user?.id || session.channelId || session.event.channel?.id
   if (!peerId) return
   return {
