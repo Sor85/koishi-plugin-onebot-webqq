@@ -27,9 +27,14 @@ function readCompletionMessagesText(value: unknown) {
 }
 
 export function readCharacterAfterChatText(payload: ChatLunaCharacterAfterChatPayload) {
-  return readStructuredText(payload.lastResponseMessage)
-    || readStructuredText(payload.text)
-    || readCompletionMessagesText(payload.completionMessages)
+  const candidates = [
+    readStructuredText(payload.lastResponseMessage),
+    readStructuredText(payload.text),
+    readCompletionMessagesText(payload.completionMessages),
+  ].filter(Boolean)
+  // chatluna-character 的 lastResponseMessage 有时是已发送的清理后文本，
+  // `<think>` 仍保留在 completionMessages 快照里；不能被第一个非空候选提前截断。
+  return candidates.find((text) => parseThinkContent(text)) || candidates[0] || ''
 }
 
 export function parseThinkContent(text: string) {
