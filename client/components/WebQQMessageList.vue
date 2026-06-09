@@ -47,8 +47,8 @@
           </div>
           <div class="onebot-webqq-webqq__message-body">
             <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media">
-              <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="emit('open-image', message.elements[0].url)">
-                <img :src="withProxy(message.elements[0].url)" alt="图片" @load="emit('image-load')">
+              <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
+                <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
               </button>
             </div>
             <div v-else :class="['onebot-webqq-webqq__bubble', { 'is-record-only': isRecordOnlyMessage(message) }]">
@@ -239,7 +239,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onBeforeUnmount, onBeforeUpdate, ref } from 'vue'
+import { onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
 import type { WebQQForwardItem, WebQQMessage, WebQQMessageReactionUser } from '../state'
 import type { WebQQElementRun, WebQQMessageElement, WebQQThinkingMessage } from '../utils/webqq-message-view'
 
@@ -286,6 +286,7 @@ const loadingRecordKey = ref('')
 const recordTranscripts = ref<Record<string, string>>({})
 const transcribingRecordKeys = ref<Record<string, boolean>>({})
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
+type TemplateRefValue = Element | ComponentPublicInstance | null
 
 function getMessageDomKey(message: WebQQMessage) {
   return message.id || message.sequence
@@ -305,19 +306,28 @@ onBeforeUnmount(() => {
   recordAudioRefs.clear()
 })
 
-function setMessageElementRef(message: WebQQMessage, element: Element | null) {
+function setMessageElementRef(message: WebQQMessage, element: TemplateRefValue) {
   if (!(element instanceof HTMLElement)) return
   const key = getMessageDomKey(message)
   if (key) messageElementRefs.set(key, element)
 }
 
-function setRecordAudioRef(message: WebQQMessage, element: WebQQMessageElement, runIndex: number, audio: Element | null) {
+function setRecordAudioRef(message: WebQQMessage, element: WebQQMessageElement, runIndex: number, audio: TemplateRefValue) {
   const key = getRecordKey(message, element, runIndex)
   if (audio instanceof HTMLAudioElement) {
     recordAudioRefs.set(key, audio)
   } else {
     recordAudioRefs.delete(key)
   }
+}
+
+function getImageOnlyUrl(message: WebQQMessage) {
+  const element = message.elements[0]
+  return element?.type === 'image' ? element.url || '' : ''
+}
+
+function openImage(url: string | undefined) {
+  if (url) emit('open-image', url)
 }
 
 function isHighlightedMessage(message: WebQQMessage) {

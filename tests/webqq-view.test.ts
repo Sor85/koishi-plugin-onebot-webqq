@@ -374,7 +374,7 @@ describe('webqq observer view', () => {
   })
 
   it('keeps sender metadata cache state in a small composable', () => {
-    const currentChat = { value: createGroupChatSelection() }
+    const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
     const metadata = useWebQQSenderMetadata(currentChat)
     metadata.rememberMessageSenderMetadata('group', '20000', [createWebQQMessage({
       senderId: '30000',
@@ -771,7 +771,8 @@ describe('webqq observer view', () => {
   it('renders image-only WebQQ messages without a text bubble', () => {
     expect(webqqMessageListView).toContain('v-if="isImageOnlyMessage(message)"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-media"')
-    expect(webqqMessageListView).toContain(':src="withProxy(message.elements[0].url)"')
+    expect(webqqMessageListView).toContain(':src="withProxy(getImageOnlyUrl(message))"')
+    expect(webqqMessageListView).toContain('function getImageOnlyUrl(message: WebQQMessage)')
     expect(webqqMessageView).toContain('function isImageOnlyMessage(message: WebQQMessage)')
   })
 
@@ -782,7 +783,8 @@ describe('webqq observer view', () => {
     expect(webqqImagePreview).toContain('imagePreviewUrl.value = withProxy(url)')
     expect(webqqImagePreview).toContain('function closeImagePreview()')
     expect(webqqImagePreview).toContain('imagePreviewUrl.value = \'\'')
-    expect(webqqMessageListView).toContain("emit('open-image', message.elements[0].url)")
+    expect(webqqMessageListView).toContain('@click="openImage(getImageOnlyUrl(message))"')
+    expect(webqqMessageListView).toContain("function openImage(url: string | undefined)")
     expect(webqqMessageListView).toContain("emit('open-image', run.element.url)")
     expect(webqqView).toContain('@open-image="openImagePreview"')
     expect(webqqView).toContain('<WebQQImagePreview')

@@ -67,6 +67,10 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 - `webQQAffinityScopeId`：指定 ChatLuna 好感度插件的 scopeId
 - `showWebQQCapsuleUnread`：在右下角胶囊 bot 头像上显示 WebQQ 总未读数
 
+### 开发者选项
+
+- `debug`：显示前端调试信息
+
 ## 使用方式
 
 安装并启用插件后，Koishi 控制台右下角会出现聊天胶囊。点击胶囊头像可以打开 WebQQ 观察窗。
