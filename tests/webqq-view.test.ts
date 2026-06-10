@@ -783,6 +783,7 @@ describe('webqq observer view', () => {
 
   it('renders image-only WebQQ messages without a text bubble', () => {
     expect(webqqMessageListView).toContain('v-if="isImageOnlyMessage(message)"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-media-stack"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-media"')
     expect(webqqMessageListView).toContain(':src="withProxy(getImageOnlyUrl(message))"')
     expect(webqqMessageListView).toContain('function getImageOnlyUrl(message: WebQQMessage)')
@@ -1121,7 +1122,7 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain(':get-sender-authority-text="getSenderAuthorityText"')
     expect(webqqMessageListView).toContain('message.reactions')
     expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle === 'telegram'")
-    expect(webqqMessageListView).toContain("message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))")
+    expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle !== 'telegram'")
     expect(webqqMessageReactionsView).toContain('onebot-webqq-webqq__message-reactions')
     expect(webqqMessageReactionsView).toContain('getReactionUsers(reaction)')
     expect(webqqMessageReactionsView).toContain('getReactionUserZIndex(reaction, userIndex)')
@@ -1148,7 +1149,7 @@ describe('webqq observer view', () => {
   it('renders QQ-style WebQQ reactions outside bubbles without user avatars', () => {
     const outsideReactionSource = sourceBetween(
       webqqMessageListView,
-      "message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))",
+      "message.reactions?.length && chatStyle !== 'telegram'",
       'class="onebot-webqq-webqq__message-recall-status"',
     )
 

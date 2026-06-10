@@ -132,6 +132,17 @@
   align-items: flex-end;
 }
 
+.onebot-webqq-webqq__message-media-stack {
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack {
+  align-items: flex-end;
+}
+
 .onebot-webqq-webqq__message-media {
   display: flex;
   max-width: 100%;
@@ -644,7 +655,30 @@
   margin-bottom: -5px;
 }
 
+// 图片纯消息没有气泡，reaction 放在媒体列里；这里让它在图片下方复用 Telegram 气泡 reaction 的视觉规则。
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions {
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%);
+  align-self: flex-start;
+  margin-top: 0;
+  margin-bottom: -5px;
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions {
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #0f172a 12%);
+  align-self: flex-end;
+}
+
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction {
+  --onebot-webqq-webqq-reaction-avatar-size: 18px;
+  gap: 4px;
+  padding: 0 0 0 4px;
+  min-height: unset;
+  color: #fff;
+  background: var(--onebot-webqq-webqq-reaction-bg);
+  border-color: transparent;
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction {
   --onebot-webqq-webqq-reaction-avatar-size: 18px;
   gap: 4px;
   padding: 0 0 0 4px;
@@ -658,7 +692,15 @@
   background: var(--onebot-webqq-webqq-reaction-bg);
 }
 
+.onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction {
+  background: var(--onebot-webqq-webqq-reaction-bg);
+}
+
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-users {
+  margin-right: 0;
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-users {
   margin-right: 0;
 }
 
@@ -666,7 +708,15 @@
   box-shadow: none;
 }
 
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-avatar {
+  box-shadow: none;
+}
+
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-avatar:not(:only-child):not(:last-child) {
+  box-shadow: 0 0 0 1px var(--onebot-webqq-webqq-reaction-bg, #4fa3e0);
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-avatar:not(:only-child):not(:last-child) {
   box-shadow: 0 0 0 1px var(--onebot-webqq-webqq-reaction-bg, #4fa3e0);
 }
 

@@ -404,6 +404,30 @@ describe('chat capsule styles', () => {
     expect(usersBody).toContain('margin-right: 0')
   })
 
+  it('keeps Telegram-style WebQQ image reactions below images with bubble reaction styling', () => {
+    const stackBody = ruleBody('.onebot-webqq-webqq__message-media-stack')
+    const outgoingStackBody = ruleBody('.onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack')
+    const reactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
+    const outgoingReactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
+    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction')
+    const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-users')
+    const avatarBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-avatar')
+
+    expect(stackBody).toContain('flex-direction: column')
+    expect(stackBody).toContain('align-items: flex-start')
+    expect(outgoingStackBody).toContain('align-items: flex-end')
+    expect(reactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%)')
+    expect(reactionsBody).toContain('align-self: flex-start')
+    expect(reactionsBody).toContain('margin-top: 0')
+    expect(outgoingReactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #0f172a 12%)')
+    expect(outgoingReactionsBody).toContain('align-self: flex-end')
+    expect(reactionBody).toContain('--onebot-webqq-webqq-reaction-avatar-size: 18px')
+    expect(reactionBody).toContain('background: var(--onebot-webqq-webqq-reaction-bg)')
+    expect(reactionBody).toContain('padding: 0 0 0 4px')
+    expect(usersBody).toContain('margin-right: 0')
+    expect(avatarBody).toContain('box-shadow: none')
+  })
+
   it('shows QQ-style WebQQ message times beside bubbles on hover', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-body')).toContain('flex-direction: row')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-body')).toContain('align-items: flex-end')
@@ -551,8 +575,12 @@ describe('chat capsule styles', () => {
     const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
     const forcedBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__bubble')
     const forcedOutgoingBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')
+    const forcedMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
+    const forcedOutgoingMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
     const autoBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__bubble', autoDarkBody)
     const autoOutgoingBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble', autoDarkBody)
+    const autoMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions', autoDarkBody)
+    const autoOutgoingMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions', autoDarkBody)
     const forcedSelectors = [
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat',
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__search input',
@@ -560,6 +588,8 @@ describe('chat capsule styles', () => {
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-menu',
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__bubble',
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble',
+      '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions',
+      '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions',
     ]
     const autoSelectors = forcedSelectors.map((selector) => selector.replace('is-color-dark', 'is-color-auto'))
     const missingRequirements = [
@@ -588,6 +618,18 @@ describe('chat capsule styles', () => {
       autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
         ? ''
         : '自动暗色发出气泡没有覆盖 Telegram 贴表情背景变量',
+      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
+        ? ''
+        : '强制暗色图片贴表情没有覆盖 Telegram 贴表情背景变量',
+      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
+        ? ''
+        : '强制暗色发出图片贴表情没有覆盖 Telegram 贴表情背景变量',
+      autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
+        ? ''
+        : '自动暗色图片贴表情没有覆盖 Telegram 贴表情背景变量',
+      autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
+        ? ''
+        : '自动暗色发出图片贴表情没有覆盖 Telegram 贴表情背景变量',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])

@@ -46,10 +46,17 @@
             </template>
           </div>
           <div class="onebot-webqq-webqq__message-body">
-            <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media">
-              <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
-                <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
-              </button>
+            <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media-stack">
+              <div class="onebot-webqq-webqq__message-media">
+                <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
+                  <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
+                </button>
+              </div>
+              <WebQQMessageReactions
+                v-if="message.reactions?.length && chatStyle === 'telegram'"
+                :reactions="message.reactions ?? []"
+                :chat-style="chatStyle"
+              />
             </div>
             <div v-else :class="['onebot-webqq-webqq__bubble', { 'is-record-only': isRecordOnlyMessage(message) }]">
               <span v-if="isBotThinkingMessage(message)" class="onebot-webqq-webqq__thinking-dots" aria-label="机器人正在思考">
@@ -180,7 +187,7 @@
               />
             </div>
             <WebQQMessageReactions
-              v-if="message.reactions?.length && (chatStyle !== 'telegram' || isImageOnlyMessage(message))"
+              v-if="message.reactions?.length && chatStyle !== 'telegram'"
               :reactions="message.reactions ?? []"
               :chat-style="chatStyle"
             />
