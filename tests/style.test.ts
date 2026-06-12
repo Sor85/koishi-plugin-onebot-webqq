@@ -475,6 +475,16 @@ describe('chat capsule styles', () => {
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message.is-recalled:hover .onebot-webqq-webqq__message-recall-status')).toContain('visibility: visible')
   })
 
+  it('draws recalled WebQQ text strikethrough on each wrapped line', () => {
+    const recalledTextBody = ruleBody('.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__inline-run')
+    const recalledBubbleBody = ruleBody('.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__bubble')
+
+    expect(recalledTextBody).toContain('text-decoration-line: line-through')
+    expect(recalledTextBody).toContain('text-decoration-thickness: 2px')
+    expect(recalledTextBody).toContain('text-decoration-skip-ink: none')
+    expect(recalledBubbleBody).not.toContain('top: 50%')
+  })
+
   it('keeps WebQQ contact message times in the top-right corner', () => {
     expect(ruleBody('.onebot-webqq-webqq__contact')).toContain('position: relative')
     expect(ruleBody('.onebot-webqq-webqq__contact')).toContain('padding: 10px 58px 10px 12px')

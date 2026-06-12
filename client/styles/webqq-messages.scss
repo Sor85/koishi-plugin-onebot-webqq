@@ -391,25 +391,33 @@
   }
 }
 
-.onebot-webqq-webqq__message.is-recalled {
-  .onebot-webqq-webqq__bubble,
-  .onebot-webqq-webqq__message-media {
-    position: relative;
-    opacity: 0.62;
+.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__bubble,
+.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__message-media {
+  opacity: 0.62;
+}
 
-    &::after {
-      content: '';
-      position: absolute;
-      left: 8px;
-      right: 8px;
-      top: 50%;
-      height: 2px;
-      border-radius: 2px;
-      background: currentColor;
-      opacity: 0.56;
-      pointer-events: none;
-      transform: translateY(-50%);
-    }
+// 撤回文本不能用气泡居中伪元素画线；多行文本会只命中气泡中线，改由文本装饰逐行绘制。
+.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__inline-run {
+  text-decoration-line: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-skip-ink: none;
+}
+
+.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__message-media {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 50%;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.56;
+    pointer-events: none;
+    transform: translateY(-50%);
   }
 }
 
