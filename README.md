@@ -14,7 +14,7 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 - 实时同步：监听 Koishi 消息、撤回、系统事件和 OneBot 贴表情事件，并同步更新当前会话
 - ChatLuna 联动：显示正在思考、正在对话、模型 token 用量、character `<think>` 字段、好感度和关系徽标
 - 缓存与持久化：可选择 Koishi 数据库或浏览器本地存储保存最近会话、未读数和消息缓存
-- 主题外观：支持清爽/毛玻璃主题、QQ/Telegram 聊天气泡样式、明亮/暗色/自动颜色模式和自定义强调色
+- 主题外观：支持清爽/毛玻璃主题、QQ/TIM 聊天气泡样式、明亮/暗色/自动颜色模式和自定义强调色
 
 ## 使用前提
 
@@ -53,7 +53,8 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 ### 界面外观
 
 - `webQQTheme`：清爽或毛玻璃主题
-- `webQQChatStyle`：Telegram 或 QQ 聊天页面样式
+- `webQQChatStyle`：TIM 或 QQ 聊天页面样式
+- `webQQTimBubbleTail`：显示 TIM 气泡小尖角，默认开启
 - `webQQColorMode`：自动、明亮或暗色模式
 - `webQQAccentColor`：手动主题色
 - `useBotAvatarThemeColor`：使用 bot 头像主色作为 WebQQ 主题色

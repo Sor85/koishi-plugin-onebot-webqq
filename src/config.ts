@@ -13,6 +13,7 @@ export interface Config {
   webQQMarkRecalledMessages?: boolean
   webQQTheme?: 'fresh' | 'frosted'
   webQQChatStyle?: 'qq' | 'telegram'
+  webQQTimBubbleTail?: boolean
   webQQColorMode?: 'auto' | 'light' | 'dark'
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
@@ -51,9 +52,10 @@ export const Config: Schema<Config> = Schema.intersect([
       Schema.const('frosted').description('毛玻璃'),
     ]).default('fresh').role('radio').description('WebQQ 主题'),
     webQQChatStyle: Schema.union([
-      Schema.const('telegram').description('Telegram'),
+      Schema.const('telegram').description('TIM'),
       Schema.const('qq').description('QQ'),
     ]).default('telegram').role('radio').description('WebQQ 聊天页面样式'),
+    webQQTimBubbleTail: Schema.boolean().default(true).description('显示 TIM 气泡小尖角'),
     webQQColorMode: Schema.union([
       Schema.const('auto').description('自动'),
       Schema.const('light').description('明亮'),

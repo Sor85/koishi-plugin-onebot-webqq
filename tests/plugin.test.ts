@@ -1736,8 +1736,11 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain(".default('fresh')")
     expect(configSource).toContain("description('WebQQ 主题')")
     expect(configSource).toContain("webQQChatStyle?:")
-    expect(configSource).toMatch(/webQQChatStyle:\s*Schema\.union\(\[[\s\S]*Schema\.const\('telegram'\)\.description\('Telegram'\)[\s\S]*Schema\.const\('qq'\)\.description\('QQ'\)[\s\S]*\]\)\.default\('telegram'\)\.role\('radio'\)/)
+    expect(configSource).toMatch(/webQQChatStyle:\s*Schema\.union\(\[[\s\S]*Schema\.const\('telegram'\)\.description\('TIM'\)[\s\S]*Schema\.const\('qq'\)\.description\('QQ'\)[\s\S]*\]\)\.default\('telegram'\)\.role\('radio'\)/)
+    expect(configSource).not.toContain("Schema.const('telegram').description('Telegram')")
     expect(configSource).toContain("description('WebQQ 聊天页面样式')")
+    expect(configSource).toContain("webQQTimBubbleTail?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('显示 TIM 气泡小尖角')")
     expect(configSource).toMatch(/webQQColorMode\?:\s*'auto'\s*\|\s*'light'\s*\|\s*'dark'/)
     expect(configSource).toMatch(/webQQColorMode:\s*Schema\.union\(\[[\s\S]*Schema\.const\('auto'\)\.description\('自动'\)[\s\S]*Schema\.const\('light'\)\.description\('明亮'\)[\s\S]*Schema\.const\('dark'\)\.description\('暗色'\)[\s\S]*\]\)\.default\('auto'\)\.role\('radio'\)/)
     expect(configSource).toContain("webQQAccentColor?:")
@@ -1789,6 +1792,7 @@ describe('chat capsule plugin wiring', () => {
       debug: false,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
+      webQQTimBubbleTail: true,
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
@@ -3361,6 +3365,7 @@ describe('chat capsule plugin wiring', () => {
       debug: true,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
+      webQQTimBubbleTail: true,
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useBotAvatarThemeColor: false,
@@ -3378,6 +3383,7 @@ describe('chat capsule plugin wiring', () => {
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
       webQQTheme?: 'fresh' | 'frosted'
       webQQChatStyle?: 'qq' | 'telegram'
+      webQQTimBubbleTail?: boolean
       webQQColorMode?: 'auto' | 'light' | 'dark'
       webQQAccentColor?: string
       useBotAvatarThemeColor?: boolean
@@ -3394,6 +3400,7 @@ describe('chat capsule plugin wiring', () => {
     applyWithConfig(ctx, {
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
+      webQQTimBubbleTail: false,
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,
@@ -3412,6 +3419,7 @@ describe('chat capsule plugin wiring', () => {
       debug: false,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
+      webQQTimBubbleTail: false,
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useBotAvatarThemeColor: false,

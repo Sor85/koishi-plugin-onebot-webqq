@@ -244,6 +244,7 @@ export const webQQColorMode = ref<WebQQColorMode>('auto')
 export const webQQMessageCacheLimit = ref(100)
 export const webQQStorageBackend = ref<WebQQStorageBackend>('koishi')
 export const webQQTheme = ref<WebQQTheme>('fresh')
+export const webQQTimBubbleTail = ref(true)
 
 export function resetWebQQClientState() {
   capsule.value = undefined
@@ -261,4 +262,5 @@ export function resetWebQQClientState() {
   webQQMessageCacheLimit.value = 100
   webQQStorageBackend.value = 'koishi'
   webQQTheme.value = 'fresh'
+  webQQTimBubbleTail.value = true
 }
