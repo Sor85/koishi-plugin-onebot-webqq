@@ -758,6 +758,7 @@
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble {
   --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%);
+  position: relative;
   gap: 2px;
   margin: 1px 0;
   border-radius: 18px;
@@ -789,6 +790,39 @@
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing.is-cluster-last .onebot-webqq-webqq__bubble {
   border-top-right-radius: 3px;
+}
+
+/* 气泡尖角：从簇首气泡上角伸出并指向头像，颜色继承气泡背景。
+   斜边用二次贝塞尔曲线，在气泡边缘处垂直相切后平滑收向尖端，过渡比直线柔和。
+   气泡背景半透明，故尖角全部伸出气泡外、贴边与气泡边缘 0 重叠共线，气泡该角设直角拼成一体。
+   clip-path: path() 用绝对坐标、不随 left/right 翻转，左右两侧需各自镜像路径 */
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 14px;
+  background: inherit;
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only) {
+  border-top-left-radius: 0;
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before {
+  left: -8px;
+  /* 尖端在左上(0,0)指向头像，贴边 x=8 与气泡左缘共线，曲线在(8,14)垂直相切 */
+  clip-path: path('M 0 0 L 8 0 L 8 14 Q 8 3 0 0 Z');
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only) {
+  border-top-right-radius: 0;
+}
+
+.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before {
+  right: -8px;
+  /* 尖端在右上(8,0)指向头像，贴边 x=0 与气泡右缘共线，曲线在(0,14)垂直相切 */
+  clip-path: path('M 8 0 L 0 0 L 0 14 Q 0 3 8 0 Z');
 }
 
 .onebot-webqq-webqq__bubble {
