@@ -1,7 +1,7 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
 import Capsule from './Capsule.vue'
-import { capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
+import { capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
 import './style.scss'
 
 interface ClientData {
@@ -9,6 +9,7 @@ interface ClientData {
   debug?: boolean
   webQQTheme?: WebQQTheme
   webQQChatStyle?: WebQQChatStyle
+  webQQTimBubbleTail?: boolean
   webQQColorMode?: WebQQColorMode
   webQQStorageBackend?: WebQQStorageBackend
   webQQMessageCacheLimit?: number
@@ -121,6 +122,7 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   debug.value = !!data?.value?.debug
   webQQTheme.value = data?.value?.webQQTheme || 'fresh'
   webQQChatStyle.value = data?.value?.webQQChatStyle || 'telegram'
+  webQQTimBubbleTail.value = data?.value?.webQQTimBubbleTail ?? true
   webQQColorMode.value = data?.value?.webQQColorMode || 'auto'
   webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'koishi'
   webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100

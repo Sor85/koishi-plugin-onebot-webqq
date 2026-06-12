@@ -25,6 +25,7 @@ export function registerConsoleEntry(
       debug: options.debug,
       webQQTheme: config.webQQTheme ?? 'fresh',
       webQQChatStyle: config.webQQChatStyle ?? 'telegram',
+      webQQTimBubbleTail: config.webQQTimBubbleTail ?? true,
       webQQColorMode: config.webQQColorMode ?? 'auto',
       webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
       webQQMessageCacheLimit: config.webQQMessageCacheLimit ?? 100,

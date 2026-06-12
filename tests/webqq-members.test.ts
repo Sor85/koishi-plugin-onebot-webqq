@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hideWebQQGroupLevel, showWebQQCapsuleUnread, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTotalUnread, type WebQQGroupMember } from '../client/state'
+import { hideWebQQGroupLevel, showWebQQCapsuleUnread, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread, type WebQQGroupMember } from '../client/state'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -15,6 +15,7 @@ describe('webqq group members', () => {
   it('uses the fresh WebQQ theme as the frontend default', () => {
     expect(webQQTheme.value).toBe('fresh')
     expect(webQQChatStyle.value).toBe('telegram')
+    expect(webQQTimBubbleTail.value).toBe(true)
     expect(webQQStorageBackend.value).toBe('koishi')
     expect(webQQMessageCacheLimit.value).toBe(100)
     expect(webQQAccentColor.value).toBe('#2563eb')

@@ -369,6 +369,17 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing.is-cluster-middle .onebot-webqq-webqq__bubble')).toContain('border-radius: 18px 3px 3px 18px')
   })
 
+  it('gates TIM-style WebQQ bubble tails behind the enabled option class', () => {
+    const baseTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before'
+    const enabledTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before'
+
+    expect(ruleBody(baseTailSelector)).toBe('')
+    expect(ruleBody(enabledTailSelector)).toContain("content: ''")
+    expect(ruleBody(enabledTailSelector)).toContain('background: inherit')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)')).toContain('border-top-left-radius: 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)')).toContain('border-top-right-radius: 0')
+  })
+
   it('shows Telegram-style WebQQ message times outside bubbles on hover', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-body')).toContain('display: flex')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-body')).toContain('flex-direction: row')
@@ -462,6 +473,16 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-recall-status')).toContain('white-space: nowrap')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message.is-recalled:hover .onebot-webqq-webqq__message-recall-status')).toContain('opacity: 1')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message.is-recalled:hover .onebot-webqq-webqq__message-recall-status')).toContain('visibility: visible')
+  })
+
+  it('draws recalled WebQQ text strikethrough on each wrapped line', () => {
+    const recalledTextBody = ruleBody('.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__inline-run')
+    const recalledBubbleBody = ruleBody('.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__bubble')
+
+    expect(recalledTextBody).toContain('text-decoration-line: line-through')
+    expect(recalledTextBody).toContain('text-decoration-thickness: 2px')
+    expect(recalledTextBody).toContain('text-decoration-skip-ink: none')
+    expect(recalledBubbleBody).not.toContain('top: 50%')
   })
 
   it('keeps WebQQ contact message times in the top-right corner', () => {
