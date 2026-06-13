@@ -29,7 +29,21 @@
       @handle-notice="handleNotice"
     />
     <section class="onebot-webqq-webqq__chat">
-      <div class="onebot-webqq-webqq__chat-main">
+      <div :class="['onebot-webqq-webqq__chat-content', { 'is-mobile-notice-open': noticeOpen }]">
+        <div v-if="noticeOpen" class="onebot-webqq-webqq__mobile-notice-page" @click.stop>
+          <WebQQNoticeMenu
+            v-model:tab="noticeMenuTab"
+            class="onebot-webqq-webqq__mobile-notice-content"
+            :loading="noticeLoading"
+            :error-text="noticeErrorText"
+            :notices="filteredNotices"
+            :handling-notice-id="handlingNoticeId"
+            :with-proxy="withProxy"
+            :format-notice-time="formatNoticeTime"
+            @handle="handleNotice"
+          />
+        </div>
+        <div class="onebot-webqq-webqq__chat-main">
         <header class="onebot-webqq-webqq__chat-header">
           <div class="onebot-webqq-webqq__chat-title">
             <img v-if="currentAvatar" class="onebot-webqq-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
@@ -85,6 +99,7 @@
             </button>
           </Transition>
         </div>
+        </div>
       </div>
       <WebQQGroupInfoPanel
         v-if="groupInfoOpen && currentChat?.type === 'group'"
@@ -124,6 +139,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
+import WebQQNoticeMenu from './components/WebQQNoticeMenu.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'

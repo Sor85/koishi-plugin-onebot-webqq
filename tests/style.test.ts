@@ -14,6 +14,19 @@ const webqqMessageEffectsStyle = await readFile(new URL('../client/styles/webqq-
 const themeColorsStyle = await readFile(new URL('../client/styles/theme-colors.scss', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
+function mediaBody(query: string) {
+  const start = style.indexOf(query)
+  if (start < 0) return ''
+  const bodyStart = style.indexOf('{', start) + 1
+  let depth = 1
+  for (let index = bodyStart; index < style.length; index++) {
+    if (style[index] === '{') depth++
+    if (style[index] === '}') depth--
+    if (depth === 0) return style.slice(bodyStart, index)
+  }
+  return ''
+}
+
 function ruleBody(selector: string) {
   const start = style.indexOf(`${selector} {`)
   if (start < 0) return ''
@@ -542,6 +555,47 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__tabs-row')).toContain('border-radius: 24px 0 0 0')
     expect(ruleBody('.onebot-webqq-webqq__tabs-row')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq__tabs-row')).not.toContain('rgba(255, 255, 255, 0.68)')
+  })
+
+  it('keeps WebQQ as a floating single-left-rail panel on narrow screens', () => {
+    const narrowBody = mediaBody('@media screen and (max-width: 768px)')
+    const panelStart = narrowBody.indexOf('.onebot-webqq-webqq {')
+    const panelBody = narrowBody.slice(panelStart, narrowBody.indexOf('}', panelStart))
+
+    expect(narrowBody).toContain('.onebot-webqq-webqq')
+    expect(panelBody).toContain('right: 16px')
+    expect(panelBody).toContain('bottom: 112px')
+    expect(panelBody).toContain('grid-template-columns: 70px minmax(0, 1fr)')
+    expect(panelBody).not.toContain('inset: 0')
+    expect(panelBody).not.toContain('width: 100vw')
+    expect(panelBody).not.toContain('height: 100vh')
+    expect(panelBody).not.toContain('border-radius: 0')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__sidebar')
+    expect(narrowBody).toContain('grid-template-rows: auto minmax(0, 1fr)')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__tabs-row')
+    expect(narrowBody).toContain('flex-direction: column')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__tabs')
+    expect(narrowBody).toContain('grid-template-columns: 1fr')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__list')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__contact')
+    expect(narrowBody).toContain('grid-template-columns: 38px')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__contact-info')
+    expect(narrowBody).toContain('display: none')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__contact-time')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__friend-category-title')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__search')
+  })
+
+  it('shows the mobile notification page instead of the sidebar dropdown on narrow screens', () => {
+    const narrowBody = mediaBody('@media screen and (max-width: 768px)')
+
+    expect(narrowBody).toContain('.onebot-webqq-webqq__mobile-notice-page')
+    expect(narrowBody).toContain('display: flex')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__mobile-notice-content')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__sidebar .onebot-webqq-webqq__notice-menu')
+    expect(narrowBody).toContain('display: none')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat-content')
+    expect(narrowBody).toContain('min-width: 0')
   })
 
   it('adds a fresh WebQQ theme with plain gray-white surfaces and blue accents', () => {
