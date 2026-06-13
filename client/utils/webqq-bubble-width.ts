@@ -49,24 +49,9 @@ export function fitWebQQBubbleToInlineLines(bubble: HTMLElement) {
 
   bubble.style.width = ''
   const horizontalInset = getBubbleBoxInset(bubble)
-  const naturalLineWidths = measureInlineLineWidths(inlineRuns)
-  const maxLineWidth = getMaxLineWidth(naturalLineWidths)
+  const lineWidths = measureInlineLineWidths(inlineRuns)
+  const maxLineWidth = getMaxLineWidth(lineWidths)
   if (!maxLineWidth) return
 
-  let bestLineWidths = naturalLineWidths
-  let low = 1
-  let high = maxLineWidth
-  for (let index = 0; index < 8; index++) {
-    const candidateWidth = (low + high) / 2
-    setBubbleContentWidth(bubble, candidateWidth, horizontalInset)
-    const lineWidths = measureInlineLineWidths(inlineRuns)
-    if (lineWidths.length <= naturalLineWidths.length) {
-      bestLineWidths = lineWidths
-      high = candidateWidth
-    } else {
-      low = candidateWidth
-    }
-  }
-
-  setBubbleContentWidth(bubble, getMaxLineWidth(bestLineWidths) || high, horizontalInset)
+  setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)
 }

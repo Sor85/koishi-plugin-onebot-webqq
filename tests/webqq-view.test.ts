@@ -1214,7 +1214,11 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('requestAnimationFrame(() => fitWebQQBubbleToInlineLines(bubble))')
     expect(webqqBubbleWidth).toContain('export function fitWebQQBubbleToInlineLines(bubble: HTMLElement)')
     expect(webqqBubbleWidth).toContain('range.getClientRects()')
-    expect(webqqBubbleWidth).toContain('lineWidths.length <= naturalLineWidths.length')
+    expect(webqqBubbleWidth).toContain('const lineWidths = measureInlineLineWidths(inlineRuns)')
+    expect(webqqBubbleWidth).toContain('setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)')
+    expect(webqqBubbleWidth).not.toContain('lineWidths.length <=')
+    expect(webqqBubbleWidth).not.toContain('let low =')
+    expect(webqqBubbleWidth).not.toContain('let high =')
     expect(webqqBubbleWidth).toContain('function setBubbleContentWidth(bubble: HTMLElement, contentWidth: number, horizontalInset: number)')
   })
 
@@ -1232,24 +1236,17 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).not.toContain('watch(() => props.visible')
   })
 
-  it('searches the narrowest fitted bubble width without increasing rendered line count', () => {
+  it('sets fitted bubble width to the current max rendered line width', () => {
     const inlineRun = {} as HTMLElement
+    const getClientRects = vi.fn(() => [{ width: 312.4 }, { width: 64 }])
     const bubble = {
-      style: { width: '' },
+      style: { width: '409px' },
       querySelectorAll: vi.fn(() => [inlineRun]),
     } as unknown as HTMLElement
-    function getContentWidth() {
-      return Math.max(0, Number.parseFloat(bubble.style.width || '409') - 22)
-    }
     vi.stubGlobal('document', {
       createRange: vi.fn(() => ({
         selectNodeContents: vi.fn(),
-        getClientRects: vi.fn(() => {
-          const width = getContentWidth()
-          return width >= 260
-            ? [{ width }, { width: Math.max(62, 448 - width) }]
-            : [{ width }, { width }, { width: 20 }]
-        }),
+        getClientRects,
         detach: vi.fn(),
       })),
     })
@@ -1265,8 +1262,8 @@ describe('webqq observer view', () => {
 
     fitWebQQBubbleToInlineLines(bubble)
 
-    expect(Number.parseFloat(bubble.style.width)).toBeLessThan(409)
-    expect(Number.parseFloat(bubble.style.width)).toBeGreaterThanOrEqual(282)
+    expect(bubble.style.width).toBe('335px')
+    expect(getClientRects).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
   })
 
