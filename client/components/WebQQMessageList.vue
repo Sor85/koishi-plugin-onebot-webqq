@@ -58,7 +58,11 @@
                 :chat-style="chatStyle"
               />
             </div>
-            <div v-else :class="['onebot-webqq-webqq__bubble', { 'is-record-only': isRecordOnlyMessage(message) }]">
+            <div
+              v-else
+              :ref="(element) => setBubbleElementRef(message, element)"
+              :class="['onebot-webqq-webqq__bubble', { 'is-record-only': isRecordOnlyMessage(message) }]"
+            >
               <span v-if="isBotThinkingMessage(message)" class="onebot-webqq-webqq__thinking-dots" aria-label="机器人正在思考">
                 <span v-for="dot in 3" :key="dot" class="onebot-webqq-webqq__thinking-dot"></span>
               </span>
@@ -252,10 +256,12 @@ import {
   getSenderAuthorityClass,
   getSenderAuthorityText,
   getWebQQElementRuns,
+  isInlineWebQQElement,
   isImageOnlyMessage,
   type WebQQMessageElement,
   type WebQQThinkingMessage,
 } from '../utils/webqq-message-view'
+import { fitWebQQBubbleToInlineLines } from '../utils/webqq-bubble-width'
 
 const props = defineProps<{
   loading: boolean
@@ -283,6 +289,7 @@ const emit = defineEmits<{
 }>()
 
 const messageElementRefs = new Map<string, HTMLElement>()
+const bubbleElementRefs = new Map<string, HTMLElement>()
 const recordAudioRefs = new Map<string, HTMLAudioElement>()
 const highlightedMessageKey = ref('')
 const playingRecordKey = ref('')
@@ -290,6 +297,8 @@ const loadingRecordKey = ref('')
 const recordTranscripts = ref<Record<string, string>>({})
 const transcribingRecordKeys = ref<Record<string, boolean>>({})
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
+let textBubbleResizeObserver: ResizeObserver | undefined
+let fitTextBubblesFrame: number | undefined
 type TemplateRefValue = Element | ComponentPublicInstance | null
 const webQQForwardPreviewLimit = 4
 
@@ -303,11 +312,16 @@ function getRecordKey(message: WebQQMessage, element: WebQQMessageElement, runIn
 
 onBeforeUpdate(() => {
   messageElementRefs.clear()
+  bubbleElementRefs.clear()
+  textBubbleResizeObserver?.disconnect()
 })
 
 onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
+  if (fitTextBubblesFrame != null) cancelAnimationFrame(fitTextBubblesFrame)
   for (const audio of recordAudioRefs.values()) audio.pause()
+  bubbleElementRefs.clear()
+  textBubbleResizeObserver?.disconnect()
   recordAudioRefs.clear()
 })
 
@@ -315,6 +329,48 @@ function setMessageElementRef(message: WebQQMessage, element: TemplateRefValue) 
   if (!(element instanceof HTMLElement)) return
   const key = getMessageDomKey(message)
   if (key) messageElementRefs.set(key, element)
+}
+
+function shouldFitTextBubble(message: WebQQMessage) {
+  return message.elements.length > 0 &&
+    message.elements.every(isInlineWebQQElement)
+}
+
+function scheduleFitTextBubble(bubble: HTMLElement) {
+  requestAnimationFrame(() => fitWebQQBubbleToInlineLines(bubble))
+}
+
+function scheduleFitTextBubbles() {
+  if (fitTextBubblesFrame != null) return
+  fitTextBubblesFrame = requestAnimationFrame(() => {
+    fitTextBubblesFrame = undefined
+    for (const bubble of bubbleElementRefs.values()) fitWebQQBubbleToInlineLines(bubble)
+  })
+}
+
+function observeTextBubbleResizeTarget(bubble: HTMLElement) {
+  if (typeof ResizeObserver === 'undefined') return
+  textBubbleResizeObserver ||= new ResizeObserver(() => scheduleFitTextBubbles())
+  const resizeTarget = bubble.closest<HTMLElement>('.onebot-webqq-webqq__message') || bubble.parentElement
+  if (resizeTarget) textBubbleResizeObserver.observe(resizeTarget)
+}
+
+function setBubbleElementRef(message: WebQQMessage, element: TemplateRefValue) {
+  const key = getMessageDomKey(message)
+  if (!key) return
+  if (!(element instanceof HTMLElement)) {
+    bubbleElementRefs.delete(key)
+    return
+  }
+  if (!shouldFitTextBubble(message)) {
+    bubbleElementRefs.delete(key)
+    element.style.width = ''
+    return
+  }
+  // 浏览器先按可用宽度换行，气泡不会再按“最长实际行”回缩；渲染后读行矩形来消除纯文本气泡短末行造成的大空白。
+  bubbleElementRefs.set(key, element)
+  observeTextBubbleResizeTarget(element)
+  scheduleFitTextBubble(element)
 }
 
 function setRecordAudioRef(message: WebQQMessage, element: WebQQMessageElement, runIndex: number, audio: TemplateRefValue) {

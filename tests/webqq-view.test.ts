@@ -12,6 +12,7 @@ import { useWebQQNotices } from '../client/stores/webqq-notices'
 import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-conversation-state'
+import { fitWebQQBubbleToInlineLines } from '../client/utils/webqq-bubble-width'
 import { createBotThinkingMessage, mergeMessages, type WebQQMessageElement } from '../client/utils/webqq-message-view'
 import { applyWebQQRecallToMessages } from '../client/utils/webqq-recall-view'
 import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
@@ -50,6 +51,7 @@ const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices
 const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqThinkingExpansionStore = await readFile(new URL('../client/stores/webqq-thinking-expansion.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
+const webqqBubbleWidth = await readFile(new URL('../client/utils/webqq-bubble-width.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
 const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
@@ -1190,7 +1192,7 @@ describe('webqq observer view', () => {
   it('renders consecutive inline WebQQ elements inside one inline container', () => {
     const bubbleSource = sourceBetween(
       webqqMessageListView,
-      '<div v-else :class="[\'onebot-webqq-webqq__bubble\'',
+      ':class="[\'onebot-webqq-webqq__bubble\'',
       '<div class="onebot-webqq-webqq__message-time"',
     )
 
@@ -1199,6 +1201,84 @@ describe('webqq observer view', () => {
     expect(bubbleSource).toContain('v-for="element in run.elements"')
     expect(webqqMessageListView).not.toContain('v-else v-for')
     expect(bubbleSource).not.toContain('v-for="(element, index) in message.elements"')
+  })
+
+  it('fits pure inline text bubbles to the measured rendered line width', () => {
+    expect(webqqMessageListView).toContain("import { fitWebQQBubbleToInlineLines } from '../utils/webqq-bubble-width'")
+    expect(webqqMessageListView).toContain(':ref="(element) => setBubbleElementRef(message, element)"')
+    expect(webqqMessageListView).toContain('function shouldFitTextBubble(message: WebQQMessage)')
+    expect(webqqMessageListView).not.toContain("message.direction === 'outgoing' &&")
+    expect(webqqMessageListView).toContain('message.elements.length > 0')
+    expect(webqqMessageListView).toContain('message.elements.every(isInlineWebQQElement)')
+    expect(webqqMessageListView).toContain('function scheduleFitTextBubble(bubble: HTMLElement)')
+    expect(webqqMessageListView).toContain('requestAnimationFrame(() => fitWebQQBubbleToInlineLines(bubble))')
+    expect(webqqBubbleWidth).toContain('export function fitWebQQBubbleToInlineLines(bubble: HTMLElement)')
+    expect(webqqBubbleWidth).toContain('range.getClientRects()')
+    expect(webqqBubbleWidth).toContain('lineWidths.length <= naturalLineWidths.length')
+    expect(webqqBubbleWidth).toContain('function setBubbleContentWidth(bubble: HTMLElement, contentWidth: number, horizontalInset: number)')
+  })
+
+  it('remeasures fitted text bubbles when the message row width changes', () => {
+    expect(webqqMessageListView).toContain('const bubbleElementRefs = new Map<string, HTMLElement>()')
+    expect(webqqMessageListView).toContain('bubbleElementRefs.set(key, element)')
+    expect(webqqMessageListView).toContain('let textBubbleResizeObserver: ResizeObserver | undefined')
+    expect(webqqMessageListView).toContain('function scheduleFitTextBubbles()')
+    expect(webqqMessageListView).toContain('for (const bubble of bubbleElementRefs.values())')
+    expect(webqqMessageListView).toContain('new ResizeObserver(() => scheduleFitTextBubbles())')
+    expect(webqqMessageListView).toContain("bubble.closest<HTMLElement>('.onebot-webqq-webqq__message')")
+    expect(webqqMessageListView).toContain('textBubbleResizeObserver.observe(resizeTarget)')
+    expect(webqqMessageListView).toContain('textBubbleResizeObserver?.disconnect()')
+    expect(webqqMessageListView).not.toContain('visible: boolean')
+    expect(webqqMessageListView).not.toContain('watch(() => props.visible')
+  })
+
+  it('searches the narrowest fitted bubble width without increasing rendered line count', () => {
+    const inlineRun = {} as HTMLElement
+    const bubble = {
+      style: { width: '' },
+      querySelectorAll: vi.fn(() => [inlineRun]),
+    } as unknown as HTMLElement
+    function getContentWidth() {
+      return Math.max(0, Number.parseFloat(bubble.style.width || '409') - 22)
+    }
+    vi.stubGlobal('document', {
+      createRange: vi.fn(() => ({
+        selectNodeContents: vi.fn(),
+        getClientRects: vi.fn(() => {
+          const width = getContentWidth()
+          return width >= 260
+            ? [{ width }, { width: Math.max(62, 448 - width) }]
+            : [{ width }, { width }, { width: 20 }]
+        }),
+        detach: vi.fn(),
+      })),
+    })
+    vi.stubGlobal('window', {
+      getComputedStyle: vi.fn(() => ({
+        boxSizing: 'border-box',
+        paddingLeft: '11px',
+        paddingRight: '11px',
+        borderLeftWidth: '0px',
+        borderRightWidth: '0px',
+      })),
+    })
+
+    fitWebQQBubbleToInlineLines(bubble)
+
+    expect(Number.parseFloat(bubble.style.width)).toBeLessThan(409)
+    expect(Number.parseFloat(bubble.style.width)).toBeGreaterThanOrEqual(282)
+    vi.unstubAllGlobals()
+  })
+
+  it('clears fitted bubble width when there is no inline text run to measure', () => {
+    const bubble = {
+      style: { width: '387px' },
+      querySelectorAll: vi.fn(() => []),
+    } as unknown as HTMLElement
+
+    fitWebQQBubbleToInlineLines(bubble)
+
+    expect(bubble.style.width).toBe('')
   })
 
   it('renders group badges around sender names in opposite order by direction', () => {
