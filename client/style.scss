@@ -88,11 +88,9 @@
   }
 
   .onebot-webqq-webqq {
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 16px;
+    bottom: 112px;
     grid-template-columns: 70px minmax(0, 1fr);
-    border-radius: 0;
   }
 
   .onebot-webqq-webqq__sidebar {

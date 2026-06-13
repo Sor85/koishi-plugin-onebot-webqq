@@ -557,14 +557,19 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__tabs-row')).not.toContain('rgba(255, 255, 255, 0.68)')
   })
 
-  it('turns WebQQ into a full-screen single-left-rail layout on narrow screens', () => {
+  it('keeps WebQQ as a floating single-left-rail panel on narrow screens', () => {
     const narrowBody = mediaBody('@media screen and (max-width: 768px)')
+    const panelStart = narrowBody.indexOf('.onebot-webqq-webqq {')
+    const panelBody = narrowBody.slice(panelStart, narrowBody.indexOf('}', panelStart))
 
     expect(narrowBody).toContain('.onebot-webqq-webqq')
-    expect(narrowBody).toContain('inset: 0')
-    expect(narrowBody).toContain('width: 100vw')
-    expect(narrowBody).toContain('height: 100vh')
-    expect(narrowBody).toContain('grid-template-columns: 70px minmax(0, 1fr)')
+    expect(panelBody).toContain('right: 16px')
+    expect(panelBody).toContain('bottom: 112px')
+    expect(panelBody).toContain('grid-template-columns: 70px minmax(0, 1fr)')
+    expect(panelBody).not.toContain('inset: 0')
+    expect(panelBody).not.toContain('width: 100vw')
+    expect(panelBody).not.toContain('height: 100vh')
+    expect(panelBody).not.toContain('border-radius: 0')
     expect(narrowBody).toContain('.onebot-webqq-webqq__sidebar')
     expect(narrowBody).toContain('grid-template-rows: auto minmax(0, 1fr)')
     expect(narrowBody).toContain('.onebot-webqq-webqq__tabs-row')
