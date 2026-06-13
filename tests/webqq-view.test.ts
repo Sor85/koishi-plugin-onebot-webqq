@@ -686,6 +686,18 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('<div v-if="noticeOpen" class="onebot-webqq-webqq__chat-title">')
   })
 
+  it('renders a mobile full-page WebQQ notification view beside the narrow sidebar', () => {
+    expect(webqqView).toContain(`:class="['onebot-webqq-webqq__chat-content', { 'is-mobile-notice-open': noticeOpen }]"`)
+    expect(webqqView).toContain('<div v-if="noticeOpen" class="onebot-webqq-webqq__mobile-notice-page" @click.stop>')
+    expect(webqqView).toContain('<WebQQNoticeMenu')
+    expect(webqqView).toContain('class="onebot-webqq-webqq__mobile-notice-content"')
+    expect(webqqView).toContain('v-model:tab="noticeMenuTab"')
+    expect(webqqView).toContain(':notices="filteredNotices"')
+    expect(webqqView).toContain('@handle="handleNotice"')
+    expect(webqqView).toContain('<div class="onebot-webqq-webqq__chat-main">')
+    expect(webqqSidebar).toContain('<WebQQNoticeMenu')
+  })
+
   it('keeps WebQQ notification menu state inside a composable', async () => {
     const events: string[] = []
     const notices = useWebQQNotices({

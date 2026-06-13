@@ -8,6 +8,17 @@
   backdrop-filter: saturate(180%) blur(20px);
 }
 
+.onebot-webqq-webqq__chat-content {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+}
+
+.onebot-webqq-webqq__mobile-notice-page {
+  display: none;
+}
+
 .onebot-webqq-webqq__chat-main {
   min-width: 0;
   min-height: 0;
