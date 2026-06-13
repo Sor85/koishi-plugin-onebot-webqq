@@ -18,7 +18,7 @@
           </svg>
         </button>
       </header>
-      <div class="onebot-webqq-webqq__forward-modal-body">
+      <div v-webqq-scrollbar class="onebot-webqq-webqq__forward-modal-body">
         <article v-for="(item, itemIndex) in items" :key="`forward:${itemIndex}`" :class="['onebot-webqq-webqq__message', 'is-incoming', getForwardItemClusterClass(itemIndex), { 'is-merged': isMergedForwardItem(itemIndex) }]">
           <!-- Telegram 合并项依赖 wrapper 保留头像占位并隐藏重复头像，弹窗需和普通消息保持同一结构。 -->
           <span class="onebot-webqq-webqq__message-avatar-wrap">
@@ -85,6 +85,7 @@ import {
   getWebQQElementRuns,
   type WebQQMessageElement,
 } from '../utils/webqq-message-view'
+import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 defineProps<{
   dialog: WebQQMessageElement

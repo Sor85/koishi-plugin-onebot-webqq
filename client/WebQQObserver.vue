@@ -61,7 +61,7 @@
           </button>
         </header>
         <div class="onebot-webqq-webqq__chat-body">
-          <div ref="messagePane" class="onebot-webqq-webqq__messages" @scroll="updateMessageTracking">
+          <div ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages" @scroll="updateMessageTracking">
             <WebQQMessageList
               :loading="loading"
               :error-text="errorText"
@@ -167,6 +167,7 @@ import {
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
 import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq-theme-view'
+import { vWebqqScrollbar } from './utils/webqq-scrollbar'
 
 type RecentItem = WebQQRecentItem
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="onebot-webqq-webqq__list">
+  <div v-webqq-scrollbar="{ hideOnNarrow: true }" class="onebot-webqq-webqq__list">
     <template v-if="activeTab === 'recent'">
       <button
         v-for="item in recentItems"
@@ -76,6 +76,7 @@
 import type { WebQQFriend, WebQQGroup } from '../state'
 import type { WebQQFriendCategoryView, WebQQRecentItem } from '../utils/webqq-contact-view'
 import { formatTime } from '../utils/webqq-message-view'
+import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 type WebQQContactType = 'friend' | 'group'
 type WebQQTab = 'recent' | 'friends' | 'groups'

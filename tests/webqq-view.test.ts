@@ -52,6 +52,7 @@ const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-
 const webqqThinkingExpansionStore = await readFile(new URL('../client/stores/webqq-thinking-expansion.ts', import.meta.url), 'utf8')
 const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
 const webqqBubbleWidth = await readFile(new URL('../client/utils/webqq-bubble-width.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqScrollbarDirective = await readFile(new URL('../client/utils/webqq-scrollbar.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
 const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
 const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
@@ -696,6 +697,39 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('@handle="handleNotice"')
     expect(webqqView).toContain('<div class="onebot-webqq-webqq__chat-main">')
     expect(webqqSidebar).toContain('<WebQQNoticeMenu')
+  })
+
+  it('attaches the WebQQ overlay scrollbar directive to every WebQQ scroll area', () => {
+    expect(webqqScrollbarDirective).toContain('export const vWebqqScrollbar')
+    expect(webqqScrollbarDirective).toContain('document.body.appendChild')
+    expect(webqqScrollbarDirective).toContain('ResizeObserver')
+    expect(webqqScrollbarDirective).toContain('pointermove')
+    expect(webqqScrollbarDirective).toContain('const overlayInset = 0')
+    expect(webqqScrollbarDirective).toContain('function stopEvent(event: Event)')
+    expect(webqqScrollbarDirective).toContain('event.stopPropagation()')
+    expect(webqqScrollbarDirective).toContain("addListener(thumb, 'click', stopEvent)")
+    expect(webqqScrollbarDirective).toContain(`const thumbEnter = () => {
+      state.hovering = true
+      showScrollbar(state)
+      overlay.classList.add('is-wide')
+    }`)
+    expect(webqqScrollbarDirective).toContain(`const thumbLeave = () => {
+      state.hovering = false
+      if (!state.dragging) overlay.classList.remove('is-wide')
+      scheduleHide(state)
+    }`)
+    expect(webqqView).toContain('import { vWebqqScrollbar }')
+    expect(webqqView).toContain('ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages" @scroll="updateMessageTracking"')
+    expect(webqqContactList).toContain('import { vWebqqScrollbar }')
+    expect(webqqContactList).toContain('<div v-webqq-scrollbar="{ hideOnNarrow: true }" class="onebot-webqq-webqq__list">')
+    expect(webqqScrollbarDirective).toContain("overlay.classList.toggle('is-hidden-on-narrow', Boolean(binding.value?.hideOnNarrow))")
+    expect(webqqNoticeMenu).toContain('import { vWebqqScrollbar }')
+    expect(webqqNoticeMenu).toContain('<div v-webqq-scrollbar class="onebot-webqq-webqq__notice-menu-body">')
+    expect(webqqGroupInfoPanel).toContain('import { vWebqqScrollbar }')
+    expect(webqqGroupInfoPanel).toContain('<section v-webqq-scrollbar class="onebot-webqq-webqq__group-announcements">')
+    expect(webqqGroupInfoPanel).toContain('<div v-else v-webqq-scrollbar class="onebot-webqq-webqq__group-member-list">')
+    expect(webqqForwardModal).toContain('import { vWebqqScrollbar }')
+    expect(webqqForwardModal).toContain('<div v-webqq-scrollbar class="onebot-webqq-webqq__forward-modal-body">')
   })
 
   it('keeps WebQQ notification menu state inside a composable', async () => {

@@ -4,7 +4,7 @@
       <strong>群信息</strong>
     </header>
     <div class="onebot-webqq-webqq__group-info-body">
-      <section class="onebot-webqq-webqq__group-announcements">
+      <section v-webqq-scrollbar class="onebot-webqq-webqq__group-announcements">
         <h3>群公告</h3>
         <div v-if="loading && !hasGroupInfo" class="onebot-webqq-webqq__group-empty">加载中</div>
         <div v-else-if="errorText" class="onebot-webqq-webqq__group-empty is-error">{{ errorText }}</div>
@@ -22,7 +22,7 @@
         <div v-if="loading && !hasGroupInfo" class="onebot-webqq-webqq__group-empty">加载中</div>
         <div v-else-if="errorText" class="onebot-webqq-webqq__group-empty is-error">{{ errorText }}</div>
         <div v-else-if="!visibleMembers.length" class="onebot-webqq-webqq__group-empty">暂无群成员</div>
-        <div v-else class="onebot-webqq-webqq__group-member-list">
+        <div v-else v-webqq-scrollbar class="onebot-webqq-webqq__group-member-list">
           <article v-for="member in visibleMembers" :key="member.userId" class="onebot-webqq-webqq__group-member">
             <img :src="withProxy(member.avatar)" :alt="getGroupMemberName(member)">
             <span>
@@ -40,6 +40,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import type { WebQQGroupInfo, WebQQGroupMember } from '../state'
+import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 const props = defineProps<{
   loading: boolean

@@ -4,7 +4,7 @@
       <button :class="{ 'is-active': tab === 'friends' }" type="button" @click="emit('update:tab', 'friends')">好友申请</button>
       <button :class="{ 'is-active': tab === 'groups' }" type="button" @click="emit('update:tab', 'groups')">群通知</button>
     </div>
-    <div class="onebot-webqq-webqq__notice-menu-body">
+    <div v-webqq-scrollbar class="onebot-webqq-webqq__notice-menu-body">
       <div v-if="loading" class="onebot-webqq-webqq__notice-empty">加载中</div>
       <div v-else-if="errorText" class="onebot-webqq-webqq__notice-empty is-error">{{ errorText }}</div>
       <div v-else-if="!notices.length" class="onebot-webqq-webqq__notice-empty">暂无通知</div>
@@ -40,6 +40,7 @@ import {
   formatNoticeComment,
   getHandledNoticeStatusText,
 } from '../utils/webqq-notice-view'
+import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 defineProps<{
   tab: 'friends' | 'groups'

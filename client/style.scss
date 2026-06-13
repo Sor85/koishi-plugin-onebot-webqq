@@ -157,6 +157,10 @@
     overflow-y: auto;
   }
 
+  .onebot-webqq-webqq__scrollbar-overlay.is-hidden-on-narrow {
+    display: none;
+  }
+
   .onebot-webqq-webqq__friend-category {
     display: contents;
   }
