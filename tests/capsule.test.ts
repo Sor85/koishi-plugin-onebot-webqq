@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
+const capsuleStyle = await readFile(new URL('../client/styles/capsule.scss', import.meta.url), 'utf8')
 const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -164,6 +165,24 @@ describe('chat capsule view', () => {
       capsuleView.includes('class="onebot-webqq__bot-stack"')
         ? ''
         : '缺少多机器人头像堆叠容器',
+      capsuleView.includes('const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))')
+        ? ''
+        : '折叠态没有限制最多显示 3 个机器人头像',
+      capsuleView.includes('v-if="collapsedBotOverflowCount"') && capsuleView.includes('class="onebot-webqq__bot-overflow"')
+        ? ''
+        : '折叠态没有用数字显示多余机器人数量',
+      capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
+        ? ''
+        : '折叠态没有隐藏超过上限的机器人头像',
+      capsuleStyle.includes('right: var(--onebot-webqq-bot-collapsed-right, 0);')
+        && capsuleStyle.includes('right: var(--onebot-webqq-bot-expanded-right, 0);')
+        ? ''
+        : '多机器人头像没有从右侧锚定向左展开',
+      capsuleStyle.includes('.onebot-webqq__status {\n    opacity: 0;')
+        && capsuleStyle.includes('&.is-active .onebot-webqq__avatar')
+        && !capsuleStyle.includes('&:focus-visible,\n  &.is-active')
+        ? ''
+        : '折叠态不应显示在线状态，也不应让 active 头像垂直偏移',
       capsuleView.includes("['onebot-webqq__bot-switch'")
         ? ''
         : '缺少机器人头像切换按钮',

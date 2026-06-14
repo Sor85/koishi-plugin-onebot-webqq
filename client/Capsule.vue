@@ -7,9 +7,12 @@
         :style="botStackStyle"
       >
         <button
-          v-for="(bot, index) in availableBots"
+          v-for="(bot, index) in botStackBots"
           :key="bot.selfId"
-          :class="['onebot-webqq__bot-switch', { 'is-active': bot.selfId === activeBotSelfId }]"
+          :class="['onebot-webqq__bot-switch', {
+            'is-active': bot.selfId === activeBotSelfId,
+            'is-collapsed-extra': isBotCollapsedExtra(index),
+          }]"
           type="button"
           :aria-label="getBotSwitchLabel(bot)"
           :aria-pressed="bot.selfId === activeBotSelfId"
@@ -23,6 +26,12 @@
             <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
           </span>
         </button>
+        <span
+          v-if="collapsedBotOverflowCount"
+          class="onebot-webqq__bot-overflow"
+          :style="botOverflowStyle"
+          aria-hidden="true"
+        >+{{ collapsedBotOverflowCount }}</span>
       </div>
       <button
         v-else
@@ -86,13 +95,27 @@ const hasMultipleBots = computed(() => availableBots.value.length > 1)
 const selectedBot = computed(() => availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value))
 const displayBotProfile = computed(() => selectedBot.value ?? capsule.value?.bot)
 const activeBotSelfId = computed(() => displayBotProfile.value?.selfId || selectedBotSelfId.value)
+const botStackBots = computed(() => {
+  const bots = availableBots.value
+  const activeIndex = bots.findIndex((bot) => bot.selfId === activeBotSelfId.value)
+  return activeIndex > 0
+    ? [bots[activeIndex], ...bots.slice(0, activeIndex), ...bots.slice(activeIndex + 1)]
+    : bots
+})
+const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))
+const collapsedBotOverflowCount = computed(() => Math.max(0, botStackBots.value.length - collapsedBotVisibleCount.value))
+const collapsedBotItemCount = computed(() => collapsedBotVisibleCount.value + (collapsedBotOverflowCount.value ? 1 : 0))
 const displayBotName = computed(() => displayBotProfile.value?.name || cachedBotProfile.value.name || '空闲')
 const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cachedBotProfile.value.avatar || '')
 const botStackStyle = computed(() => {
-  const count = availableBots.value.length
   return {
-    '--onebot-webqq-stack-collapsed-width': `${42 + Math.max(0, count - 1) * 7}px`,
-    '--onebot-webqq-stack-expanded-width': `${42 + Math.max(0, count - 1) * 31}px`,
+    '--onebot-webqq-stack-collapsed-width': `${42 + Math.max(0, collapsedBotItemCount.value - 1) * 24}px`,
+  }
+})
+const botOverflowStyle = computed(() => {
+  return {
+    '--onebot-webqq-bot-overflow-right': `${collapsedBotVisibleCount.value * 24}px`,
+    zIndex: String(botStackBots.value.length + 1),
   }
 })
 const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))
@@ -140,10 +163,14 @@ function getBotSwitchLabel(bot: OneBotRobotProfile) {
 
 function getBotSwitchStyle(index: number) {
   return {
-    '--onebot-webqq-bot-collapsed-left': `${index * 7}px`,
-    '--onebot-webqq-bot-expanded-left': `${index * 31}px`,
-    zIndex: String(availableBots.value.length - index),
+    '--onebot-webqq-bot-collapsed-right': `${index * 24}px`,
+    '--onebot-webqq-bot-expanded-right': `${index * 31}px`,
+    zIndex: String(botStackBots.value.length - index),
   }
+}
+
+function isBotCollapsedExtra(index: number) {
+  return collapsedBotOverflowCount.value > 0 && index >= collapsedBotVisibleCount.value
 }
 
 function getCapsuleUnreadText(count: number) {

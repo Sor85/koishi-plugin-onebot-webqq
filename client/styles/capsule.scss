@@ -83,17 +83,27 @@
 
   &:hover,
   &:focus-within {
-    width: var(--onebot-webqq-stack-expanded-width, 104px);
-
     .onebot-webqq__bot-switch {
-      left: var(--onebot-webqq-bot-expanded-left, 0);
+      right: var(--onebot-webqq-bot-expanded-right, 0);
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .onebot-webqq__status {
+      opacity: 1;
+    }
+
+    .onebot-webqq__bot-overflow {
+      opacity: 0;
+      visibility: hidden;
     }
   }
 }
 
 .onebot-webqq__bot-switch {
   position: absolute;
-  left: var(--onebot-webqq-bot-collapsed-left, 0);
+  right: var(--onebot-webqq-bot-collapsed-right, 0);
   top: 0;
   display: inline-flex;
   align-items: center;
@@ -105,16 +115,32 @@
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  transition: left 0.18s ease, transform 0.18s ease;
+  transition: right 0.18s ease, transform 0.18s ease, opacity 0.12s ease, visibility 0.12s ease;
 
   .onebot-webqq__avatar {
     margin-right: 0;
     box-shadow: 0 0 0 2px #ffffff;
   }
 
+  .onebot-webqq__status {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  &.is-active .onebot-webqq__avatar {
+    box-shadow:
+      0 0 0 2px #ffffff,
+      0 0 0 4px color-mix(in srgb, var(--k-color-primary, #409eff) 68%, transparent);
+  }
+
+  &.is-collapsed-extra {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   &:hover,
-  &:focus-visible,
-  &.is-active {
+  &:focus-visible {
     transform: translateY(-2px);
   }
 
@@ -122,6 +148,27 @@
     outline: 2px solid var(--k-color-primary, #409eff);
     outline-offset: 3px;
   }
+}
+
+.onebot-webqq__bot-overflow {
+  position: absolute;
+  right: var(--onebot-webqq-bot-overflow-right, 0);
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  color: var(--k-text-dark, var(--fg1, #1f2328));
+  background: color-mix(in srgb, var(--k-color-primary, #409eff) 16%, #ffffff 84%);
+  box-shadow: 0 0 0 2px #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
 }
 
 .onebot-webqq__avatar-unread {
