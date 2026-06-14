@@ -45,6 +45,13 @@ export function useWebQQContacts(conversationSummaries: Ref<Record<string, Conve
     currentChat.value = createRecentChatSelection(item)
   }
 
+  function resetContacts() {
+    activeTab.value = 'recent'
+    searchQuery.value = ''
+    contacts.value = { friends: [], groups: [] }
+    currentChat.value = undefined
+  }
+
   return {
     activeTab,
     searchQuery,
@@ -62,5 +69,6 @@ export function useWebQQContacts(conversationSummaries: Ref<Record<string, Conve
     selectFriend,
     selectGroup,
     selectRecent,
+    resetContacts,
   }
 }

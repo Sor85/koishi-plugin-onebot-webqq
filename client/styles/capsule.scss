@@ -71,6 +71,59 @@
   }
 }
 
+.onebot-webqq__bot-stack {
+  position: relative;
+  z-index: 2;
+  width: var(--onebot-webqq-stack-collapsed-width, 56px);
+  height: 42px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  pointer-events: auto;
+  transition: width 0.18s ease;
+
+  &:hover,
+  &:focus-within {
+    width: var(--onebot-webqq-stack-expanded-width, 104px);
+
+    .onebot-webqq__bot-switch {
+      left: var(--onebot-webqq-bot-expanded-left, 0);
+    }
+  }
+}
+
+.onebot-webqq__bot-switch {
+  position: absolute;
+  left: var(--onebot-webqq-bot-collapsed-left, 0);
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: left 0.18s ease, transform 0.18s ease;
+
+  .onebot-webqq__avatar {
+    margin-right: 0;
+    box-shadow: 0 0 0 2px #ffffff;
+  }
+
+  &:hover,
+  &:focus-visible,
+  &.is-active {
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--k-color-primary, #409eff);
+    outline-offset: 3px;
+  }
+}
+
 .onebot-webqq__avatar-unread {
   position: absolute;
   top: -5px;

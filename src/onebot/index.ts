@@ -11,6 +11,7 @@ import {
 } from './data'
 import {
   callAction,
+  getAvailableOneBotBots,
   selectBot,
   supportsOneBotAction,
   type OneBotBot,
@@ -44,6 +45,8 @@ import {
 } from './messages'
 import type {
   OneBotWebQQOptions,
+  OneBotRobotProfile,
+  OneBotRobotState,
   WebQQChatType,
   WebQQContacts,
   WebQQFriend,
@@ -62,6 +65,8 @@ import type {
 
 export type {
   OneBotWebQQOptions,
+  OneBotRobotProfile,
+  OneBotRobotState,
   WebQQChatType,
   WebQQContacts,
   WebQQForwardItem,
@@ -88,6 +93,23 @@ export type {
 
 function toStringId(value: unknown) {
   return value == null ? '' : String(value)
+}
+
+function getBotDisplayName(bot: OneBotBot) {
+  const name = (bot.name || bot.username || '').trim()
+  if (name && name !== bot.selfId) return name
+  return '机器人'
+}
+
+function toOneBotRobotProfile(bot: OneBotBot): OneBotRobotProfile | undefined {
+  if (!bot.selfId) return
+  return {
+    platform: bot.platform || 'onebot',
+    selfId: bot.selfId,
+    status: bot.status,
+    name: getBotDisplayName(bot),
+    avatar: bot.avatar || getUserAvatar(bot.selfId),
+  }
 }
 
 async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: WebQQFriend[], groups: WebQQGroup[], imageUrlResolver?: (file: string) => string): Promise<WebQQRecentContact | undefined> {
@@ -155,10 +177,25 @@ function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefi
 
 // 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
-  const getBot = () => selectBot(ctx, options)
+  let selectedSelfId = options.selfId
+  const getBot = () => selectBot(ctx, { ...options, selfId: selectedSelfId })
   const protocol = options.protocol ?? 'napcat'
   const { imageUrlResolver } = options
   return {
+    getSelectedSelfId() {
+      return selectedSelfId
+    },
+
+    selectSelfId(selfId: string) {
+      const selected = selectBot(ctx, { ...options, selfId })
+      selectedSelfId = selected.selfId
+      return selectedSelfId
+    },
+
+    listBots() {
+      return getAvailableOneBotBots(ctx, options.selfIds).map(toOneBotRobotProfile).filter((bot): bot is OneBotRobotProfile => !!bot)
+    },
+
     async resolveQuote(id: string) {
       return resolveOneBotQuote(getBot(), id, imageUrlResolver)
     },

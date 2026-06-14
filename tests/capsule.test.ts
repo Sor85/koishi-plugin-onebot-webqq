@@ -134,9 +134,9 @@ describe('chat capsule view', () => {
   it('uses cached bot avatar and name before live capsule data arrives', () => {
     expect(capsuleView).toContain("const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'")
     expect(capsuleView).toContain('const cachedBotProfile = ref(loadCachedBotProfile())')
-    expect(capsuleView).toContain('const displayBotName = computed(() => capsule.value?.bot.name || cachedBotProfile.value.name ||')
-    expect(capsuleView).toContain('const displayBotAvatar = computed(() => capsule.value?.bot.avatar || cachedBotProfile.value.avatar ||')
-    expect(capsuleView).toContain('watch(() => capsule.value?.bot')
+    expect(capsuleView).toContain('const displayBotName = computed(() => displayBotProfile.value?.name || cachedBotProfile.value.name ||')
+    expect(capsuleView).toContain('const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cachedBotProfile.value.avatar ||')
+    expect(capsuleView).toContain('watch(displayBotProfile')
     expect(capsuleView).toContain('cacheBotProfile(bot.name, bot.avatar)')
     expect(capsuleView).toContain('v-if="displayBotAvatar"')
     expect(capsuleView).toContain(':src="withProxy(displayBotAvatar)"')
@@ -146,11 +146,39 @@ describe('chat capsule view', () => {
   })
 
   it('renders total WebQQ unread count on the bot avatar when enabled', () => {
-    expect(capsuleView).toContain("import { capsule, showWebQQCapsuleUnread, webQQColorMode, webQQTotalUnread } from './state'")
+    expect(capsuleView).toMatch(/import \{[^}]*\bshowWebQQCapsuleUnread\b[^}]*\bwebQQTotalUnread\b[^}]*\} from '\.\/state'/)
     expect(capsuleView).toContain('class="onebot-webqq__avatar-unread"')
     expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
     expect(capsuleView).toContain('{{ capsuleUnreadText }}')
     expect(capsuleView).toContain('const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))')
+  })
+
+  it('renders a hover-expandable onebot robot avatar group', () => {
+    const missingRequirements = [
+      capsuleView.includes('const availableBots = computed(() => capsule.value?.bots?.length ? capsule.value.bots : runtimeBots.value)')
+        ? ''
+        : '胶囊没有读取可用 OneBot 机器人列表',
+      capsuleView.includes('const hasMultipleBots = computed(() => availableBots.value.length > 1)')
+        ? ''
+        : '胶囊没有区分单机器人和多机器人场景',
+      capsuleView.includes('class="onebot-webqq__bot-stack"')
+        ? ''
+        : '缺少多机器人头像堆叠容器',
+      capsuleView.includes("['onebot-webqq__bot-switch'")
+        ? ''
+        : '缺少机器人头像切换按钮',
+      capsuleView.includes('@click.stop="selectBot(bot.selfId)"')
+        ? ''
+        : '点击头像没有切换到对应机器人',
+      capsuleView.includes('async function selectBot(selfId: string)')
+        ? ''
+        : '缺少机器人切换函数',
+      capsuleView.includes('await selectWebQQBot(selfId)')
+        ? ''
+        : '机器人切换没有调用后端 WebQQ 切换接口',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('applies the configured WebQQ color mode to the main capsule', () => {
@@ -178,8 +206,10 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
+    expect(clientEntry).toContain("bots?: OneBotRobotState['bots']")
+    expect(clientEntry).toContain('selectedSelfId?: string')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
     expect(clientEntry).toContain('webQQTimBubbleTail?: boolean')
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')

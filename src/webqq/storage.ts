@@ -47,6 +47,10 @@ export const chatCapsuleStorageTable = 'onebot_webqq_storage'
 const webQQStateStorageId = 'state:webqq'
 const defaultWebQQMessageCacheLimit = 100
 
+function getScopedStorageId(id: string, scopeId?: string) {
+  return scopeId ? `${id}:${scopeId}` : id
+}
+
 function createEmptyWebQQStoredState(): WebQQStoredState {
   return {
     conversationSummaries: {},
@@ -90,27 +94,27 @@ function getWebQQDatabase(ctx: WebQQStorageContext) {
   return ctx.database
 }
 
-async function loadKoishiWebQQStorage(ctx: WebQQStorageContext) {
+async function loadKoishiWebQQStorage(ctx: WebQQStorageContext, scopeId?: string) {
   const database = getWebQQDatabase(ctx)
-  const [row] = await database.get(chatCapsuleStorageTable, { id: webQQStateStorageId })
+  const [row] = await database.get(chatCapsuleStorageTable, { id: getScopedStorageId(webQQStateStorageId, scopeId) })
   return readWebQQStoredState(isRecord(row) ? row.payload : undefined)
 }
 
-async function saveKoishiWebQQStorage(ctx: WebQQStorageContext, state: WebQQStoredState) {
+async function saveKoishiWebQQStorage(ctx: WebQQStorageContext, state: WebQQStoredState, scopeId?: string) {
   const database = getWebQQDatabase(ctx)
   await database.upsert(chatCapsuleStorageTable, [{
-    id: webQQStateStorageId,
+    id: getScopedStorageId(webQQStateStorageId, scopeId),
     payload: state,
     updatedAt: new Date(),
   }])
 }
 
-function getWebQQMessageStorageId(query: WebQQMessageCacheQuery) {
-  return `messages:${query.type}:${query.peerId}`
+function getWebQQMessageStorageId(query: WebQQMessageCacheQuery, scopeId?: string) {
+  return getScopedStorageId(`messages:${query.type}:${query.peerId}`, scopeId)
 }
 
-function getWebQQRecalledMessageStorageId(query: WebQQMessageCacheQuery) {
-  return `recalled-messages:${query.type}:${query.peerId}`
+function getWebQQRecalledMessageStorageId(query: WebQQMessageCacheQuery, scopeId?: string) {
+  return getScopedStorageId(`recalled-messages:${query.type}:${query.peerId}`, scopeId)
 }
 
 function readStringField(source: Record<string, unknown>, key: string) {
@@ -304,51 +308,51 @@ function readWebQQStoredMessages(value: unknown) {
   return readArray(value.messages, readWebQQStoredMessage)
 }
 
-export async function loadWebQQStorage(ctx: WebQQStorageContext, config: Config): Promise<WebQQStoredState> {
-  if (config.webQQStorageBackend === 'koishi') return loadKoishiWebQQStorage(ctx)
+export async function loadWebQQStorage(ctx: WebQQStorageContext, config: Config, scopeId?: string): Promise<WebQQStoredState> {
+  if (config.webQQStorageBackend === 'koishi') return loadKoishiWebQQStorage(ctx, scopeId)
   return createEmptyWebQQStoredState()
 }
 
-export async function saveWebQQStorage(ctx: WebQQStorageContext, config: Config, state: WebQQStoredState): Promise<void> {
+export async function saveWebQQStorage(ctx: WebQQStorageContext, config: Config, state: WebQQStoredState, scopeId?: string): Promise<void> {
   const normalized = readWebQQStoredState(state)
   if (config.webQQStorageBackend === 'koishi') {
-    await saveKoishiWebQQStorage(ctx, normalized)
+    await saveKoishiWebQQStorage(ctx, normalized, scopeId)
     return
   }
 }
 
-export async function loadKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, query: WebQQMessageCacheQuery) {
+export async function loadKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, query: WebQQMessageCacheQuery, scopeId?: string) {
   if (config.webQQStorageBackend !== 'koishi') return []
   const database = getWebQQDatabase(ctx)
-  const [row] = await database.get(chatCapsuleStorageTable, { id: getWebQQMessageStorageId(query) })
+  const [row] = await database.get(chatCapsuleStorageTable, { id: getWebQQMessageStorageId(query, scopeId) })
   return readWebQQStoredMessages(isRecord(row) ? row.payload : undefined)
 }
 
-export async function saveKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload) {
+export async function saveKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload, scopeId?: string) {
   if (config.webQQStorageBackend !== 'koishi') return
   const database = getWebQQDatabase(ctx)
   const messageCacheLimit = config.webQQMessageCacheLimit ?? defaultWebQQMessageCacheLimit
   const messages = payload.messages.slice(-messageCacheLimit)
   await database.upsert(chatCapsuleStorageTable, [{
-    id: getWebQQMessageStorageId(payload),
+    id: getWebQQMessageStorageId(payload, scopeId),
     payload: { messages },
     updatedAt: new Date(),
   }])
 }
 
-export async function loadKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, query: WebQQMessageCacheQuery) {
+export async function loadKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, query: WebQQMessageCacheQuery, scopeId?: string) {
   if (!ctx.database) return []
-  const [row] = await ctx.database.get(chatCapsuleStorageTable, { id: getWebQQRecalledMessageStorageId(query) })
+  const [row] = await ctx.database.get(chatCapsuleStorageTable, { id: getWebQQRecalledMessageStorageId(query, scopeId) })
   return readWebQQStoredMessages(isRecord(row) ? row.payload : undefined)
 }
 
-export async function saveKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload) {
+export async function saveKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload, scopeId?: string) {
   if (!ctx.database) return
   const messageCacheLimit = config.webQQMessageCacheLimit ?? defaultWebQQMessageCacheLimit
   const messages = payload.messages.filter((message) => message.recalled).slice(-messageCacheLimit)
   if (!messages.length) return
   await ctx.database.upsert(chatCapsuleStorageTable, [{
-    id: getWebQQRecalledMessageStorageId(payload),
+    id: getWebQQRecalledMessageStorageId(payload, scopeId),
     payload: { messages },
     updatedAt: new Date(),
   }])

@@ -55,6 +55,7 @@ const koishiMock = vi.hoisted(() => {
       intersect: createSchemaNode,
       object: createSchemaNode,
       string: createSchemaNode,
+      array: createSchemaNode,
       union: createSchemaNode,
       const: createSchemaNode,
       natural: createSchemaNode,
@@ -1789,6 +1790,7 @@ describe('chat capsule plugin wiring', () => {
     expect(data).toBeDefined()
     expect(data?.()).toEqual({
       capsule: undefined,
+      bots: [],
       debug: false,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
@@ -3362,6 +3364,7 @@ describe('chat capsule plugin wiring', () => {
     const data = addEntry.mock.calls[0][1]
     expect(data?.()).toEqual({
       capsule: undefined,
+      bots: [],
       debug: true,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',
@@ -3416,6 +3419,7 @@ describe('chat capsule plugin wiring', () => {
     const data = addEntry.mock.calls[0][1]
     expect(data?.()).toEqual({
       capsule: undefined,
+      bots: [],
       debug: false,
       webQQTheme: 'fresh',
       webQQChatStyle: 'telegram',

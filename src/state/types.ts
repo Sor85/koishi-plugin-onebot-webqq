@@ -62,4 +62,5 @@ export interface CapsuleSnapshot {
     received: number
     sent: number
   }
+  bots?: CapsuleBotInput[]
 }

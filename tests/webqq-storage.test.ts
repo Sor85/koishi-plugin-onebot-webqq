@@ -34,4 +34,21 @@ describe('webqq koishi storage', () => {
       peerId: '20000',
     })).resolves.toEqual([validMessage])
   })
+
+  it('scopes Koishi message cache keys by selected onebot robot when provided', async () => {
+    const database = {
+      get: vi.fn(async () => []),
+      upsert: vi.fn(),
+    }
+    const config: Config = { webQQStorageBackend: 'koishi' }
+
+    await loadKoishiWebQQMessageCache({ database }, config, {
+      type: 'group',
+      peerId: '20000',
+    }, '10001')
+
+    expect(database.get).toHaveBeenCalledWith('onebot_webqq_storage', {
+      id: 'messages:group:20000:10001',
+    })
+  })
 })

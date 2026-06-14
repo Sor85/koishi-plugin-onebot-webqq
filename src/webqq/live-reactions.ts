@@ -8,6 +8,7 @@ import { createWebQQEventMessage } from './live-message'
 import { getWebQQUserAvatar } from './session'
 
 interface WebQQReactionService {
+  getSelectedSelfId(): string | undefined
   supportsReactionUsers(): boolean
   loadReactionUsers(messageId: string, emojiId: string, count: number): Promise<WebQQMessageReactionUser[]>
   resolveMessage(id: string): Promise<WebQQMessage>
@@ -114,6 +115,8 @@ export function createWebQQReactionRuntime(options: {
   }
 
   const recordWebQQReaction = async (reaction: WebQQRawReaction) => {
+    const selectedSelfId = options.webqq.getSelectedSelfId()
+    if (selectedSelfId && reaction.selfId && reaction.selfId !== selectedSelfId) return
     const peer = { type: 'group' as const, peerId: reaction.groupId }
     const label = readWebQQReactionLabel(reaction.emojiId)
     const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)

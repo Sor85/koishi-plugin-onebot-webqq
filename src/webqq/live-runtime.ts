@@ -53,10 +53,17 @@ export function createWebQQLiveRuntime(options: {
   logger?: DebugLogger
   getThinkingDurationMs: () => number
   getThinkingUsage: () => WebQQThinking['usage'] | undefined
+  getStorageScope: () => string | undefined
 }) {
   const liveMessages = new Map<string, WebQQMessage[]>()
   const pendingWebQQThinking = new Map<string, WebQQThinking>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
+
+  function isSelectedWebQQSession(session: Session) {
+    const selectedSelfId = options.webqq.getSelectedSelfId()
+    // 多 OneBot 实例会共享同一套 Koishi 事件；这里只让当前 WebQQ 选中的 bot 写入 live cache，避免其他 bot 的实时消息串进当前观察窗。
+    return !selectedSelfId || session.bot.selfId === selectedSelfId
+  }
 
   function trimOldestMapEntries<TKey, TValue>(map: Map<TKey, TValue>, limit: number, onEvict?: (key: TKey) => void) {
     while (map.size > limit) {
@@ -109,11 +116,11 @@ export function createWebQQLiveRuntime(options: {
   }
   const persistMarkedWebQQRecall = async (peer: { type: WebQQChatType; peerId: string }, message: WebQQMessage) => {
     try {
-      const cachedMessages = await loadKoishiWebQQRecalledMessageCache(options.ctx, peer)
+      const cachedMessages = await loadKoishiWebQQRecalledMessageCache(options.ctx, peer, options.getStorageScope())
       await saveKoishiWebQQRecalledMessageCache(options.ctx, options.config, {
         ...peer,
         messages: mergeWebQQLiveMessages(cachedMessages, [{ ...message, recalled: true }]),
-      })
+      }, options.getStorageScope())
     } catch (error) {
       options.logger?.info('webqq recalled message cache failed %s', error instanceof Error ? error.message : String(error))
     }
@@ -150,6 +157,7 @@ export function createWebQQLiveRuntime(options: {
   }
   const recordWebQQLiveMessage = async (session: Session | undefined) => {
     if (!session) return
+    if (!isSelectedWebQQSession(session)) return
     const direction = readWebQQLiveDirection(session)
     let payload = await createWebQQLiveMessage(
       session,
@@ -196,6 +204,7 @@ export function createWebQQLiveRuntime(options: {
   }
   const updateLastOutgoingWebQQThinking = (payload: ChatLunaCharacterAfterChatPayload) => {
     if (!payload.session) return
+    if (!isSelectedWebQQSession(payload.session)) return
     const content = parseThinkContent(readCharacterAfterChatText(payload))
     if (!content) return
     const peer = readWebQQPeer(payload.session)
@@ -226,6 +235,7 @@ export function createWebQQLiveRuntime(options: {
   }
   const recordWebQQRecall = async (session: Session | undefined) => {
     if (!session || (session.bot.platform || session.platform) !== 'onebot') return
+    if (!isSelectedWebQQSession(session)) return
     const peer = readWebQQPeer(session)
     if (!peer) return
     const messageId = session.messageId || session.event.message?.id || readRawRecallMessageId(session)
@@ -274,7 +284,10 @@ export function createWebQQLiveRuntime(options: {
   return {
     liveMessages,
     recordWebQQLiveMessage,
-    recordWebQQNotice: noticeRuntime.recordWebQQNotice,
+    recordWebQQNotice: (session: Session | undefined) => {
+      if (session && !isSelectedWebQQSession(session)) return
+      return noticeRuntime.recordWebQQNotice(session)
+    },
     recordWebQQReaction: reactionRuntime.recordWebQQReaction,
     recordWebQQRecall,
     updateLastOutgoingWebQQThinking,

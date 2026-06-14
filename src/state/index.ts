@@ -23,6 +23,7 @@ export interface CapsuleState {
 
 interface MutableCapsuleState {
   current?: CapsuleSnapshot
+  bots: CapsuleBotInput[]
   counters: {
     received: number
     sent: number
@@ -42,6 +43,9 @@ function cloneSnapshot(snapshot: CapsuleSnapshot): CapsuleSnapshot {
       } : {}),
     },
     counters: { ...snapshot.counters },
+    ...(snapshot.bots ? {
+      bots: snapshot.bots.map((bot) => ({ ...bot })),
+    } : {}),
   }
 }
 
@@ -60,6 +64,7 @@ function getBotName(input: CapsuleBotInput) {
 // 创建聊天胶囊的内存状态容器。
 export function createCapsuleState(): CapsuleState {
   const state: MutableCapsuleState = {
+    bots: [],
     counters: {
       received: 0,
       sent: 0,
@@ -76,7 +81,7 @@ export function createCapsuleState(): CapsuleState {
   return capsule
 }
 
-function createSnapshot(input: CapsuleMessageInput, counters: MutableCapsuleState['counters']): CapsuleSnapshot {
+function createSnapshot(input: CapsuleMessageInput, state: MutableCapsuleState): CapsuleSnapshot {
   return {
     bot: {
       platform: input.bot.platform,
@@ -91,8 +96,25 @@ function createSnapshot(input: CapsuleMessageInput, counters: MutableCapsuleStat
       timestamp: input.timestamp,
     },
     counters: {
-      ...counters,
+      ...state.counters,
     },
+    ...(state?.bots.length ? {
+      bots: state.bots.map((bot) => ({ ...bot })),
+    } : {}),
+  }
+}
+
+export function setAvailableBots(capsule: CapsuleState, bots: CapsuleBotInput[]) {
+  const state = getState(capsule)
+  state.bots = bots.map((bot) => ({ ...bot }))
+  if (!state.current) return
+  state.current = {
+    ...state.current,
+    ...(state.bots.length ? {
+      bots: state.bots.map((bot) => ({ ...bot })),
+    } : {
+      bots: undefined,
+    }),
   }
 }
 
@@ -121,7 +143,7 @@ export function recordIncomingMessage(capsule: CapsuleState, input: CapsuleMessa
   const state = getState(capsule)
   state.counters.received += 1
   const currentActivity = state.current?.conversation.activityText ? copyActiveConversation(state.current.conversation) : {}
-  const snapshot = createSnapshot(input, state.counters)
+  const snapshot = createSnapshot(input, state)
   state.current = {
     ...snapshot,
     conversation: {
@@ -140,7 +162,7 @@ export function recordConversationActivity(
 ) {
   const state = getState(capsule)
   state.thinkingStartedAt = activityText === '正在思考' ? options.now ?? Date.now() : undefined
-  const snapshot = createSnapshot(input, state.counters)
+  const snapshot = createSnapshot(input, state)
   state.current = {
     ...snapshot,
     conversation: {

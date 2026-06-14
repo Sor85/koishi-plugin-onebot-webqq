@@ -35,6 +35,7 @@ export function registerWebQQConsoleListeners(
     friendRequestNotices: Map<string, WebQQNotice>
     groupLeaveNotices: Map<string, WebQQNotice>
     consoleAuthOptions: { authority: number }
+    getStorageScope: () => string | undefined
     logger?: DebugLogger
   },
 ) {
@@ -46,6 +47,7 @@ export function registerWebQQConsoleListeners(
     friendRequestNotices,
     groupLeaveNotices,
     consoleAuthOptions,
+    getStorageScope,
     logger,
   } = options
 
@@ -58,7 +60,7 @@ export function registerWebQQConsoleListeners(
     const history = await webqq.loadMessages(nextQuery)
     const messages = mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit)
     const recalledMessages = config.webQQMarkRecalledMessages ?? true
-      ? await loadKoishiWebQQRecalledMessageCache(inner, nextQuery)
+      ? await loadKoishiWebQQRecalledMessageCache(inner, nextQuery, getStorageScope())
       : []
     return attachWebQQAffinityBadges(inner, config, mergeWebQQLiveMessages(messages, recalledMessages), logger)
   }, consoleAuthOptions)
@@ -82,15 +84,15 @@ export function registerWebQQConsoleListeners(
     })
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/storage/load', () => {
-    return loadWebQQStorage(inner, config)
+    return loadWebQQStorage(inner, config, getStorageScope())
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/storage/save', (state: WebQQStoredState) => {
-    return saveWebQQStorage(inner, config, state)
+    return saveWebQQStorage(inner, config, state, getStorageScope())
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/messages/cache/load', (query: WebQQMessageCacheQuery) => {
-    return loadKoishiWebQQMessageCache(inner, config, query)
+    return loadKoishiWebQQMessageCache(inner, config, query, getStorageScope())
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/messages/cache/save', (payload: WebQQMessageCachePayload) => {
-    return saveKoishiWebQQMessageCache(inner, config, payload)
+    return saveKoishiWebQQMessageCache(inner, config, payload, getStorageScope())
   }, consoleAuthOptions)
 }

@@ -28,6 +28,20 @@ export interface CapsuleData {
     received: number
     sent: number
   }
+  bots?: OneBotRobotProfile[]
+}
+
+export interface OneBotRobotProfile {
+  platform: string
+  selfId: string
+  status?: number
+  name: string
+  avatar?: string
+}
+
+export interface OneBotRobotState {
+  bots: OneBotRobotProfile[]
+  selectedSelfId?: string
 }
 
 export interface WebQQFriend {
@@ -230,6 +244,7 @@ export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
 export const capsule = ref<CapsuleData>()
+export const availableBots = ref<OneBotRobotProfile[]>([])
 export const debug = ref(false)
 export const hideWebQQGroupLevel = ref(true)
 export const showWebQQAffinity = ref(false)
@@ -245,9 +260,11 @@ export const webQQMessageCacheLimit = ref(100)
 export const webQQStorageBackend = ref<WebQQStorageBackend>('koishi')
 export const webQQTheme = ref<WebQQTheme>('fresh')
 export const webQQTimBubbleTail = ref(true)
+export const selectedBotSelfId = ref('')
 
 export function resetWebQQClientState() {
   capsule.value = undefined
+  availableBots.value = []
   debug.value = false
   hideWebQQGroupLevel.value = true
   showWebQQAffinity.value = false
@@ -263,4 +280,5 @@ export function resetWebQQClientState() {
   webQQStorageBackend.value = 'koishi'
   webQQTheme.value = 'fresh'
   webQQTimBubbleTail.value = true
+  selectedBotSelfId.value = ''
 }

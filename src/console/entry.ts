@@ -1,5 +1,6 @@
 import { resolve } from 'path'
 import type { Config as PluginConfig } from '../config'
+import type { OneBotRobotState } from '../onebot'
 import type { ConsoleService } from '../plugin-context'
 import type { CapsuleState } from '../state'
 
@@ -10,6 +11,7 @@ export function registerConsoleEntry(
   options: {
     debug: boolean
     logSnapshot: (source: string) => void
+    readBotState: () => OneBotRobotState
   },
 ) {
   console.addEntry(process.env.KOISHI_BASE ? [
@@ -20,8 +22,10 @@ export function registerConsoleEntry(
     prod: resolve(__dirname, '../dist'),
   }, () => {
     options.logSnapshot('entry')
+    const botState = options.readBotState()
     return {
       capsule: state.snapshot(),
+      ...botState,
       debug: options.debug,
       webQQTheme: config.webQQTheme ?? 'fresh',
       webQQChatStyle: config.webQQChatStyle ?? 'telegram',
