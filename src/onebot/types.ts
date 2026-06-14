@@ -205,6 +205,7 @@ export interface WebQQRecordTranscriptionQuery {
 export interface OneBotWebQQOptions {
   selfId?: string
   selfIds?: string[]
+  mockBotCount?: number
   protocol?: WebQQProtocol
   imageUrlResolver?: (file: string) => string
 }

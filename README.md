@@ -43,6 +43,10 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 - `onebotSelfIds`：关闭运行时全量模式时允许使用的 OneBot 机器人 selfId 集合
 - `onebotProtocol`：选择 NapCat 或 LLBot 协议模式
 
+### 开发者选项
+
+- `onebotMockBotCount`：额外模拟的 OneBot 机器人数量，仅用于没有多 bot 环境时验证胶囊展开和切换
+
 ### 历史与缓存
 
 - `historyLimit`：每次加载聊天历史的消息数量，默认 100

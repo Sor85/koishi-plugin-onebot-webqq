@@ -60,9 +60,9 @@ export function createWebQQLiveRuntime(options: {
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
 
   function isSelectedWebQQSession(session: Session) {
-    const selectedSelfId = options.webqq.getSelectedSelfId()
-    // 多 OneBot 实例会共享同一套 Koishi 事件；这里只让当前 WebQQ 选中的 bot 写入 live cache，避免其他 bot 的实时消息串进当前观察窗。
-    return !selectedSelfId || session.bot.selfId === selectedSelfId
+    // 多 OneBot 实例会共享同一套 Koishi 事件；模拟 bot 的 selfId 又会映射回源 bot。
+    // 因此匹配规则必须由 OneBot WebQQ 服务统一判断，避免真实消息在切到模拟头像后被误过滤。
+    return options.webqq.isSelectedSelfId(session.bot.selfId)
   }
 
   function trimOldestMapEntries<TKey, TValue>(map: Map<TKey, TValue>, limit: number, onEvict?: (key: TKey) => void) {

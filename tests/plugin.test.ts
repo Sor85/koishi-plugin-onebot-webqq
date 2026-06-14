@@ -1771,6 +1771,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB')")
     expect(configSource).toContain("webQQMarkRecalledMessages?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息')")
+    expect(configSource).toContain('onebotMockBotCount?: number')
+    expect(configSource).toContain("Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，仅用于无多 bot 环境验证胶囊切换')")
     expect(configSource).not.toContain("Schema.const('s3')")
     expect(configSource).not.toContain('webQQS3')
     expect(configSource).not.toContain('@aws-sdk/client-s3')
@@ -1805,6 +1807,39 @@ describe('chat capsule plugin wiring', () => {
       webQQStorageBackend: 'koishi',
       webQQMessageCacheLimit: 100,
     })
+  })
+
+  it('adds configured mock OneBot robots to console entry data', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      name: 'Capsule Bot',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const { ctx, addEntry, addListener, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx, { onebotMockBotCount: 2 })
+
+    const data = addEntry.mock.calls[0][1]
+    expect(data?.()).toMatchObject({
+      bots: [
+        { selfId: '10000', name: 'Capsule Bot' },
+        { selfId: '10000:mock:1', name: 'Capsule Bot 模拟 1' },
+        { selfId: '10000:mock:2', name: 'Capsule Bot 模拟 2' },
+      ],
+    })
+
+    const selectBot = findConsoleListener(addListener, 'onebot-webqq/webqq/bot/select')
+    await expect(selectBot?.({ selfId: '10000:mock:2' })).resolves.toMatchObject({
+      selectedSelfId: '10000:mock:2',
+    })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/bots/update', expect.objectContaining({
+      selectedSelfId: '10000:mock:2',
+    }), { authority: 1 })
   })
 
   it('registers read-only WebQQ console listeners backed by OneBot actions', async () => {

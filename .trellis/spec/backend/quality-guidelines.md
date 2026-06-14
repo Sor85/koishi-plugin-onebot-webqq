@@ -85,6 +85,62 @@ ctx.console?.broadcast('onebot-webqq/bots/update', readBotState(), consoleAuthOp
 
 ---
 
+## 场景：无多 bot 环境下模拟 OneBot 机器人
+
+### 1. 范围与触发
+
+- 触发：开发或验收环境只有一个真实 OneBot 机器人，但需要验证多机器人胶囊堆叠、展开和切换
+- 范围：配置项、OneBot WebQQ 服务的可见机器人列表、console entry payload、`bot/select` RPC、实时事件过滤
+
+### 2. 签名
+
+- 配置：`onebotMockBotCount?: number`，默认 `0`，表示额外追加的模拟机器人数量
+- 服务选项：`OneBotWebQQOptions.mockBotCount?: number`
+- 服务方法：`isSelectedSelfId(selfId?: string) => boolean`
+
+### 3. 契约
+
+- `onebotMockBotCount=0` 时不追加模拟机器人，原有单机器人和多真实机器人行为不变
+- `onebotMockBotCount>0` 时，`createOneBotWebQQService().listBots()` 在真实机器人列表后追加同等数量的模拟 profile
+- 模拟 profile 的 `selfId` 使用 `<sourceSelfId>:mock:<index>`，并复用第一个可用真实机器人的头像和状态
+- 点击模拟机器人时，`selectedSelfId` 仍返回模拟 `selfId`，用于前端高亮和多机器人缓存分区
+- 真实 WebQQ action、实时消息和贴表情过滤必须通过服务层映射回源机器人 `selfId`
+- 不要把模拟机器人写进 `ctx.bots`，避免污染 Koishi 当前运行时的真实适配器列表
+
+### 4. 校验与错误矩阵
+
+- `onebotMockBotCount=0`：`listBots()` 只返回真实机器人
+- 没有可用真实机器人：不追加模拟 profile，WebQQ 读取继续按原逻辑报“未找到可用的 OneBot 机器人”
+- 点击不存在的模拟 `selfId`：`bot/select` 抛出“未找到 selfId 为 ... 的 OneBot 机器人”
+- 切到模拟 `selfId` 后收到源机器人实时事件：`isSelectedSelfId(sourceSelfId)` 必须返回 `true`
+
+### 5. 正确 / 基线 / 错误案例
+
+- 正确：一个真实机器人在线，`onebotMockBotCount=2`，胶囊显示三个头像，点击 `10000:mock:2` 后前端选中模拟头像，WebQQ 数据仍从真实 `10000` 读取
+- 基线：`onebotMockBotCount=0`，只有一个真实机器人时仍走单头像路径
+- 错误：前端本地伪造两个头像，但后端 `bot/select` 不认识模拟 `selfId`，点击后静默失败或无法打开 WebQQ
+
+### 6. 必要测试
+
+- `tests/onebot.test.ts`：`mockBotCount` 会追加模拟 profile，选择模拟 `selfId` 后仍调用真实 bot action
+- `tests/plugin.test.ts`：console entry data 会返回真实机器人加模拟机器人，`bot/select` 能广播模拟 `selectedSelfId`
+- 变更完成后运行 `yarn test`、`yarn typecheck`、`yarn build`
+
+### 7. 错误与正确示例
+
+错误做法：
+```ts
+ctx.bots?.push(mockBot)
+```
+
+正确做法：
+```ts
+const bots = webqq.listBots()
+webqq.selectSelfId('10000:mock:1')
+```
+
+---
+
 ## Forbidden Patterns
 
 <!-- Patterns that should never be used and why -->

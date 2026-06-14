@@ -127,6 +127,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const webqq = createOneBotWebQQService(ctx, {
     selfId: initialOneBotSelfId,
     selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
+    mockBotCount: config.onebotMockBotCount,
     protocol: config.onebotProtocol,
     imageUrlResolver,
   })
