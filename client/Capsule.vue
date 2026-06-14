@@ -1,6 +1,10 @@
 <template>
   <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host">
-    <div :class="['onebot-webqq', `is-color-${webQQColorMode}`]" aria-live="polite">
+    <div
+      :class="['onebot-webqq', `is-color-${webQQColorMode}`, { 'has-bot-stack': hasMultipleBots }]"
+      :style="capsuleStyle"
+      aria-live="polite"
+    >
       <div
         v-if="hasMultipleBots"
         class="onebot-webqq__bot-stack"
@@ -104,18 +108,27 @@ const botStackBots = computed(() => {
 })
 const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))
 const collapsedBotOverflowCount = computed(() => Math.max(0, botStackBots.value.length - collapsedBotVisibleCount.value))
-const collapsedBotItemCount = computed(() => collapsedBotVisibleCount.value + (collapsedBotOverflowCount.value ? 1 : 0))
+const collapsedBotStackWidth = computed(() => 42 + Math.max(0, collapsedBotVisibleCount.value - 1) * 24 + (collapsedBotOverflowCount.value ? 18 : 0))
+const expandedBotStackWidth = computed(() => 42 + Math.max(0, botStackBots.value.length - 1) * 31)
 const displayBotName = computed(() => displayBotProfile.value?.name || cachedBotProfile.value.name || '空闲')
 const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cachedBotProfile.value.avatar || '')
+const capsuleStyle = computed(() => {
+  if (!hasMultipleBots.value) return {}
+  return {
+    '--onebot-webqq-capsule-collapsed-width': `${220 + collapsedBotStackWidth.value - 42}px`,
+    '--onebot-webqq-capsule-expanded-width': `${220 + expandedBotStackWidth.value - 42}px`,
+  }
+})
 const botStackStyle = computed(() => {
   return {
-    '--onebot-webqq-stack-collapsed-width': `${42 + Math.max(0, collapsedBotItemCount.value - 1) * 24}px`,
+    '--onebot-webqq-stack-collapsed-width': `${collapsedBotStackWidth.value}px`,
+    '--onebot-webqq-stack-expanded-width': `${expandedBotStackWidth.value}px`,
   }
 })
 const botOverflowStyle = computed(() => {
   return {
-    '--onebot-webqq-bot-overflow-right': `${collapsedBotVisibleCount.value * 24}px`,
-    zIndex: String(botStackBots.value.length + 1),
+    '--onebot-webqq-bot-overflow-right': `${Math.max(0, collapsedBotVisibleCount.value - 1) * 24 + 18}px`,
+    zIndex: '0',
   }
 })
 const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))

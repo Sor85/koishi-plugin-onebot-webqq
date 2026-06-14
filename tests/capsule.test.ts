@@ -174,10 +174,23 @@ describe('chat capsule view', () => {
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
         ? ''
         : '折叠态没有隐藏超过上限的机器人头像',
+      capsuleView.includes("'--onebot-webqq-capsule-collapsed-width': `${220 + collapsedBotStackWidth.value - 42}px`")
+        && capsuleView.includes("'--onebot-webqq-capsule-expanded-width': `${220 + expandedBotStackWidth.value - 42}px`")
+        ? ''
+        : '多机器人头像没有让胶囊随头像组向左扩张',
       capsuleStyle.includes('right: var(--onebot-webqq-bot-collapsed-right, 0);')
         && capsuleStyle.includes('right: var(--onebot-webqq-bot-expanded-right, 0);')
         ? ''
         : '多机器人头像没有从右侧锚定向左展开',
+      capsuleStyle.includes('.onebot-webqq.has-bot-stack:has(.onebot-webqq__bot-stack:hover)')
+        && capsuleStyle.includes('width: var(--onebot-webqq-stack-expanded-width')
+        ? ''
+        : '头像悬停展开时胶囊和头像组没有同步展开',
+      capsuleView.includes("zIndex: '0'")
+        && capsuleStyle.includes('justify-content: flex-start;')
+        && capsuleStyle.includes('text-align: left;')
+        ? ''
+        : '多余机器人数字没有置于头像下层并靠左显示',
       capsuleStyle.includes('.onebot-webqq__status {\n    opacity: 0;')
         && capsuleStyle.includes('&.is-active .onebot-webqq__avatar')
         && !capsuleStyle.includes('&:focus-visible,\n  &.is-active')

@@ -137,7 +137,7 @@ describe('chat capsule styles', () => {
   })
 
   it('keeps the main capsule compact without usage rows', () => {
-    expect(ruleBody('.onebot-webqq')).toContain('width: 220px')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-capsule-collapsed-width, 220px)')
     expect(style).not.toContain('.onebot-webqq__usage')
     expect(style).not.toContain('.onebot-webqq__usage-row')
     expect(style).not.toContain('.onebot-webqq__usage-icon')
