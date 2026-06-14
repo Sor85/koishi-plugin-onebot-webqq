@@ -13,3 +13,9 @@ lib
 dist
 *.tsbuildinfo
 docs
+
+## trellis
+.codex
+.claude
+.agents
+AGENTS.md
