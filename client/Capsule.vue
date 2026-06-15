@@ -39,15 +39,6 @@
                 <k-icon v-else name="robot" />
                 <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
                 <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
-                <Transition name="onebot-webqq-avatar-guide">
-                  <span
-                    v-if="webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId"
-                    class="onebot-webqq__avatar-guide"
-                    aria-hidden="true"
-                  >
-                    <span class="onebot-webqq__avatar-guide-ring"></span>
-                  </span>
-                </Transition>
               </span>
             </button>
             <span

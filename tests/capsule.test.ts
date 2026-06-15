@@ -23,6 +23,8 @@ function runGetCapsuleUnreadText(count: number) {
   return Function('count', `return ${returnExpression}`)(count)
 }
 
+const multiBotTemplate = sourceBetween(capsuleView, 'v-if="hasMultipleBots"', '<button\n            v-else')
+
 describe('chat capsule view', () => {
   it('hides the capsule on the logger page', () => {
     expect(capsuleView).toContain("import { Universal, activities, router, store, withProxy } from '@koishijs/client'")
@@ -244,13 +246,10 @@ describe('chat capsule view', () => {
         && !capsuleStyle.includes('&.is-active .onebot-webqq__avatar')
         ? ''
         : '多机器人状态点应只显示在当前 bot 头像上，且 active 头像不应有额外强调样式',
-      capsuleView.includes('webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId')
-        && capsuleStyle.includes('.onebot-webqq__avatar-guide')
-        && capsuleStyle.includes('z-index: 1;')
-        && capsuleStyle.includes('.onebot-webqq__status')
-        && capsuleStyle.includes('.onebot-webqq__avatar-unread')
+      !multiBotTemplate.includes('onebot-webqq-avatar-guide')
+        && !multiBotTemplate.includes('onebot-webqq__avatar-guide')
         ? ''
-        : '多 bot 头像引导光圈没有放到当前 bot 头像内部或没有置于在线状态和消息计数下',
+        : '多 bot 折叠态当前头像不应渲染头像引导光圈，避免出现波纹扩散效果',
       capsuleView.includes("['onebot-webqq__bot-switch'")
         ? ''
         : '缺少机器人头像切换按钮',
