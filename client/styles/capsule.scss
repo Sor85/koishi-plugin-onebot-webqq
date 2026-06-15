@@ -3,12 +3,15 @@
   right: 24px;
   bottom: 56px;
   z-index: 10000;
+  height: 52px;
+  line-height: 0;
 }
 
 .onebot-webqq-layout-root {
   position: relative;
-  display: inline-block;
+  display: block;
   z-index: 10000;
+  height: 52px;
 }
 
 .onebot-webqq {
