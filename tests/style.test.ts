@@ -187,6 +187,9 @@ describe('chat capsule styles', () => {
     expect(stack).toContain('width: var(--onebot-webqq-stack-collapsed-width, 56px)')
     expect(stack).toContain('transition: width 0.18s ease')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('right: var(--onebot-webqq-bot-collapsed-right, 0)')
+    expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('-webkit-tap-highlight-color: transparent')
+    expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('content: none')
+    expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('display: none')
     expect(ruleBody('.onebot-webqq__bot-stack').includes('right: var(--onebot-webqq-bot-expanded-right, 0)')).toBe(true)
   })
 

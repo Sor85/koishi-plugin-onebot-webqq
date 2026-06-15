@@ -229,12 +229,11 @@ describe('chat capsule view', () => {
         && capsuleView.includes('createLayout(capsuleLayoutRef.value')
         && capsuleView.includes('layout?.record()')
         && capsuleView.includes("layout.animate({ duration: 260, ease: 'out(3)' })")
-        && capsuleView.includes("children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-overflow']")
+        && capsuleView.includes("children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow']")
         && !capsuleView.includes("'.onebot-webqq__body'")
-        && !capsuleView.includes("'.onebot-webqq__bot-switch'")
         && !capsuleView.includes("'.onebot-webqq__avatar-guide'")
         ? ''
-        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像容器，不能动画右侧正文、单个头像按钮或头像引导层',
+        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像容器，不能动画右侧正文或头像引导层；bot-switch 必须参与 FLIP 才能固定当前头像',
       capsuleView.includes("zIndex: '0'")
         && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
         && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")

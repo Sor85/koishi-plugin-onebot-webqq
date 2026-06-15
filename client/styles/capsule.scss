@@ -145,6 +145,13 @@
   border-radius: 50%;
   cursor: pointer;
   transition: opacity 0.12s ease, visibility 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &::before,
+  &::after {
+    content: none;
+    display: none;
+  }
 
   .onebot-webqq__avatar {
     margin-right: 0;
