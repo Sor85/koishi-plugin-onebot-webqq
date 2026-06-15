@@ -242,8 +242,9 @@ function isBotCollapsedExtra(index: number) {
 function ensureBotStackLayout() {
   if (botStackLayout || !capsuleLayoutRef.value) return botStackLayout
   // layout root 不能是 fixed 胶囊本体；用独立 wrapper 记录外层右锚定胶囊的左移，同时把右侧正文隔离在 wrapper 外，避免文字被 FLIP 位移。
+  // 单个 bot 按钮已经靠 right/width 自己定位，别再把它们纳入 FLIP；否则最右侧当前头像会在展开/折叠时出现轻微抖动和假性的波纹感。
   botStackLayout = createLayout(capsuleLayoutRef.value, {
-    children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide'],
+    children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-overflow'],
   })
   return botStackLayout
 }
@@ -359,6 +360,7 @@ function hideWebQQAvatarGuide() {
 
 function showWebQQAvatarGuide(remember = false) {
   if (webqqOpen.value) return
+  if (hasMultipleBots.value) return
   if (remember) rememberWebQQAvatarGuide()
   webQQAvatarGuideVisible.value = true
   if (webQQAvatarGuideTimer) clearTimeout(webQQAvatarGuideTimer)

@@ -229,10 +229,12 @@ describe('chat capsule view', () => {
         && capsuleView.includes('createLayout(capsuleLayoutRef.value')
         && capsuleView.includes('layout?.record()')
         && capsuleView.includes("layout.animate({ duration: 260, ease: 'out(3)' })")
-        && capsuleView.includes("children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide']")
+        && capsuleView.includes("children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-overflow']")
         && !capsuleView.includes("'.onebot-webqq__body'")
+        && !capsuleView.includes("'.onebot-webqq__bot-switch'")
+        && !capsuleView.includes("'.onebot-webqq__avatar-guide'")
         ? ''
-        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像区域，不能动画右侧正文',
+        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像容器，不能动画右侧正文、单个头像按钮或头像引导层',
       capsuleView.includes("zIndex: '0'")
         && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
         && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")
@@ -252,8 +254,9 @@ describe('chat capsule view', () => {
         : '多机器人状态点应只显示在当前 bot 头像上，且 active 头像不应有额外强调样式',
       !multiBotTemplate.includes('onebot-webqq-avatar-guide')
         && !multiBotTemplate.includes('onebot-webqq__avatar-guide')
+        && capsuleView.includes('if (hasMultipleBots.value) return')
         ? ''
-        : '多 bot 折叠态当前头像不应渲染头像引导光圈，避免出现波纹扩散效果',
+        : '多 bot 折叠态当前头像不应渲染或触发头像引导光圈，避免出现波纹扩散效果',
       capsuleView.includes("['onebot-webqq__bot-switch'")
         ? ''
         : '缺少机器人头像切换按钮',
