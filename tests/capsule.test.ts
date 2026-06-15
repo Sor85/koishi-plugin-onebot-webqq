@@ -88,8 +88,21 @@ describe('chat capsule view', () => {
         ? ''
         : '缺少展示头像图形引导函数',
       capsuleView.includes('@click="showWebQQAvatarGuide()"')
+        && !capsuleView.includes('@click.self="showWebQQAvatarGuide()"')
         ? ''
-        : '胶囊主体点击没有触发头像图形引导',
+        : '头像图形引导应在胶囊非头像区域点击时触发',
+      capsuleView.includes('ref="titleRef"')
+        && capsuleView.includes('ref="activityRef"')
+        && capsuleView.includes('class="onebot-webqq__tooltip"')
+        && capsuleView.includes('class="onebot-webqq__tooltip-content"')
+        && capsuleView.includes('class="onebot-webqq__tooltip-arrow"')
+        && capsuleView.includes('function hasTextOverflow(element?: HTMLElement)')
+        && capsuleView.includes("function showCapsuleTextTooltip(target: 'title' | 'activity')")
+        && capsuleView.includes("capsuleTooltipTarget.value === 'activity' && activityOverflow.value")
+        && !capsuleView.includes(':title="titleTooltip"')
+        && !capsuleView.includes(':title="metaTooltip"')
+        ? ''
+        : '胶囊文字应只在内容溢出时显示 HeroUI 风格 tooltip',
       mountedSource.includes('!hasSeenWebQQAvatarGuide()')
         && mountedSource.includes('showWebQQAvatarGuide(true)')
         ? ''
@@ -142,7 +155,8 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('v-if="displayBotAvatar"')
     expect(capsuleView).toContain(':src="withProxy(displayBotAvatar)"')
     expect(capsuleView).toContain(':alt="displayBotName"')
-    expect(capsuleView).toContain(':title="displayBotName"')
+    expect(capsuleView).toContain('ref="titleRef"')
+    expect(capsuleView).not.toContain(':title="displayBotName"')
     expect(capsuleView).toContain('{{ displayBotName }}')
   })
 
@@ -171,44 +185,67 @@ describe('chat capsule view', () => {
       capsuleView.includes('v-if="collapsedBotOverflowCount"') && capsuleView.includes('class="onebot-webqq__bot-overflow"')
         ? ''
         : '折叠态没有用数字显示多余机器人数量',
-      capsuleView.includes('>{{ collapsedBotOverflowCount }}</span>') && !capsuleView.includes('>+{{ collapsedBotOverflowCount }}</span>')
+      capsuleView.includes('>+{{ collapsedBotOverflowCount }}</span>')
         ? ''
-        : '折叠态多余机器人数量不应显示加号',
+        : '折叠态多余机器人数量应显示加号',
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
         ? ''
         : '折叠态没有隐藏超过上限的机器人头像',
       capsuleView.includes("'--onebot-webqq-capsule-collapsed-width': `${220 + collapsedBotStackWidth.value - 42}px`")
         && capsuleView.includes("'--onebot-webqq-capsule-expanded-width': `${220 + expandedBotStackWidth.value - 42}px`")
+        && capsuleView.includes("'--onebot-webqq-stack-collapsed-width': `${collapsedBotStackWidth.value}px`")
+        && capsuleView.includes("'--onebot-webqq-stack-expanded-width': `${expandedBotStackWidth.value}px`")
+        && !capsuleView.includes("'--onebot-webqq-capsule-width'")
+        && !capsuleView.includes("'--onebot-webqq-stack-width'")
         ? ''
-        : '多机器人头像没有让胶囊随头像组向左扩张',
+        : '多机器人胶囊不应预留展开宽度，应折叠和展开同步计算宽度',
       capsuleStyle.includes('right: var(--onebot-webqq-bot-collapsed-right, 0);')
         && capsuleStyle.includes('right: var(--onebot-webqq-bot-expanded-right, 0);')
         ? ''
         : '多机器人头像没有从右侧锚定向左展开',
-      capsuleStyle.includes('.onebot-webqq.has-bot-stack.is-bot-stack-expanded')
+      capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', { \'is-expanded\': botStackExpanded }]"')
         && capsuleView.includes("'is-bot-stack-expanded': botStackExpanded")
-        && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', { \'is-expanded\': botStackExpanded }]"')
+        && !capsuleView.includes("'has-bot-stack': hasMultipleBots")
+        && capsuleStyle.includes('.onebot-webqq.is-bot-stack-expanded')
+        && capsuleStyle.includes('width: var(--onebot-webqq-capsule-expanded-width')
         && capsuleStyle.includes('width: var(--onebot-webqq-stack-expanded-width')
+        && capsuleStyle.includes('.onebot-webqq__body')
+        && capsuleStyle.includes('position: absolute')
+        && capsuleStyle.includes('right: 12px')
+        && capsuleStyle.includes('width: 149px')
         ? ''
-        : '头像展开时胶囊和头像组没有通过状态类同步展开',
+        : '头像展开时胶囊和头像组没有同步向左扩张，或正文没有固定右锚点',
       capsuleView.includes("import { createLayout, type AutoLayout } from 'animejs'")
+        && capsuleView.includes('ref="botStackRef"')
+        && capsuleView.includes('class="onebot-webqq__bot-stack-layout"')
+        && capsuleView.includes('const botStackRef = ref<HTMLElement>()')
+        && capsuleView.includes('createLayout(botStackRef.value')
         && capsuleView.includes('layout?.record()')
         && capsuleView.includes("layout.animate({ duration: 260, ease: 'out(3)' })")
+        && !capsuleView.includes("children: ['.onebot-webqq',")
         ? ''
-        : '机器人头像组没有直接使用 Anime.js layout record/animate 动画',
+        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能是头像组内部布局层，不能动画根胶囊正文',
       capsuleView.includes("zIndex: '0'")
+        && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
+        && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")
         && capsuleStyle.includes('justify-content: flex-start;')
         && capsuleStyle.includes('text-align: left;')
+        && capsuleStyle.includes('font-size: 10px;')
         ? ''
-        : '多余机器人数字没有置于头像下层并靠左显示',
+        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或没有缩小字号',
       capsuleView.includes('v-if="bot.selfId === activeBotSelfId"')
         && !capsuleStyle.includes('.onebot-webqq__status {\n    opacity: 0;')
         && !capsuleStyle.includes('&:focus-visible,\n  &.is-active')
+        && !capsuleStyle.includes('&.is-active .onebot-webqq__avatar')
         ? ''
-        : '多机器人状态点应始终只显示在当前 bot 头像上，且 active 头像不应垂直偏移',
+        : '多机器人状态点应只显示在当前 bot 头像上，且 active 头像不应有额外强调样式',
       capsuleView.includes('webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId')
+        && capsuleStyle.includes('.onebot-webqq__avatar-guide')
+        && capsuleStyle.includes('z-index: 1;')
+        && capsuleStyle.includes('.onebot-webqq__status')
+        && capsuleStyle.includes('.onebot-webqq__avatar-unread')
         ? ''
-        : '多 bot 头像引导光圈没有放到当前 bot 头像内部',
+        : '多 bot 头像引导光圈没有放到当前 bot 头像内部或没有置于在线状态和消息计数下',
       capsuleView.includes("['onebot-webqq__bot-switch'")
         ? ''
         : '缺少机器人头像切换按钮',

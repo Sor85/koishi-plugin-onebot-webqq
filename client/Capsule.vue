@@ -2,7 +2,6 @@
   <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host">
     <div
       :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
-        'has-bot-stack': hasMultipleBots,
         'is-bot-stack-expanded': botStackExpanded,
       }]"
       :style="capsuleStyle"
@@ -17,41 +16,43 @@
         @focusin="expandBotStack"
         @focusout="collapseBotStack"
       >
-        <button
-          v-for="(bot, index) in botStackBots"
-          :key="bot.selfId"
-          :class="['onebot-webqq__bot-switch', {
-            'is-active': bot.selfId === activeBotSelfId,
-            'is-collapsed-extra': isBotCollapsedExtra(index),
-          }]"
-          type="button"
-          :aria-label="getBotSwitchLabel(bot)"
-          :aria-pressed="bot.selfId === activeBotSelfId"
-          :style="getBotSwitchStyle(index)"
-          @click.stop="selectBot(bot.selfId)"
-        >
-          <span class="onebot-webqq__avatar">
-            <img v-if="bot.avatar" :src="withProxy(bot.avatar)" :alt="getBotName(bot)">
-            <k-icon v-else name="robot" />
-            <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
-            <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
-            <Transition name="onebot-webqq-avatar-guide">
-              <span
-                v-if="webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId"
-                class="onebot-webqq__avatar-guide"
-                aria-hidden="true"
-              >
-                <span class="onebot-webqq__avatar-guide-ring"></span>
-              </span>
-            </Transition>
-          </span>
-        </button>
-        <span
-          v-if="collapsedBotOverflowCount"
-          class="onebot-webqq__bot-overflow"
-          :style="botOverflowStyle"
-          aria-hidden="true"
-        >{{ collapsedBotOverflowCount }}</span>
+        <div ref="botStackRef" class="onebot-webqq__bot-stack-layout">
+          <button
+            v-for="(bot, index) in botStackBots"
+            :key="bot.selfId"
+            :class="['onebot-webqq__bot-switch', {
+              'is-active': bot.selfId === activeBotSelfId,
+              'is-collapsed-extra': isBotCollapsedExtra(index),
+            }]"
+            type="button"
+            :aria-label="getBotSwitchLabel(bot)"
+            :aria-pressed="bot.selfId === activeBotSelfId"
+            :style="getBotSwitchStyle(index)"
+            @click.stop="selectBot(bot.selfId)"
+          >
+            <span class="onebot-webqq__avatar">
+              <img v-if="bot.avatar" :src="withProxy(bot.avatar)" :alt="getBotName(bot)">
+              <k-icon v-else name="robot" />
+              <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
+              <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
+              <Transition name="onebot-webqq-avatar-guide">
+                <span
+                  v-if="webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId"
+                  class="onebot-webqq__avatar-guide"
+                  aria-hidden="true"
+                >
+                  <span class="onebot-webqq__avatar-guide-ring"></span>
+                </span>
+              </Transition>
+            </span>
+          </button>
+          <span
+            v-if="collapsedBotOverflowCount"
+            class="onebot-webqq__bot-overflow"
+            :style="botOverflowStyle"
+            aria-hidden="true"
+          >+{{ collapsedBotOverflowCount }}</span>
+        </div>
       </div>
       <button
         v-else
@@ -79,14 +80,31 @@
       </button>
       <div class="onebot-webqq__body" @click="showWebQQAvatarGuide()">
         <div class="onebot-webqq__title-line">
-          <div class="onebot-webqq__title" :title="displayBotName">
+          <div
+            ref="titleRef"
+            class="onebot-webqq__title"
+            @pointerenter="showCapsuleTextTooltip('title')"
+            @pointerleave="hideCapsuleTextTooltip"
+          >
             {{ displayBotName }}
           </div>
           <span v-if="titleStatusText" class="onebot-webqq__title-status is-thinking">{{ titleStatusText }}</span>
         </div>
-        <div class="onebot-webqq__meta" :title="metaTitle">
-          <span v-if="displayActivityText" class="onebot-webqq__activity">{{ displayActivityText }}</span>
+        <div class="onebot-webqq__meta">
+          <span
+            v-if="displayActivityText"
+            ref="activityRef"
+            class="onebot-webqq__activity"
+            @pointerenter="showCapsuleTextTooltip('activity')"
+            @pointerleave="hideCapsuleTextTooltip"
+          >{{ displayActivityText }}</span>
         </div>
+        <Transition name="onebot-webqq-tooltip">
+          <div v-if="capsuleTooltipText" class="onebot-webqq__tooltip" role="tooltip">
+            <span class="onebot-webqq__tooltip-content">{{ capsuleTooltipText }}</span>
+            <span class="onebot-webqq__tooltip-arrow" aria-hidden="true"></span>
+          </div>
+        </Transition>
       </div>
     </div>
     <WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />
@@ -106,10 +124,17 @@ const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
 const webqqOpen = ref(false)
 const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()
+const botStackRef = ref<HTMLElement>()
+const titleRef = ref<HTMLElement>()
+const activityRef = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
 const botStackExpanded = ref(false)
+const titleOverflow = ref(false)
+const activityOverflow = ref(false)
+const capsuleTooltipTarget = ref<'title' | 'activity'>()
 let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 let botStackLayout: AutoLayout | undefined
+let capsuleTextResizeObserver: ResizeObserver | undefined
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))
 const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)
@@ -146,7 +171,7 @@ const botStackStyle = computed(() => {
 })
 const botOverflowStyle = computed(() => {
   return {
-    '--onebot-webqq-bot-overflow-right': `${Math.max(0, collapsedBotVisibleCount.value - 1) * 24 + 24}px`,
+    '--onebot-webqq-bot-overflow-right': `${collapsedBotVisibleCount.value * 24}px`,
     zIndex: '0',
   }
 })
@@ -165,8 +190,11 @@ const displayActivityText = computed(() => {
     ? conversation.activityText
     : '空闲中'
 })
-
-const metaTitle = computed(() => displayActivityText.value)
+const capsuleTooltipText = computed(() => {
+  if (capsuleTooltipTarget.value === 'title' && titleOverflow.value) return displayBotName.value
+  if (capsuleTooltipTarget.value === 'activity' && activityOverflow.value) return displayActivityText.value
+  return ''
+})
 
 const statusClass = computed(() => getBotStatusClass(displayBotProfile.value))
 
@@ -206,9 +234,10 @@ function isBotCollapsedExtra(index: number) {
 }
 
 function ensureBotStackLayout() {
-  if (botStackLayout || !capsuleHost.value) return botStackLayout
-  botStackLayout = createLayout(capsuleHost.value, {
-    children: ['.onebot-webqq', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide'],
+  if (botStackLayout || !botStackRef.value) return botStackLayout
+  // Anime layout 会把目标节点的父链一起记录；root 固定为右锚定内部层，避免正文或外层宽度容器改变主头像轨迹。
+  botStackLayout = createLayout(botStackRef.value, {
+    children: ['.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide'],
   })
   return botStackLayout
 }
@@ -245,6 +274,34 @@ function collapseBotStack(event?: FocusEvent | PointerEvent) {
 
 function getCapsuleUnreadText(count: number) {
   return count > 99999 ? '99999+' : String(count)
+}
+
+function hasTextOverflow(element?: HTMLElement) {
+  return !!element && element.scrollWidth > element.clientWidth + 1
+}
+
+function refreshCapsuleTextOverflow() {
+  titleOverflow.value = hasTextOverflow(titleRef.value)
+  activityOverflow.value = hasTextOverflow(activityRef.value)
+  if (capsuleTooltipTarget.value === 'title' && !titleOverflow.value) capsuleTooltipTarget.value = undefined
+  if (capsuleTooltipTarget.value === 'activity' && !activityOverflow.value) capsuleTooltipTarget.value = undefined
+}
+
+function showCapsuleTextTooltip(target: 'title' | 'activity') {
+  refreshCapsuleTextOverflow()
+  const overflow = target === 'title' ? titleOverflow.value : activityOverflow.value
+  capsuleTooltipTarget.value = overflow ? target : undefined
+}
+
+function hideCapsuleTextTooltip() {
+  capsuleTooltipTarget.value = undefined
+}
+
+function observeCapsuleTextOverflow() {
+  if (typeof ResizeObserver === 'undefined') return
+  capsuleTextResizeObserver = new ResizeObserver(refreshCapsuleTextOverflow)
+  if (titleRef.value) capsuleTextResizeObserver.observe(titleRef.value)
+  if (activityRef.value) capsuleTextResizeObserver.observe(activityRef.value)
 }
 
 function loadCachedBotProfile() {
@@ -339,18 +396,26 @@ async function selectBot(selfId: string) {
 onMounted(() => {
   document.addEventListener('pointerdown', closeWebQQOnOutsideClick)
   if (!hasSeenWebQQAvatarGuide()) showWebQQAvatarGuide(true)
+  observeCapsuleTextOverflow()
+  void nextTick(refreshCapsuleTextOverflow)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)
   botStackLayout?.revert()
   botStackLayout = undefined
+  capsuleTextResizeObserver?.disconnect()
+  capsuleTextResizeObserver = undefined
   hideWebQQAvatarGuide()
 })
 
 watch(displayBotProfile, (bot) => {
   if (!bot) return
   cacheBotProfile(bot.name, bot.avatar)
+}, { immediate: true })
+
+watch([displayBotName, displayActivityText, botStackExpanded], () => {
+  void nextTick(refreshCapsuleTextOverflow)
 }, { immediate: true })
 
 </script>

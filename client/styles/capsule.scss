@@ -23,9 +23,10 @@
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
   pointer-events: none;
+  transition: width 0.18s ease;
 }
 
-.onebot-webqq.has-bot-stack.is-bot-stack-expanded {
+.onebot-webqq.is-bot-stack-expanded {
   width: var(--onebot-webqq-capsule-expanded-width, var(--onebot-webqq-capsule-collapsed-width, 220px));
 }
 
@@ -83,6 +84,7 @@
   margin-right: 10px;
   flex-shrink: 0;
   pointer-events: auto;
+  transition: width 0.18s ease;
 
   &.is-expanded {
     width: var(--onebot-webqq-stack-expanded-width, var(--onebot-webqq-stack-collapsed-width, 56px));
@@ -99,6 +101,14 @@
       visibility: hidden;
     }
   }
+}
+
+.onebot-webqq__bot-stack-layout {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--onebot-webqq-stack-expanded-width, var(--onebot-webqq-stack-collapsed-width, 56px));
+  height: 42px;
 }
 
 .onebot-webqq__bot-switch {
@@ -120,12 +130,6 @@
   .onebot-webqq__avatar {
     margin-right: 0;
     box-shadow: 0 0 0 2px #ffffff;
-  }
-
-  &.is-active .onebot-webqq__avatar {
-    box-shadow:
-      0 0 0 2px #ffffff,
-      0 0 0 4px color-mix(in srgb, var(--k-color-primary, #409eff) 68%, transparent);
   }
 
   &.is-collapsed-extra {
@@ -166,7 +170,7 @@
   color: var(--k-text-dark, var(--fg1, #1f2328));
   background: color-mix(in srgb, var(--k-color-primary, #409eff) 16%, #ffffff 84%);
   box-shadow: 0 0 0 2px #ffffff;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
   text-align: left;
@@ -198,7 +202,7 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 4;
+  z-index: 1;
   width: 52px;
   height: 52px;
   pointer-events: none;
@@ -241,6 +245,7 @@
   position: absolute;
   right: 1px;
   bottom: 1px;
+  z-index: 2;
   width: 10px;
   height: 10px;
   border: 2px solid var(--k-side-bg, var(--bg1, #f9f9fa));
@@ -257,6 +262,11 @@
 }
 
 .onebot-webqq__body {
+  position: absolute;
+  top: 5px;
+  right: 12px;
+  bottom: 5px;
+  width: 149px;
   min-width: 0;
   flex: 1;
   align-self: stretch;
@@ -332,4 +342,48 @@
 .onebot-webqq__activity {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.onebot-webqq__tooltip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  max-width: min(280px, calc(100vw - 48px));
+  color: #ffffff;
+  filter: drop-shadow(0 10px 20px rgba(15, 23, 42, 0.18));
+  pointer-events: none;
+}
+
+.onebot-webqq__tooltip-content {
+  display: block;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.96);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.onebot-webqq__tooltip-arrow {
+  position: absolute;
+  left: 16px;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  background: rgba(17, 24, 39, 0.96);
+  transform: rotate(45deg);
+}
+
+.onebot-webqq-tooltip-enter-active,
+.onebot-webqq-tooltip-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.onebot-webqq-tooltip-enter-from,
+.onebot-webqq-tooltip-leave-to {
+  opacity: 0;
+  transform: translateY(2px) scale(0.98);
 }
