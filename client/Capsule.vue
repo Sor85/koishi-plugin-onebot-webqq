@@ -46,7 +46,10 @@
               class="onebot-webqq__bot-overflow"
               :style="botOverflowStyle"
               aria-hidden="true"
-            >+{{ collapsedBotOverflowCount }}</span>
+            >
+              <span class="onebot-webqq__bot-overflow-plus">+</span>
+              <span class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>
+            </span>
           </div>
           <button
             v-else

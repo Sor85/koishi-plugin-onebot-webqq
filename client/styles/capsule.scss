@@ -180,10 +180,10 @@
   top: 0;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   width: 42px;
   height: 42px;
-  padding-left: 6px;
+  padding-right: 18px;
   box-sizing: border-box;
   border-radius: 50%;
   color: var(--k-text-dark, var(--fg1, #1f2328));
@@ -195,6 +195,13 @@
   text-align: left;
   pointer-events: none;
   transition: opacity 0.12s ease, visibility 0.12s ease;
+}
+
+.onebot-webqq__bot-overflow-plus,
+.onebot-webqq__bot-overflow-count {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .onebot-webqq__avatar-unread {

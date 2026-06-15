@@ -187,7 +187,8 @@ describe('chat capsule view', () => {
       capsuleView.includes('v-if="collapsedBotOverflowCount"') && capsuleView.includes('class="onebot-webqq__bot-overflow"')
         ? ''
         : '折叠态没有用数字显示多余机器人数量',
-      capsuleView.includes('>+{{ collapsedBotOverflowCount }}</span>')
+      capsuleView.includes('class="onebot-webqq__bot-overflow-plus">+</span>')
+        && capsuleView.includes('class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>')
         ? ''
         : '折叠态多余机器人数量应显示加号',
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
@@ -235,11 +236,14 @@ describe('chat capsule view', () => {
       capsuleView.includes("zIndex: '0'")
         && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
         && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")
-        && capsuleStyle.includes('justify-content: flex-start;')
-        && capsuleStyle.includes('text-align: left;')
+        && capsuleStyle.includes('justify-content: center;')
+        && capsuleStyle.includes('padding-right: 18px;')
+        && capsuleStyle.includes('.onebot-webqq__bot-overflow-plus')
+        && capsuleStyle.includes('.onebot-webqq__bot-overflow-count')
+        && capsuleStyle.includes('align-items: center;')
         && capsuleStyle.includes('font-size: 10px;')
         ? ''
-        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或没有缩小字号',
+        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或 +N 没有在露出的 24px 区域中对齐',
       capsuleView.includes('v-if="bot.selfId === activeBotSelfId"')
         && !capsuleStyle.includes('.onebot-webqq__status {\n    opacity: 0;')
         && !capsuleStyle.includes('&:focus-visible,\n  &.is-active')
