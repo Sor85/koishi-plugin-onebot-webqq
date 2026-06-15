@@ -191,8 +191,10 @@ describe('chat capsule view', () => {
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
         ? ''
         : '折叠态没有隐藏超过上限的机器人头像',
-      capsuleView.includes("'--onebot-webqq-capsule-collapsed-width': `${220 + collapsedBotStackWidth.value - 42}px`")
-        && capsuleView.includes("'--onebot-webqq-capsule-expanded-width': `${220 + expandedBotStackWidth.value - 42}px`")
+      capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${178 + collapsedBotStackWidth.value}px`")
+        && capsuleView.includes("'--onebot-webqq-shell-width': `${178 + expandedBotStackWidth.value}px`")
+        && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 14}px`")
+        && capsuleView.includes("'--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 14}px`")
         && capsuleView.includes("'--onebot-webqq-stack-collapsed-width': `${collapsedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-stack-expanded-width': `${expandedBotStackWidth.value}px`")
         && !capsuleView.includes("'--onebot-webqq-capsule-width'")
@@ -203,28 +205,31 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('right: var(--onebot-webqq-bot-expanded-right, 0);')
         ? ''
         : '多机器人头像没有从右侧锚定向左展开',
-      capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', { \'is-expanded\': botStackExpanded }]"')
+      capsuleView.includes(':class="[\'onebot-webqq__avatar-capsule\', { \'has-bot-stack\': hasMultipleBots, \'is-expanded\': botStackExpanded }]"')
+        && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', { \'is-expanded\': botStackExpanded }]"')
         && capsuleView.includes("'is-bot-stack-expanded': botStackExpanded")
-        && !capsuleView.includes("'has-bot-stack': hasMultipleBots")
+        && capsuleView.indexOf('class="onebot-webqq-layout-root"') < capsuleView.indexOf(':class="[\'onebot-webqq__body\', `is-color-${webQQColorMode}`]"')
         && capsuleStyle.includes('.onebot-webqq.is-bot-stack-expanded')
-        && capsuleStyle.includes('width: var(--onebot-webqq-capsule-expanded-width')
+        && capsuleStyle.includes('width: var(--onebot-webqq-shell-width')
+        && capsuleStyle.includes('.onebot-webqq__avatar-capsule.is-expanded')
+        && capsuleStyle.includes('width: var(--onebot-webqq-avatar-capsule-expanded-width')
         && capsuleStyle.includes('width: var(--onebot-webqq-stack-expanded-width')
         && capsuleStyle.includes('.onebot-webqq__body')
-        && capsuleStyle.includes('position: absolute')
-        && capsuleStyle.includes('right: 12px')
-        && capsuleStyle.includes('width: 149px')
+        && capsuleStyle.includes('position: fixed')
+        && capsuleStyle.includes('right: 24px')
+        && capsuleStyle.includes('width: 173px')
         ? ''
         : '头像展开时胶囊和头像组没有同步向左扩张，或正文没有固定右锚点',
       capsuleView.includes("import { createLayout, type AutoLayout } from 'animejs'")
-        && capsuleView.includes('ref="botStackRef"')
-        && capsuleView.includes('class="onebot-webqq__bot-stack-layout"')
-        && capsuleView.includes('const botStackRef = ref<HTMLElement>()')
-        && capsuleView.includes('createLayout(botStackRef.value')
+        && capsuleView.includes('ref="capsuleLayoutRef"')
+        && capsuleView.includes('const capsuleLayoutRef = ref<HTMLElement>()')
+        && capsuleView.includes('createLayout(capsuleLayoutRef.value')
         && capsuleView.includes('layout?.record()')
         && capsuleView.includes("layout.animate({ duration: 260, ease: 'out(3)' })")
-        && !capsuleView.includes("children: ['.onebot-webqq',")
+        && capsuleView.includes("children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide']")
+        && !capsuleView.includes("'.onebot-webqq__body'")
         ? ''
-        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能是头像组内部布局层，不能动画根胶囊正文',
+        : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像区域，不能动画右侧正文',
       capsuleView.includes("zIndex: '0'")
         && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
         && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")

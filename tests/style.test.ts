@@ -138,8 +138,8 @@ describe('chat capsule styles', () => {
     const transition = ruleBody(`.onebot-webqq-tooltip-enter-active,
 .onebot-webqq-tooltip-leave-active`)
 
-    expect(body).toContain('position: absolute')
-    expect(body).toContain('right: 12px')
+    expect(body).toContain('position: fixed')
+    expect(body).toContain('right: 24px')
     expect(tooltip).toContain('position: absolute')
     expect(tooltip).toContain('bottom: calc(100% + 8px)')
     expect(tooltip).toContain('pointer-events: none')
@@ -151,59 +151,77 @@ describe('chat capsule styles', () => {
   })
 
   it('keeps the bot name smaller and anchored near the top', () => {
-    expect(ruleBody('.onebot-webqq__body')).toContain('position: absolute')
-    expect(ruleBody('.onebot-webqq__body')).toContain('right: 12px')
-    expect(ruleBody('.onebot-webqq__body')).toContain('width: 149px')
-    expect(ruleBody('.onebot-webqq__body')).toContain('align-self: stretch')
+    expect(ruleBody('.onebot-webqq__body')).toContain('position: fixed')
+    expect(ruleBody('.onebot-webqq__body')).toContain('right: 24px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('bottom: 56px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('width: 173px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('padding: 9px 12px 5px')
     expect(ruleBody('.onebot-webqq__body')).toContain('justify-content: flex-start')
-    expect(ruleBody('.onebot-webqq__body')).toContain('padding-top: 4px')
     expect(ruleBody('.onebot-webqq__title')).toContain('font-size: 13px')
     expect(ruleBody('.onebot-webqq__title')).toContain('line-height: 18px')
   })
 
   it('keeps the current bot avatar anchored while folded avatars expand left', () => {
+    const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const stack = ruleBody('.onebot-webqq__bot-stack')
-    const layout = ruleBody('.onebot-webqq__bot-stack-layout')
 
-    expect(stack).toContain('width: var(--onebot-webqq-stack-collapsed-width, 56px)')
+    expect(ruleBody('.onebot-webqq-host')).toContain('position: fixed')
+    expect(ruleBody('.onebot-webqq-host')).toContain('right: 24px')
+    expect(ruleBody('.onebot-webqq-host')).toContain('bottom: 56px')
+    expect(ruleBody('.onebot-webqq-layout-root')).toContain('position: relative')
+    expect(ruleBody('.onebot-webqq')).toContain('position: relative')
+    expect(ruleBody('.onebot-webqq')).not.toContain('position: fixed')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
     expect(ruleBody('.onebot-webqq')).toContain('transition: width 0.18s ease')
+    expect(ruleBody('.onebot-webqq.is-bot-stack-expanded')).toContain('width: var(--onebot-webqq-shell-width')
+    expect(avatarCapsule).toContain('position: relative')
+    expect(avatarCapsule).not.toContain('position: absolute')
+    expect(avatarCapsule).not.toContain('right: 164px')
+    expect(avatarCapsule).toContain('width: var(--onebot-webqq-avatar-capsule-collapsed-width, 56px)')
+    expect(avatarCapsule).toContain('transition: width 0.18s ease')
+    expect(ruleBody('.onebot-webqq__avatar-capsule.is-expanded')).toContain('width: var(--onebot-webqq-avatar-capsule-expanded-width')
+    expect(stack).toContain('width: var(--onebot-webqq-stack-collapsed-width, 56px)')
     expect(stack).toContain('transition: width 0.18s ease')
-    expect(layout).toContain('position: absolute')
-    expect(layout).toContain('right: 0')
-    expect(layout).toContain('width: var(--onebot-webqq-stack-expanded-width')
-    expect(layout).toContain('height: 42px')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('right: var(--onebot-webqq-bot-collapsed-right, 0)')
     expect(ruleBody('.onebot-webqq__bot-stack').includes('right: var(--onebot-webqq-bot-expanded-right, 0)')).toBe(true)
   })
 
   it('keeps the main capsule compact without usage rows', () => {
-    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-capsule-collapsed-width, 220px)')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
     expect(style).not.toContain('.onebot-webqq__usage')
     expect(style).not.toContain('.onebot-webqq__usage-row')
     expect(style).not.toContain('.onebot-webqq__usage-icon')
   })
 
   it('renders the main capsule with a frosted glass surface', () => {
-    const capsuleBody = ruleBody('.onebot-webqq')
-    const autoDarkBody = ruleBody('.onebot-webqq.is-color-auto')
-    const darkBody = ruleBody('.onebot-webqq.is-color-dark')
+    const capsule = ruleBody('.onebot-webqq')
+    const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
+    const body = ruleBody('.onebot-webqq__body')
+    const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto')
+    const darkSurface = ruleBody('.onebot-webqq.is-color-dark')
     const missingRequirements = [
-      capsuleBody.includes('background: rgba(255, 255, 255, 0.78)')
+      capsule.includes('background: rgba(255, 255, 255, 0.78)')
         ? ''
         : '主胶囊浅色背景不是半透明毛玻璃',
-      capsuleBody.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
+      capsule.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
         ? ''
         : '主胶囊浅色边框没有使用半透明高光',
-      capsuleBody.includes('backdrop-filter: saturate(180%) blur(18px)')
+      capsule.includes('backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少毛玻璃背景模糊',
-      capsuleBody.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
+      capsule.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少 Safari 毛玻璃前缀',
-      autoDarkBody.includes('background: rgba(15, 23, 42, 0.72)')
+      !avatarCapsule.includes('background:')
+        && !avatarCapsule.includes('border:')
+        && !body.includes('background:')
+        && !body.includes('border:')
+        ? ''
+        : '左右结构不能各自画成两个胶囊表面',
+      autoDarkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊自动暗色背景不是半透明毛玻璃',
-      darkBody.includes('background: rgba(15, 23, 42, 0.72)')
+      darkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊暗色背景不是半透明毛玻璃',
     ].filter(Boolean)

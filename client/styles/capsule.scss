@@ -1,19 +1,22 @@
 .onebot-webqq-host {
-  position: relative;
-  z-index: 10000;
-}
-
-.onebot-webqq {
   position: fixed;
   right: 24px;
   bottom: 56px;
   z-index: 10000;
-  display: inline-flex;
-  align-items: center;
-  width: var(--onebot-webqq-capsule-collapsed-width, 220px);
+}
+
+.onebot-webqq-layout-root {
+  position: relative;
+  display: inline-block;
+  z-index: 10000;
+}
+
+.onebot-webqq {
+  position: relative;
+  z-index: 10000;
+  width: var(--onebot-webqq-shell-collapsed-width, 220px);
+  height: 52px;
   max-width: calc(100vw - 32px);
-  min-height: 52px;
-  padding: 5px 12px 5px 7px;
   box-sizing: border-box;
   color: var(--k-text-dark, var(--fg1, #1f2328));
   background: rgba(255, 255, 255, 0.78);
@@ -27,7 +30,24 @@
 }
 
 .onebot-webqq.is-bot-stack-expanded {
-  width: var(--onebot-webqq-capsule-expanded-width, var(--onebot-webqq-capsule-collapsed-width, 220px));
+  width: var(--onebot-webqq-shell-width, var(--onebot-webqq-shell-collapsed-width, 220px));
+}
+
+.onebot-webqq__avatar-capsule {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  width: var(--onebot-webqq-avatar-capsule-collapsed-width, 56px);
+  height: 52px;
+  padding: 5px 7px;
+  box-sizing: border-box;
+  pointer-events: auto;
+  transition: width 0.18s ease;
+}
+
+.onebot-webqq__avatar-capsule.is-expanded {
+  width: var(--onebot-webqq-avatar-capsule-expanded-width, var(--onebot-webqq-avatar-capsule-collapsed-width, 56px));
 }
 
 .onebot-webqq__avatar {
@@ -76,12 +96,16 @@
   }
 }
 
+.onebot-webqq__avatar-capsule .onebot-webqq__avatar-button {
+  margin: 0;
+}
+
 .onebot-webqq__bot-stack {
   position: relative;
   z-index: 2;
   width: var(--onebot-webqq-stack-collapsed-width, 56px);
   height: 42px;
-  margin-right: 10px;
+  margin: 0;
   flex-shrink: 0;
   pointer-events: auto;
   transition: width 0.18s ease;
@@ -101,14 +125,6 @@
       visibility: hidden;
     }
   }
-}
-
-.onebot-webqq__bot-stack-layout {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: var(--onebot-webqq-stack-expanded-width, var(--onebot-webqq-stack-collapsed-width, 56px));
-  height: 42px;
 }
 
 .onebot-webqq__bot-switch {
@@ -262,19 +278,19 @@
 }
 
 .onebot-webqq__body {
-  position: absolute;
-  top: 5px;
-  right: 12px;
-  bottom: 5px;
-  width: 149px;
+  position: fixed;
+  right: 24px;
+  bottom: 56px;
+  z-index: 10001;
+  width: 173px;
+  height: 52px;
   min-width: 0;
-  flex: 1;
-  align-self: stretch;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: 4px;
+  padding: 9px 12px 5px;
   box-sizing: border-box;
+  color: var(--k-text-dark, var(--fg1, #1f2328));
   pointer-events: auto;
 }
 

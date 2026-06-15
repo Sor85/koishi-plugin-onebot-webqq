@@ -1,43 +1,78 @@
 <template>
   <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host">
-    <div
-      :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
-        'is-bot-stack-expanded': botStackExpanded,
-      }]"
-      :style="capsuleStyle"
-      aria-live="polite"
-    >
+    <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root">
       <div
-        v-if="hasMultipleBots"
-        :class="['onebot-webqq__bot-stack', { 'is-expanded': botStackExpanded }]"
-        :style="botStackStyle"
-        @pointerenter="expandBotStack"
-        @pointerleave="collapseBotStack"
-        @focusin="expandBotStack"
-        @focusout="collapseBotStack"
+        :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
+          'is-bot-stack-expanded': botStackExpanded,
+        }]"
+        :style="capsuleStyle"
+        aria-live="polite"
       >
-        <div ref="botStackRef" class="onebot-webqq__bot-stack-layout">
+        <div
+          :class="['onebot-webqq__avatar-capsule', { 'has-bot-stack': hasMultipleBots, 'is-expanded': botStackExpanded }]"
+          :style="avatarCapsuleStyle"
+          @pointerenter="expandBotStack"
+          @pointerleave="collapseBotStack"
+          @focusin="expandBotStack"
+          @focusout="collapseBotStack"
+        >
+          <div
+            v-if="hasMultipleBots"
+            :class="['onebot-webqq__bot-stack', { 'is-expanded': botStackExpanded }]"
+            :style="botStackStyle"
+          >
+            <button
+              v-for="(bot, index) in botStackBots"
+              :key="bot.selfId"
+              :class="['onebot-webqq__bot-switch', {
+                'is-active': bot.selfId === activeBotSelfId,
+                'is-collapsed-extra': isBotCollapsedExtra(index),
+              }]"
+              type="button"
+              :aria-label="getBotSwitchLabel(bot)"
+              :aria-pressed="bot.selfId === activeBotSelfId"
+              :style="getBotSwitchStyle(index)"
+              @click.stop="selectBot(bot.selfId)"
+            >
+              <span class="onebot-webqq__avatar">
+                <img v-if="bot.avatar" :src="withProxy(bot.avatar)" :alt="getBotName(bot)">
+                <k-icon v-else name="robot" />
+                <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
+                <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
+                <Transition name="onebot-webqq-avatar-guide">
+                  <span
+                    v-if="webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId"
+                    class="onebot-webqq__avatar-guide"
+                    aria-hidden="true"
+                  >
+                    <span class="onebot-webqq__avatar-guide-ring"></span>
+                  </span>
+                </Transition>
+              </span>
+            </button>
+            <span
+              v-if="collapsedBotOverflowCount"
+              class="onebot-webqq__bot-overflow"
+              :style="botOverflowStyle"
+              aria-hidden="true"
+            >+{{ collapsedBotOverflowCount }}</span>
+          </div>
           <button
-            v-for="(bot, index) in botStackBots"
-            :key="bot.selfId"
-            :class="['onebot-webqq__bot-switch', {
-              'is-active': bot.selfId === activeBotSelfId,
-              'is-collapsed-extra': isBotCollapsedExtra(index),
-            }]"
+            v-else
+            class="onebot-webqq__avatar-button"
             type="button"
-            :aria-label="getBotSwitchLabel(bot)"
-            :aria-pressed="bot.selfId === activeBotSelfId"
-            :style="getBotSwitchStyle(index)"
-            @click.stop="selectBot(bot.selfId)"
+            :aria-label="capsuleButtonLabel"
+            :aria-expanded="webqqOpen"
+            @click="toggleWebQQ"
           >
             <span class="onebot-webqq__avatar">
-              <img v-if="bot.avatar" :src="withProxy(bot.avatar)" :alt="getBotName(bot)">
+              <img v-if="displayBotAvatar" :src="withProxy(displayBotAvatar)" :alt="displayBotName">
               <k-icon v-else name="robot" />
-              <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
-              <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
+              <span :class="['onebot-webqq__status', statusClass]"></span>
+              <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
               <Transition name="onebot-webqq-avatar-guide">
                 <span
-                  v-if="webQQAvatarGuideVisible && !webqqOpen && bot.selfId === activeBotSelfId"
+                  v-if="webQQAvatarGuideVisible && !webqqOpen"
                   class="onebot-webqq__avatar-guide"
                   aria-hidden="true"
                 >
@@ -46,66 +81,36 @@
               </Transition>
             </span>
           </button>
-          <span
-            v-if="collapsedBotOverflowCount"
-            class="onebot-webqq__bot-overflow"
-            :style="botOverflowStyle"
-            aria-hidden="true"
-          >+{{ collapsedBotOverflowCount }}</span>
         </div>
       </div>
-      <button
-        v-else
-        class="onebot-webqq__avatar-button"
-        type="button"
-        :aria-label="capsuleButtonLabel"
-        :aria-expanded="webqqOpen"
-        @click="toggleWebQQ"
-      >
-        <span class="onebot-webqq__avatar">
-          <img v-if="displayBotAvatar" :src="withProxy(displayBotAvatar)" :alt="displayBotName">
-          <k-icon v-else name="robot" />
-          <span :class="['onebot-webqq__status', statusClass]"></span>
-          <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
-          <Transition name="onebot-webqq-avatar-guide">
-            <span
-              v-if="webQQAvatarGuideVisible && !webqqOpen"
-              class="onebot-webqq__avatar-guide"
-              aria-hidden="true"
-            >
-              <span class="onebot-webqq__avatar-guide-ring"></span>
-            </span>
-          </Transition>
-        </span>
-      </button>
-      <div class="onebot-webqq__body" @click="showWebQQAvatarGuide()">
-        <div class="onebot-webqq__title-line">
-          <div
-            ref="titleRef"
-            class="onebot-webqq__title"
-            @pointerenter="showCapsuleTextTooltip('title')"
-            @pointerleave="hideCapsuleTextTooltip"
-          >
-            {{ displayBotName }}
-          </div>
-          <span v-if="titleStatusText" class="onebot-webqq__title-status is-thinking">{{ titleStatusText }}</span>
+    </div>
+    <div :class="['onebot-webqq__body', `is-color-${webQQColorMode}`]" @click="showWebQQAvatarGuide()">
+      <div class="onebot-webqq__title-line">
+        <div
+          ref="titleRef"
+          class="onebot-webqq__title"
+          @pointerenter="showCapsuleTextTooltip('title')"
+          @pointerleave="hideCapsuleTextTooltip"
+        >
+          {{ displayBotName }}
         </div>
-        <div class="onebot-webqq__meta">
-          <span
-            v-if="displayActivityText"
-            ref="activityRef"
-            class="onebot-webqq__activity"
-            @pointerenter="showCapsuleTextTooltip('activity')"
-            @pointerleave="hideCapsuleTextTooltip"
-          >{{ displayActivityText }}</span>
-        </div>
-        <Transition name="onebot-webqq-tooltip">
-          <div v-if="capsuleTooltipText" class="onebot-webqq__tooltip" role="tooltip">
-            <span class="onebot-webqq__tooltip-content">{{ capsuleTooltipText }}</span>
-            <span class="onebot-webqq__tooltip-arrow" aria-hidden="true"></span>
-          </div>
-        </Transition>
+        <span v-if="titleStatusText" class="onebot-webqq__title-status is-thinking">{{ titleStatusText }}</span>
       </div>
+      <div class="onebot-webqq__meta">
+        <span
+          v-if="displayActivityText"
+          ref="activityRef"
+          class="onebot-webqq__activity"
+          @pointerenter="showCapsuleTextTooltip('activity')"
+          @pointerleave="hideCapsuleTextTooltip"
+        >{{ displayActivityText }}</span>
+      </div>
+      <Transition name="onebot-webqq-tooltip">
+        <div v-if="capsuleTooltipText" class="onebot-webqq__tooltip" role="tooltip">
+          <span class="onebot-webqq__tooltip-content">{{ capsuleTooltipText }}</span>
+          <span class="onebot-webqq__tooltip-arrow" aria-hidden="true"></span>
+        </div>
+      </Transition>
     </div>
     <WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />
   </div>
@@ -124,7 +129,7 @@ const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
 const webqqOpen = ref(false)
 const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()
-const botStackRef = ref<HTMLElement>()
+const capsuleLayoutRef = ref<HTMLElement>()
 const titleRef = ref<HTMLElement>()
 const activityRef = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
@@ -159,8 +164,15 @@ const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cache
 const capsuleStyle = computed(() => {
   if (!hasMultipleBots.value) return {}
   return {
-    '--onebot-webqq-capsule-collapsed-width': `${220 + collapsedBotStackWidth.value - 42}px`,
-    '--onebot-webqq-capsule-expanded-width': `${220 + expandedBotStackWidth.value - 42}px`,
+    '--onebot-webqq-shell-collapsed-width': `${178 + collapsedBotStackWidth.value}px`,
+    '--onebot-webqq-shell-width': `${178 + expandedBotStackWidth.value}px`,
+  }
+})
+const avatarCapsuleStyle = computed(() => {
+  if (!hasMultipleBots.value) return {}
+  return {
+    '--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 14}px`,
+    '--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 14}px`,
   }
 })
 const botStackStyle = computed(() => {
@@ -234,10 +246,10 @@ function isBotCollapsedExtra(index: number) {
 }
 
 function ensureBotStackLayout() {
-  if (botStackLayout || !botStackRef.value) return botStackLayout
-  // Anime layout 会把目标节点的父链一起记录；root 固定为右锚定内部层，避免正文或外层宽度容器改变主头像轨迹。
-  botStackLayout = createLayout(botStackRef.value, {
-    children: ['.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide'],
+  if (botStackLayout || !capsuleLayoutRef.value) return botStackLayout
+  // layout root 不能是 fixed 胶囊本体；用独立 wrapper 记录外层右锚定胶囊的左移，同时把右侧正文隔离在 wrapper 外，避免文字被 FLIP 位移。
+  botStackLayout = createLayout(capsuleLayoutRef.value, {
+    children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow', '.onebot-webqq__avatar-guide'],
   })
   return botStackLayout
 }
@@ -255,6 +267,7 @@ async function animateBotStackLayout(layout?: AutoLayout) {
 }
 
 function setBotStackExpanded(expanded: boolean) {
+  if (!hasMultipleBots.value) return
   if (botStackExpanded.value === expanded) return
   const layout = recordBotStackLayout()
   botStackExpanded.value = expanded
