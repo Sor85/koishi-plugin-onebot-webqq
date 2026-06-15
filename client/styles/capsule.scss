@@ -23,11 +23,9 @@
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
   pointer-events: none;
-  transition: width 0.18s ease;
 }
 
-.onebot-webqq.has-bot-stack:has(.onebot-webqq__bot-stack:hover),
-.onebot-webqq.has-bot-stack:has(.onebot-webqq__bot-stack:focus-within) {
+.onebot-webqq.has-bot-stack.is-bot-stack-expanded {
   width: var(--onebot-webqq-capsule-expanded-width, var(--onebot-webqq-capsule-collapsed-width, 220px));
 }
 
@@ -85,10 +83,8 @@
   margin-right: 10px;
   flex-shrink: 0;
   pointer-events: auto;
-  transition: width 0.18s ease;
 
-  &:hover,
-  &:focus-within {
+  &.is-expanded {
     width: var(--onebot-webqq-stack-expanded-width, var(--onebot-webqq-stack-collapsed-width, 56px));
 
     .onebot-webqq__bot-switch {
@@ -96,10 +92,6 @@
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
-    }
-
-    .onebot-webqq__status {
-      opacity: 1;
     }
 
     .onebot-webqq__bot-overflow {
@@ -123,16 +115,11 @@
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  transition: right 0.18s ease, transform 0.18s ease, opacity 0.12s ease, visibility 0.12s ease;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
 
   .onebot-webqq__avatar {
     margin-right: 0;
     box-shadow: 0 0 0 2px #ffffff;
-  }
-
-  .onebot-webqq__status {
-    opacity: 0;
-    transition: opacity 0.12s ease;
   }
 
   &.is-active .onebot-webqq__avatar {
@@ -149,13 +136,19 @@
 
   &:hover,
   &:focus-visible {
-    transform: translateY(-2px);
+    z-index: 20;
   }
 
   &:focus-visible {
     outline: 2px solid var(--k-color-primary, #409eff);
     outline-offset: 3px;
   }
+}
+
+.onebot-webqq__bot-stack.is-expanded .onebot-webqq__bot-switch.is-collapsed-extra {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .onebot-webqq__bot-overflow {
@@ -203,13 +196,13 @@
 
 .onebot-webqq__avatar-guide {
   position: absolute;
-  left: 2px;
+  left: 50%;
   top: 50%;
-  z-index: 1;
+  z-index: 4;
   width: 52px;
   height: 52px;
   pointer-events: none;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
 }
 
 .onebot-webqq__avatar-guide-ring {
@@ -241,7 +234,7 @@
 .onebot-webqq-avatar-guide-enter-from,
 .onebot-webqq-avatar-guide-leave-to {
   opacity: 0;
-  transform: translateY(-50%) scale(0.92);
+  transform: translate(-50%, -50%) scale(0.92);
 }
 
 .onebot-webqq__status {

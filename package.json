@@ -70,6 +70,7 @@
   },
   "dependencies": {
     "@koishijs/console": "^5.30.0",
+    "animejs": "^4.4.1",
     "qface": "^1.4.1"
   },
   "devDependencies": {
