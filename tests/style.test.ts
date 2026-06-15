@@ -164,6 +164,7 @@ describe('chat capsule styles', () => {
   it('keeps the current bot avatar anchored while folded avatars expand left', () => {
     const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const stack = ruleBody('.onebot-webqq__bot-stack')
+    const narrowBody = mediaBody('@media screen and (max-width: 768px)')
 
     expect(ruleBody('.onebot-webqq-host')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq-host')).toContain('right: 24px')
@@ -191,6 +192,10 @@ describe('chat capsule styles', () => {
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('content: none')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('display: none')
     expect(ruleBody('.onebot-webqq__bot-stack').includes('right: var(--onebot-webqq-bot-expanded-right, 0)')).toBe(true)
+    expect(narrowBody).not.toContain('.onebot-webqq {\n    right: 16px;\n    bottom: 52px;')
+    expect(narrowBody).toContain('.onebot-webqq-host,\n  .onebot-webqq__body')
+    expect(narrowBody).toContain('right: 16px')
+    expect(narrowBody).toContain('bottom: 52px')
   })
 
   it('keeps the main capsule compact without usage rows', () => {
