@@ -31,6 +31,8 @@
               type="button"
               :aria-label="getBotSwitchLabel(bot)"
               :aria-pressed="bot.selfId === activeBotSelfId"
+              :aria-hidden="isBotCollapsedHidden(index) ? 'true' : undefined"
+              :tabindex="isBotCollapsedHidden(index) ? -1 : undefined"
               :style="getBotSwitchStyle(index)"
               @click.stop="selectBot(bot.selfId)"
             >
@@ -237,8 +239,14 @@ function getBotSwitchLabel(bot: OneBotRobotProfile) {
 }
 
 function getBotSwitchStyle(index: number) {
+  // 折叠态把余量头像收拢到最后一个可见头像的位置（藏在头像堆叠正后方），展开时再从这里向外
+  // 扇形滑出并淡入。这样位移幅度足够大，重现折叠/展开滑动，而不是只剩 opacity 淡入淡出。
+  // 收拢位与展开位都落在当前 bot 头像左侧，FLIP 在两端之间线性插值，余量头像不会越过当前头像。
+  const collapsedRight = isBotCollapsedExtra(index)
+    ? Math.max(0, collapsedBotVisibleCount.value - 1) * 24
+    : index * 24
   return {
-    '--onebot-webqq-bot-collapsed-right': `${index * 24}px`,
+    '--onebot-webqq-bot-collapsed-right': `${collapsedRight}px`,
     '--onebot-webqq-bot-expanded-right': `${index * 31}px`,
     zIndex: String(botStackBots.value.length - index),
   }
@@ -246,6 +254,12 @@ function getBotSwitchStyle(index: number) {
 
 function isBotCollapsedExtra(index: number) {
   return collapsedBotOverflowCount.value > 0 && index >= collapsedBotVisibleCount.value
+}
+
+// 余量头像折叠态改用 opacity 隐藏（不再 visibility:hidden）以保住 FLIP 位移补偿，
+// 因此折叠态要手动把它们移出 Tab 序与读屏树，展开后再恢复，避免出现不可见可聚焦按钮。
+function isBotCollapsedHidden(index: number) {
+  return !botStackExpanded.value && isBotCollapsedExtra(index)
 }
 
 function ensureBotStackLayout() {
