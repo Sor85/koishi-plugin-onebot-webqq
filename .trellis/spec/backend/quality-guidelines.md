@@ -161,6 +161,14 @@ webqq.selectSelfId('10000:mock:1')
 
 <!-- Patterns that must always be used -->
 
+### 约定：保留 OneBot 普通文本段的边界空白
+
+**是什么**：`src/onebot/text.ts` 处理普通 text segment 时，只解码文本实体，不要用 `.trim()` 删除前后空白。只有 CQ/XML 这类标记文本在转换摘要时才可以压缩空白。
+
+**为什么**：OneBot 会把 `@用户` 和后续文本拆成相邻 segment，后续 text segment 的前导空格通常就是 QQ 默认插入的 `@用户 ` 分隔符。提前 trim 会让 WebQQ 显示成 `@用户消息`，看起来像用户删掉了空格。
+
+**必要测试**：`tests/onebot.test.ts` 需要同时覆盖 `at + " 文本"` 保留空格，以及 `at + "文本"` 不主动补空格。
+
 ### 约定：保留单机器人 key 路径
 
 **是什么**：当只存在一个可用 OneBot 机器人时，存储 key 和缓存行为继续走原来的未分区路径。

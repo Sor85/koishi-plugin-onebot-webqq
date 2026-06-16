@@ -73,3 +73,12 @@ Questions to answer:
 
 ### 必要测试
 - `tests/capsule.test.ts` 和 `tests/style.test.ts` 需要覆盖折叠上限、`+N` 余量、右锚点同步展开、左侧头像胶囊和右侧正文拆分、视觉表面只画在外层单胶囊、正文固定右锚点且不进入 Anime.js layout、余量数字下层靠左显示且使用头像同款折叠步进、Anime.js layout `record()` / `animate()` 且 root 只能是非 fixed 的 `.onebot-webqq-layout-root`、外层视觉胶囊和左侧头像区域、fixed host 与 layout root 的固定高度和行盒约束、只当前 bot 显示状态点、多机器人头像组不渲染头像引导波纹、头像引导触发范围、胶囊文字 HeroUI 风格 tooltip 仅溢出时显示、active 不垂直偏移且无额外强调框。
+
+## WebQQ 消息气泡行内文本宽度拟合
+
+### 触发范围
+- 修改 `client/utils/webqq-bubble-width.ts`、`.onebot-webqq-webqq__inline-run` 或 WebQQ 纯行内消息渲染结构时适用。
+
+### 契约
+- 使用 `Range.getClientRects()` 拟合纯行内消息气泡宽度时，不能直接把每个 `rect.width` 当成一行宽度。浏览器可能在 `@` 提及或相邻行内节点边界把同一视觉行拆成多个 rect；必须先按 `top` 容差合并同一行，再用合并后的 `right - left` 作为该行内容宽度。
+- 回归测试必须覆盖同一视觉行被拆成多个 rect 的场景，断言气泡宽度取合并后的整行宽度，而不是最长单个片段宽度。

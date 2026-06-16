@@ -562,7 +562,7 @@ describe('onebot webqq adapter', () => {
             },
             message: [
               { type: 'at', data: { qq: '10000', name: '宁宁' } },
-              { type: 'text', data: { text: '在吗' } },
+              { type: 'text', data: { text: ' 在吗' } },
             ],
           }, {
             message_id: 4,
@@ -573,6 +573,18 @@ describe('onebot webqq adapter', () => {
               nickname: 'Alice',
             },
             message: [{ type: 'at', data: { qq: '10001' } }],
+          }, {
+            message_id: 5,
+            message_seq: 15,
+            time: 1710000004,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [
+              { type: 'at', data: { qq: '10000', name: '宁宁' } },
+              { type: 'text', data: { text: '在吗' } },
+            ],
           }],
         })),
       },
@@ -581,15 +593,22 @@ describe('onebot webqq adapter', () => {
 
     await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
-        summary: '@宁宁在吗',
+        summary: '@宁宁 在吗',
         elements: [
           { type: 'text', text: '@宁宁' },
-          { type: 'text', text: '在吗' },
+          { type: 'text', text: ' 在吗' },
         ],
       }),
       expect.objectContaining({
         summary: '@10001',
         elements: [{ type: 'text', text: '@10001' }],
+      }),
+      expect.objectContaining({
+        summary: '@宁宁在吗',
+        elements: [
+          { type: 'text', text: '@宁宁' },
+          { type: 'text', text: '在吗' },
+        ],
       }),
     ])
   })

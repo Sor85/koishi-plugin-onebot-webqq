@@ -1266,6 +1266,7 @@ describe('webqq observer view', () => {
     expect(webqqBubbleWidth).toContain('export function fitWebQQBubbleToInlineLines(bubble: HTMLElement)')
     expect(webqqBubbleWidth).toContain('range.getClientRects()')
     expect(webqqBubbleWidth).toContain('const lineWidths = measureInlineLineWidths(inlineRuns)')
+    expect(webqqBubbleWidth).toContain('mergeRenderedLineRects(inlineRuns.flatMap(getRenderedTextRects))')
     expect(webqqBubbleWidth).toContain('setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)')
     expect(webqqBubbleWidth).not.toContain('lineWidths.length <=')
     expect(webqqBubbleWidth).not.toContain('let low =')
@@ -1289,7 +1290,10 @@ describe('webqq observer view', () => {
 
   it('sets fitted bubble width to the current max rendered line width', () => {
     const inlineRun = {} as HTMLElement
-    const getClientRects = vi.fn(() => [{ width: 312.4 }, { width: 64 }])
+    const getClientRects = vi.fn(() => [
+      { top: 0, left: 0, right: 312.4, width: 312.4 },
+      { top: 24, left: 0, right: 64, width: 64 },
+    ])
     const bubble = {
       style: { width: '409px' },
       querySelectorAll: vi.fn(() => [inlineRun]),
@@ -1314,6 +1318,41 @@ describe('webqq observer view', () => {
     fitWebQQBubbleToInlineLines(bubble)
 
     expect(bubble.style.width).toBe('335px')
+    expect(getClientRects).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps same-line inline fragments together when fitting mention text bubbles', () => {
+    const inlineRun = {} as HTMLElement
+    const getClientRects = vi.fn(() => [
+      { top: 0, left: 0, right: 72, width: 72 },
+      { top: 0.5, left: 72, right: 286.2, width: 214.2 },
+      { top: 26, left: 0, right: 90, width: 90 },
+    ])
+    const bubble = {
+      style: { width: '409px' },
+      querySelectorAll: vi.fn(() => [inlineRun]),
+    } as unknown as HTMLElement
+    vi.stubGlobal('document', {
+      createRange: vi.fn(() => ({
+        selectNodeContents: vi.fn(),
+        getClientRects,
+        detach: vi.fn(),
+      })),
+    })
+    vi.stubGlobal('window', {
+      getComputedStyle: vi.fn(() => ({
+        boxSizing: 'border-box',
+        paddingLeft: '10px',
+        paddingRight: '10px',
+        borderLeftWidth: '0px',
+        borderRightWidth: '0px',
+      })),
+    })
+
+    fitWebQQBubbleToInlineLines(bubble)
+
+    expect(bubble.style.width).toBe('307px')
     expect(getClientRects).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
   })
