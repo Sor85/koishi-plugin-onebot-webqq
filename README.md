@@ -39,7 +39,6 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 ### 连接设置
 
 - `onebotUseRuntimeBots`：使用当前运行时里所有可用的 OneBot 机器人，默认开启；关闭后只使用下方 selfId 集合
-- `onebotSelfId`：默认打开的 WebQQ 机器人 selfId，留空时自动选择第一个可用机器人
 - `onebotSelfIds`：关闭运行时全量模式时允许使用的 OneBot 机器人 selfId 集合
 - `onebotProtocol`：选择 NapCat 或 LLBot 协议模式
 

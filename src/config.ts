@@ -4,7 +4,6 @@ import type { WebQQProtocol } from './onebot'
 export interface Config {
   debug?: boolean
   onebotUseRuntimeBots?: boolean
-  onebotSelfId?: string
   onebotSelfIds?: string[]
   onebotMockBotCount?: number
   onebotProtocol?: WebQQProtocol
@@ -31,7 +30,6 @@ export interface Config {
 export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     onebotUseRuntimeBots: Schema.boolean().default(true).description('使用当前运行时里所有可用的 OneBot 机器人，关闭后只使用下方 selfId 集合'),
-    onebotSelfId: Schema.string().description('默认打开的 WebQQ 机器人 selfId，留空时自动选择第一个可用机器人'),
     onebotSelfIds: Schema.array(Schema.string()).role('table').default([]).description('关闭运行时全量模式时允许使用的 OneBot 机器人 selfId 集合'),
     onebotProtocol: Schema.union([
       Schema.const('napcat').description('NapCat'),

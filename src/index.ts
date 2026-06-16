@@ -105,7 +105,6 @@ function normalizeOneBotSelfId(value?: string) {
 
 function getConfiguredOneBotSelfIds(config: PluginConfig) {
   return Array.from(new Set([
-    normalizeOneBotSelfId(config.onebotSelfId),
     ...(config.onebotSelfIds ?? []).map(normalizeOneBotSelfId),
   ].filter((selfId): selfId is string => !!selfId)))
 }
@@ -118,7 +117,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const logger = debug ? ctx.logger?.('onebot-webqq') : undefined
   const configuredOneBotSelfIds = getConfiguredOneBotSelfIds(config)
   const useRuntimeOneBotBots = config.onebotUseRuntimeBots ?? true
-  const initialOneBotSelfId = normalizeOneBotSelfId(config.onebotSelfId) || (!useRuntimeOneBotBots ? configuredOneBotSelfIds[0] : undefined)
+  const initialOneBotSelfId = !useRuntimeOneBotBots ? configuredOneBotSelfIds[0] : undefined
   const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger, {
     cacheEnabled: config.webQQImageCacheEnabled ?? true,
     cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024,

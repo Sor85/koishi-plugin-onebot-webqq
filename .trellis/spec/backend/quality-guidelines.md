@@ -34,7 +34,6 @@ Questions to answer:
 ### 2. 签名
 
 - 配置：`onebotUseRuntimeBots?: boolean`，默认 `true`
-- 配置：`onebotSelfId?: string`，表示默认打开的机器人
 - 配置：`onebotSelfIds?: string[]`，表示关闭运行时全量模式时的显式集合
 - RPC：`onebot-webqq/webqq/bot/select({ selfId: string }) => OneBotRobotState`
 - 广播：`onebot-webqq/bots/update(OneBotRobotState)`
@@ -43,7 +42,7 @@ Questions to answer:
 ### 3. 契约
 
 - `onebotUseRuntimeBots` 开启时，候选机器人来自当前运行时里所有可用 OneBot 机器人
-- `onebotUseRuntimeBots` 关闭时，候选机器人只来自 `onebotSelfId` 与 `onebotSelfIds`
+- `onebotUseRuntimeBots` 关闭时，候选机器人只来自 `onebotSelfIds`，默认选中候选列表里的第一个机器人
 - `selectedSelfId` 是运行时状态，不写入数据库
 - WebQQ 历史、联系人、实时消息和通知都读取当前选中的机器人
 - 当 `bots.length > 1` 时，缓存 key 追加当前 `selectedSelfId`；当只有一个可用机器人时，继续使用旧 key
