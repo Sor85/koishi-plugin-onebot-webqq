@@ -78,7 +78,7 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('消息显示'),
 
   Schema.object({
-    onebotMockBotCount: Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，仅用于无多 bot 环境验证胶囊切换'),
+    onebotMockBotCount: Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动'),
     debug: Schema.boolean().default(false).description('显示前端调试信息'),
   }).description('开发者选项'),
 ])
