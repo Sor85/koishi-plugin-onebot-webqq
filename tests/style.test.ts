@@ -1040,6 +1040,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__message')).toContain('flex-direction: row-reverse')
     expect(ruleBody('.onebot-webqq-webqq__message')).toContain('--onebot-webqq-webqq-message-avatar-size: 32px')
     expect(ruleBody('.onebot-webqq-webqq__message-avatar')).toContain('width: var(--onebot-webqq-webqq-message-avatar-size)')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-row')).toContain('position: relative')
     expect(ruleBody('.onebot-webqq-webqq__thinking-row')).toContain('margin: -12px 40px 16px auto')
   })
 

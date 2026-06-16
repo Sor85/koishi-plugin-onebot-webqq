@@ -233,7 +233,7 @@
             <path d="M6 3.5 10.5 8 6 12.5"></path>
           </svg>
         </button>
-        <Transition name="onebot-webqq-webqq-thinking" @after-leave="animatePendingThinkingLeaveMove">
+        <Transition name="onebot-webqq-webqq-thinking" @before-leave="prepareThinkingPanelLeave">
           <div
             v-if="isThinkingMessageExpanded(index)"
             class="onebot-webqq-webqq__thinking-panel"
@@ -305,7 +305,6 @@ let textBubbleResizeObserver: ResizeObserver | undefined
 let fitTextBubblesFrame: number | undefined
 let thinkingMoveFrame: number | undefined
 let thinkingMoveCleanupTimer: ReturnType<typeof setTimeout> | undefined
-let pendingThinkingLeaveRects: Map<string, DOMRect> | undefined
 type TemplateRefValue = Element | ComponentPublicInstance | null
 const webQQForwardPreviewLimit = 4
 
@@ -328,7 +327,6 @@ onBeforeUnmount(() => {
   if (fitTextBubblesFrame != null) cancelAnimationFrame(fitTextBubblesFrame)
   if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
   if (thinkingMoveCleanupTimer != null) clearTimeout(thinkingMoveCleanupTimer)
-  pendingThinkingLeaveRects = undefined
   for (const audio of recordAudioRefs.values()) audio.pause()
   bubbleElementRefs.clear()
   textBubbleResizeObserver?.disconnect()
@@ -478,11 +476,16 @@ function animateMovedMessageRows(previousRects: Map<string, DOMRect>) {
   })
 }
 
-function animatePendingThinkingLeaveMove() {
-  if (!pendingThinkingLeaveRects) return
-  const previousRects = pendingThinkingLeaveRects
-  pendingThinkingLeaveRects = undefined
-  animateMovedMessageRows(previousRects)
+function prepareThinkingPanelLeave(element: Element) {
+  if (!(element instanceof HTMLElement) || !element.parentElement) return
+  const parentRect = element.parentElement.getBoundingClientRect()
+  const panelRect = element.getBoundingClientRect()
+  // Vue 离场节点默认会继续占住文档流，导致后续消息只能等已思考淡出结束后才上移；这里把离场面板冻结在原视觉位置，让消息 FLIP 和面板离场同步开始。
+  element.style.position = 'absolute'
+  element.style.top = `${panelRect.top - parentRect.top}px`
+  element.style.right = `${parentRect.right - panelRect.right}px`
+  element.style.width = `${panelRect.width}px`
+  element.style.marginTop = '0'
 }
 
 function formatRecordDuration(duration: number) {
@@ -572,14 +575,8 @@ async function transcribeRecordMessage(message: WebQQMessage, element: WebQQMess
 async function toggleThinking(index: number) {
   const message = getThinkingMessage(index)
   if (!message) return
-  const wasExpanded = props.isThinkingExpanded(message)
   const previousRects = readMessageRowRects()
   emit('toggle-thinking', message)
-  if (wasExpanded) {
-    pendingThinkingLeaveRects = previousRects
-    return
-  }
-  pendingThinkingLeaveRects = undefined
   await nextTick()
   animateMovedMessageRows(previousRects)
 }
