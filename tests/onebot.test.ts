@@ -310,6 +310,40 @@ describe('onebot webqq adapter', () => {
     expect(onlineBot.internal.get_friend_list).toHaveBeenCalled()
   })
 
+  it('adds mock OneBot profiles and maps selected mock bots back to the real bot', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      name: 'Capsule Bot',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] }, { mockBotCount: 2 })
+
+    expect(service.listBots()).toEqual([
+      expect.objectContaining({
+        selfId: '10000',
+        name: 'Capsule Bot',
+      }),
+      expect.objectContaining({
+        selfId: '10000:mock:1',
+        name: 'Capsule Bot 模拟 1',
+      }),
+      expect.objectContaining({
+        selfId: '10000:mock:2',
+        name: 'Capsule Bot 模拟 2',
+      }),
+    ])
+
+    expect(service.selectSelfId('10000:mock:1')).toBe('10000:mock:1')
+    expect(service.isSelectedSelfId('10000')).toBe(true)
+    await expect(service.loadContacts()).resolves.toEqual({ friends: [], groups: [] })
+    expect(bot.internal.get_friend_list).toHaveBeenCalled()
+  })
+
   it('loads group info with announcements and members', async () => {
     const request = vi.fn(async (action: string) => {
       if (action === 'get_group_member_list') return [{
@@ -528,7 +562,7 @@ describe('onebot webqq adapter', () => {
             },
             message: [
               { type: 'at', data: { qq: '10000', name: '宁宁' } },
-              { type: 'text', data: { text: '在吗' } },
+              { type: 'text', data: { text: ' 在吗' } },
             ],
           }, {
             message_id: 4,
@@ -539,6 +573,18 @@ describe('onebot webqq adapter', () => {
               nickname: 'Alice',
             },
             message: [{ type: 'at', data: { qq: '10001' } }],
+          }, {
+            message_id: 5,
+            message_seq: 15,
+            time: 1710000004,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [
+              { type: 'at', data: { qq: '10000', name: '宁宁' } },
+              { type: 'text', data: { text: '在吗' } },
+            ],
           }],
         })),
       },
@@ -547,15 +593,22 @@ describe('onebot webqq adapter', () => {
 
     await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
-        summary: '@宁宁在吗',
+        summary: '@宁宁 在吗',
         elements: [
           { type: 'text', text: '@宁宁' },
-          { type: 'text', text: '在吗' },
+          { type: 'text', text: ' 在吗' },
         ],
       }),
       expect.objectContaining({
         summary: '@10001',
         elements: [{ type: 'text', text: '@10001' }],
+      }),
+      expect.objectContaining({
+        summary: '@宁宁在吗',
+        elements: [
+          { type: 'text', text: '@宁宁' },
+          { type: 'text', text: '在吗' },
+        ],
       }),
     ])
   })

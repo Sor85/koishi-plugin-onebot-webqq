@@ -540,8 +540,9 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain('function loadBrowserWebQQStoredState')
     expect(webqqConversationStateStore).toContain('function persistWebQQState()')
     expect(webqqStorage).toContain("if (storageBackend !== 'browser') return empty")
-    expect(webqqStorage).toContain('localStorage.getItem(webQQStorageKey)')
-    expect(webqqStorage).toContain('localStorage.setItem(webQQStorageKey')
+    expect(webqqStorage).toContain('function getScopedStorageKey(key: string, scopeId?: string)')
+    expect(webqqStorage).toContain('localStorage.getItem(getScopedStorageKey(webQQStorageKey, scopeId))')
+    expect(webqqStorage).toContain('localStorage.setItem(getScopedStorageKey(webQQStorageKey, scopeId)')
     expect(webqqConversationStateStore).toContain('conversationSummaries.value = stored.conversationSummaries')
     expect(webqqConversationStateStore).toContain('conversationUnreadCounts.value = stored.conversationUnreadCounts')
     expect(webqqConversationStateStore).toContain('persistWebQQState()')
@@ -550,14 +551,14 @@ describe('webqq observer view', () => {
 
   it('loads and saves WebQQ state through Koishi storage listeners for the koishi backend', () => {
     expect(webqqView).toContain('webQQStorageBackend')
-    expect(webqqView).toContain('useWebQQConversationState(webQQStorageBackend)')
+    expect(webqqView).toContain('useWebQQConversationState(webQQStorageBackend, webQQStorageScope)')
     expect(webqqConversationStateStore).toContain('function createWebQQStoredState()')
     expect(webqqConversationStateStore).toContain('async function loadRemoteWebQQStoredState()')
     expect(webqqStorage).toContain("if (storageBackend === 'browser') return")
     expect(webqqStorage).toContain("send('onebot-webqq/webqq/storage/load')")
     expect(webqqConversationStateStore).toContain('applyWebQQStoredState(stored)')
     expect(webqqStorage).toContain("send('onebot-webqq/webqq/storage/save', state)")
-    expect(webqqConversationStateStore).toContain('persistWebQQStoredState(storageBackend.value, createWebQQStoredState())')
+    expect(webqqConversationStateStore).toContain('persistWebQQStoredState(storageBackend.value, createWebQQStoredState(), storageScope.value)')
     expect(webqqView).toContain('loadRemoteWebQQStoredState()')
   })
 
@@ -567,7 +568,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageCache).not.toContain('const webQQMessageCacheLimit = 100')
     expect(webqqMessageCache).toContain("indexedDB.open('onebot-webqq-webqq'")
     expect(webqqMessageCache).toContain("database.createObjectStore('messages', { keyPath: 'id' })")
-    expect(webqqMessageCache).toContain('saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number)')
+    expect(webqqMessageCache).toContain('saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number, scopeId?: string)')
     expect(webqqMessageCache).toContain('messages.slice(-limit)')
   })
 
@@ -577,13 +578,13 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain("if (storageBackend === 'koishi')")
     expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/load'")
     expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/save'")
-    expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId)')
+    expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId, scopeId)')
     expect(webqqStorage).toContain('const cachedMessages = messages.slice(-messageCacheLimit)')
-    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit)')
+    expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit, scopeId)')
     expect(webqqView).toContain("import { loadCachedWebQQMessages as loadStoredWebQQMessages, saveCachedWebQQMessages as saveStoredWebQQMessages } from './stores/webqq-storage'")
     expect(webqqView).toContain("async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string)")
-    expect(webqqView).toContain('return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)')
-    expect(webqqView).toContain('await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value)')
+    expect(webqqView).toContain('return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value, webQQStorageScope.value)')
+    expect(webqqView).toContain('await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value, webQQStorageScope.value)')
   })
 
   it('preserves completed thinking metadata when cached messages merge with plain history', () => {
@@ -901,8 +902,21 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('@click="toggleThinking(index)"')
     expect(webqqView).toContain('@toggle-thinking="toggleThinking"')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
+    expect(webqqMessageListView).toContain("{ 'is-expanded': isThinkingMessageExpanded(index) }")
+    expect(webqqMessageListView).toContain('<Transition name="onebot-webqq-webqq-thinking" @before-leave="prepareThinkingPanelLeave">')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-panel"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-content"')
     expect(webqqMessageListView).toContain('{{ getThinkingMessage(index)?.thinking.content }}')
+    expect(webqqMessageListView).toContain('function readMessageRowRects()')
+    expect(webqqMessageListView).toContain('function animateMovedMessageRows(previousRects: Map<string, DOMRect>)')
+    expect(webqqMessageListView).toContain('function prepareThinkingPanelLeave(element: Element)')
+    expect(webqqMessageListView).toContain('const previousRects = readMessageRowRects()')
+    expect(webqqMessageListView).toContain('await nextTick()')
+    expect(webqqMessageListView).toContain('animateMovedMessageRows(previousRects)')
+    expect(webqqMessageListView).toContain("element.style.position = 'absolute'")
+    expect(webqqMessageListView).toContain("element.style.marginTop = '0'")
+    expect(webqqMessageListView).toContain("element.style.transition = 'transform 0.16s ease'")
+    expect(webqqMessageListView).toContain("element.style.willChange = 'transform'")
   })
 
   it('keeps WebQQ thinking expansion state inside a composable', () => {
@@ -1146,6 +1160,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('getThinkingMessage(index)')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
     expect(webqqMessageListView).toContain('toggleThinking(index)')
+    expect(webqqMessageListView).toContain('<Transition name="onebot-webqq-webqq-thinking" @before-leave="prepareThinkingPanelLeave">')
   })
 
   it('renders WebQQ recall events and recalled message marks', () => {
@@ -1215,7 +1230,7 @@ describe('webqq observer view', () => {
     const thinkingToggleSource = sourceBetween(
       webqqMessageListView,
       'class="onebot-webqq-webqq__thinking-toggle"',
-      'class="onebot-webqq-webqq__thinking-chevron"',
+      "'onebot-webqq-webqq__thinking-chevron'",
     )
 
     expect(webqqMessageListView).not.toContain("return `输入 ${usage.inputTokens} / 输出 ${usage.outputTokens}`")
@@ -1261,6 +1276,7 @@ describe('webqq observer view', () => {
     expect(webqqBubbleWidth).toContain('export function fitWebQQBubbleToInlineLines(bubble: HTMLElement)')
     expect(webqqBubbleWidth).toContain('range.getClientRects()')
     expect(webqqBubbleWidth).toContain('const lineWidths = measureInlineLineWidths(inlineRuns)')
+    expect(webqqBubbleWidth).toContain('mergeRenderedLineRects(inlineRuns.flatMap(getRenderedTextRects))')
     expect(webqqBubbleWidth).toContain('setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)')
     expect(webqqBubbleWidth).not.toContain('lineWidths.length <=')
     expect(webqqBubbleWidth).not.toContain('let low =')
@@ -1284,7 +1300,10 @@ describe('webqq observer view', () => {
 
   it('sets fitted bubble width to the current max rendered line width', () => {
     const inlineRun = {} as HTMLElement
-    const getClientRects = vi.fn(() => [{ width: 312.4 }, { width: 64 }])
+    const getClientRects = vi.fn(() => [
+      { top: 0, left: 0, right: 312.4, width: 312.4 },
+      { top: 24, left: 0, right: 64, width: 64 },
+    ])
     const bubble = {
       style: { width: '409px' },
       querySelectorAll: vi.fn(() => [inlineRun]),
@@ -1309,6 +1328,41 @@ describe('webqq observer view', () => {
     fitWebQQBubbleToInlineLines(bubble)
 
     expect(bubble.style.width).toBe('335px')
+    expect(getClientRects).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps same-line inline fragments together when fitting mention text bubbles', () => {
+    const inlineRun = {} as HTMLElement
+    const getClientRects = vi.fn(() => [
+      { top: 0, left: 0, right: 72, width: 72 },
+      { top: 0.5, left: 72, right: 286.2, width: 214.2 },
+      { top: 26, left: 0, right: 90, width: 90 },
+    ])
+    const bubble = {
+      style: { width: '409px' },
+      querySelectorAll: vi.fn(() => [inlineRun]),
+    } as unknown as HTMLElement
+    vi.stubGlobal('document', {
+      createRange: vi.fn(() => ({
+        selectNodeContents: vi.fn(),
+        getClientRects,
+        detach: vi.fn(),
+      })),
+    })
+    vi.stubGlobal('window', {
+      getComputedStyle: vi.fn(() => ({
+        boxSizing: 'border-box',
+        paddingLeft: '10px',
+        paddingRight: '10px',
+        borderLeftWidth: '0px',
+        borderRightWidth: '0px',
+      })),
+    })
+
+    fitWebQQBubbleToInlineLines(bubble)
+
+    expect(bubble.style.width).toBe('307px')
     expect(getClientRects).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
   })

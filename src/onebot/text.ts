@@ -37,11 +37,11 @@ export function readMarkupAttribute(source: string, keys: string[]) {
 
 // 部分 OneBot 实现会把引用里的 @ 以 CQ/XML 文本返回，只在命中 @ 标记时转换。
 export function normalizeMentionMarkupText(value: string) {
-  const text = value.trim()
-  if (!text) return ''
-  const decodedText = decodeTextEntity(text)
-  const source = /\[CQ:at,[^\]]+\]/i.test(text) || /<(?:[\w-]+:)?(?:at|qqbot-at-user)\b/i.test(text)
-    ? text
+  if (!value.trim()) return ''
+  // 普通 text segment 的前导空格可能是 OneBot 在 @ 后保留的消息边界，不能在这里 trim 掉。
+  const decodedText = decodeTextEntity(value)
+  const source = /\[CQ:at,[^\]]+\]/i.test(value) || /<(?:[\w-]+:)?(?:at|qqbot-at-user)\b/i.test(value)
+    ? value
     : decodedText
   const hasMentionMarkup = /\[CQ:at,[^\]]+\]/i.test(source) || /<(?:[\w-]+:)?(?:at|qqbot-at-user)\b/i.test(source)
   if (!hasMentionMarkup) return decodedText

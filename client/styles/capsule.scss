@@ -1,19 +1,24 @@
 .onebot-webqq-host {
-  position: relative;
-  z-index: 10000;
-}
-
-.onebot-webqq {
   position: fixed;
   right: 24px;
   bottom: 56px;
   z-index: 10000;
-  display: inline-flex;
-  align-items: center;
-  width: 220px;
-  max-width: calc(100vw - 32px);
-  min-height: 52px;
-  padding: 5px 12px 5px 7px;
+  height: 52px;
+  line-height: 0;
+}
+
+.onebot-webqq-layout-root {
+  position: relative;
+  display: block;
+  z-index: 10000;
+  height: 52px;
+}
+
+.onebot-webqq {
+  position: relative;
+  z-index: 10000;
+  width: var(--onebot-webqq-shell-collapsed-width, 220px);
+  height: 52px;
   box-sizing: border-box;
   color: var(--k-text-dark, var(--fg1, #1f2328));
   background: rgba(255, 255, 255, 0.78);
@@ -23,6 +28,28 @@
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
   pointer-events: none;
+  transition: width 0.18s ease;
+}
+
+.onebot-webqq.is-bot-stack-expanded {
+  width: var(--onebot-webqq-shell-width, var(--onebot-webqq-shell-collapsed-width, 220px));
+}
+
+.onebot-webqq__avatar-capsule {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  width: var(--onebot-webqq-avatar-capsule-collapsed-width, 56px);
+  height: 52px;
+  padding: 5px 7px;
+  box-sizing: border-box;
+  pointer-events: auto;
+  transition: width 0.18s ease;
+}
+
+.onebot-webqq__avatar-capsule.is-expanded {
+  width: var(--onebot-webqq-avatar-capsule-expanded-width, var(--onebot-webqq-avatar-capsule-collapsed-width, 56px));
 }
 
 .onebot-webqq__avatar {
@@ -71,6 +98,117 @@
   }
 }
 
+.onebot-webqq__avatar-capsule .onebot-webqq__avatar-button {
+  margin: 0;
+}
+
+.onebot-webqq__bot-stack {
+  position: relative;
+  z-index: 2;
+  width: var(--onebot-webqq-stack-collapsed-width, 56px);
+  height: 42px;
+  margin: 0;
+  flex-shrink: 0;
+  pointer-events: auto;
+  transition: width 0.18s ease;
+
+  &.is-expanded {
+    width: var(--onebot-webqq-stack-expanded-width, var(--onebot-webqq-stack-collapsed-width, 56px));
+
+    .onebot-webqq__bot-switch {
+      right: var(--onebot-webqq-bot-expanded-right, 0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .onebot-webqq__bot-overflow {
+      opacity: 0;
+    }
+  }
+}
+
+.onebot-webqq__bot-switch {
+  position: absolute;
+  right: var(--onebot-webqq-bot-collapsed-right, 0);
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  // 折叠/展开靠 Anime.js FLIP 同步位移当前 bot 头像；这里只能用 opacity 隐藏多余头像。
+  // 用 visibility/display 隐藏会让 FLIP 把它判定为 enter/leave 节点，跳过抵消外层胶囊位移的位移补偿，
+  // 余量头像会被钉在录制坐标上、随胶囊折叠被拖过当前 bot 头像，露出底部伪影/波纹/虚影。
+  transition: opacity 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &::before,
+  &::after {
+    content: none;
+    display: none;
+  }
+
+  .onebot-webqq__avatar {
+    margin-right: 0;
+    box-shadow: 0 0 0 2px #ffffff;
+  }
+
+  &.is-collapsed-extra {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:hover,
+  &:focus-visible {
+    z-index: 20;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--k-color-primary, #409eff);
+    outline-offset: 3px;
+  }
+}
+
+.onebot-webqq__bot-stack.is-expanded .onebot-webqq__bot-switch.is-collapsed-extra {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.onebot-webqq__bot-overflow {
+  position: absolute;
+  right: var(--onebot-webqq-bot-overflow-right, 0);
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding-right: 18px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  color: var(--k-text-dark, var(--fg1, #1f2328));
+  background: color-mix(in srgb, var(--k-color-primary, #409eff) 16%, #ffffff 84%);
+  box-shadow: 0 0 0 2px #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: left;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.onebot-webqq__bot-overflow-plus,
+.onebot-webqq__bot-overflow-count {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .onebot-webqq__avatar-unread {
   position: absolute;
   top: -5px;
@@ -93,13 +231,13 @@
 
 .onebot-webqq__avatar-guide {
   position: absolute;
-  left: 2px;
+  left: 50%;
   top: 50%;
   z-index: 1;
   width: 52px;
   height: 52px;
   pointer-events: none;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
 }
 
 .onebot-webqq__avatar-guide-ring {
@@ -131,13 +269,14 @@
 .onebot-webqq-avatar-guide-enter-from,
 .onebot-webqq-avatar-guide-leave-to {
   opacity: 0;
-  transform: translateY(-50%) scale(0.92);
+  transform: translate(-50%, -50%) scale(0.92);
 }
 
 .onebot-webqq__status {
   position: absolute;
   right: 1px;
   bottom: 1px;
+  z-index: 2;
   width: 10px;
   height: 10px;
   border: 2px solid var(--k-side-bg, var(--bg1, #f9f9fa));
@@ -154,14 +293,19 @@
 }
 
 .onebot-webqq__body {
+  position: fixed;
+  right: 24px;
+  bottom: 56px;
+  z-index: 10001;
+  width: 173px;
+  height: 52px;
   min-width: 0;
-  flex: 1;
-  align-self: stretch;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: 4px;
+  padding: 9px 12px 5px;
   box-sizing: border-box;
+  color: var(--k-text-dark, var(--fg1, #1f2328));
   pointer-events: auto;
 }
 
@@ -229,4 +373,48 @@
 .onebot-webqq__activity {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.onebot-webqq__tooltip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  max-width: min(280px, calc(100vw - 48px));
+  color: #ffffff;
+  filter: drop-shadow(0 10px 20px rgba(15, 23, 42, 0.18));
+  pointer-events: none;
+}
+
+.onebot-webqq__tooltip-content {
+  display: block;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.96);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.onebot-webqq__tooltip-arrow {
+  position: absolute;
+  left: 16px;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  background: rgba(17, 24, 39, 0.96);
+  transform: rotate(45deg);
+}
+
+.onebot-webqq-tooltip-enter-active,
+.onebot-webqq-tooltip-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.onebot-webqq-tooltip-enter-from,
+.onebot-webqq-tooltip-leave-to {
+  opacity: 0;
+  transform: translateY(2px) scale(0.98);
 }

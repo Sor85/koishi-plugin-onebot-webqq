@@ -524,6 +524,7 @@
 }
 
 .onebot-webqq-webqq__thinking-row {
+  position: relative;
   max-width: 74%;
   display: flex;
   flex-direction: column;
@@ -582,15 +583,26 @@
   width: 13px;
   height: 13px;
   fill: none;
+  flex-shrink: 0;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
+  transition: transform 0.16s ease;
+}
+
+.onebot-webqq-webqq__thinking-chevron.is-expanded {
+  transform: rotate(90deg);
+}
+
+.onebot-webqq-webqq__thinking-panel {
+  max-width: min(360px, 100%);
+  margin-top: 4px;
+  transform-origin: top right;
 }
 
 .onebot-webqq-webqq__thinking-content {
-  max-width: min(360px, 100%);
-  margin-top: 4px;
+  min-height: 0;
   padding: 8px 10px;
   border-left: 2px solid rgba(148, 163, 184, 0.54);
   border-radius: 6px;
@@ -598,9 +610,21 @@
   background: rgba(255, 255, 255, 0.72);
   font-size: 12px;
   line-height: 18px;
+  overflow: hidden;
   overflow-wrap: anywhere;
   text-align: left;
   white-space: pre-wrap;
+}
+
+.onebot-webqq-webqq-thinking-enter-active,
+.onebot-webqq-webqq-thinking-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.onebot-webqq-webqq-thinking-enter-from,
+.onebot-webqq-webqq-thinking-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scaleY(0.98);
 }
 
 .onebot-webqq-webqq__sender-badge {

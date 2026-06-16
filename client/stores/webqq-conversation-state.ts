@@ -39,8 +39,8 @@ export function clearConversationUnreadCount(conversationUnreadCounts: Record<st
   return next
 }
 
-export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBackend>) {
-  const stored = loadBrowserWebQQStoredState(storageBackend.value)
+export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBackend>, storageScope: Ref<string>) {
+  const stored = loadBrowserWebQQStoredState(storageBackend.value, storageScope.value)
   const conversationSummaries = ref(stored.conversationSummaries)
   const conversationUnreadCounts = ref(stored.conversationUnreadCounts)
   const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))
@@ -58,10 +58,14 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
   }
 
   function persistWebQQState() {
-    persistWebQQStoredState(storageBackend.value, createWebQQStoredState())
+    persistWebQQStoredState(storageBackend.value, createWebQQStoredState(), storageScope.value)
   }
 
   async function loadRemoteWebQQStoredState() {
+    if (storageBackend.value === 'browser') {
+      applyWebQQStoredState(loadBrowserWebQQStoredState(storageBackend.value, storageScope.value))
+      return
+    }
     const stored = await loadRemoteWebQQStoredStateFromBackend(storageBackend.value)
     if (stored) applyWebQQStoredState(stored)
   }
@@ -97,6 +101,11 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
     persistWebQQState()
   }
 
+  function resetConversationState() {
+    conversationSummaries.value = {}
+    conversationUnreadCounts.value = {}
+  }
+
   return {
     conversationSummaries,
     conversationUnreadCounts,
@@ -111,5 +120,6 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
     getUnreadCount,
     increaseUnreadCount,
     clearUnreadCount,
+    resetConversationState,
   }
 }

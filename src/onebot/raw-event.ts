@@ -6,6 +6,7 @@ import { getNumberField, getStringField, isRecord } from './data'
 // 上拦截原始事件。仅支持 ws / ws-reverse；http webhook 模式没有 socket，跳过。
 
 export interface WebQQRawReaction {
+  selfId?: string
   groupId: string
   userId: string
   messageId: string
@@ -44,7 +45,7 @@ function findBotSocket(bot: Record<string, unknown>): SocketLike | undefined {
   return undefined
 }
 
-function parseReaction(raw: unknown): WebQQRawReaction | undefined {
+function parseReaction(raw: unknown, selfId?: string): WebQQRawReaction | undefined {
   if (!isRecord(raw)) return
   if (raw.post_type !== 'notice') return
   if (getStringField(raw, ['notice_type']) !== 'group_msg_emoji_like') return
@@ -62,6 +63,7 @@ function parseReaction(raw: unknown): WebQQRawReaction | undefined {
   if (!emojiId) return
   const isAdd = raw.is_add !== false
   return {
+    ...(selfId ? { selfId } : {}),
     groupId,
     userId: getStringField(raw, ['user_id', 'operator_id']),
     messageId,
@@ -75,7 +77,7 @@ function parseReaction(raw: unknown): WebQQRawReaction | undefined {
 export function registerWebQQReactionInterceptor(ctx: RawEventContext, onReaction: (reaction: WebQQRawReaction) => void) {
   const bound = new WeakSet<SocketLike>()
 
-  const bindSocket = (socket: SocketLike) => {
+  const bindSocket = (socket: SocketLike, selfId?: string) => {
     if (bound.has(socket)) return
     bound.add(socket)
     socket.addEventListener('message', (event) => {
@@ -85,7 +87,7 @@ export function registerWebQQReactionInterceptor(ctx: RawEventContext, onReactio
       } catch {
         return
       }
-      const reaction = parseReaction(parsed)
+      const reaction = parseReaction(parsed, selfId)
       if (reaction) onReaction(reaction)
     })
   }
@@ -94,7 +96,8 @@ export function registerWebQQReactionInterceptor(ctx: RawEventContext, onReactio
     for (const bot of ctx.bots ?? []) {
       if (!isRecord(bot) || bot.platform !== 'onebot') continue
       const socket = findBotSocket(bot)
-      if (socket) bindSocket(socket)
+      const selfId = getStringField(bot, ['selfId'])
+      if (socket) bindSocket(socket, selfId)
     }
   }
 

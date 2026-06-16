@@ -11,6 +11,7 @@ import {
 } from './data'
 import {
   callAction,
+  getAvailableOneBotBots,
   selectBot,
   supportsOneBotAction,
   type OneBotBot,
@@ -44,6 +45,8 @@ import {
 } from './messages'
 import type {
   OneBotWebQQOptions,
+  OneBotRobotProfile,
+  OneBotRobotState,
   WebQQChatType,
   WebQQContacts,
   WebQQFriend,
@@ -62,6 +65,8 @@ import type {
 
 export type {
   OneBotWebQQOptions,
+  OneBotRobotProfile,
+  OneBotRobotState,
   WebQQChatType,
   WebQQContacts,
   WebQQForwardItem,
@@ -88,6 +93,45 @@ export type {
 
 function toStringId(value: unknown) {
   return value == null ? '' : String(value)
+}
+
+function getBotDisplayName(bot: OneBotBot) {
+  const name = (bot.name || bot.username || '').trim()
+  if (name && name !== bot.selfId) return name
+  return '机器人'
+}
+
+function toOneBotRobotProfile(bot: OneBotBot): OneBotRobotProfile | undefined {
+  if (!bot.selfId) return
+  return {
+    platform: bot.platform || 'onebot',
+    selfId: bot.selfId,
+    status: bot.status,
+    name: getBotDisplayName(bot),
+    avatar: bot.avatar || getUserAvatar(bot.selfId),
+  }
+}
+
+function getMockBotCount(value: number | undefined) {
+  return Math.max(0, Math.min(20, Math.floor(value ?? 0)))
+}
+
+function getMockSelfId(sourceSelfId: string, index: number) {
+  return `${sourceSelfId}:mock:${index + 1}`
+}
+
+function getMockBotSourceSelfId(selfId: string) {
+  return selfId.match(/^(.*):mock:\d+$/)?.[1]
+}
+
+function createMockBotProfiles(bots: OneBotRobotProfile[], count: number): OneBotRobotProfile[] {
+  const source = bots[0]
+  if (!source || !count) return []
+  return Array.from({ length: count }, (_, index) => ({
+    ...source,
+    selfId: getMockSelfId(source.selfId, index),
+    name: `${source.name} 模拟 ${index + 1}`,
+  }))
 }
 
 async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: WebQQFriend[], groups: WebQQGroup[], imageUrlResolver?: (file: string) => string): Promise<WebQQRecentContact | undefined> {
@@ -155,10 +199,45 @@ function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefi
 
 // 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
-  const getBot = () => selectBot(ctx, options)
+  let selectedSelfId = options.selfId
+  const getRealSelfId = (selfId = selectedSelfId) => {
+    const sourceSelfId = selfId ? getMockBotSourceSelfId(selfId) : undefined
+    return sourceSelfId || selfId
+  }
+  const getBot = () => selectBot(ctx, { ...options, selfId: getRealSelfId() })
+  const listBots = () => {
+    const bots = getAvailableOneBotBots(ctx, options.selfIds).map(toOneBotRobotProfile).filter((bot): bot is OneBotRobotProfile => !!bot)
+    return [
+      ...bots,
+      ...createMockBotProfiles(bots, getMockBotCount(options.mockBotCount)),
+    ]
+  }
   const protocol = options.protocol ?? 'napcat'
   const { imageUrlResolver } = options
   return {
+    getSelectedSelfId() {
+      return selectedSelfId
+    },
+
+    isSelectedSelfId(selfId?: string) {
+      if (!selectedSelfId) return true
+      return selfId === selectedSelfId || selfId === getRealSelfId()
+    },
+
+    selectSelfId(selfId: string) {
+      const bots = listBots()
+      const selected = bots.find((bot) => bot.selfId === selfId)
+      if (!selected) throw new Error(`未找到 selfId 为 ${selfId} 的 OneBot 机器人`)
+      // 模拟 bot 只用于无多 bot 环境验证 UI，真实 WebQQ action 仍要落到源机器人。
+      selectBot(ctx, { ...options, selfId: getRealSelfId(selfId) })
+      selectedSelfId = selected.selfId
+      return selectedSelfId
+    },
+
+    listBots() {
+      return listBots()
+    },
+
     async resolveQuote(id: string) {
       return resolveOneBotQuote(getBot(), id, imageUrlResolver)
     },

@@ -38,8 +38,13 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 
 ### 连接设置
 
-- `onebotSelfId`：指定读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人
+- `onebotUseRuntimeBots`：使用当前运行时里所有可用的 OneBot 机器人，默认开启；关闭后只使用下方 selfId 集合
+- `onebotSelfIds`：关闭运行时全量模式时允许使用的 OneBot 机器人 selfId 集合
 - `onebotProtocol`：选择 NapCat 或 LLBot 协议模式
+
+### 开发者选项
+
+- `onebotMockBotCount`：额外模拟的 OneBot 机器人数量，仅用于没有多 bot 环境时验证胶囊展开和切换
 
 ### 历史与缓存
 
@@ -74,7 +79,7 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 
 ## 使用方式
 
-安装并启用插件后，Koishi 控制台右下角会出现聊天胶囊。点击胶囊头像可以打开 WebQQ 观察窗。
+安装并启用插件后，Koishi 控制台右下角会出现聊天胶囊。点击胶囊头像可以打开 WebQQ 观察窗。存在多个 OneBot 机器人时，胶囊会显示堆叠头像；悬停展开后点击指定头像可切换到对应机器人的 WebQQ。
 
 观察窗目前偏只读：它用于浏览联系人、会话和消息，不提供主动发送消息入口。通知菜单里的好友申请或群申请如果带有可处理 flag，则可以在观察窗内同意或拒绝。
 

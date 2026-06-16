@@ -13,6 +13,7 @@ import type {
   WebQQMessageReaction,
   WebQQMessageReactionUser,
   WebQQNotice,
+  OneBotRobotState,
   WebQQRecentContact,
 } from '../state'
 
@@ -411,4 +412,8 @@ export async function approveWebQQNotice(notice: WebQQNotice, approve: boolean) 
     subType: notice.subType,
     approve,
   })
+}
+
+export async function selectWebQQBot(selfId: string) {
+  return await send('onebot-webqq/webqq/bot/select', { selfId }) as OneBotRobotState
 }

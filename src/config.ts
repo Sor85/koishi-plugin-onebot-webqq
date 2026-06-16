@@ -3,7 +3,9 @@ import type { WebQQProtocol } from './onebot'
 
 export interface Config {
   debug?: boolean
-  onebotSelfId?: string
+  onebotUseRuntimeBots?: boolean
+  onebotSelfIds?: string[]
+  onebotMockBotCount?: number
   onebotProtocol?: WebQQProtocol
   historyLimit?: number
   webQQMessageCacheLimit?: number
@@ -27,7 +29,8 @@ export interface Config {
 
 export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
-    onebotSelfId: Schema.string().description('用于读取 WebQQ 数据的 OneBot 机器人 selfId，留空时自动选择第一个支持读取接口的机器人'),
+    onebotUseRuntimeBots: Schema.boolean().default(true).description('使用当前运行时里所有可用的 OneBot 机器人，关闭后只使用下方 selfId 集合'),
+    onebotSelfIds: Schema.array(Schema.string()).role('table').default([]).description('关闭运行时全量模式时允许使用的 OneBot 机器人 selfId 集合'),
     onebotProtocol: Schema.union([
       Schema.const('napcat').description('NapCat'),
       Schema.const('llbot').description('LLBot'),
@@ -75,6 +78,7 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('消息显示'),
 
   Schema.object({
+    onebotMockBotCount: Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动'),
     debug: Schema.boolean().default(false).description('显示前端调试信息'),
   }).description('开发者选项'),
 ])

@@ -3,8 +3,9 @@ import type { WebQQMessage } from './state'
 const webQQMessageCacheStoreName = 'messages'
 let webQQMessageCacheDatabase: IDBDatabase | undefined
 
-function createWebQQMessageCacheKey(type: string, peerId: string) {
-  return `${type}:${peerId}`
+function createWebQQMessageCacheKey(type: string, peerId: string, scopeId?: string) {
+  const key = `${type}:${peerId}`
+  return scopeId ? `${key}:${scopeId}` : key
 }
 
 function openWebQQMessageCacheDatabase(): Promise<IDBDatabase> {
@@ -33,13 +34,13 @@ function readCachedMessages(value: unknown) {
 }
 
 // 读取当前浏览器里指定 WebQQ 会话的消息缓存。
-export async function loadBrowserWebQQMessages(type: string, peerId: string): Promise<WebQQMessage[]> {
+export async function loadBrowserWebQQMessages(type: string, peerId: string, scopeId?: string): Promise<WebQQMessage[]> {
   try {
     const database = await openWebQQMessageCacheDatabase()
     return await new Promise((resolve) => {
       const transaction = database.transaction(webQQMessageCacheStoreName, 'readonly')
       const store = transaction.objectStore(webQQMessageCacheStoreName)
-      const request = store.get(createWebQQMessageCacheKey(type, peerId))
+      const request = store.get(createWebQQMessageCacheKey(type, peerId, scopeId))
       request.onsuccess = () => resolve(readCachedMessages(request.result))
       request.onerror = () => resolve([])
     })
@@ -49,7 +50,7 @@ export async function loadBrowserWebQQMessages(type: string, peerId: string): Pr
 }
 
 // 保存当前浏览器里指定 WebQQ 会话的最近消息缓存。
-export async function saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number): Promise<void> {
+export async function saveBrowserWebQQMessages(type: string, peerId: string, messages: WebQQMessage[], limit: number, scopeId?: string): Promise<void> {
   try {
     const database = await openWebQQMessageCacheDatabase()
     const cachedMessages = messages.slice(-limit)
@@ -57,7 +58,7 @@ export async function saveBrowserWebQQMessages(type: string, peerId: string, mes
       const transaction = database.transaction(webQQMessageCacheStoreName, 'readwrite')
       const store = transaction.objectStore(webQQMessageCacheStoreName)
       const request = store.put({
-        id: createWebQQMessageCacheKey(type, peerId),
+        id: createWebQQMessageCacheKey(type, peerId, scopeId),
         messages: cachedMessages,
         updatedAt: Date.now(),
       })

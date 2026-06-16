@@ -1,11 +1,13 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
 import Capsule from './Capsule.vue'
-import { capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
+import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
 import './style.scss'
 
 interface ClientData {
   capsule?: CapsuleData
+  bots?: OneBotRobotState['bots']
+  selectedSelfId?: string
   debug?: boolean
   webQQTheme?: WebQQTheme
   webQQChatStyle?: WebQQChatStyle
@@ -117,8 +119,14 @@ function resetClientEntryState() {
   resetWebQQClientState()
 }
 
+function applyOneBotRobotState(state?: Partial<OneBotRobotState>) {
+  availableBots.value = state?.bots ?? []
+  selectedBotSelfId.value = state?.selectedSelfId || ''
+}
+
 export default function (ctx: Context, data?: Ref<ClientData>) {
   capsule.value = data?.value?.capsule
+  applyOneBotRobotState(data?.value)
   debug.value = !!data?.value?.debug
   webQQTheme.value = data?.value?.webQQTheme || 'fresh'
   webQQChatStyle.value = data?.value?.webQQChatStyle || 'telegram'
@@ -141,9 +149,16 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   ctx.effect(() => {
     const disposeUpdateReceive = receive('onebot-webqq/update', (value) => {
       capsule.value = value as CapsuleData | undefined
+      availableBots.value = capsule.value?.bots ?? availableBots.value
       updateWebQQAvatarThemeColor(capsule.value)
       if (debug.value) {
         console.debug('[onebot-webqq] update', value)
+      }
+    })
+    const disposeBotsUpdateReceive = receive('onebot-webqq/bots/update', (value) => {
+      applyOneBotRobotState(value as OneBotRobotState)
+      if (debug.value) {
+        console.debug('[onebot-webqq] bots update', value)
       }
     })
 
@@ -151,6 +166,8 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
       // Koishi client receive 旧实现没有 disposer；插件卸载时覆盖为空回调，避免 update 事件继续持有旧的全局 ref 闭包。
       if (typeof disposeUpdateReceive === 'function') disposeUpdateReceive()
       else receive('onebot-webqq/update', () => {})
+      if (typeof disposeBotsUpdateReceive === 'function') disposeBotsUpdateReceive()
+      else receive('onebot-webqq/bots/update', () => {})
       resetClientEntryState()
     }
   })

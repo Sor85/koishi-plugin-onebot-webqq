@@ -229,14 +229,18 @@
             <span>{{ getThinkingMessage(index)?.thinking.usage?.outputTokens }}</span>
           </span>
           <span>{{ getThinkingDurationText(index) }}</span>
-          <svg class="onebot-webqq-webqq__thinking-chevron" viewBox="0 0 16 16" aria-hidden="true">
+          <svg :class="['onebot-webqq-webqq__thinking-chevron', { 'is-expanded': isThinkingMessageExpanded(index) }]" viewBox="0 0 16 16" aria-hidden="true">
             <path d="M6 3.5 10.5 8 6 12.5"></path>
           </svg>
         </button>
-        <div
-          v-if="isThinkingMessageExpanded(index)"
-          class="onebot-webqq-webqq__thinking-content"
-        >{{ getThinkingMessage(index)?.thinking.content }}</div>
+        <Transition name="onebot-webqq-webqq-thinking" @before-leave="prepareThinkingPanelLeave">
+          <div
+            v-if="isThinkingMessageExpanded(index)"
+            class="onebot-webqq-webqq__thinking-panel"
+          >
+            <div class="onebot-webqq-webqq__thinking-content">{{ getThinkingMessage(index)?.thinking.content }}</div>
+          </div>
+        </Transition>
       </div>
     </template>
   </template>
@@ -244,7 +248,7 @@
 
 <script lang="ts" setup>
 import { withProxy } from '@koishijs/client'
-import { onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
+import { nextTick, onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
 import WebQQMessageReactions from './WebQQMessageReactions.vue'
 import type { WebQQChatStyle, WebQQMessage } from '../state'
 import {
@@ -299,6 +303,8 @@ const transcribingRecordKeys = ref<Record<string, boolean>>({})
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
 let textBubbleResizeObserver: ResizeObserver | undefined
 let fitTextBubblesFrame: number | undefined
+let thinkingMoveFrame: number | undefined
+let thinkingMoveCleanupTimer: ReturnType<typeof setTimeout> | undefined
 type TemplateRefValue = Element | ComponentPublicInstance | null
 const webQQForwardPreviewLimit = 4
 
@@ -319,6 +325,8 @@ onBeforeUpdate(() => {
 onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
   if (fitTextBubblesFrame != null) cancelAnimationFrame(fitTextBubblesFrame)
+  if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
+  if (thinkingMoveCleanupTimer != null) clearTimeout(thinkingMoveCleanupTimer)
   for (const audio of recordAudioRefs.values()) audio.pause()
   bubbleElementRefs.clear()
   textBubbleResizeObserver?.disconnect()
@@ -427,6 +435,59 @@ function getThinkingDurationText(index: number) {
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
 }
 
+function readMessageRowRects() {
+  const rects = new Map<string, DOMRect>()
+  for (const [key, element] of messageElementRefs) rects.set(key, element.getBoundingClientRect())
+  return rects
+}
+
+function animateMovedMessageRows(previousRects: Map<string, DOMRect>) {
+  const movedElements: HTMLElement[] = []
+  for (const [key, element] of messageElementRefs) {
+    const previous = previousRects.get(key)
+    if (!previous) continue
+    const current = element.getBoundingClientRect()
+    const deltaY = previous.top - current.top
+    if (Math.abs(deltaY) < 0.5) continue
+    element.style.transition = 'none'
+    element.style.transform = `translateY(${deltaY}px)`
+    element.style.willChange = 'transform'
+    movedElements.push(element)
+  }
+  if (!movedElements.length) return
+  if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
+  if (thinkingMoveCleanupTimer != null) clearTimeout(thinkingMoveCleanupTimer)
+  // 已思考面板会一次性改变文档流高度；先把受影响消息钉回旧位置并强制一次布局，避免浏览器把位移和回弹合成同一帧而直接闪到终点。
+  void movedElements[0].getBoundingClientRect()
+  thinkingMoveFrame = requestAnimationFrame(() => {
+    thinkingMoveFrame = undefined
+    for (const element of movedElements) {
+      element.style.transition = 'transform 0.16s ease'
+      element.style.transform = ''
+    }
+    thinkingMoveCleanupTimer = setTimeout(() => {
+      thinkingMoveCleanupTimer = undefined
+      for (const element of movedElements) {
+        element.style.transition = ''
+        element.style.transform = ''
+        element.style.willChange = ''
+      }
+    }, 200)
+  })
+}
+
+function prepareThinkingPanelLeave(element: Element) {
+  if (!(element instanceof HTMLElement) || !element.parentElement) return
+  const parentRect = element.parentElement.getBoundingClientRect()
+  const panelRect = element.getBoundingClientRect()
+  // Vue 离场节点默认会继续占住文档流，导致后续消息只能等已思考淡出结束后才上移；这里把离场面板冻结在原视觉位置，让消息 FLIP 和面板离场同步开始。
+  element.style.position = 'absolute'
+  element.style.top = `${panelRect.top - parentRect.top}px`
+  element.style.right = `${parentRect.right - panelRect.right}px`
+  element.style.width = `${panelRect.width}px`
+  element.style.marginTop = '0'
+}
+
 function formatRecordDuration(duration: number) {
   const totalSeconds = Math.max(0, Math.round(duration))
   const minutes = Math.floor(totalSeconds / 60)
@@ -511,8 +572,12 @@ async function transcribeRecordMessage(message: WebQQMessage, element: WebQQMess
   }
 }
 
-function toggleThinking(index: number) {
+async function toggleThinking(index: number) {
   const message = getThinkingMessage(index)
-  if (message) emit('toggle-thinking', message)
+  if (!message) return
+  const previousRects = readMessageRowRects()
+  emit('toggle-thinking', message)
+  await nextTick()
+  animateMovedMessageRows(previousRects)
 }
 </script>

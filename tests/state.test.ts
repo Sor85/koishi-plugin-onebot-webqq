@@ -6,6 +6,7 @@ import {
   recordModelUsage,
   recordConversationActivity,
   recordIncomingMessage,
+  setAvailableBots,
   recordOutgoingMessage,
 } from '../src/state'
 
@@ -80,6 +81,60 @@ describe('chat capsule state', () => {
     expect(state.snapshot()?.bot.avatar).toBeUndefined()
     expect(state.snapshot()?.conversation.channelName).toBe('channel-1')
     expect(state.snapshot()?.conversation.userName).toBeUndefined()
+  })
+
+  it('exposes available onebot robots on snapshots', () => {
+    const state = createCapsuleState()
+
+    setAvailableBots(state, [
+      {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        name: 'Bot A',
+        avatar: 'https://example.com/a.png',
+      },
+      {
+        platform: 'onebot',
+        selfId: '10001',
+        status: 1,
+        name: 'Bot B',
+        avatar: 'https://example.com/b.png',
+      },
+    ])
+    recordIncomingMessage(state, {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        name: 'Bot A',
+        avatar: 'https://example.com/a.png',
+      },
+      channel: {
+        id: '20000',
+      },
+      user: {
+        id: '30000',
+      },
+      timestamp: 1710000000001,
+    })
+
+    expect(state.snapshot()?.bots).toEqual([
+      {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        name: 'Bot A',
+        avatar: 'https://example.com/a.png',
+      },
+      {
+        platform: 'onebot',
+        selfId: '10001',
+        status: 1,
+        name: 'Bot B',
+        avatar: 'https://example.com/b.png',
+      },
+    ])
   })
 
   it('tracks sent and received counters from plugin startup', () => {

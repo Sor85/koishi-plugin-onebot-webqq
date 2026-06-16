@@ -3,6 +3,19 @@ export type WebQQChatType = 'friend' | 'group'
 // WebQQ 只读面板支持的 OneBot 实现协议。
 export type WebQQProtocol = 'napcat' | 'llbot'
 
+export interface OneBotRobotProfile {
+  platform: string
+  selfId: string
+  status?: number
+  name: string
+  avatar?: string
+}
+
+export interface OneBotRobotState {
+  bots: OneBotRobotProfile[]
+  selectedSelfId?: string
+}
+
 // WebQQ 只读面板使用的好友数据。
 export interface WebQQFriend {
   userId: string
@@ -191,6 +204,8 @@ export interface WebQQRecordTranscriptionQuery {
 
 export interface OneBotWebQQOptions {
   selfId?: string
+  selfIds?: string[]
+  mockBotCount?: number
   protocol?: WebQQProtocol
   imageUrlResolver?: (file: string) => string
 }

@@ -144,7 +144,7 @@ import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
 import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
-import { capsule, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from './state'
+import { availableBots, capsule, hideWebQQGroupLevel, selectedBotSelfId, showWebQQAffinity, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from './state'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './state'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
@@ -172,6 +172,7 @@ import { vWebqqScrollbar } from './utils/webqq-scrollbar'
 type RecentItem = WebQQRecentItem
 
 const props = defineProps<{ visible: boolean }>()
+const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
 
 const {
   conversationSummaries,
@@ -183,7 +184,8 @@ const {
   getUnreadCount,
   increaseUnreadCount,
   clearUnreadCount,
-} = useWebQQConversationState(webQQStorageBackend)
+  resetConversationState,
+} = useWebQQConversationState(webQQStorageBackend, webQQStorageScope)
 const {
   activeTab,
   searchQuery,
@@ -201,6 +203,7 @@ const {
   selectFriend: selectWebQQFriend,
   selectGroup: selectWebQQGroup,
   selectRecent: selectWebQQRecent,
+  resetContacts,
 } = useWebQQContacts(conversationSummaries)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
@@ -209,11 +212,11 @@ const errorText = ref('')
 const imagePreviewUrl = ref('')
 
 async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
-  return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value)
+  return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value, webQQStorageScope.value)
 }
 
 async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[]) {
-  await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value)
+  await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value, webQQStorageScope.value)
 }
 
 function openImagePreview(url: string) {
@@ -346,6 +349,16 @@ async function loadContacts() {
   }
 }
 
+async function reloadWebQQForSelectedBot() {
+  resetContacts()
+  resetConversationState()
+  messages.value = []
+  groupInfoOpen.value = false
+  groupInfo.value = { announcements: [], members: [] }
+  await loadRemoteWebQQStoredState()
+  await loadContacts()
+}
+
 function closeNoticeMenu() {
   noticeOpen.value = false
   closeForwardDialog()
@@ -411,6 +424,11 @@ watch(() => currentChat.value?.peerId, () => {
     return
   }
   if (groupInfoOpen.value) loadGroupInfo()
+})
+
+watch(selectedBotSelfId, (selfId, oldSelfId) => {
+  if (!selfId || selfId === oldSelfId) return
+  void reloadWebQQForSelectedBot()
 })
 
 onMounted(async () => {

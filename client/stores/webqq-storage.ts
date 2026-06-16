@@ -4,6 +4,10 @@ import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from '../webqq-mes
 
 const webQQStorageKey = 'onebot-webqq:webqq:v1'
 
+function getScopedStorageKey(key: string, scopeId?: string) {
+  return scopeId ? `${key}:${scopeId}` : key
+}
+
 function readStoredConversationSummaries(value: unknown) {
   const summaries: Record<string, ConversationSummary> = {}
   if (!value || typeof value !== 'object') return summaries
@@ -40,12 +44,12 @@ function normalizeWebQQStoredState(value: unknown): WebQQStoredState {
   }
 }
 
-export function loadBrowserWebQQStoredState(storageBackend: WebQQStorageBackend): WebQQStoredState {
+export function loadBrowserWebQQStoredState(storageBackend: WebQQStorageBackend, scopeId?: string): WebQQStoredState {
   const empty = createEmptyWebQQStoredState()
   if (storageBackend !== 'browser') return empty
   if (typeof localStorage === 'undefined') return empty
   try {
-    const raw = localStorage.getItem(webQQStorageKey)
+    const raw = localStorage.getItem(getScopedStorageKey(webQQStorageKey, scopeId))
     if (!raw) return empty
     const data = JSON.parse(raw)
     if (!data || typeof data !== 'object') return empty
@@ -55,14 +59,14 @@ export function loadBrowserWebQQStoredState(storageBackend: WebQQStorageBackend)
   }
 }
 
-export function persistWebQQStoredState(storageBackend: WebQQStorageBackend, state: WebQQStoredState) {
+export function persistWebQQStoredState(storageBackend: WebQQStorageBackend, state: WebQQStoredState, scopeId?: string) {
   if (storageBackend !== 'browser') {
     send('onebot-webqq/webqq/storage/save', state).catch(() => {})
     return
   }
   if (typeof localStorage === 'undefined') return
   try {
-    localStorage.setItem(webQQStorageKey, JSON.stringify(state))
+    localStorage.setItem(getScopedStorageKey(webQQStorageKey, scopeId), JSON.stringify(state))
   } catch {}
 }
 
@@ -80,7 +84,7 @@ function normalizeCachedWebQQMessages(value: unknown) {
   return value.filter((message) => message && typeof message === 'object') as WebQQMessage[]
 }
 
-export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string, storageBackend: WebQQStorageBackend) {
+export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string, storageBackend: WebQQStorageBackend, scopeId?: string) {
   if (storageBackend === 'koishi') {
     try {
       return normalizeCachedWebQQMessages(await send('onebot-webqq/webqq/messages/cache/load', { type, peerId }))
@@ -88,14 +92,14 @@ export async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: 
       return []
     }
   }
-  return loadBrowserWebQQMessages(type, peerId)
+  return loadBrowserWebQQMessages(type, peerId, scopeId)
 }
 
-export async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[], storageBackend: WebQQStorageBackend, messageCacheLimit: number) {
+export async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[], storageBackend: WebQQStorageBackend, messageCacheLimit: number, scopeId?: string) {
   const cachedMessages = messages.slice(-messageCacheLimit)
   if (storageBackend === 'koishi') {
     await send('onebot-webqq/webqq/messages/cache/save', { type, peerId, messages: cachedMessages }).catch(() => {})
     return
   }
-  await saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit)
+  await saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit, scopeId)
 }

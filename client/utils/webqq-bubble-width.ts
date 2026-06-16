@@ -7,11 +7,42 @@ function readPixelValue(value: string) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function getRenderedLineWidths(node: HTMLElement) {
+function readRectValue(value: number) {
+  return Number.isFinite(value) ? value : 0
+}
+
+type RenderedTextRect = {
+  top: number
+  left: number
+  right: number
+  width: number
+}
+
+type RenderedLineRect = {
+  top: number
+  left: number
+  right: number
+}
+
+const lineTopTolerance = 2
+
+function getRenderedTextRects(node: HTMLElement): RenderedTextRect[] {
   const range = document.createRange()
   range.selectNodeContents(node)
   try {
-    return [...range.getClientRects()].map((rect) => rect.width).filter((width) => width > 0)
+    return [...range.getClientRects()]
+      .map((rect) => {
+        const width = readRectValue(rect.width)
+        const left = readRectValue(rect.left)
+        const right = readRectValue(rect.right) || left + width
+        return {
+          top: readRectValue(rect.top),
+          left,
+          right,
+          width,
+        }
+      })
+      .filter((rect) => rect.width > 0)
   } finally {
     range.detach()
   }
@@ -36,8 +67,28 @@ function setBubbleContentWidth(bubble: HTMLElement, contentWidth: number, horizo
   bubble.style.width = `${Math.ceil(contentWidth + horizontalInset)}px`
 }
 
+function findMatchingLine(lines: RenderedLineRect[], top: number) {
+  return lines.find((line) => Math.abs(line.top - top) <= lineTopTolerance)
+}
+
+function mergeRenderedLineRects(rects: RenderedTextRect[]) {
+  const lines: RenderedLineRect[] = []
+  for (const rect of rects) {
+    const line = findMatchingLine(lines, rect.top)
+    if (line) {
+      line.left = Math.min(line.left, rect.left)
+      line.right = Math.max(line.right, rect.right)
+      continue
+    }
+    lines.push({ top: rect.top, left: rect.left, right: rect.right })
+  }
+  return lines.map((line) => Math.max(0, line.right - line.left))
+}
+
 function measureInlineLineWidths(inlineRuns: HTMLElement[]) {
-  return inlineRuns.flatMap(getRenderedLineWidths)
+  // Range 会在 @ 提及或相邻行内节点边界把同一视觉行拆成多个 rect；
+  // 先按行合并可以避免只取到最长片段，导致本应一行的消息被压窄换行。
+  return mergeRenderedLineRects(inlineRuns.flatMap(getRenderedTextRects))
 }
 
 export function fitWebQQBubbleToInlineLines(bubble: HTMLElement) {

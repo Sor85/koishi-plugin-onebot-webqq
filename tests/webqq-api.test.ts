@@ -8,7 +8,9 @@ vi.mock('@koishijs/client', () => ({
   send: vi.fn(async () => sendState.response),
 }))
 
+const { send } = await import('@koishijs/client')
 const {
+  selectWebQQBot,
   requestWebQQContacts,
   requestWebQQGroupInfo,
   requestWebQQMessages,
@@ -56,5 +58,11 @@ describe('webqq client api', () => {
 
     sendState.response = { text: 'not a string' }
     await expect(requestWebQQRecordTranscription('message-1')).resolves.toBe('')
+  })
+
+  it('requests backend onebot robot switching', async () => {
+    await selectWebQQBot('10001')
+
+    expect(send).toHaveBeenCalledWith('onebot-webqq/webqq/bot/select', { selfId: '10001' })
   })
 })

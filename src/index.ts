@@ -13,6 +13,7 @@ import {
   recordIncomingMessage,
   recordModelUsage,
   recordOutgoingMessage,
+  setAvailableBots,
 } from './state'
 import {
   createOneBotWebQQService,
@@ -27,6 +28,7 @@ import {
   WebQQRecallPayload,
   WebQQRecordTranscriptionQuery,
 } from './onebot'
+import type { OneBotRobotState } from './onebot'
 import { registerWebQQReactionInterceptor } from './onebot/raw-event'
 import {
   chatCapsuleStorageTable,
@@ -67,6 +69,7 @@ export const inject = {
 declare module '@koishijs/console' {
   interface Events {
     'onebot-webqq/update'(data: CapsuleSnapshot | undefined): void
+    'onebot-webqq/bots/update'(data: OneBotRobotState): void
     'onebot-webqq/webqq/message'(data: WebQQLiveMessage): void
     'onebot-webqq/webqq/recall'(data: WebQQRecallPayload): void
     'onebot-webqq/webqq/contacts'(): Promise<WebQQContacts>
@@ -75,6 +78,7 @@ declare module '@koishijs/console' {
     'onebot-webqq/webqq/record/transcribe'(query: WebQQRecordTranscriptionQuery): Promise<string>
     'onebot-webqq/webqq/notices'(): Promise<WebQQNotice[]>
     'onebot-webqq/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>
+    'onebot-webqq/webqq/bot/select'(input: { selfId: string }): Promise<OneBotRobotState>
     'onebot-webqq/webqq/storage/load'(): Promise<WebQQStoredState>
     'onebot-webqq/webqq/storage/save'(state: WebQQStoredState): Promise<void>
     'onebot-webqq/webqq/messages/cache/load'(query: WebQQMessageCacheQuery): Promise<WebQQMessage[]>
@@ -94,25 +98,71 @@ function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
   return visibleUsageSources.has(usage.source || '')
 }
 
+function normalizeOneBotSelfId(value?: string) {
+  const selfId = value?.trim()
+  return selfId || undefined
+}
+
+function getConfiguredOneBotSelfIds(config: PluginConfig) {
+  return Array.from(new Set([
+    ...(config.onebotSelfIds ?? []).map(normalizeOneBotSelfId),
+  ].filter((selfId): selfId is string => !!selfId)))
+}
+
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const state = createCapsuleState()
   const historyLimit = config.historyLimit ?? 100
   const debug = !!config.debug
   const logger = debug ? ctx.logger?.('onebot-webqq') : undefined
+  const configuredOneBotSelfIds = getConfiguredOneBotSelfIds(config)
+  const useRuntimeOneBotBots = config.onebotUseRuntimeBots ?? true
+  const initialOneBotSelfId = !useRuntimeOneBotBots ? configuredOneBotSelfIds[0] : undefined
   const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger, {
     cacheEnabled: config.webQQImageCacheEnabled ?? true,
     cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024,
     cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024,
   })
   const webqq = createOneBotWebQQService(ctx, {
-    selfId: config.onebotSelfId,
+    selfId: initialOneBotSelfId,
+    selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
+    mockBotCount: config.onebotMockBotCount,
     protocol: config.onebotProtocol,
     imageUrlResolver,
   })
   const consoleAuthOptions = { authority: 1 }
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
-  const broadcast = () => ctx.console?.broadcast('onebot-webqq/update', state.snapshot(), consoleAuthOptions)
+  const broadcast = () => {
+    readBotState()
+    ctx.console?.broadcast('onebot-webqq/update', state.snapshot(), consoleAuthOptions)
+  }
+  const readBotState = (): OneBotRobotState => {
+    const bots = webqq.listBots()
+    const currentSelfId = webqq.getSelectedSelfId()
+    const selectedSelfId = currentSelfId && bots.some((bot) => bot.selfId === currentSelfId)
+      ? currentSelfId
+      : bots[0]?.selfId
+    if (selectedSelfId && selectedSelfId !== currentSelfId) {
+      try {
+        webqq.selectSelfId(selectedSelfId)
+      } catch (error) {
+        logger?.info('select default onebot failed %s', error instanceof Error ? error.message : String(error))
+      }
+    }
+    setAvailableBots(state, bots)
+    return {
+      bots,
+      ...(selectedSelfId ? { selectedSelfId } : {}),
+    }
+  }
+  const broadcastBotState = (botState = readBotState()) => {
+    ctx.console?.broadcast('onebot-webqq/bots/update', botState, consoleAuthOptions)
+    broadcast()
+  }
+  const getStorageScope = () => {
+    const botState = readBotState()
+    return botState.bots.length > 1 ? botState.selectedSelfId : undefined
+  }
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
   const readScheduleActivity = async (session?: Session) => {
@@ -175,6 +225,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     logger,
     getThinkingDurationMs: () => getCurrentThinkingDurationMs(state),
     getThinkingUsage: () => state.snapshot()?.conversation.usage,
+    getStorageScope,
   })
 
   ctx.on('message', async (session) => {
@@ -254,7 +305,13 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   }, (inner) => {
     const console = inner.console
     if (!console) return
-    registerConsoleEntry(console, state, config, { debug, logSnapshot })
+    registerConsoleEntry(console, state, config, { debug, logSnapshot, readBotState })
+    console.addListener('onebot-webqq/webqq/bot/select', async (input) => {
+      webqq.selectSelfId(input.selfId)
+      const botState = readBotState()
+      broadcastBotState(botState)
+      return botState
+    }, consoleAuthOptions)
     registerWebQQConsoleListeners(console, inner, {
       config,
       webqq,
@@ -263,6 +320,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
       friendRequestNotices,
       groupLeaveNotices,
       consoleAuthOptions,
+      getStorageScope,
       logger,
     })
   })
