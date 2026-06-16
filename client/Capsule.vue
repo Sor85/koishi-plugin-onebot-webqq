@@ -13,8 +13,8 @@
           :style="avatarCapsuleStyle"
           @pointerenter="expandBotStack"
           @pointerleave="collapseBotStack"
-          @focusin="expandBotStack"
-          @focusout="collapseBotStack"
+          @focusin="focusBotStack"
+          @focusout="blurBotStack"
         >
           <div
             v-if="hasMultipleBots"
@@ -139,6 +139,12 @@ const titleRef = ref<HTMLElement>()
 const activityRef = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
 const botStackExpanded = ref(false)
+const botStackHovered = ref(false)
+const botStackFocused = ref(false)
+// Chrome 会在 click 时聚焦 <button>，切换 bot 时 Vue 把这个聚焦节点移到最右会触发一次
+// relatedTarget 为 null 的 focusout。切换期间挂起折叠，避免它取消正在进行的切换 FLIP。
+let suppressStackCollapse = false
+let suppressStackCollapseTimer: ReturnType<typeof setTimeout> | undefined
 const titleOverflow = ref(false)
 const activityOverflow = ref(false)
 const capsuleTooltipTarget = ref<'title' | 'activity'>()
@@ -293,15 +299,36 @@ function setBotStackExpanded(expanded: boolean) {
   void animateBotStackLayout(layout)
 }
 
-function expandBotStack() {
-  setBotStackExpanded(true)
+// 展开态由「指针悬停」或「焦点驻留」任一为真推导，而不是直接听 pointerleave/focusout。
+// Chrome 点击 <button> 会聚焦它，随后 selectBot 把这枚已聚焦按钮在 keyed v-for 里挪到最右，
+// 触发一次 relatedTarget 为 null 的 focusout——旧逻辑会据此立刻折叠，打断切换 FLIP 并卡死后续折叠。
+// 改成显式跟踪 hover/focus，并在 selectBot 重排期间挂起折叠，避免这次伪 focusout 误触发。
+function syncBotStackExpanded() {
+  if (suppressStackCollapse) return
+  setBotStackExpanded(botStackHovered.value || botStackFocused.value)
 }
 
-function collapseBotStack(event?: FocusEvent | PointerEvent) {
+function expandBotStack() {
+  botStackHovered.value = true
+  syncBotStackExpanded()
+}
+
+function collapseBotStack() {
+  botStackHovered.value = false
+  syncBotStackExpanded()
+}
+
+function focusBotStack() {
+  botStackFocused.value = true
+  syncBotStackExpanded()
+}
+
+function blurBotStack(event?: FocusEvent) {
   const nextTarget = event?.relatedTarget
   const currentTarget = event?.currentTarget
-  if (nextTarget instanceof Node && currentTarget instanceof Node && currentTarget.contains(nextTarget)) return
-  setBotStackExpanded(false)
+  // 焦点仍落在胶囊内部（Tab 切换头像）时不算离开。
+  botStackFocused.value = nextTarget instanceof Node && currentTarget instanceof Node && currentTarget.contains(nextTarget)
+  syncBotStackExpanded()
 }
 
 function getCapsuleUnreadText(count: number) {
@@ -416,13 +443,27 @@ async function selectBot(selfId: string) {
   try {
     const botState = await selectWebQQBot(selfId)
     const layout = recordBotStackLayout()
+    // 挂起折叠后再重排：Vue 移动这枚（Chrome 已聚焦的）按钮触发的伪 focusout 不会打断切换 FLIP。
+    suppressStackCollapse = true
+    if (suppressStackCollapseTimer) clearTimeout(suppressStackCollapseTimer)
     runtimeBots.value = botState.bots
     selectedBotSelfId.value = botState.selectedSelfId || selfId
     webqqOpen.value = true
     rememberWebQQAvatarGuide()
     hideWebQQAvatarGuide()
     await animateBotStackLayout(layout)
-  } catch {}
+    // 切换 FLIP 跑完再解除挂起，并按真实 hover/focus 收敛——指针已离开则此时自然折叠。
+    // 重排途中那次被挂起的 focusout 可能让 botStackFocused 留在过期的 false，这里按
+    // document.activeElement 真实归属重新判定，避免键盘切换后焦点仍在胶囊内却误折叠。
+    suppressStackCollapseTimer = setTimeout(() => {
+      suppressStackCollapse = false
+      suppressStackCollapseTimer = undefined
+      botStackFocused.value = !!capsuleHost.value?.contains(document.activeElement)
+      syncBotStackExpanded()
+    }, 280)
+  } catch {
+    suppressStackCollapse = false
+  }
 }
 
 onMounted(() => {
@@ -438,6 +479,7 @@ onBeforeUnmount(() => {
   botStackLayout = undefined
   capsuleTextResizeObserver?.disconnect()
   capsuleTextResizeObserver = undefined
+  if (suppressStackCollapseTimer) clearTimeout(suppressStackCollapseTimer)
   hideWebQQAvatarGuide()
 })
 
