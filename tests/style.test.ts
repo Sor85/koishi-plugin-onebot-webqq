@@ -990,8 +990,29 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('cursor: pointer')
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('border: 0')
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('background: transparent')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-panel')).toContain('display: grid')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-panel')).toContain('grid-template-rows: 1fr')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-content')).toContain('overflow: hidden')
     expect(ruleBody('.onebot-webqq-webqq__thinking-content')).toContain('white-space: pre-wrap')
     expect(ruleBody('.onebot-webqq-webqq__thinking-content')).toContain('overflow-wrap: anywhere')
+  })
+
+  it('animates completed WebQQ thinking disclosure expansion without ignoring reduced motion', () => {
+    const transitionBody = ruleBody(`.onebot-webqq-webqq-thinking-enter-active,
+.onebot-webqq-webqq-thinking-leave-active`)
+    const hiddenBody = ruleBody(`.onebot-webqq-webqq-thinking-enter-from,
+.onebot-webqq-webqq-thinking-leave-to`)
+    const reducedMotionBody = ruleBody('@media (prefers-reduced-motion: reduce)')
+
+    expect(transitionBody).toContain('transition: grid-template-rows')
+    expect(transitionBody).toContain('opacity')
+    expect(transitionBody).toContain('transform')
+    expect(hiddenBody).toContain('grid-template-rows: 0fr')
+    expect(hiddenBody).toContain('opacity: 0')
+    expect(hiddenBody).toContain('transform: translateY(-4px)')
+    expect(reducedMotionBody).toContain('.onebot-webqq-webqq-thinking-enter-active')
+    expect(reducedMotionBody).toContain('.onebot-webqq-webqq-thinking-leave-active')
+    expect(reducedMotionBody).toContain('transition: none')
   })
 
   it('reveals completed WebQQ thinking usage only while the thinking toggle is hovered or focused', () => {

@@ -233,10 +233,14 @@
             <path d="M6 3.5 10.5 8 6 12.5"></path>
           </svg>
         </button>
-        <div
-          v-if="isThinkingMessageExpanded(index)"
-          class="onebot-webqq-webqq__thinking-content"
-        >{{ getThinkingMessage(index)?.thinking.content }}</div>
+        <Transition name="onebot-webqq-webqq-thinking">
+          <div
+            v-if="isThinkingMessageExpanded(index)"
+            class="onebot-webqq-webqq__thinking-panel"
+          >
+            <div class="onebot-webqq-webqq__thinking-content">{{ getThinkingMessage(index)?.thinking.content }}</div>
+          </div>
+        </Transition>
       </div>
     </template>
   </template>

@@ -79,6 +79,11 @@
   .webqq-scroll-bottom-leave-active {
     transition: none;
   }
+
+  .onebot-webqq-webqq-thinking-enter-active,
+  .onebot-webqq-webqq-thinking-leave-active {
+    transition: none;
+  }
 }
 
 @media screen and (max-width: 768px) {

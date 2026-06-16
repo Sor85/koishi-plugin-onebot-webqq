@@ -902,6 +902,8 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('@click="toggleThinking(index)"')
     expect(webqqView).toContain('@toggle-thinking="toggleThinking"')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
+    expect(webqqMessageListView).toContain('<Transition name="onebot-webqq-webqq-thinking">')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-panel"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-content"')
     expect(webqqMessageListView).toContain('{{ getThinkingMessage(index)?.thinking.content }}')
   })
@@ -1147,6 +1149,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('getThinkingMessage(index)')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
     expect(webqqMessageListView).toContain('toggleThinking(index)')
+    expect(webqqMessageListView).toContain('<Transition name="onebot-webqq-webqq-thinking">')
   })
 
   it('renders WebQQ recall events and recalled message marks', () => {

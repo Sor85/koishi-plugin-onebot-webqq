@@ -588,9 +588,15 @@
   stroke-width: 1.8;
 }
 
-.onebot-webqq-webqq__thinking-content {
+.onebot-webqq-webqq__thinking-panel {
   max-width: min(360px, 100%);
   margin-top: 4px;
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.onebot-webqq-webqq__thinking-content {
+  min-height: 0;
   padding: 8px 10px;
   border-left: 2px solid rgba(148, 163, 184, 0.54);
   border-radius: 6px;
@@ -598,9 +604,23 @@
   background: rgba(255, 255, 255, 0.72);
   font-size: 12px;
   line-height: 18px;
+  overflow: hidden;
   overflow-wrap: anywhere;
   text-align: left;
   white-space: pre-wrap;
+}
+
+.onebot-webqq-webqq-thinking-enter-active,
+.onebot-webqq-webqq-thinking-leave-active {
+  transition: grid-template-rows 0.18s ease, opacity 0.16s ease, transform 0.16s ease, margin-top 0.16s ease;
+}
+
+.onebot-webqq-webqq-thinking-enter-from,
+.onebot-webqq-webqq-thinking-leave-to {
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .onebot-webqq-webqq__sender-badge {
