@@ -597,8 +597,7 @@
 .onebot-webqq-webqq__thinking-panel {
   max-width: min(360px, 100%);
   margin-top: 4px;
-  display: grid;
-  grid-template-rows: 1fr;
+  transform-origin: top right;
 }
 
 .onebot-webqq-webqq__thinking-content {
@@ -618,15 +617,13 @@
 
 .onebot-webqq-webqq-thinking-enter-active,
 .onebot-webqq-webqq-thinking-leave-active {
-  transition: grid-template-rows 0.18s ease, opacity 0.16s ease, transform 0.16s ease, margin-top 0.16s ease;
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
 .onebot-webqq-webqq-thinking-enter-from,
 .onebot-webqq-webqq-thinking-leave-to {
-  grid-template-rows: 0fr;
-  margin-top: 0;
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-4px) scaleY(0.98);
 }
 
 .onebot-webqq-webqq__sender-badge {
