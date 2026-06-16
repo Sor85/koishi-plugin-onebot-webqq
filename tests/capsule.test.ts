@@ -112,6 +112,10 @@ describe('chat capsule view', () => {
       capsuleView.includes("localStorage.setItem(webQQAvatarGuideStorageKey, 'seen')")
         ? ''
         : '头像图形引导没有写入已展示状态',
+      capsuleView.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webqqOpen')
+        && !capsuleView.includes('if (hasMultipleBots.value) return')
+        ? ''
+        : '多机器人场景点击胶囊非头像区域时，应在当前 bot 头像上显示引导光圈',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -251,15 +255,11 @@ describe('chat capsule view', () => {
         && !capsuleStyle.includes('&.is-active .onebot-webqq__avatar')
         ? ''
         : '多机器人状态点应只显示在当前 bot 头像上，且 active 头像不应有额外强调样式',
-      !multiBotTemplate.includes('onebot-webqq-avatar-guide')
-        && !multiBotTemplate.includes('onebot-webqq__avatar-guide')
-        && capsuleView.includes('if (hasMultipleBots.value) return')
-        && capsuleView.includes('key="multi-bot-stack"')
-        && capsuleView.includes('key="single-bot-avatar"')
-        && capsuleView.includes('watch(hasMultipleBots, (multiple) => {')
-        && capsuleView.includes('if (multiple) hideWebQQAvatarGuide()')
+      multiBotTemplate.includes('onebot-webqq-avatar-guide')
+        && multiBotTemplate.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webqqOpen')
+        && !capsuleView.includes('if (hasMultipleBots.value) return')
         ? ''
-        : '多 bot 折叠态当前头像不应渲染或触发头像引导光圈，避免出现波纹扩散效果',
+        : '多 bot 折叠态当前头像应能渲染正文点击触发的头像引导光圈',
       capsuleView.includes("['onebot-webqq__bot-switch'")
         ? ''
         : '缺少机器人头像切换按钮',

@@ -18,7 +18,6 @@
         >
           <div
             v-if="hasMultipleBots"
-            key="multi-bot-stack"
             :class="['onebot-webqq__bot-stack', { 'is-expanded': botStackExpanded }]"
             :style="botStackStyle"
           >
@@ -40,6 +39,15 @@
                 <k-icon v-else name="robot" />
                 <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
                 <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
+                <Transition name="onebot-webqq-avatar-guide">
+                  <span
+                    v-if="bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webqqOpen"
+                    class="onebot-webqq__avatar-guide"
+                    aria-hidden="true"
+                  >
+                    <span class="onebot-webqq__avatar-guide-ring"></span>
+                  </span>
+                </Transition>
               </span>
             </button>
             <span
@@ -54,7 +62,6 @@
           </div>
           <button
             v-else
-            key="single-bot-avatar"
             class="onebot-webqq__avatar-button"
             type="button"
             :aria-label="capsuleButtonLabel"
@@ -363,7 +370,6 @@ function hideWebQQAvatarGuide() {
 
 function showWebQQAvatarGuide(remember = false) {
   if (webqqOpen.value) return
-  if (hasMultipleBots.value) return
   if (remember) rememberWebQQAvatarGuide()
   webQQAvatarGuideVisible.value = true
   if (webQQAvatarGuideTimer) clearTimeout(webQQAvatarGuideTimer)
@@ -428,11 +434,6 @@ watch(displayBotProfile, (bot) => {
 
 watch([displayBotName, displayActivityText, botStackExpanded], () => {
   void nextTick(refreshCapsuleTextOverflow)
-}, { immediate: true })
-
-watch(hasMultipleBots, (multiple) => {
-  // 头像引导只属于单机器人路径；运行时切到多机器人时清掉状态，避免离场过渡残留到折叠态当前头像。
-  if (multiple) hideWebQQAvatarGuide()
 }, { immediate: true })
 
 </script>
