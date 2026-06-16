@@ -254,6 +254,10 @@ describe('chat capsule view', () => {
       !multiBotTemplate.includes('onebot-webqq-avatar-guide')
         && !multiBotTemplate.includes('onebot-webqq__avatar-guide')
         && capsuleView.includes('if (hasMultipleBots.value) return')
+        && capsuleView.includes('key="multi-bot-stack"')
+        && capsuleView.includes('key="single-bot-avatar"')
+        && capsuleView.includes('watch(hasMultipleBots, (multiple) => {')
+        && capsuleView.includes('if (multiple) hideWebQQAvatarGuide()')
         ? ''
         : '多 bot 折叠态当前头像不应渲染或触发头像引导光圈，避免出现波纹扩散效果',
       capsuleView.includes("['onebot-webqq__bot-switch'")
