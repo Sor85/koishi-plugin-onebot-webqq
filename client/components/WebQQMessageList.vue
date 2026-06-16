@@ -229,7 +229,7 @@
             <span>{{ getThinkingMessage(index)?.thinking.usage?.outputTokens }}</span>
           </span>
           <span>{{ getThinkingDurationText(index) }}</span>
-          <svg class="onebot-webqq-webqq__thinking-chevron" viewBox="0 0 16 16" aria-hidden="true">
+          <svg :class="['onebot-webqq-webqq__thinking-chevron', { 'is-expanded': isThinkingMessageExpanded(index) }]" viewBox="0 0 16 16" aria-hidden="true">
             <path d="M6 3.5 10.5 8 6 12.5"></path>
           </svg>
         </button>

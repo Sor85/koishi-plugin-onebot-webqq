@@ -582,10 +582,16 @@
   width: 13px;
   height: 13px;
   fill: none;
+  flex-shrink: 0;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
+  transition: transform 0.16s ease;
+}
+
+.onebot-webqq-webqq__thinking-chevron.is-expanded {
+  transform: rotate(90deg);
 }
 
 .onebot-webqq-webqq__thinking-panel {

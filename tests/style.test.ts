@@ -990,6 +990,8 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('cursor: pointer')
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('border: 0')
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('background: transparent')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-chevron')).toContain('transition: transform 0.16s ease')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-chevron.is-expanded')).toContain('transform: rotate(90deg)')
     expect(ruleBody('.onebot-webqq-webqq__thinking-panel')).toContain('display: grid')
     expect(ruleBody('.onebot-webqq-webqq__thinking-panel')).toContain('grid-template-rows: 1fr')
     expect(ruleBody('.onebot-webqq-webqq__thinking-content')).toContain('overflow: hidden')
@@ -1012,6 +1014,7 @@ describe('chat capsule styles', () => {
     expect(hiddenBody).toContain('transform: translateY(-4px)')
     expect(reducedMotionBody).toContain('.onebot-webqq-webqq-thinking-enter-active')
     expect(reducedMotionBody).toContain('.onebot-webqq-webqq-thinking-leave-active')
+    expect(reducedMotionBody).toContain('.onebot-webqq-webqq__thinking-chevron')
     expect(reducedMotionBody).toContain('transition: none')
   })
 

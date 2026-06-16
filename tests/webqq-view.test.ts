@@ -902,6 +902,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('@click="toggleThinking(index)"')
     expect(webqqView).toContain('@toggle-thinking="toggleThinking"')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
+    expect(webqqMessageListView).toContain("{ 'is-expanded': isThinkingMessageExpanded(index) }")
     expect(webqqMessageListView).toContain('<Transition name="onebot-webqq-webqq-thinking">')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-panel"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-content"')
@@ -1219,7 +1220,7 @@ describe('webqq observer view', () => {
     const thinkingToggleSource = sourceBetween(
       webqqMessageListView,
       'class="onebot-webqq-webqq__thinking-toggle"',
-      'class="onebot-webqq-webqq__thinking-chevron"',
+      "'onebot-webqq-webqq__thinking-chevron'",
     )
 
     expect(webqqMessageListView).not.toContain("return `输入 ${usage.inputTokens} / 输出 ${usage.outputTokens}`")
