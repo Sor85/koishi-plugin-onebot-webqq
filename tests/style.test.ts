@@ -177,6 +177,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq')).toContain('position: relative')
     expect(ruleBody('.onebot-webqq')).not.toContain('position: fixed')
     expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
+    expect(ruleBody('.onebot-webqq')).not.toContain('max-width: calc(100vw - 32px)')
     expect(ruleBody('.onebot-webqq')).toContain('transition: width 0.18s ease')
     expect(ruleBody('.onebot-webqq.is-bot-stack-expanded')).toContain('width: var(--onebot-webqq-shell-width')
     expect(avatarCapsule).toContain('position: relative')
