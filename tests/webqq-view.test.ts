@@ -907,6 +907,11 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-panel"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-content"')
     expect(webqqMessageListView).toContain('{{ getThinkingMessage(index)?.thinking.content }}')
+    expect(webqqMessageListView).toContain('function readMessageRowRects()')
+    expect(webqqMessageListView).toContain('function animateMovedMessageRows(previousRects: Map<string, DOMRect>)')
+    expect(webqqMessageListView).toContain('const previousRects = readMessageRowRects()')
+    expect(webqqMessageListView).toContain('await nextTick()')
+    expect(webqqMessageListView).toContain('animateMovedMessageRows(previousRects)')
   })
 
   it('keeps WebQQ thinking expansion state inside a composable', () => {

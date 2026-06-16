@@ -248,7 +248,7 @@
 
 <script lang="ts" setup>
 import { withProxy } from '@koishijs/client'
-import { onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
+import { nextTick, onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
 import WebQQMessageReactions from './WebQQMessageReactions.vue'
 import type { WebQQChatStyle, WebQQMessage } from '../state'
 import {
@@ -303,6 +303,7 @@ const transcribingRecordKeys = ref<Record<string, boolean>>({})
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
 let textBubbleResizeObserver: ResizeObserver | undefined
 let fitTextBubblesFrame: number | undefined
+let thinkingMoveFrame: number | undefined
 type TemplateRefValue = Element | ComponentPublicInstance | null
 const webQQForwardPreviewLimit = 4
 
@@ -323,6 +324,7 @@ onBeforeUpdate(() => {
 onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
   if (fitTextBubblesFrame != null) cancelAnimationFrame(fitTextBubblesFrame)
+  if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
   for (const audio of recordAudioRefs.values()) audio.pause()
   bubbleElementRefs.clear()
   textBubbleResizeObserver?.disconnect()
@@ -431,6 +433,36 @@ function getThinkingDurationText(index: number) {
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
 }
 
+function readMessageRowRects() {
+  const rects = new Map<string, DOMRect>()
+  for (const [key, element] of messageElementRefs) rects.set(key, element.getBoundingClientRect())
+  return rects
+}
+
+function animateMovedMessageRows(previousRects: Map<string, DOMRect>) {
+  const movedElements: HTMLElement[] = []
+  for (const [key, element] of messageElementRefs) {
+    const previous = previousRects.get(key)
+    if (!previous) continue
+    const current = element.getBoundingClientRect()
+    const deltaY = previous.top - current.top
+    if (Math.abs(deltaY) < 0.5) continue
+    element.style.transition = 'none'
+    element.style.transform = `translateY(${deltaY}px)`
+    movedElements.push(element)
+  }
+  if (!movedElements.length) return
+  if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
+  // 已思考面板会一次性改变文档流高度；这里用 FLIP 把受影响消息从旧位置补偿回新位置，再交给已有 transform 过渡归零。
+  thinkingMoveFrame = requestAnimationFrame(() => {
+    thinkingMoveFrame = undefined
+    for (const element of movedElements) {
+      element.style.transition = ''
+      element.style.transform = ''
+    }
+  })
+}
+
 function formatRecordDuration(duration: number) {
   const totalSeconds = Math.max(0, Math.round(duration))
   const minutes = Math.floor(totalSeconds / 60)
@@ -515,8 +547,12 @@ async function transcribeRecordMessage(message: WebQQMessage, element: WebQQMess
   }
 }
 
-function toggleThinking(index: number) {
+async function toggleThinking(index: number) {
   const message = getThinkingMessage(index)
-  if (message) emit('toggle-thinking', message)
+  if (!message) return
+  const previousRects = readMessageRowRects()
+  emit('toggle-thinking', message)
+  await nextTick()
+  animateMovedMessageRows(previousRects)
 }
 </script>
