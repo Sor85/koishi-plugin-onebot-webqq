@@ -912,6 +912,8 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain('const previousRects = readMessageRowRects()')
     expect(webqqMessageListView).toContain('await nextTick()')
     expect(webqqMessageListView).toContain('animateMovedMessageRows(previousRects)')
+    expect(webqqMessageListView).toContain("element.style.transition = 'transform 0.16s ease'")
+    expect(webqqMessageListView).toContain("element.style.willChange = 'transform'")
   })
 
   it('keeps WebQQ thinking expansion state inside a composable', () => {

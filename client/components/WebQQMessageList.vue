@@ -304,6 +304,7 @@ let highlightTimer: ReturnType<typeof setTimeout> | undefined
 let textBubbleResizeObserver: ResizeObserver | undefined
 let fitTextBubblesFrame: number | undefined
 let thinkingMoveFrame: number | undefined
+let thinkingMoveCleanupTimer: ReturnType<typeof setTimeout> | undefined
 type TemplateRefValue = Element | ComponentPublicInstance | null
 const webQQForwardPreviewLimit = 4
 
@@ -325,6 +326,7 @@ onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
   if (fitTextBubblesFrame != null) cancelAnimationFrame(fitTextBubblesFrame)
   if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
+  if (thinkingMoveCleanupTimer != null) clearTimeout(thinkingMoveCleanupTimer)
   for (const audio of recordAudioRefs.values()) audio.pause()
   bubbleElementRefs.clear()
   textBubbleResizeObserver?.disconnect()
@@ -449,17 +451,28 @@ function animateMovedMessageRows(previousRects: Map<string, DOMRect>) {
     if (Math.abs(deltaY) < 0.5) continue
     element.style.transition = 'none'
     element.style.transform = `translateY(${deltaY}px)`
+    element.style.willChange = 'transform'
     movedElements.push(element)
   }
   if (!movedElements.length) return
   if (thinkingMoveFrame != null) cancelAnimationFrame(thinkingMoveFrame)
-  // 已思考面板会一次性改变文档流高度；这里用 FLIP 把受影响消息从旧位置补偿回新位置，再交给已有 transform 过渡归零。
+  if (thinkingMoveCleanupTimer != null) clearTimeout(thinkingMoveCleanupTimer)
+  // 已思考面板会一次性改变文档流高度；先把受影响消息钉回旧位置并强制一次布局，避免浏览器把位移和回弹合成同一帧而直接闪到终点。
+  void movedElements[0].getBoundingClientRect()
   thinkingMoveFrame = requestAnimationFrame(() => {
     thinkingMoveFrame = undefined
     for (const element of movedElements) {
-      element.style.transition = ''
+      element.style.transition = 'transform 0.16s ease'
       element.style.transform = ''
     }
+    thinkingMoveCleanupTimer = setTimeout(() => {
+      thinkingMoveCleanupTimer = undefined
+      for (const element of movedElements) {
+        element.style.transition = ''
+        element.style.transform = ''
+        element.style.willChange = ''
+      }
+    }, 200)
   })
 }
 
