@@ -9,6 +9,14 @@ export interface OneBotBot {
   selfId?: string
   name?: string
   username?: string
+  user?: {
+    id?: string
+    name?: string
+    nick?: string
+    username?: string
+    nickname?: string
+    avatar?: string
+  }
   avatar?: string
   status?: number
   internal: OneBotInternal

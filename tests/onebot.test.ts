@@ -344,6 +344,32 @@ describe('onebot webqq adapter', () => {
     expect(bot.internal.get_friend_list).toHaveBeenCalled()
   })
 
+  it('uses the Satori bot user profile as the robot display profile', () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      user: {
+        id: '10000',
+        name: '酣眠睡意脑内排练',
+        avatar: 'https://example.com/bot-avatar.png',
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] }, { mockBotCount: 0 })
+
+    expect(service.listBots()).toEqual([
+      expect.objectContaining({
+        selfId: '10000',
+        name: '酣眠睡意脑内排练',
+        avatar: 'https://example.com/bot-avatar.png',
+      }),
+    ])
+  })
+
   it('loads group info with announcements and members', async () => {
     const request = vi.fn(async (action: string) => {
       if (action === 'get_group_member_list') return [{

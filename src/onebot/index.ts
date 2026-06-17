@@ -96,7 +96,7 @@ function toStringId(value: unknown) {
 }
 
 function getBotDisplayName(bot: OneBotBot) {
-  const name = (bot.name || bot.username || '').trim()
+  const name = (bot.name || bot.username || bot.user?.name || bot.user?.nick || bot.user?.username || bot.user?.nickname || '').trim()
   if (name && name !== bot.selfId) return name
   return '机器人'
 }
@@ -108,7 +108,7 @@ function toOneBotRobotProfile(bot: OneBotBot): OneBotRobotProfile | undefined {
     selfId: bot.selfId,
     status: bot.status,
     name: getBotDisplayName(bot),
-    avatar: bot.avatar || getUserAvatar(bot.selfId),
+    avatar: bot.avatar || bot.user?.avatar || getUserAvatar(bot.selfId),
   }
 }
 
