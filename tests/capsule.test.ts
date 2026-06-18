@@ -200,8 +200,8 @@ describe('chat capsule view', () => {
         : '折叠态没有隐藏超过上限的机器人头像',
       capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${178 + collapsedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-shell-width': `${178 + expandedBotStackWidth.value}px`")
-        && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 14}px`")
-        && capsuleView.includes("'--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 14}px`")
+        && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 8}px`")
+        && capsuleView.includes("'--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 8}px`")
         && capsuleView.includes("'--onebot-webqq-stack-collapsed-width': `${collapsedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-stack-expanded-width': `${expandedBotStackWidth.value}px`")
         && !capsuleView.includes("'--onebot-webqq-capsule-width'")
@@ -272,6 +272,30 @@ describe('chat capsule view', () => {
       capsuleView.includes('await selectWebQQBot(selfId)')
         ? ''
         : '机器人切换没有调用后端 WebQQ 切换接口',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('sizes the capsule avatar as an evenly inset inner circle', () => {
+    const avatarCapsuleSource = sourceBetween(
+      capsuleStyle,
+      '.onebot-webqq__avatar-capsule {',
+      '.onebot-webqq__avatar-capsule.is-expanded',
+    )
+    const avatarSource = sourceBetween(capsuleStyle, '.onebot-webqq__avatar {', '  img {')
+    const missingRequirements = [
+      capsuleStyle.includes('height: 52px;') ? '' : '胶囊高度应保持 52px',
+      capsuleStyle.includes('border: 1px solid rgba(255, 255, 255, 0.62);') ? '' : '胶囊边框应保持 1px',
+      avatarCapsuleSource.includes('width: var(--onebot-webqq-avatar-capsule-collapsed-width, 50px);')
+        ? ''
+        : '头像胶囊默认宽度应与主胶囊内容盒对齐',
+      avatarCapsuleSource.includes('height: 50px;') && avatarCapsuleSource.includes('padding: 4px;')
+        ? ''
+        : '头像应在胶囊内容盒中等距内缩',
+      avatarSource.includes('width: 42px;') && avatarSource.includes('height: 42px;')
+        ? ''
+        : '头像直径应等于 50px 小胶囊扣除上下 4px 留白后的内切圆',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])

@@ -182,8 +182,8 @@ const capsuleStyle = computed(() => {
 const avatarCapsuleStyle = computed(() => {
   if (!hasMultipleBots.value) return {}
   return {
-    '--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 14}px`,
-    '--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 14}px`,
+    '--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 8}px`,
+    '--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 8}px`,
   }
 })
 const botStackStyle = computed(() => {
