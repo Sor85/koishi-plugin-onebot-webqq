@@ -278,6 +278,7 @@ describe('chat capsule view', () => {
   })
 
   it('sizes the capsule avatar as an evenly inset inner circle', () => {
+    const shellSource = sourceBetween(capsuleStyle, '.onebot-webqq {', '.onebot-webqq::before')
     const avatarCapsuleSource = sourceBetween(
       capsuleStyle,
       '.onebot-webqq__avatar-capsule {',
@@ -285,7 +286,7 @@ describe('chat capsule view', () => {
     )
     const avatarSource = sourceBetween(capsuleStyle, '.onebot-webqq__avatar {', '  img {')
     const missingRequirements = [
-      capsuleStyle.includes('height: 52px;') ? '' : '胶囊高度应保持 52px',
+      shellSource.includes('height: 50px;') ? '' : '胶囊高度应匹配 42px 头像加上下各 4px 留白',
       capsuleStyle.includes('border: 1px solid rgba(255, 255, 255, 0.62);') ? '' : '胶囊边框应保持 1px',
       avatarCapsuleSource.includes('width: var(--onebot-webqq-avatar-capsule-collapsed-width, 50px);')
         ? ''
