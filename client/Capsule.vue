@@ -176,8 +176,8 @@ const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cache
 const capsuleStyle = computed(() => {
   if (!hasMultipleBots.value) return {}
   return {
-    '--onebot-webqq-shell-collapsed-width': `${178 + collapsedBotStackWidth.value}px`,
-    '--onebot-webqq-shell-width': `${178 + expandedBotStackWidth.value}px`,
+    '--onebot-webqq-shell-collapsed-width': `${162 + collapsedBotStackWidth.value}px`,
+    '--onebot-webqq-shell-width': `${162 + expandedBotStackWidth.value}px`,
   }
 })
 const avatarCapsuleStyle = computed(() => {

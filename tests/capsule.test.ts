@@ -198,8 +198,8 @@ describe('chat capsule view', () => {
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
         ? ''
         : '折叠态没有隐藏超过上限的机器人头像',
-      capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${178 + collapsedBotStackWidth.value}px`")
-        && capsuleView.includes("'--onebot-webqq-shell-width': `${178 + expandedBotStackWidth.value}px`")
+      capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${162 + collapsedBotStackWidth.value}px`")
+        && capsuleView.includes("'--onebot-webqq-shell-width': `${162 + expandedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 8}px`")
         && capsuleView.includes("'--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 8}px`")
         && capsuleView.includes("'--onebot-webqq-stack-collapsed-width': `${collapsedBotStackWidth.value}px`")
@@ -224,7 +224,7 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('.onebot-webqq__body')
         && capsuleStyle.includes('position: fixed')
         && capsuleStyle.includes('right: 24px')
-        && capsuleStyle.includes('width: 173px')
+        && capsuleStyle.includes('width: 157px')
         ? ''
         : '头像展开时胶囊和头像组没有同步向左扩张，或正文没有固定右锚点',
       capsuleView.includes("import { createLayout, type AutoLayout } from 'animejs'")

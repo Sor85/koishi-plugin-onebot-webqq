@@ -171,7 +171,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq__body')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq__body')).toContain('right: 24px')
     expect(ruleBody('.onebot-webqq__body')).toContain('bottom: 56px')
-    expect(ruleBody('.onebot-webqq__body')).toContain('width: 173px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('width: 157px')
     expect(ruleBody('.onebot-webqq__body')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq__body')).toContain('padding: 7px 12px')
     expect(ruleBody('.onebot-webqq__body')).toContain('justify-content: flex-start')
@@ -200,7 +200,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-layout-root')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq')).toContain('position: relative')
     expect(ruleBody('.onebot-webqq')).not.toContain('position: fixed')
-    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 204px)')
     expect(ruleBody('.onebot-webqq')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq')).not.toContain('max-width: calc(100vw - 32px)')
     expect(ruleBody('.onebot-webqq')).toContain('transition: width 0.18s ease')
@@ -228,7 +228,7 @@ describe('chat capsule styles', () => {
   })
 
   it('keeps the main capsule compact without usage rows', () => {
-    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 204px)')
     expect(style).not.toContain('.onebot-webqq__usage')
     expect(style).not.toContain('.onebot-webqq__usage-row')
     expect(style).not.toContain('.onebot-webqq__usage-icon')
