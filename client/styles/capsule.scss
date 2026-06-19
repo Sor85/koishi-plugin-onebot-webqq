@@ -137,6 +137,7 @@
     }
 
     .onebot-webqq__bot-overflow {
+      right: var(--onebot-webqq-bot-overflow-expanded-right, var(--onebot-webqq-bot-overflow-right, 0));
       opacity: 0;
     }
   }
@@ -209,12 +210,48 @@
   color: var(--k-text-dark, var(--fg1, #1f2328));
   background: color-mix(in srgb, var(--k-color-primary, #409eff) 16%, #ffffff 84%);
   box-shadow: 0 0 0 2px #ffffff;
+  overflow: hidden;
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
   text-align: left;
   pointer-events: none;
+  z-index: var(--onebot-webqq-bot-overflow-z-index, 0);
   transition: opacity 0.12s ease;
+  will-change: opacity;
+}
+
+.onebot-webqq__bot-overflow-avatar,
+.onebot-webqq__bot-overflow-label {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+}
+
+.onebot-webqq__bot-overflow-avatar {
+  opacity: 0;
+  clip-path: inset(0 100% 0 0 round 999px);
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+
+  .k-icon {
+    font-size: 22px;
+  }
+}
+
+.onebot-webqq__bot-overflow-label {
+  padding-right: 18px;
+  box-sizing: border-box;
+  background: inherit;
+  clip-path: inset(0 0 0 0 round 999px);
 }
 
 .onebot-webqq__bot-overflow-plus,
@@ -222,6 +259,29 @@
   display: inline-flex;
   align-items: center;
   line-height: 1;
+}
+
+.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-overflow {
+  opacity: 1;
+}
+
+.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-switch.is-collapsed-extra,
+.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-switch.is-collapsed-extra {
+  opacity: 1;
+  pointer-events: none;
+  transition: none;
+}
+
+.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow {
+  opacity: 1;
+
+  .onebot-webqq__bot-overflow-avatar {
+    animation: onebot-webqq-bot-overflow-avatar-erase 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .onebot-webqq__bot-overflow-label {
+    animation: onebot-webqq-bot-overflow-label-reveal 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 .onebot-webqq__avatar-unread {

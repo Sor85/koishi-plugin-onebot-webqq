@@ -49,6 +49,28 @@
   }
 }
 
+@keyframes onebot-webqq-bot-overflow-avatar-erase {
+  0% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round 999px);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0 round 999px);
+  }
+}
+
+@keyframes onebot-webqq-bot-overflow-label-reveal {
+  0% {
+    clip-path: inset(0 0 0 100% round 999px);
+  }
+
+  100% {
+    clip-path: inset(0 0 0 0 round 999px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .onebot-webqq__activity.is-thinking {
     animation: none;
@@ -63,6 +85,11 @@
   .onebot-webqq-avatar-guide-enter-active,
   .onebot-webqq-avatar-guide-leave-active {
     transition: none;
+  }
+
+  .onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow-avatar,
+  .onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow-label {
+    animation: none;
   }
 
   .onebot-webqq-webqq__thinking-dot {

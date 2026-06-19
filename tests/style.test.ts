@@ -14,6 +14,13 @@ const webqqMessageEffectsStyle = await readFile(new URL('../client/styles/webqq-
 const themeColorsStyle = await readFile(new URL('../client/styles/theme-colors.scss', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
+function sourceBetween(source: string, start: string, end: string) {
+  const startIndex = source.indexOf(start)
+  if (startIndex < 0) return ''
+  const endIndex = source.indexOf(end, startIndex + start.length)
+  return endIndex < 0 ? source.slice(startIndex) : source.slice(startIndex, endIndex)
+}
+
 function mediaBody(query: string) {
   const start = style.indexOf(query)
   if (start < 0) return ''
@@ -38,6 +45,10 @@ function ruleBody(selector: string) {
     if (depth === 0) return style.slice(bodyStart, index)
   }
   return ''
+}
+
+function topLevelRuleBody(selector: string) {
+  return ruleBodyIncluding(selector, capsuleStyle.slice(capsuleStyle.indexOf(`\n${selector} {`) + 1))
 }
 
 function ruleBodyIncluding(selector: string, source = style) {
@@ -210,6 +221,20 @@ describe('chat capsule styles', () => {
   it('keeps the current bot avatar anchored while folded avatars expand left', () => {
     const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const stack = ruleBody('.onebot-webqq__bot-stack')
+    const overflow = topLevelRuleBody('.onebot-webqq__bot-overflow')
+    const overflowExpanding = ruleBodyIncluding('.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-overflow')
+    const overflowAvatar = ruleBody('.onebot-webqq__bot-overflow-avatar')
+    const overflowLabel = sourceBetween(
+      capsuleStyle,
+      '.onebot-webqq__bot-overflow-label {',
+      '.onebot-webqq__bot-overflow-plus',
+    )
+    const overflowMotionAvatars = sourceBetween(
+      capsuleStyle,
+      '.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-switch.is-collapsed-extra,',
+      '.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow',
+    )
+    const overflowCollapsing = ruleBodyIncluding('.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow')
     const narrowBody = mediaBody('@media screen and (max-width: 768px)')
 
     expect(ruleBody('.onebot-webqq-host')).toContain('position: fixed')
@@ -243,6 +268,39 @@ describe('chat capsule styles', () => {
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('content: none')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('display: none')
     expect(ruleBody('.onebot-webqq__bot-stack').includes('right: var(--onebot-webqq-bot-expanded-right, 0)')).toBe(true)
+    expect(overflow).toContain('right: var(--onebot-webqq-bot-overflow-right, 0)')
+    expect(overflow).toContain('z-index: var(--onebot-webqq-bot-overflow-z-index, 0)')
+    expect(overflow).toContain('overflow: hidden')
+    expect(overflow).toContain('transition: opacity 0.12s ease')
+    expect(overflow).toContain('will-change: opacity')
+    expect(overflowAvatar).toContain('opacity: 0')
+    expect(overflowAvatar).toContain('clip-path: inset(0 100% 0 0 round 999px)')
+    expect(overflowAvatar).toContain('object-fit: cover')
+    expect(overflowLabel).toContain('background: inherit')
+    expect(overflowLabel).toContain('clip-path: inset(0 0 0 0 round 999px)')
+    expect(stack).toContain('.onebot-webqq__bot-overflow')
+    expect(stack).toContain('right: var(--onebot-webqq-bot-overflow-expanded-right, var(--onebot-webqq-bot-overflow-right, 0))')
+    expect(stack).toContain('opacity: 0')
+    expect(overflowExpanding).not.toContain('--onebot-webqq-bot-overflow-z-index')
+    expect(overflowExpanding).toContain('opacity: 1')
+    expect(overflowExpanding).not.toContain('animation:')
+    expect(overflowMotionAvatars).toContain('opacity: 1')
+    expect(overflowMotionAvatars).toContain('pointer-events: none')
+    expect(overflowMotionAvatars).toContain('transition: none')
+    expect(overflowCollapsing).not.toContain('--onebot-webqq-bot-overflow-z-index')
+    expect(overflowCollapsing).toContain('opacity: 1')
+    expect(overflowCollapsing).toContain('animation: onebot-webqq-bot-overflow-avatar-erase 190ms cubic-bezier')
+    expect(overflowCollapsing).toContain('animation: onebot-webqq-bot-overflow-label-reveal 190ms cubic-bezier')
+    expect(style).toContain('@keyframes onebot-webqq-bot-overflow-avatar-erase')
+    expect(style).toContain('@keyframes onebot-webqq-bot-overflow-label-reveal')
+    expect(ruleBody('@keyframes onebot-webqq-bot-overflow-avatar-erase')).toContain('clip-path: inset(0 100% 0 0 round 999px)')
+    expect(ruleBody('@keyframes onebot-webqq-bot-overflow-label-reveal')).toContain('clip-path: inset(0 0 0 0 round 999px)')
+    expect(style).not.toContain('@keyframes onebot-webqq-bot-overflow-avatar-reveal')
+    expect(style).not.toContain('@keyframes onebot-webqq-bot-overflow-label-erase')
+    expect(style).not.toContain('--onebot-webqq-bot-overflow-expanded-offset')
+    expect(style).not.toContain('--onebot-webqq-bot-overflow-z-index: 20')
+    expect(ruleBody('@media (prefers-reduced-motion: reduce)')).not.toContain('.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-overflow-avatar')
+    expect(ruleBody('@media (prefers-reduced-motion: reduce)')).toContain('.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow-label')
     expect(narrowBody).not.toContain('.onebot-webqq {\n    right: 16px;\n    bottom: 52px;')
     expect(narrowBody).toContain('.onebot-webqq-host,\n  .onebot-webqq__body')
     expect(narrowBody).toContain('right: 16px')

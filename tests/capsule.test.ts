@@ -200,22 +200,33 @@ describe('chat capsule view', () => {
       capsuleView.includes('const hasMultipleBots = computed(() => availableBots.value.length > 1)')
         ? ''
         : '胶囊没有区分单机器人和多机器人场景',
-      capsuleView.includes("['onebot-webqq__bot-stack', { 'is-expanded': botStackExpanded }]")
+      capsuleView.includes("['onebot-webqq__bot-stack', {")
+        && capsuleView.includes("'is-expanded': botStackExpanded")
+        && capsuleView.includes("'is-overflow-expanding': botStackOverflowMotion === 'expanding'")
+        && capsuleView.includes("'is-overflow-collapsing': botStackOverflowMotion === 'collapsing'")
         ? ''
-        : '缺少多机器人头像堆叠容器',
+        : '缺少多机器人头像堆叠容器或头像余量徽标动效状态',
       capsuleView.includes('const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))')
         ? ''
         : '折叠态没有限制最多显示 3 个机器人头像',
       capsuleView.includes('v-if="collapsedBotOverflowCount"') && capsuleView.includes('class="onebot-webqq__bot-overflow"')
         ? ''
         : '折叠态没有用数字显示多余机器人数量',
-      capsuleView.includes('class="onebot-webqq__bot-overflow-plus">+</span>')
+      capsuleView.includes('const botOverflowPreview = computed(() => botStackBots.value[collapsedBotVisibleCount.value])')
+        && capsuleView.includes('v-if="botOverflowPreview" class="onebot-webqq__bot-overflow-avatar"')
+        && capsuleView.includes('v-if="botOverflowPreview.avatar" :src="withProxy(botOverflowPreview.avatar)"')
+        ? ''
+        : '头像余量徽标缺少用于擦除替换的头像预览层',
+      capsuleView.includes('class="onebot-webqq__bot-overflow-label"')
+        && capsuleView.includes('class="onebot-webqq__bot-overflow-plus">+</span>')
         && capsuleView.includes('class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>')
         ? ''
-        : '折叠态多余机器人数量应显示加号',
+        : '折叠态多余机器人数量应在可擦除的 label 层显示加号',
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
+        && capsuleView.includes('? collapsedBotVisibleCount.value * 24')
+        && !capsuleView.includes('? Math.max(0, collapsedBotVisibleCount.value - 1) * 24')
         ? ''
-        : '折叠态没有隐藏超过上限的机器人头像',
+        : '折叠态没有把超过上限的机器人头像收拢到头像余量徽标位置',
       capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${162 + collapsedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-shell-width': `${162 + expandedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 8}px`")
@@ -231,7 +242,7 @@ describe('chat capsule view', () => {
         ? ''
         : '多机器人头像没有从右侧锚定向左展开',
       capsuleView.includes(':class="[\'onebot-webqq__avatar-capsule\', { \'has-bot-stack\': hasMultipleBots, \'is-expanded\': botStackExpanded }]"')
-        && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', { \'is-expanded\': botStackExpanded }]"')
+        && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', {')
         && capsuleView.includes("'is-bot-stack-expanded': botStackExpanded")
         && capsuleView.indexOf('class="onebot-webqq-layout-root"') < capsuleView.indexOf(':class="[\'onebot-webqq__body\', `is-color-${webQQColorMode}`]"')
         && capsuleStyle.includes('.onebot-webqq.is-bot-stack-expanded')
@@ -256,9 +267,16 @@ describe('chat capsule view', () => {
         && !capsuleView.includes("'.onebot-webqq__avatar-guide'")
         ? ''
         : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像容器，不能动画右侧正文或头像引导层；bot-switch 必须参与 FLIP 才能固定当前头像',
-      capsuleView.includes("zIndex: '0'")
-        && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
-        && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")
+      capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
+        && capsuleView.includes('const collapsedRight = collapsedBotVisibleCount.value * 24')
+        && capsuleView.includes('const expandedRight = collapsedBotVisibleCount.value * 31')
+        && capsuleView.includes("const isCoveredByExpandedAvatar = botStackExpanded.value || botStackOverflowMotion.value === 'expanding'")
+        && capsuleView.includes('const overflowZIndex = botStackBots.value.length - collapsedBotVisibleCount.value - (isCoveredByExpandedAvatar ? 1 : 0)')
+        && capsuleView.includes("'--onebot-webqq-bot-overflow-right': `${collapsedRight}px`")
+        && capsuleView.includes("'--onebot-webqq-bot-overflow-expanded-right': `${expandedRight}px`")
+        && capsuleView.includes("'--onebot-webqq-bot-overflow-z-index': `${overflowZIndex}`")
+        && !capsuleView.includes('--onebot-webqq-bot-overflow-expanded-offset')
+        && !capsuleView.includes("zIndex: '0'")
         && capsuleStyle.includes('justify-content: center;')
         && capsuleStyle.includes('padding-right: 18px;')
         && capsuleStyle.includes('.onebot-webqq__bot-overflow-plus')
@@ -266,7 +284,14 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('align-items: center;')
         && capsuleStyle.includes('font-size: 10px;')
         ? ''
-        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或 +N 没有在露出的 24px 区域中对齐',
+        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或头像余量徽标没有按头像槽位同步计算展开位',
+      capsuleView.includes("type BotStackOverflowMotion = 'idle' | 'expanding' | 'collapsing'")
+        && capsuleView.includes("const botStackOverflowMotion = ref<BotStackOverflowMotion>('idle')")
+        && capsuleView.includes("botStackOverflowMotion.value = expanded ? 'expanding' : 'collapsing'")
+        && capsuleView.includes("botStackOverflowMotion.value = 'idle'")
+        && capsuleView.includes('if (botStackOverflowMotionTimer) clearTimeout(botStackOverflowMotionTimer)')
+        ? ''
+        : '头像余量徽标展开/折叠没有独立动效阶段，可能退回静态背景板',
       capsuleView.includes('v-if="bot.selfId === activeBotSelfId"')
         && !capsuleStyle.includes('.onebot-webqq__status {\n    opacity: 0;')
         && !capsuleStyle.includes('&:focus-visible,\n  &.is-active')

@@ -19,7 +19,11 @@
         >
           <div
             v-if="hasMultipleBots"
-            :class="['onebot-webqq__bot-stack', { 'is-expanded': botStackExpanded }]"
+            :class="['onebot-webqq__bot-stack', {
+              'is-expanded': botStackExpanded,
+              'is-overflow-expanding': botStackOverflowMotion === 'expanding',
+              'is-overflow-collapsing': botStackOverflowMotion === 'collapsing',
+            }]"
             :style="botStackStyle"
           >
             <button
@@ -59,8 +63,14 @@
               :style="botOverflowStyle"
               aria-hidden="true"
             >
-              <span class="onebot-webqq__bot-overflow-plus">+</span>
-              <span class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>
+              <span v-if="botOverflowPreview" class="onebot-webqq__bot-overflow-avatar">
+                <img v-if="botOverflowPreview.avatar" :src="withProxy(botOverflowPreview.avatar)" :alt="getBotName(botOverflowPreview)">
+                <k-icon v-else name="robot" />
+              </span>
+              <span class="onebot-webqq__bot-overflow-label">
+                <span class="onebot-webqq__bot-overflow-plus">+</span>
+                <span class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>
+              </span>
             </span>
           </div>
           <button
@@ -156,6 +166,8 @@ const cachedBotProfile = ref(loadCachedBotProfile())
 const botStackExpanded = ref(false)
 const botStackHovered = ref(false)
 const botStackFocused = ref(false)
+type BotStackOverflowMotion = 'idle' | 'expanding' | 'collapsing'
+const botStackOverflowMotion = ref<BotStackOverflowMotion>('idle')
 // Chrome 会在 click 时聚焦 <button>，切换 bot 时 Vue 把这个聚焦节点移到最右会触发一次
 // relatedTarget 为 null 的 focusout。切换期间挂起折叠，避免它取消正在进行的切换 FLIP。
 let suppressStackCollapse = false
@@ -166,6 +178,7 @@ const capsuleTooltipTarget = ref<'title' | 'activity'>()
 const tooltipLeft = ref(0)
 let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 let botStackLayout: AutoLayout | undefined
+let botStackOverflowMotionTimer: ReturnType<typeof setTimeout> | undefined
 let capsuleTextResizeObserver: ResizeObserver | undefined
 const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
 const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))
@@ -184,6 +197,7 @@ const botStackBots = computed(() => {
 })
 const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))
 const collapsedBotOverflowCount = computed(() => Math.max(0, botStackBots.value.length - collapsedBotVisibleCount.value))
+const botOverflowPreview = computed(() => botStackBots.value[collapsedBotVisibleCount.value])
 const collapsedBotStackWidth = computed(() => 42 + Math.max(0, collapsedBotVisibleCount.value - 1) * 24 + (collapsedBotOverflowCount.value ? 24 : 0))
 const expandedBotStackWidth = computed(() => 42 + Math.max(0, botStackBots.value.length - 1) * 31)
 const displayBotName = computed(() => displayBotProfile.value?.name || cachedBotProfile.value.name || '空闲')
@@ -209,9 +223,14 @@ const botStackStyle = computed(() => {
   }
 })
 const botOverflowStyle = computed(() => {
+  const collapsedRight = collapsedBotVisibleCount.value * 24
+  const expandedRight = collapsedBotVisibleCount.value * 31
+  const isCoveredByExpandedAvatar = botStackExpanded.value || botStackOverflowMotion.value === 'expanding'
+  const overflowZIndex = botStackBots.value.length - collapsedBotVisibleCount.value - (isCoveredByExpandedAvatar ? 1 : 0)
   return {
-    '--onebot-webqq-bot-overflow-right': `${collapsedBotVisibleCount.value * 24}px`,
-    zIndex: '0',
+    '--onebot-webqq-bot-overflow-right': `${collapsedRight}px`,
+    '--onebot-webqq-bot-overflow-expanded-right': `${expandedRight}px`,
+    '--onebot-webqq-bot-overflow-z-index': `${overflowZIndex}`,
   }
 })
 const capsuleUnreadText = computed(() => getCapsuleUnreadText(webQQTotalUnread.value))
@@ -264,11 +283,10 @@ function getBotSwitchLabel(bot: OneBotRobotProfile) {
 }
 
 function getBotSwitchStyle(index: number) {
-  // 折叠态把余量头像收拢到最后一个可见头像的位置（藏在头像堆叠正后方），展开时再从这里向外
-  // 扇形滑出并淡入。这样位移幅度足够大，重现折叠/展开滑动，而不是只剩 opacity 淡入淡出。
+  // 折叠态把余量头像收拢到头像余量徽标的位置，再由徽标承接数量显示。
   // 收拢位与展开位都落在当前 bot 头像左侧，FLIP 在两端之间线性插值，余量头像不会越过当前头像。
   const collapsedRight = isBotCollapsedExtra(index)
-    ? Math.max(0, collapsedBotVisibleCount.value - 1) * 24
+    ? collapsedBotVisibleCount.value * 24
     : index * 24
   return {
     '--onebot-webqq-bot-collapsed-right': `${collapsedRight}px`,
@@ -314,6 +332,12 @@ function setBotStackExpanded(expanded: boolean) {
   if (!hasMultipleBots.value) return
   if (botStackExpanded.value === expanded) return
   const layout = recordBotStackLayout()
+  botStackOverflowMotion.value = expanded ? 'expanding' : 'collapsing'
+  if (botStackOverflowMotionTimer) clearTimeout(botStackOverflowMotionTimer)
+  botStackOverflowMotionTimer = setTimeout(() => {
+    botStackOverflowMotion.value = 'idle'
+    botStackOverflowMotionTimer = undefined
+  }, 280)
   botStackExpanded.value = expanded
   void animateBotStackLayout(layout)
 }
@@ -519,6 +543,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateCapsuleTooltipPosition)
   botStackLayout?.revert()
   botStackLayout = undefined
+  if (botStackOverflowMotionTimer) clearTimeout(botStackOverflowMotionTimer)
   capsuleTextResizeObserver?.disconnect()
   capsuleTextResizeObserver = undefined
   if (suppressStackCollapseTimer) clearTimeout(suppressStackCollapseTimer)
