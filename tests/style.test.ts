@@ -211,21 +211,37 @@ describe('chat capsule styles', () => {
 
   it('renders the main capsule with a frosted glass surface', () => {
     const capsule = ruleBody('.onebot-webqq')
+    const capsuleSurface = ruleBody('.onebot-webqq::before')
     const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const body = ruleBody('.onebot-webqq__body')
-    const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto')
-    const darkSurface = ruleBody('.onebot-webqq.is-color-dark')
+    const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto::before')
+    const darkSurface = ruleBody('.onebot-webqq.is-color-dark::before')
     const missingRequirements = [
-      capsule.includes('background: rgba(255, 255, 255, 0.78)')
+      capsule.includes('isolation: isolate')
+        ? ''
+        : '主胶囊没有隔离表面层和溢出的头像角标',
+      !capsule.includes('background:')
+        && !capsule.includes('box-shadow:')
+        && !capsule.includes('backdrop-filter:')
+        && !capsule.includes('-webkit-backdrop-filter:')
+        ? ''
+        : '主胶囊本体不应直接绘制表面，否则溢出的未读计数会参与表面合成范围',
+      capsuleSurface.includes("content: ''")
+        && capsuleSurface.includes('position: absolute')
+        && capsuleSurface.includes('inset: 0')
+        && capsuleSurface.includes('border-radius: inherit')
+        ? ''
+        : '主胶囊表面没有固定在独立伪元素层',
+      capsuleSurface.includes('background: rgba(255, 255, 255, 0.78)')
         ? ''
         : '主胶囊浅色背景不是半透明毛玻璃',
-      capsule.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
+      capsuleSurface.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
         ? ''
         : '主胶囊浅色边框没有使用半透明高光',
-      capsule.includes('backdrop-filter: saturate(180%) blur(18px)')
+      capsuleSurface.includes('backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少毛玻璃背景模糊',
-      capsule.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
+      capsuleSurface.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少 Safari 毛玻璃前缀',
       !avatarCapsule.includes('background:')
@@ -822,29 +838,33 @@ describe('chat capsule styles', () => {
   it('adds dark color mode overrides for the main capsule and WebQQ chat header', () => {
     const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
     const forcedCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-dark')
+    const forcedCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-dark::before')
     const autoCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-auto', autoDarkBody)
+    const autoCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-auto::before', autoDarkBody)
     const forcedHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header')
     const autoHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__chat-header', autoDarkBody)
     const missingRequirements = [
       forcedCapsuleBody ? '' : '缺少强制暗色主胶囊选择器 .onebot-webqq.is-color-dark',
-      forcedCapsuleBody.includes('background:')
+      forcedCapsuleSurfaceBody ? '' : '缺少强制暗色主胶囊表面选择器 .onebot-webqq.is-color-dark::before',
+      forcedCapsuleSurfaceBody.includes('background:')
         ? ''
         : '强制暗色主胶囊没有覆盖背景',
       forcedCapsuleBody.includes('color:')
         ? ''
         : '强制暗色主胶囊没有覆盖文本',
-      forcedCapsuleBody.includes('border')
+      forcedCapsuleSurfaceBody.includes('border')
         ? ''
         : '强制暗色主胶囊没有覆盖边框',
       autoDarkBody ? '' : '缺少 prefers-color-scheme: dark 自动暗色媒体查询',
       autoCapsuleBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq.is-color-auto 覆盖',
-      autoCapsuleBody.includes('background:')
+      autoCapsuleSurfaceBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq.is-color-auto::before 表面覆盖',
+      autoCapsuleSurfaceBody.includes('background:')
         ? ''
         : '自动暗色主胶囊没有覆盖背景',
       autoCapsuleBody.includes('color:')
         ? ''
         : '自动暗色主胶囊没有覆盖文本',
-      autoCapsuleBody.includes('border')
+      autoCapsuleSurfaceBody.includes('border')
         ? ''
         : '自动暗色主胶囊没有覆盖边框',
       forcedHeaderBody ? '' : '缺少强制暗色聊天顶栏选择器 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header',

@@ -412,6 +412,9 @@
 
   .onebot-webqq.is-color-auto {
     color: #e5edf7;
+  }
+
+  .onebot-webqq.is-color-auto::before {
     background: rgba(15, 23, 42, 0.72);
     border-color: rgba(148, 163, 184, 0.28);
     box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
@@ -435,6 +438,9 @@
 
 .onebot-webqq.is-color-dark {
   color: #e5edf7;
+}
+
+.onebot-webqq.is-color-dark::before {
   background: rgba(15, 23, 42, 0.72);
   border-color: rgba(148, 163, 184, 0.28);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
