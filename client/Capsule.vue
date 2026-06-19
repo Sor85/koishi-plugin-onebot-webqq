@@ -119,9 +119,14 @@
         </span>
       </div>
       <Transition name="onebot-webqq-tooltip">
-        <div v-if="capsuleTooltipText" class="onebot-webqq__tooltip" role="tooltip">
+        <div
+          v-if="capsuleTooltipText"
+          ref="tooltipRef"
+          class="onebot-webqq__tooltip"
+          :style="tooltipStyle"
+          role="tooltip"
+        >
           <span class="onebot-webqq__tooltip-content">{{ capsuleTooltipText }}</span>
-          <span class="onebot-webqq__tooltip-arrow" aria-hidden="true"></span>
         </div>
       </Transition>
     </div>
@@ -146,6 +151,7 @@ const capsuleLayoutRef = ref<HTMLElement>()
 const titleRef = ref<HTMLElement>()
 const activityRef = ref<HTMLElement>()
 const activityUserRef = ref<HTMLElement>()
+const tooltipRef = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
 const botStackExpanded = ref(false)
 const botStackHovered = ref(false)
@@ -157,6 +163,7 @@ let suppressStackCollapseTimer: ReturnType<typeof setTimeout> | undefined
 const titleOverflow = ref(false)
 const activityOverflow = ref(false)
 const capsuleTooltipTarget = ref<'title' | 'activity'>()
+const tooltipLeft = ref(0)
 let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 let botStackLayout: AutoLayout | undefined
 let capsuleTextResizeObserver: ResizeObserver | undefined
@@ -229,6 +236,7 @@ const capsuleTooltipText = computed(() => {
   return ''
 })
 const activityTooltipText = computed(() => conversationUserName.value || displayActivityText.value)
+const tooltipStyle = computed(() => ({ '--onebot-webqq-tooltip-left': `${tooltipLeft.value}px` }))
 
 const statusClass = computed(() => getBotStatusClass(displayBotProfile.value))
 
@@ -357,16 +365,34 @@ function refreshCapsuleTextOverflow() {
     : hasTextOverflow(activityRef.value)
   if (capsuleTooltipTarget.value === 'title' && !titleOverflow.value) capsuleTooltipTarget.value = undefined
   if (capsuleTooltipTarget.value === 'activity' && !activityOverflow.value) capsuleTooltipTarget.value = undefined
+  if (capsuleTooltipTarget.value) void nextTick(updateCapsuleTooltipPosition)
 }
 
 function showCapsuleTextTooltip(target: 'title' | 'activity') {
   refreshCapsuleTextOverflow()
   const overflow = target === 'title' ? titleOverflow.value : activityOverflow.value
   capsuleTooltipTarget.value = overflow ? target : undefined
+  if (overflow) void nextTick(updateCapsuleTooltipPosition)
 }
 
 function hideCapsuleTextTooltip() {
   capsuleTooltipTarget.value = undefined
+}
+
+function updateCapsuleTooltipPosition() {
+  const body = tooltipRef.value?.parentElement
+  const tooltip = tooltipRef.value
+  if (!body || !tooltip || typeof window === 'undefined') {
+    tooltipLeft.value = 0
+    return
+  }
+  const viewportMargin = 12
+  const bodyRect = body.getBoundingClientRect()
+  const tooltipWidth = Math.min(tooltip.offsetWidth, Math.max(0, window.innerWidth - viewportMargin * 2))
+  const centeredLeft = bodyRect.width / 2 - tooltipWidth / 2
+  const minLeft = viewportMargin - bodyRect.left
+  const maxLeft = window.innerWidth - viewportMargin - bodyRect.left - tooltipWidth
+  tooltipLeft.value = Math.min(Math.max(centeredLeft, minLeft), maxLeft)
 }
 
 function observeCapsuleTextOverflow() {
@@ -482,6 +508,7 @@ async function selectBot(selfId: string) {
 
 onMounted(() => {
   document.addEventListener('pointerdown', closeWebQQOnOutsideClick)
+  window.addEventListener('resize', updateCapsuleTooltipPosition)
   if (!hasSeenWebQQAvatarGuide()) showWebQQAvatarGuide(true)
   observeCapsuleTextOverflow()
   void nextTick(refreshCapsuleTextOverflow)
@@ -489,6 +516,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)
+  window.removeEventListener('resize', updateCapsuleTooltipPosition)
   botStackLayout?.revert()
   botStackLayout = undefined
   capsuleTextResizeObserver?.disconnect()
