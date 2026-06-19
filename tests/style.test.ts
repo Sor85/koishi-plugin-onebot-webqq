@@ -149,6 +149,10 @@ describe('chat capsule styles', () => {
 
   it('uses a HeroUI-style tooltip for overflowing capsule text', () => {
     const body = ruleBody('.onebot-webqq__body')
+    const conversationActivity = ruleBody('.onebot-webqq__activity.is-conversation')
+    const activityAffix = ruleBody(`.onebot-webqq__activity-prefix,
+.onebot-webqq__activity-suffix`)
+    const activityUser = ruleBody('.onebot-webqq__activity-user')
     const tooltip = ruleBody('.onebot-webqq__tooltip')
     const content = ruleBody('.onebot-webqq__tooltip-content')
     const arrow = ruleBody('.onebot-webqq__tooltip-arrow')
@@ -157,6 +161,13 @@ describe('chat capsule styles', () => {
 
     expect(body).toContain('position: fixed')
     expect(body).toContain('right: 24px')
+    expect(conversationActivity).toContain('display: flex')
+    expect(conversationActivity).toContain('align-items: center')
+    expect(activityAffix).toContain('flex-shrink: 0')
+    expect(activityUser).toContain('min-width: 0')
+    expect(activityUser).toContain('overflow: hidden')
+    expect(activityUser).toContain('text-overflow: ellipsis')
+    expect(activityUser).toContain('white-space: nowrap')
     expect(tooltip).toContain('position: absolute')
     expect(tooltip).toContain('bottom: calc(100% + 8px)')
     expect(tooltip).toContain('pointer-events: none')

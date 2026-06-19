@@ -106,10 +106,17 @@
         <span
           v-if="displayActivityText"
           ref="activityRef"
-          class="onebot-webqq__activity"
+          :class="['onebot-webqq__activity', { 'is-conversation': conversationUserName }]"
           @pointerenter="showCapsuleTextTooltip('activity')"
           @pointerleave="hideCapsuleTextTooltip"
-        >{{ displayActivityText }}</span>
+        >
+          <template v-if="conversationUserName">
+            <span class="onebot-webqq__activity-prefix">正在与</span>
+            <span ref="activityUserRef" class="onebot-webqq__activity-user">{{ conversationUserName }}</span>
+            <span class="onebot-webqq__activity-suffix">对话</span>
+          </template>
+          <template v-else>{{ displayActivityText }}</template>
+        </span>
       </div>
       <Transition name="onebot-webqq-tooltip">
         <div v-if="capsuleTooltipText" class="onebot-webqq__tooltip" role="tooltip">
@@ -138,6 +145,7 @@ const capsuleHost = ref<HTMLElement>()
 const capsuleLayoutRef = ref<HTMLElement>()
 const titleRef = ref<HTMLElement>()
 const activityRef = ref<HTMLElement>()
+const activityUserRef = ref<HTMLElement>()
 const cachedBotProfile = ref(loadCachedBotProfile())
 const botStackExpanded = ref(false)
 const botStackHovered = ref(false)
@@ -206,19 +214,21 @@ const capsuleButtonLabel = computed(() => {
     : '打开 WebQQ 观察窗'
 })
 const titleStatusText = computed(() => capsule.value?.conversation.activityText === '正在思考' ? '正在思考' : '')
+const conversationUserName = computed(() => capsule.value?.conversation.userName || '')
 const displayActivityText = computed(() => {
   const conversation = capsule.value?.conversation
   if (!conversation) return '空闲中'
-  if (conversation.userName) return `正在与 ${conversation.userName} 对话`
+  if (conversationUserName.value) return `正在与 ${conversationUserName.value} 对话`
   return conversation.activityText && conversation.activityText !== '正在思考'
     ? conversation.activityText
     : '空闲中'
 })
 const capsuleTooltipText = computed(() => {
   if (capsuleTooltipTarget.value === 'title' && titleOverflow.value) return displayBotName.value
-  if (capsuleTooltipTarget.value === 'activity' && activityOverflow.value) return displayActivityText.value
+  if (capsuleTooltipTarget.value === 'activity' && activityOverflow.value) return activityTooltipText.value
   return ''
 })
+const activityTooltipText = computed(() => conversationUserName.value || displayActivityText.value)
 
 const statusClass = computed(() => getBotStatusClass(displayBotProfile.value))
 
@@ -342,7 +352,9 @@ function hasTextOverflow(element?: HTMLElement) {
 
 function refreshCapsuleTextOverflow() {
   titleOverflow.value = hasTextOverflow(titleRef.value)
-  activityOverflow.value = hasTextOverflow(activityRef.value)
+  activityOverflow.value = conversationUserName.value
+    ? hasTextOverflow(activityUserRef.value)
+    : hasTextOverflow(activityRef.value)
   if (capsuleTooltipTarget.value === 'title' && !titleOverflow.value) capsuleTooltipTarget.value = undefined
   if (capsuleTooltipTarget.value === 'activity' && !activityOverflow.value) capsuleTooltipTarget.value = undefined
 }
@@ -362,6 +374,7 @@ function observeCapsuleTextOverflow() {
   capsuleTextResizeObserver = new ResizeObserver(refreshCapsuleTextOverflow)
   if (titleRef.value) capsuleTextResizeObserver.observe(titleRef.value)
   if (activityRef.value) capsuleTextResizeObserver.observe(activityRef.value)
+  if (activityUserRef.value) capsuleTextResizeObserver.observe(activityUserRef.value)
 }
 
 function loadCachedBotProfile() {
@@ -489,7 +502,7 @@ watch(displayBotProfile, (bot) => {
   cacheBotProfile(bot.name, bot.avatar)
 }, { immediate: true })
 
-watch([displayBotName, displayActivityText, botStackExpanded], () => {
+watch([displayBotName, displayActivityText, conversationUserName, botStackExpanded], () => {
   void nextTick(refreshCapsuleTextOverflow)
 }, { immediate: true })
 

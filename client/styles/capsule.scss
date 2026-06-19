@@ -390,6 +390,24 @@
   text-overflow: ellipsis;
 }
 
+.onebot-webqq__activity.is-conversation {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.onebot-webqq__activity-prefix,
+.onebot-webqq__activity-suffix {
+  flex-shrink: 0;
+}
+
+.onebot-webqq__activity-user {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .onebot-webqq__tooltip {
   position: absolute;
   left: 0;

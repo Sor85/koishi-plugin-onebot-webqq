@@ -95,16 +95,20 @@ describe('chat capsule view', () => {
         : '头像图形引导应在胶囊非头像区域点击时触发',
       capsuleView.includes('ref="titleRef"')
         && capsuleView.includes('ref="activityRef"')
+        && capsuleView.includes('ref="activityUserRef"')
         && capsuleView.includes('class="onebot-webqq__tooltip"')
         && capsuleView.includes('class="onebot-webqq__tooltip-content"')
         && capsuleView.includes('class="onebot-webqq__tooltip-arrow"')
         && capsuleView.includes('function hasTextOverflow(element?: HTMLElement)')
         && capsuleView.includes("function showCapsuleTextTooltip(target: 'title' | 'activity')")
         && capsuleView.includes("capsuleTooltipTarget.value === 'activity' && activityOverflow.value")
+        && capsuleView.includes("return activityTooltipText.value")
+        && capsuleView.includes('const activityTooltipText = computed(() => conversationUserName.value || displayActivityText.value)')
+        && capsuleView.includes('? hasTextOverflow(activityUserRef.value)')
         && !capsuleView.includes(':title="titleTooltip"')
         && !capsuleView.includes(':title="metaTooltip"')
         ? ''
-        : '胶囊文字应只在内容溢出时显示 HeroUI 风格 tooltip',
+        : '胶囊文字应只在被省略内容溢出时显示 HeroUI 风格 tooltip',
       mountedSource.includes('!hasSeenWebQQAvatarGuide()')
         && mountedSource.includes('showWebQQAvatarGuide(true)')
         ? ''
@@ -123,14 +127,20 @@ describe('chat capsule view', () => {
 
   it('splits thinking status and current user into separate lines', () => {
     expect(capsuleView).toContain("const titleStatusText = computed(() => capsule.value?.conversation.activityText === '正在思考' ? '正在思考' : '')")
+    expect(capsuleView).toContain("const conversationUserName = computed(() => capsule.value?.conversation.userName || '')")
     expect(capsuleView).toContain('const conversation = capsule.value?.conversation')
     expect(capsuleView).toContain("if (!conversation) return '空闲中'")
-    expect(capsuleView).toContain('if (conversation.userName) return `正在与 ${conversation.userName} 对话`')
+    expect(capsuleView).toContain('if (conversationUserName.value) return `正在与 ${conversationUserName.value} 对话`')
     expect(capsuleView).toContain("conversation.activityText !== '正在思考'")
     expect(capsuleView).toContain('v-if="titleStatusText"')
     expect(capsuleView).toContain('{{ titleStatusText }}')
     expect(capsuleView).toContain('v-if="displayActivityText"')
     expect(capsuleView).toContain('{{ displayActivityText }}')
+    expect(capsuleView).toContain("'is-conversation': conversationUserName")
+    expect(capsuleView).toContain('v-if="conversationUserName"')
+    expect(capsuleView).toContain('class="onebot-webqq__activity-prefix">正在与</span>')
+    expect(capsuleView).toContain('ref="activityUserRef" class="onebot-webqq__activity-user">{{ conversationUserName }}</span>')
+    expect(capsuleView).toContain('class="onebot-webqq__activity-suffix">对话</span>')
   })
 
   it('does not render token usage in the main capsule', () => {
