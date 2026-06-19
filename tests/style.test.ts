@@ -94,9 +94,22 @@ describe('chat capsule styles', () => {
       guideBody.includes('pointer-events: none') ? '' : '头像图形引导不应拦截点击头像',
       guideBody.includes('z-index: 1') ? '' : '头像图形引导应该位于在线状态和消息计数下方',
       ruleBody('.onebot-webqq__status').includes('z-index: 2') ? '' : '在线状态应该覆盖头像图形引导',
+      guideBody.includes('width: 46px')
+        && guideBody.includes('height: 46px')
+        ? ''
+        : '头像图形引导外框没有贴合当前 42px 头像',
+      ringBody.includes('left: 1px')
+        && ringBody.includes('top: 1px')
+        && ringBody.includes('width: 44px')
+        && ringBody.includes('height: 44px')
+        ? ''
+        : '头像光圈没有围绕当前 42px 头像外缘',
       ringBody.includes('var(--k-color-primary, #409eff)')
         ? ''
         : '头像光圈没有使用当前主题主色',
+      ringBody.includes('box-shadow: 0 0 12px')
+        ? ''
+        : '头像光圈阴影仍按旧头像尺寸扩散过宽',
       style.includes('--onebot-webqq-avatar-guide-color')
         ? '头像光圈不应再依赖 bot 头像主题色 CSS 变量'
         : '',
@@ -108,6 +121,10 @@ describe('chat capsule styles', () => {
         && style.includes('@keyframes onebot-webqq-avatar-guide-halo')
         ? ''
         : '头像光圈缺少柔和外扩 halo',
+      style.includes('.onebot-webqq__avatar-guide-ring::after')
+        && ruleBody('.onebot-webqq__avatar-guide-ring::after').includes('inset: -5px')
+        ? ''
+        : '头像光圈外扩 halo 没有按当前头像尺寸收窄',
       transitionBody.includes('transition: opacity')
         && transitionBody.includes('transform')
         ? ''
