@@ -4,6 +4,7 @@
       <div
         :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
           'is-bot-stack-expanded': botStackExpanded,
+          'is-capsule-shadow-wide': !useCompactCapsuleShadow,
         }]"
         :style="capsuleStyle"
         aria-live="polite"
@@ -125,7 +126,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
 import { createLayout, type AutoLayout } from 'animejs'
-import { availableBots as runtimeBots, capsule, selectedBotSelfId, showWebQQCapsuleUnread, webQQColorMode, webQQTotalUnread, type OneBotRobotProfile } from './state'
+import { availableBots as runtimeBots, capsule, selectedBotSelfId, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQColorMode, webQQTotalUnread, type OneBotRobotProfile } from './state'
 import { selectWebQQBot } from './api/webqq'
 import WebQQObserver from './WebQQObserver.vue'
 

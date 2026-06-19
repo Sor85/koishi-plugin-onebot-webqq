@@ -224,6 +224,9 @@ describe('chat capsule styles', () => {
     const body = ruleBody('.onebot-webqq__body')
     const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto::before')
     const darkSurface = ruleBody('.onebot-webqq.is-color-dark::before')
+    const wideCapsuleSurface = ruleBody('.onebot-webqq.is-capsule-shadow-wide::before')
+    const autoWideDarkSurface = ruleBody('.onebot-webqq.is-color-auto.is-capsule-shadow-wide::before')
+    const darkWideSurface = ruleBody('.onebot-webqq.is-color-dark.is-capsule-shadow-wide::before')
     const missingRequirements = [
       capsule.includes('isolation: isolate')
         ? ''
@@ -246,6 +249,12 @@ describe('chat capsule styles', () => {
       capsuleSurface.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
         ? ''
         : '主胶囊浅色边框没有使用半透明高光',
+      capsuleSurface.includes('box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16)')
+        ? ''
+        : '主胶囊浅色阴影没有收窄到统一表面层',
+      wideCapsuleSurface.includes('box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16)')
+        ? ''
+        : '关闭紧凑阴影后没有恢复旧版浅色宽阴影',
       capsuleSurface.includes('backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少毛玻璃背景模糊',
@@ -254,16 +263,30 @@ describe('chat capsule styles', () => {
         : '主胶囊缺少 Safari 毛玻璃前缀',
       !avatarCapsule.includes('background:')
         && !avatarCapsule.includes('border:')
+        && !avatarCapsule.includes('box-shadow:')
         && !body.includes('background:')
         && !body.includes('border:')
+        && !body.includes('box-shadow:')
         ? ''
-        : '左右结构不能各自画成两个胶囊表面',
+        : '左右结构不能各自画成两个胶囊表面或阴影',
       autoDarkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊自动暗色背景不是半透明毛玻璃',
+      autoDarkSurface.includes('box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24)')
+        ? ''
+        : '主胶囊自动暗色阴影没有收窄到统一表面层',
+      autoWideDarkSurface.includes('box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28)')
+        ? ''
+        : '关闭紧凑阴影后没有恢复旧版自动暗色宽阴影',
       darkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊暗色背景不是半透明毛玻璃',
+      darkSurface.includes('box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24)')
+        ? ''
+        : '主胶囊暗色阴影没有收窄到统一表面层',
+      darkWideSurface.includes('box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28)')
+        ? ''
+        : '关闭紧凑阴影后没有恢复旧版暗色宽阴影',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])

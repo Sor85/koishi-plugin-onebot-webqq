@@ -1,7 +1,7 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
 import Capsule from './Capsule.vue'
-import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
+import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
 import './style.scss'
 
 interface ClientData {
@@ -17,6 +17,7 @@ interface ClientData {
   webQQMessageCacheLimit?: number
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
+  useCompactCapsuleShadow?: boolean
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
   showWebQQRelationship?: boolean
@@ -136,6 +137,7 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100
   webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'
   useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false
+  useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true
   hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true
   showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false
   showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false

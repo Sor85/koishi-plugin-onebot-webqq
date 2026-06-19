@@ -318,6 +318,19 @@ describe('chat capsule view', () => {
     expect(missingRequirements).toEqual([])
   })
 
+  it('applies the configured compact capsule shadow option to the main capsule', () => {
+    const missingRequirements = [
+      /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\/state'/.test(capsuleView)
+        ? ''
+        : '主胶囊没有从 state 读取 useCompactCapsuleShadow',
+      capsuleView.includes("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
+        ? ''
+        : '关闭紧凑阴影时主胶囊没有输出旧版宽阴影类名',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('caps the capsule total unread badge at 99999+ only above 99999', () => {
     expect([
       runGetCapsuleUnreadText(9999),
@@ -327,7 +340,7 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain("bots?: OneBotRobotState['bots']")
     expect(clientEntry).toContain('selectedSelfId?: string')
@@ -336,6 +349,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')
     expect(clientEntry).toContain('webQQStorageBackend?: WebQQStorageBackend')
     expect(clientEntry).toContain('webQQMessageCacheLimit?: number')
+    expect(clientEntry).toContain('useCompactCapsuleShadow?: boolean')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain('showWebQQAffinity?: boolean')
     expect(clientEntry).toContain('showWebQQRelationship?: boolean')
@@ -348,6 +362,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100')
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
+    expect(clientEntry).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true')
     expect(clientEntry).toContain('showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false')
     expect(clientEntry).toContain('showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false')

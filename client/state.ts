@@ -251,6 +251,7 @@ export const showWebQQAffinity = ref(false)
 export const showWebQQCapsuleUnread = ref(true)
 export const showWebQQRelationship = ref(false)
 export const useBotAvatarThemeColor = ref(false)
+export const useCompactCapsuleShadow = ref(true)
 export const webQQTotalUnread = ref(0)
 export const webQQAccentColor = ref('#2563eb')
 export const webQQAvatarAccentColor = ref('')
@@ -271,6 +272,7 @@ export function resetWebQQClientState() {
   showWebQQCapsuleUnread.value = true
   showWebQQRelationship.value = false
   useBotAvatarThemeColor.value = false
+  useCompactCapsuleShadow.value = true
   webQQTotalUnread.value = 0
   webQQAccentColor.value = '#2563eb'
   webQQAvatarAccentColor.value = ''

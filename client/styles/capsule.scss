@@ -36,10 +36,14 @@
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: inherit;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16);
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
   pointer-events: none;
+}
+
+.onebot-webqq.is-capsule-shadow-wide::before {
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
 }
 
 .onebot-webqq.is-bot-stack-expanded {
