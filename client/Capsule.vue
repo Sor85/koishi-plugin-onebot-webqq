@@ -3,14 +3,14 @@
     <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root">
       <div
         :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
-          'is-bot-stack-expanded': botStackExpanded,
+          'is-bot-stack-expanded': botStackVisualExpanded,
           'is-capsule-shadow-wide': !useCompactCapsuleShadow,
         }]"
         :style="capsuleStyle"
         aria-live="polite"
       >
         <div
-          :class="['onebot-webqq__avatar-capsule', { 'has-bot-stack': hasMultipleBots, 'is-expanded': botStackExpanded }]"
+          :class="['onebot-webqq__avatar-capsule', { 'has-bot-stack': hasMultipleBots, 'is-expanded': botStackVisualExpanded }]"
           :style="avatarCapsuleStyle"
           @pointerenter="expandBotStack"
           @pointerleave="collapseBotStack"
@@ -20,7 +20,7 @@
           <div
             v-if="hasMultipleBots"
             :class="['onebot-webqq__bot-stack', {
-              'is-expanded': botStackExpanded,
+              'is-expanded': botStackVisualExpanded,
               'is-overflow-expanding': botStackOverflowMotion === 'expanding',
               'is-overflow-collapsing': botStackOverflowMotion === 'collapsing',
             }]"
@@ -197,6 +197,8 @@ const botStackBots = computed(() => {
 })
 const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))
 const collapsedBotOverflowCount = computed(() => Math.max(0, botStackBots.value.length - collapsedBotVisibleCount.value))
+const hasBotStackOverflow = computed(() => collapsedBotOverflowCount.value > 0)
+const botStackVisualExpanded = computed(() => botStackExpanded.value || !hasBotStackOverflow.value)
 const botOverflowPreview = computed(() => botStackBots.value[collapsedBotVisibleCount.value])
 const collapsedBotStackWidth = computed(() => 42 + Math.max(0, collapsedBotVisibleCount.value - 1) * 24 + (collapsedBotOverflowCount.value ? 24 : 0))
 const expandedBotStackWidth = computed(() => 42 + Math.max(0, botStackBots.value.length - 1) * 31)
@@ -329,7 +331,7 @@ async function animateBotStackLayout(layout?: AutoLayout) {
 }
 
 function setBotStackExpanded(expanded: boolean) {
-  if (!hasMultipleBots.value) return
+  if (!hasMultipleBots.value || !hasBotStackOverflow.value) return
   if (botStackExpanded.value === expanded) return
   const layout = recordBotStackLayout()
   botStackOverflowMotion.value = expanded ? 'expanding' : 'collapsing'
