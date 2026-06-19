@@ -150,16 +150,22 @@ describe('chat capsule styles', () => {
     expect(transition).toContain('transform')
   })
 
-  it('keeps the bot name smaller and anchored near the top', () => {
+  it('centers the capsule summary text vertically', () => {
     expect(ruleBody('.onebot-webqq__body')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq__body')).toContain('right: 24px')
     expect(ruleBody('.onebot-webqq__body')).toContain('bottom: 56px')
     expect(ruleBody('.onebot-webqq__body')).toContain('width: 173px')
     expect(ruleBody('.onebot-webqq__body')).toContain('height: 50px')
-    expect(ruleBody('.onebot-webqq__body')).toContain('padding: 9px 12px 5px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('padding: 7px 12px')
     expect(ruleBody('.onebot-webqq__body')).toContain('justify-content: flex-start')
     expect(ruleBody('.onebot-webqq__title')).toContain('font-size: 13px')
     expect(ruleBody('.onebot-webqq__title')).toContain('line-height: 18px')
+    expect(style).toContain(`.onebot-webqq__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 18px`)
   })
 
   it('keeps the current bot avatar anchored while folded avatars expand left', () => {
