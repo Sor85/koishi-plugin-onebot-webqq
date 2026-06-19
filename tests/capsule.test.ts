@@ -95,16 +95,28 @@ describe('chat capsule view', () => {
         : '头像图形引导应在胶囊非头像区域点击时触发',
       capsuleView.includes('ref="titleRef"')
         && capsuleView.includes('ref="activityRef"')
+        && capsuleView.includes('ref="activityUserRef"')
         && capsuleView.includes('class="onebot-webqq__tooltip"')
         && capsuleView.includes('class="onebot-webqq__tooltip-content"')
-        && capsuleView.includes('class="onebot-webqq__tooltip-arrow"')
         && capsuleView.includes('function hasTextOverflow(element?: HTMLElement)')
         && capsuleView.includes("function showCapsuleTextTooltip(target: 'title' | 'activity')")
         && capsuleView.includes("capsuleTooltipTarget.value === 'activity' && activityOverflow.value")
+        && capsuleView.includes("return activityTooltipText.value")
+        && capsuleView.includes('const activityTooltipText = computed(() => conversationUserName.value || displayActivityText.value)')
+        && capsuleView.includes('? hasTextOverflow(activityUserRef.value)')
+        && capsuleView.includes('ref="tooltipRef"')
+        && capsuleView.includes(':style="tooltipStyle"')
+        && capsuleView.includes('const tooltipStyle = computed(() => ({ \'--onebot-webqq-tooltip-left\': `${tooltipLeft.value}px` }))')
+        && capsuleView.includes('function updateCapsuleTooltipPosition()')
+        && capsuleView.includes('bodyRect.width / 2 - tooltipWidth / 2')
+        && capsuleView.includes('window.innerWidth - viewportMargin - bodyRect.left - tooltipWidth')
+        && capsuleView.includes('window.addEventListener(\'resize\', updateCapsuleTooltipPosition)')
+        && capsuleView.includes('window.removeEventListener(\'resize\', updateCapsuleTooltipPosition)')
+        && !capsuleView.includes('onebot-webqq__tooltip-arrow')
         && !capsuleView.includes(':title="titleTooltip"')
         && !capsuleView.includes(':title="metaTooltip"')
         ? ''
-        : '胶囊文字应只在内容溢出时显示 HeroUI 风格 tooltip',
+        : '胶囊文字应只在被省略内容溢出时显示 HeroUI 风格 tooltip',
       mountedSource.includes('!hasSeenWebQQAvatarGuide()')
         && mountedSource.includes('showWebQQAvatarGuide(true)')
         ? ''
@@ -123,14 +135,20 @@ describe('chat capsule view', () => {
 
   it('splits thinking status and current user into separate lines', () => {
     expect(capsuleView).toContain("const titleStatusText = computed(() => capsule.value?.conversation.activityText === '正在思考' ? '正在思考' : '')")
+    expect(capsuleView).toContain("const conversationUserName = computed(() => capsule.value?.conversation.userName || '')")
     expect(capsuleView).toContain('const conversation = capsule.value?.conversation')
     expect(capsuleView).toContain("if (!conversation) return '空闲中'")
-    expect(capsuleView).toContain('if (conversation.userName) return `正在与 ${conversation.userName} 对话`')
+    expect(capsuleView).toContain('if (conversationUserName.value) return `正在与 ${conversationUserName.value} 对话`')
     expect(capsuleView).toContain("conversation.activityText !== '正在思考'")
     expect(capsuleView).toContain('v-if="titleStatusText"')
     expect(capsuleView).toContain('{{ titleStatusText }}')
     expect(capsuleView).toContain('v-if="displayActivityText"')
     expect(capsuleView).toContain('{{ displayActivityText }}')
+    expect(capsuleView).toContain("'is-conversation': conversationUserName")
+    expect(capsuleView).toContain('v-if="conversationUserName"')
+    expect(capsuleView).toContain('class="onebot-webqq__activity-prefix">正在与</span>')
+    expect(capsuleView).toContain('ref="activityUserRef" class="onebot-webqq__activity-user">{{ conversationUserName }}</span>')
+    expect(capsuleView).toContain('class="onebot-webqq__activity-suffix">对话</span>')
   })
 
   it('does not render token usage in the main capsule', () => {
@@ -182,26 +200,41 @@ describe('chat capsule view', () => {
       capsuleView.includes('const hasMultipleBots = computed(() => availableBots.value.length > 1)')
         ? ''
         : '胶囊没有区分单机器人和多机器人场景',
-      capsuleView.includes("['onebot-webqq__bot-stack', { 'is-expanded': botStackExpanded }]")
+      capsuleView.includes("['onebot-webqq__bot-stack', {")
+        && capsuleView.includes("'is-expanded': botStackVisualExpanded")
+        && capsuleView.includes("'is-overflow-expanding': botStackOverflowMotion === 'expanding'")
+        && capsuleView.includes("'is-overflow-collapsing': botStackOverflowMotion === 'collapsing'")
         ? ''
-        : '缺少多机器人头像堆叠容器',
+        : '缺少多机器人头像堆叠容器或头像余量徽标动效状态',
       capsuleView.includes('const collapsedBotVisibleCount = computed(() => Math.min(botStackBots.value.length, 3))')
         ? ''
         : '折叠态没有限制最多显示 3 个机器人头像',
+      capsuleView.includes('const hasBotStackOverflow = computed(() => collapsedBotOverflowCount.value > 0)')
+        && capsuleView.includes('const botStackVisualExpanded = computed(() => botStackExpanded.value || !hasBotStackOverflow.value)')
+        ? ''
+        : '3 个以内的头像栈应直接使用展开态样式，只有出现头像余量徽标时才进入折叠状态机',
       capsuleView.includes('v-if="collapsedBotOverflowCount"') && capsuleView.includes('class="onebot-webqq__bot-overflow"')
         ? ''
         : '折叠态没有用数字显示多余机器人数量',
-      capsuleView.includes('class="onebot-webqq__bot-overflow-plus">+</span>')
+      capsuleView.includes('const botOverflowPreview = computed(() => botStackBots.value[collapsedBotVisibleCount.value])')
+        && capsuleView.includes('v-if="botOverflowPreview" class="onebot-webqq__bot-overflow-avatar"')
+        && capsuleView.includes('v-if="botOverflowPreview.avatar" :src="withProxy(botOverflowPreview.avatar)"')
+        ? ''
+        : '头像余量徽标缺少用于擦除替换的头像预览层',
+      capsuleView.includes('class="onebot-webqq__bot-overflow-label"')
+        && capsuleView.includes('class="onebot-webqq__bot-overflow-plus">+</span>')
         && capsuleView.includes('class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>')
         ? ''
-        : '折叠态多余机器人数量应显示加号',
+        : '折叠态多余机器人数量应在可擦除的 label 层显示加号',
       capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
+        && capsuleView.includes('? collapsedBotVisibleCount.value * 24')
+        && !capsuleView.includes('? Math.max(0, collapsedBotVisibleCount.value - 1) * 24')
         ? ''
-        : '折叠态没有隐藏超过上限的机器人头像',
-      capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${178 + collapsedBotStackWidth.value}px`")
-        && capsuleView.includes("'--onebot-webqq-shell-width': `${178 + expandedBotStackWidth.value}px`")
-        && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 14}px`")
-        && capsuleView.includes("'--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 14}px`")
+        : '折叠态没有把超过上限的机器人头像收拢到头像余量徽标位置',
+      capsuleView.includes("'--onebot-webqq-shell-collapsed-width': `${162 + collapsedBotStackWidth.value}px`")
+        && capsuleView.includes("'--onebot-webqq-shell-width': `${162 + expandedBotStackWidth.value}px`")
+        && capsuleView.includes("'--onebot-webqq-avatar-capsule-collapsed-width': `${collapsedBotStackWidth.value + 8}px`")
+        && capsuleView.includes("'--onebot-webqq-avatar-capsule-expanded-width': `${expandedBotStackWidth.value + 8}px`")
         && capsuleView.includes("'--onebot-webqq-stack-collapsed-width': `${collapsedBotStackWidth.value}px`")
         && capsuleView.includes("'--onebot-webqq-stack-expanded-width': `${expandedBotStackWidth.value}px`")
         && !capsuleView.includes("'--onebot-webqq-capsule-width'")
@@ -212,9 +245,9 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('right: var(--onebot-webqq-bot-expanded-right, 0);')
         ? ''
         : '多机器人头像没有从右侧锚定向左展开',
-      capsuleView.includes(':class="[\'onebot-webqq__avatar-capsule\', { \'has-bot-stack\': hasMultipleBots, \'is-expanded\': botStackExpanded }]"')
-        && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', { \'is-expanded\': botStackExpanded }]"')
-        && capsuleView.includes("'is-bot-stack-expanded': botStackExpanded")
+      capsuleView.includes(':class="[\'onebot-webqq__avatar-capsule\', { \'has-bot-stack\': hasMultipleBots, \'is-expanded\': botStackVisualExpanded }]"')
+        && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', {')
+        && capsuleView.includes("'is-bot-stack-expanded': botStackVisualExpanded")
         && capsuleView.indexOf('class="onebot-webqq-layout-root"') < capsuleView.indexOf(':class="[\'onebot-webqq__body\', `is-color-${webQQColorMode}`]"')
         && capsuleStyle.includes('.onebot-webqq.is-bot-stack-expanded')
         && capsuleStyle.includes('width: var(--onebot-webqq-shell-width')
@@ -224,7 +257,7 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('.onebot-webqq__body')
         && capsuleStyle.includes('position: fixed')
         && capsuleStyle.includes('right: 24px')
-        && capsuleStyle.includes('width: 173px')
+        && capsuleStyle.includes('width: 157px')
         ? ''
         : '头像展开时胶囊和头像组没有同步向左扩张，或正文没有固定右锚点',
       capsuleView.includes("import { createLayout, type AutoLayout } from 'animejs'")
@@ -238,9 +271,16 @@ describe('chat capsule view', () => {
         && !capsuleView.includes("'.onebot-webqq__avatar-guide'")
         ? ''
         : '机器人头像组应直接使用 Anime.js layout record/animate，且 layout root 只能包含外层胶囊和头像容器，不能动画右侧正文或头像引导层；bot-switch 必须参与 FLIP 才能固定当前头像',
-      capsuleView.includes("zIndex: '0'")
-        && capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
-        && capsuleView.includes("`${collapsedBotVisibleCount.value * 24}px`")
+      capsuleView.includes('collapsedBotOverflowCount.value ? 24 : 0')
+        && capsuleView.includes('const collapsedRight = collapsedBotVisibleCount.value * 24')
+        && capsuleView.includes('const expandedRight = collapsedBotVisibleCount.value * 31')
+        && capsuleView.includes("const isCoveredByExpandedAvatar = botStackExpanded.value || botStackOverflowMotion.value === 'expanding'")
+        && capsuleView.includes('const overflowZIndex = botStackBots.value.length - collapsedBotVisibleCount.value - (isCoveredByExpandedAvatar ? 1 : 0)')
+        && capsuleView.includes("'--onebot-webqq-bot-overflow-right': `${collapsedRight}px`")
+        && capsuleView.includes("'--onebot-webqq-bot-overflow-expanded-right': `${expandedRight}px`")
+        && capsuleView.includes("'--onebot-webqq-bot-overflow-z-index': `${overflowZIndex}`")
+        && !capsuleView.includes('--onebot-webqq-bot-overflow-expanded-offset')
+        && !capsuleView.includes("zIndex: '0'")
         && capsuleStyle.includes('justify-content: center;')
         && capsuleStyle.includes('padding-right: 18px;')
         && capsuleStyle.includes('.onebot-webqq__bot-overflow-plus')
@@ -248,7 +288,15 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('align-items: center;')
         && capsuleStyle.includes('font-size: 10px;')
         ? ''
-        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或 +N 没有在露出的 24px 区域中对齐',
+        : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或头像余量徽标没有按头像槽位同步计算展开位',
+      capsuleView.includes("type BotStackOverflowMotion = 'idle' | 'expanding' | 'collapsing'")
+        && capsuleView.includes("const botStackOverflowMotion = ref<BotStackOverflowMotion>('idle')")
+        && capsuleView.includes('if (!hasMultipleBots.value || !hasBotStackOverflow.value) return')
+        && capsuleView.includes("botStackOverflowMotion.value = expanded ? 'expanding' : 'collapsing'")
+        && capsuleView.includes("botStackOverflowMotion.value = 'idle'")
+        && capsuleView.includes('if (botStackOverflowMotionTimer) clearTimeout(botStackOverflowMotionTimer)')
+        ? ''
+        : '头像余量徽标展开/折叠没有独立动效阶段，可能退回静态背景板',
       capsuleView.includes('v-if="bot.selfId === activeBotSelfId"')
         && !capsuleStyle.includes('.onebot-webqq__status {\n    opacity: 0;')
         && !capsuleStyle.includes('&:focus-visible,\n  &.is-active')
@@ -277,6 +325,31 @@ describe('chat capsule view', () => {
     expect(missingRequirements).toEqual([])
   })
 
+  it('sizes the capsule avatar as an evenly inset inner circle', () => {
+    const shellSource = sourceBetween(capsuleStyle, '.onebot-webqq {', '.onebot-webqq::before')
+    const avatarCapsuleSource = sourceBetween(
+      capsuleStyle,
+      '.onebot-webqq__avatar-capsule {',
+      '.onebot-webqq__avatar-capsule.is-expanded',
+    )
+    const avatarSource = sourceBetween(capsuleStyle, '.onebot-webqq__avatar {', '  img {')
+    const missingRequirements = [
+      shellSource.includes('height: 50px;') ? '' : '胶囊高度应匹配 42px 头像加上下各 4px 留白',
+      capsuleStyle.includes('border: 1px solid rgba(255, 255, 255, 0.62);') ? '' : '胶囊边框应保持 1px',
+      avatarCapsuleSource.includes('width: var(--onebot-webqq-avatar-capsule-collapsed-width, 50px);')
+        ? ''
+        : '头像胶囊默认宽度应与主胶囊内容盒对齐',
+      avatarCapsuleSource.includes('height: 50px;') && avatarCapsuleSource.includes('padding: 4px;')
+        ? ''
+        : '头像应在胶囊内容盒中等距内缩',
+      avatarSource.includes('width: 42px;') && avatarSource.includes('height: 42px;')
+        ? ''
+        : '头像直径应等于 50px 小胶囊扣除上下 4px 留白后的内切圆',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('applies the configured WebQQ color mode to the main capsule', () => {
     const missingRequirements = [
       /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\/state'/.test(capsuleView)
@@ -293,6 +366,19 @@ describe('chat capsule view', () => {
     expect(missingRequirements).toEqual([])
   })
 
+  it('applies the configured compact capsule shadow option to the main capsule', () => {
+    const missingRequirements = [
+      /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\/state'/.test(capsuleView)
+        ? ''
+        : '主胶囊没有从 state 读取 useCompactCapsuleShadow',
+      capsuleView.includes("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
+        ? ''
+        : '关闭紧凑阴影时主胶囊没有输出旧版宽阴影类名',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('caps the capsule total unread badge at 99999+ only above 99999', () => {
     expect([
       runGetCapsuleUnreadText(9999),
@@ -302,7 +388,7 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain("bots?: OneBotRobotState['bots']")
     expect(clientEntry).toContain('selectedSelfId?: string')
@@ -311,6 +397,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')
     expect(clientEntry).toContain('webQQStorageBackend?: WebQQStorageBackend')
     expect(clientEntry).toContain('webQQMessageCacheLimit?: number')
+    expect(clientEntry).toContain('useCompactCapsuleShadow?: boolean')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain('showWebQQAffinity?: boolean')
     expect(clientEntry).toContain('showWebQQRelationship?: boolean')
@@ -323,6 +410,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100')
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
+    expect(clientEntry).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true')
     expect(clientEntry).toContain('showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false')
     expect(clientEntry).toContain('showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false')

@@ -180,6 +180,14 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('aria-label="WebQQ 颜色模式"')
   })
 
+  it('keeps compact capsule shadow enabled by default from console entry data', () => {
+    expect(clientState).toContain('export const useCompactCapsuleShadow = ref(true)')
+    expect(clientIndex).toContain('useCompactCapsuleShadow')
+    expect(clientIndex).toMatch(/useCompactCapsuleShadow\?:\s*boolean/)
+    expect(clientIndex).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
+    expect(capsuleView).toContain("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
+  })
+
   it('uses bot avatar accent color ahead of the manual WebQQ accent color', () => {
     expect(webqqView).toContain('const webQQEffectiveAccentColor = computed')
     expect(webqqView).toContain('getWebQQEffectiveAccentColor(')

@@ -14,6 +14,13 @@ const webqqMessageEffectsStyle = await readFile(new URL('../client/styles/webqq-
 const themeColorsStyle = await readFile(new URL('../client/styles/theme-colors.scss', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
+function sourceBetween(source: string, start: string, end: string) {
+  const startIndex = source.indexOf(start)
+  if (startIndex < 0) return ''
+  const endIndex = source.indexOf(end, startIndex + start.length)
+  return endIndex < 0 ? source.slice(startIndex) : source.slice(startIndex, endIndex)
+}
+
 function mediaBody(query: string) {
   const start = style.indexOf(query)
   if (start < 0) return ''
@@ -38,6 +45,10 @@ function ruleBody(selector: string) {
     if (depth === 0) return style.slice(bodyStart, index)
   }
   return ''
+}
+
+function topLevelRuleBody(selector: string) {
+  return ruleBodyIncluding(selector, capsuleStyle.slice(capsuleStyle.indexOf(`\n${selector} {`) + 1))
 }
 
 function ruleBodyIncluding(selector: string, source = style) {
@@ -94,9 +105,22 @@ describe('chat capsule styles', () => {
       guideBody.includes('pointer-events: none') ? '' : '头像图形引导不应拦截点击头像',
       guideBody.includes('z-index: 1') ? '' : '头像图形引导应该位于在线状态和消息计数下方',
       ruleBody('.onebot-webqq__status').includes('z-index: 2') ? '' : '在线状态应该覆盖头像图形引导',
+      guideBody.includes('width: 46px')
+        && guideBody.includes('height: 46px')
+        ? ''
+        : '头像图形引导外框没有贴合当前 42px 头像',
+      ringBody.includes('left: 1px')
+        && ringBody.includes('top: 1px')
+        && ringBody.includes('width: 44px')
+        && ringBody.includes('height: 44px')
+        ? ''
+        : '头像光圈没有围绕当前 42px 头像外缘',
       ringBody.includes('var(--k-color-primary, #409eff)')
         ? ''
         : '头像光圈没有使用当前主题主色',
+      ringBody.includes('box-shadow: 0 0 12px')
+        ? ''
+        : '头像光圈阴影仍按旧头像尺寸扩散过宽',
       style.includes('--onebot-webqq-avatar-guide-color')
         ? '头像光圈不应再依赖 bot 头像主题色 CSS 变量'
         : '',
@@ -108,6 +132,10 @@ describe('chat capsule styles', () => {
         && style.includes('@keyframes onebot-webqq-avatar-guide-halo')
         ? ''
         : '头像光圈缺少柔和外扩 halo',
+      style.includes('.onebot-webqq__avatar-guide-ring::after')
+        && ruleBody('.onebot-webqq__avatar-guide-ring::after').includes('inset: -5px')
+        ? ''
+        : '头像光圈外扩 halo 没有按当前头像尺寸收窄',
       transitionBody.includes('transition: opacity')
         && transitionBody.includes('transform')
         ? ''
@@ -132,67 +160,147 @@ describe('chat capsule styles', () => {
 
   it('uses a HeroUI-style tooltip for overflowing capsule text', () => {
     const body = ruleBody('.onebot-webqq__body')
+    const conversationActivity = ruleBody('.onebot-webqq__activity.is-conversation')
+    const activityAffix = ruleBody(`.onebot-webqq__activity-prefix,
+.onebot-webqq__activity-suffix`)
+    const activityUser = ruleBody('.onebot-webqq__activity-user')
     const tooltip = ruleBody('.onebot-webqq__tooltip')
     const content = ruleBody('.onebot-webqq__tooltip-content')
-    const arrow = ruleBody('.onebot-webqq__tooltip-arrow')
     const transition = ruleBody(`.onebot-webqq-tooltip-enter-active,
 .onebot-webqq-tooltip-leave-active`)
 
     expect(body).toContain('position: fixed')
     expect(body).toContain('right: 24px')
+    expect(conversationActivity).toContain('display: flex')
+    expect(conversationActivity).toContain('align-items: center')
+    expect(activityAffix).toContain('flex-shrink: 0')
+    expect(activityUser).toContain('min-width: 0')
+    expect(activityUser).toContain('overflow: hidden')
+    expect(activityUser).toContain('text-overflow: ellipsis')
+    expect(activityUser).toContain('white-space: nowrap')
     expect(tooltip).toContain('position: absolute')
-    expect(tooltip).toContain('bottom: calc(100% + 8px)')
+    expect(tooltip).toContain('left: var(--onebot-webqq-tooltip-left, 0)')
+    expect(tooltip).toContain('bottom: calc(100% + 6px)')
+    expect(tooltip).toContain('width: max-content')
+    expect(tooltip).toContain('max-width: calc(100vw - 24px)')
     expect(tooltip).toContain('pointer-events: none')
+    expect(tooltip).toContain('color: var(--k-text-dark')
     expect(content).toContain('border-radius: 8px')
-    expect(content).toContain('background: rgba(17, 24, 39, 0.96)')
-    expect(arrow).toContain('transform: rotate(45deg)')
+    expect(content).toContain('background: rgba(255, 255, 255, 0.78)')
+    expect(content).toContain('border: 1px solid rgba(255, 255, 255, 0.62)')
+    expect(content).toContain('backdrop-filter: saturate(180%) blur(18px)')
+    expect(content).toContain('-webkit-backdrop-filter: saturate(180%) blur(18px)')
+    expect(content).toContain('font-size: 11px')
+    expect(content).toContain('line-height: 16px')
+    expect(content).toContain('white-space: nowrap')
+    expect(content).toContain('overflow: hidden')
+    expect(content).not.toContain('text-overflow: ellipsis')
+    expect(style).not.toContain('onebot-webqq__tooltip-arrow')
     expect(transition).toContain('transition: opacity')
     expect(transition).toContain('transform')
   })
 
-  it('keeps the bot name smaller and anchored near the top', () => {
+  it('centers the capsule summary text vertically', () => {
     expect(ruleBody('.onebot-webqq__body')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq__body')).toContain('right: 24px')
     expect(ruleBody('.onebot-webqq__body')).toContain('bottom: 56px')
-    expect(ruleBody('.onebot-webqq__body')).toContain('width: 173px')
-    expect(ruleBody('.onebot-webqq__body')).toContain('padding: 9px 12px 5px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('width: 157px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('height: 50px')
+    expect(ruleBody('.onebot-webqq__body')).toContain('padding: 7px 12px')
     expect(ruleBody('.onebot-webqq__body')).toContain('justify-content: flex-start')
     expect(ruleBody('.onebot-webqq__title')).toContain('font-size: 13px')
     expect(ruleBody('.onebot-webqq__title')).toContain('line-height: 18px')
+    expect(style).toContain(`.onebot-webqq__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 18px`)
   })
 
   it('keeps the current bot avatar anchored while folded avatars expand left', () => {
     const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const stack = ruleBody('.onebot-webqq__bot-stack')
+    const overflow = topLevelRuleBody('.onebot-webqq__bot-overflow')
+    const overflowExpanding = ruleBodyIncluding('.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-overflow')
+    const overflowAvatar = ruleBody('.onebot-webqq__bot-overflow-avatar')
+    const overflowLabel = sourceBetween(
+      capsuleStyle,
+      '.onebot-webqq__bot-overflow-label {',
+      '.onebot-webqq__bot-overflow-plus',
+    )
+    const overflowMotionAvatars = sourceBetween(
+      capsuleStyle,
+      '.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-switch.is-collapsed-extra,',
+      '.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow',
+    )
+    const overflowCollapsing = ruleBodyIncluding('.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow')
     const narrowBody = mediaBody('@media screen and (max-width: 768px)')
 
     expect(ruleBody('.onebot-webqq-host')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq-host')).toContain('right: 24px')
     expect(ruleBody('.onebot-webqq-host')).toContain('bottom: 56px')
-    expect(ruleBody('.onebot-webqq-host')).toContain('height: 52px')
+    expect(ruleBody('.onebot-webqq-host')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq-host')).toContain('line-height: 0')
     expect(ruleBody('.onebot-webqq-layout-root')).toContain('position: relative')
     expect(ruleBody('.onebot-webqq-layout-root')).toContain('display: block')
-    expect(ruleBody('.onebot-webqq-layout-root')).toContain('height: 52px')
+    expect(ruleBody('.onebot-webqq-layout-root')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq')).toContain('position: relative')
     expect(ruleBody('.onebot-webqq')).not.toContain('position: fixed')
-    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 204px)')
+    expect(ruleBody('.onebot-webqq')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq')).not.toContain('max-width: calc(100vw - 32px)')
     expect(ruleBody('.onebot-webqq')).toContain('transition: width 0.18s ease')
     expect(ruleBody('.onebot-webqq.is-bot-stack-expanded')).toContain('width: var(--onebot-webqq-shell-width')
     expect(avatarCapsule).toContain('position: relative')
     expect(avatarCapsule).not.toContain('position: absolute')
     expect(avatarCapsule).not.toContain('right: 164px')
-    expect(avatarCapsule).toContain('width: var(--onebot-webqq-avatar-capsule-collapsed-width, 56px)')
+    expect(avatarCapsule).toContain('width: var(--onebot-webqq-avatar-capsule-collapsed-width, 50px)')
+    expect(avatarCapsule).toContain('height: 50px')
+    expect(avatarCapsule).toContain('padding: 4px')
     expect(avatarCapsule).toContain('transition: width 0.18s ease')
-    expect(ruleBody('.onebot-webqq__avatar-capsule.is-expanded')).toContain('width: var(--onebot-webqq-avatar-capsule-expanded-width')
-    expect(stack).toContain('width: var(--onebot-webqq-stack-collapsed-width, 56px)')
+    expect(ruleBody('.onebot-webqq__avatar-capsule.is-expanded')).toContain('width: var(--onebot-webqq-avatar-capsule-expanded-width, var(--onebot-webqq-avatar-capsule-collapsed-width, 50px))')
+    expect(stack).toContain('width: var(--onebot-webqq-stack-collapsed-width, 42px)')
+    expect(stack).toContain('width: var(--onebot-webqq-stack-expanded-width, var(--onebot-webqq-stack-collapsed-width, 42px))')
     expect(stack).toContain('transition: width 0.18s ease')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('right: var(--onebot-webqq-bot-collapsed-right, 0)')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('-webkit-tap-highlight-color: transparent')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('content: none')
     expect(ruleBodyIncluding('.onebot-webqq__bot-switch')).toContain('display: none')
     expect(ruleBody('.onebot-webqq__bot-stack').includes('right: var(--onebot-webqq-bot-expanded-right, 0)')).toBe(true)
+    expect(overflow).toContain('right: var(--onebot-webqq-bot-overflow-right, 0)')
+    expect(overflow).toContain('z-index: var(--onebot-webqq-bot-overflow-z-index, 0)')
+    expect(overflow).toContain('overflow: hidden')
+    expect(overflow).toContain('transition: opacity 0.12s ease')
+    expect(overflow).toContain('will-change: opacity')
+    expect(overflowAvatar).toContain('opacity: 0')
+    expect(overflowAvatar).toContain('clip-path: inset(0 100% 0 0 round 999px)')
+    expect(overflowAvatar).toContain('object-fit: cover')
+    expect(overflowLabel).toContain('background: inherit')
+    expect(overflowLabel).toContain('clip-path: inset(0 0 0 0 round 999px)')
+    expect(stack).toContain('.onebot-webqq__bot-overflow')
+    expect(stack).toContain('right: var(--onebot-webqq-bot-overflow-expanded-right, var(--onebot-webqq-bot-overflow-right, 0))')
+    expect(stack).toContain('opacity: 0')
+    expect(overflowExpanding).not.toContain('--onebot-webqq-bot-overflow-z-index')
+    expect(overflowExpanding).toContain('opacity: 1')
+    expect(overflowExpanding).not.toContain('animation:')
+    expect(overflowMotionAvatars).toContain('opacity: 1')
+    expect(overflowMotionAvatars).toContain('pointer-events: none')
+    expect(overflowMotionAvatars).toContain('transition: none')
+    expect(overflowCollapsing).not.toContain('--onebot-webqq-bot-overflow-z-index')
+    expect(overflowCollapsing).toContain('opacity: 1')
+    expect(overflowCollapsing).toContain('animation: onebot-webqq-bot-overflow-avatar-erase 190ms cubic-bezier')
+    expect(overflowCollapsing).toContain('animation: onebot-webqq-bot-overflow-label-reveal 190ms cubic-bezier')
+    expect(style).toContain('@keyframes onebot-webqq-bot-overflow-avatar-erase')
+    expect(style).toContain('@keyframes onebot-webqq-bot-overflow-label-reveal')
+    expect(ruleBody('@keyframes onebot-webqq-bot-overflow-avatar-erase')).toContain('clip-path: inset(0 100% 0 0 round 999px)')
+    expect(ruleBody('@keyframes onebot-webqq-bot-overflow-label-reveal')).toContain('clip-path: inset(0 0 0 0 round 999px)')
+    expect(style).not.toContain('@keyframes onebot-webqq-bot-overflow-avatar-reveal')
+    expect(style).not.toContain('@keyframes onebot-webqq-bot-overflow-label-erase')
+    expect(style).not.toContain('--onebot-webqq-bot-overflow-expanded-offset')
+    expect(style).not.toContain('--onebot-webqq-bot-overflow-z-index: 20')
+    expect(ruleBody('@media (prefers-reduced-motion: reduce)')).not.toContain('.onebot-webqq__bot-stack.is-overflow-expanding .onebot-webqq__bot-overflow-avatar')
+    expect(ruleBody('@media (prefers-reduced-motion: reduce)')).toContain('.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow-label')
     expect(narrowBody).not.toContain('.onebot-webqq {\n    right: 16px;\n    bottom: 52px;')
     expect(narrowBody).toContain('.onebot-webqq-host,\n  .onebot-webqq__body')
     expect(narrowBody).toContain('right: 16px')
@@ -200,7 +308,7 @@ describe('chat capsule styles', () => {
   })
 
   it('keeps the main capsule compact without usage rows', () => {
-    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 220px)')
+    expect(ruleBody('.onebot-webqq')).toContain('width: var(--onebot-webqq-shell-collapsed-width, 204px)')
     expect(style).not.toContain('.onebot-webqq__usage')
     expect(style).not.toContain('.onebot-webqq__usage-row')
     expect(style).not.toContain('.onebot-webqq__usage-icon')
@@ -208,35 +316,74 @@ describe('chat capsule styles', () => {
 
   it('renders the main capsule with a frosted glass surface', () => {
     const capsule = ruleBody('.onebot-webqq')
+    const capsuleSurface = ruleBody('.onebot-webqq::before')
     const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const body = ruleBody('.onebot-webqq__body')
-    const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto')
-    const darkSurface = ruleBody('.onebot-webqq.is-color-dark')
+    const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto::before')
+    const darkSurface = ruleBody('.onebot-webqq.is-color-dark::before')
+    const wideCapsuleSurface = ruleBody('.onebot-webqq.is-capsule-shadow-wide::before')
+    const autoWideDarkSurface = ruleBody('.onebot-webqq.is-color-auto.is-capsule-shadow-wide::before')
+    const darkWideSurface = ruleBody('.onebot-webqq.is-color-dark.is-capsule-shadow-wide::before')
     const missingRequirements = [
-      capsule.includes('background: rgba(255, 255, 255, 0.78)')
+      capsule.includes('isolation: isolate')
+        ? ''
+        : '主胶囊没有隔离表面层和溢出的头像角标',
+      !capsule.includes('background:')
+        && !capsule.includes('box-shadow:')
+        && !capsule.includes('backdrop-filter:')
+        && !capsule.includes('-webkit-backdrop-filter:')
+        ? ''
+        : '主胶囊本体不应直接绘制表面，否则溢出的未读计数会参与表面合成范围',
+      capsuleSurface.includes("content: ''")
+        && capsuleSurface.includes('position: absolute')
+        && capsuleSurface.includes('inset: 0')
+        && capsuleSurface.includes('border-radius: inherit')
+        ? ''
+        : '主胶囊表面没有固定在独立伪元素层',
+      capsuleSurface.includes('background: rgba(255, 255, 255, 0.78)')
         ? ''
         : '主胶囊浅色背景不是半透明毛玻璃',
-      capsule.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
+      capsuleSurface.includes('border: 1px solid rgba(255, 255, 255, 0.62)')
         ? ''
         : '主胶囊浅色边框没有使用半透明高光',
-      capsule.includes('backdrop-filter: saturate(180%) blur(18px)')
+      capsuleSurface.includes('box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16)')
+        ? ''
+        : '主胶囊浅色阴影没有收窄到统一表面层',
+      wideCapsuleSurface.includes('box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16)')
+        ? ''
+        : '关闭紧凑阴影后没有恢复旧版浅色宽阴影',
+      capsuleSurface.includes('backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少毛玻璃背景模糊',
-      capsule.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
+      capsuleSurface.includes('-webkit-backdrop-filter: saturate(180%) blur(18px)')
         ? ''
         : '主胶囊缺少 Safari 毛玻璃前缀',
       !avatarCapsule.includes('background:')
         && !avatarCapsule.includes('border:')
+        && !avatarCapsule.includes('box-shadow:')
         && !body.includes('background:')
         && !body.includes('border:')
+        && !body.includes('box-shadow:')
         ? ''
-        : '左右结构不能各自画成两个胶囊表面',
+        : '左右结构不能各自画成两个胶囊表面或阴影',
       autoDarkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊自动暗色背景不是半透明毛玻璃',
+      autoDarkSurface.includes('box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24)')
+        ? ''
+        : '主胶囊自动暗色阴影没有收窄到统一表面层',
+      autoWideDarkSurface.includes('box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28)')
+        ? ''
+        : '关闭紧凑阴影后没有恢复旧版自动暗色宽阴影',
       darkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊暗色背景不是半透明毛玻璃',
+      darkSurface.includes('box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24)')
+        ? ''
+        : '主胶囊暗色阴影没有收窄到统一表面层',
+      darkWideSurface.includes('box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28)')
+        ? ''
+        : '关闭紧凑阴影后没有恢复旧版暗色宽阴影',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -819,29 +966,33 @@ describe('chat capsule styles', () => {
   it('adds dark color mode overrides for the main capsule and WebQQ chat header', () => {
     const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
     const forcedCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-dark')
+    const forcedCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-dark::before')
     const autoCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-auto', autoDarkBody)
+    const autoCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-auto::before', autoDarkBody)
     const forcedHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header')
     const autoHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__chat-header', autoDarkBody)
     const missingRequirements = [
       forcedCapsuleBody ? '' : '缺少强制暗色主胶囊选择器 .onebot-webqq.is-color-dark',
-      forcedCapsuleBody.includes('background:')
+      forcedCapsuleSurfaceBody ? '' : '缺少强制暗色主胶囊表面选择器 .onebot-webqq.is-color-dark::before',
+      forcedCapsuleSurfaceBody.includes('background:')
         ? ''
         : '强制暗色主胶囊没有覆盖背景',
       forcedCapsuleBody.includes('color:')
         ? ''
         : '强制暗色主胶囊没有覆盖文本',
-      forcedCapsuleBody.includes('border')
+      forcedCapsuleSurfaceBody.includes('border')
         ? ''
         : '强制暗色主胶囊没有覆盖边框',
       autoDarkBody ? '' : '缺少 prefers-color-scheme: dark 自动暗色媒体查询',
       autoCapsuleBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq.is-color-auto 覆盖',
-      autoCapsuleBody.includes('background:')
+      autoCapsuleSurfaceBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq.is-color-auto::before 表面覆盖',
+      autoCapsuleSurfaceBody.includes('background:')
         ? ''
         : '自动暗色主胶囊没有覆盖背景',
       autoCapsuleBody.includes('color:')
         ? ''
         : '自动暗色主胶囊没有覆盖文本',
-      autoCapsuleBody.includes('border')
+      autoCapsuleSurfaceBody.includes('border')
         ? ''
         : '自动暗色主胶囊没有覆盖边框',
       forcedHeaderBody ? '' : '缺少强制暗色聊天顶栏选择器 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header',

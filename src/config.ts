@@ -19,6 +19,7 @@ export interface Config {
   webQQColorMode?: 'auto' | 'light' | 'dark'
   webQQAccentColor?: string
   useBotAvatarThemeColor?: boolean
+  useCompactCapsuleShadow?: boolean
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
   showWebQQRelationship?: boolean
@@ -66,6 +67,7 @@ export const Config: Schema<Config> = Schema.intersect([
     ]).default('auto').role('radio').description('WebQQ 颜色模式'),
     webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 手动主题色'),
     useBotAvatarThemeColor: Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效'),
+    useCompactCapsuleShadow: Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影'),
   }).description('界面外观'),
 
   Schema.object({

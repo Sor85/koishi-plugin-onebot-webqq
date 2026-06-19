@@ -34,6 +34,7 @@ export function registerConsoleEntry(
       webQQAccentColor: config.webQQAccentColor ?? '#2563eb',
       webQQMessageCacheLimit: config.webQQMessageCacheLimit ?? 100,
       useBotAvatarThemeColor: config.useBotAvatarThemeColor ?? false,
+      useCompactCapsuleShadow: config.useCompactCapsuleShadow ?? true,
       hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? true,
       showWebQQAffinity: config.showWebQQAffinity ?? false,
       showWebQQRelationship: config.showWebQQRelationship ?? false,
