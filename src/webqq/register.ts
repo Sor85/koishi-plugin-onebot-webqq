@@ -8,7 +8,7 @@ import { registerWebQQConsoleListeners } from './console'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
-} from './event-notices'
+} from './notices/event-notices'
 import {
   createWebQQLiveRuntime,
   type WebQQLiveRuntime,

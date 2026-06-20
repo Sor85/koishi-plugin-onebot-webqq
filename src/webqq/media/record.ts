@@ -1,7 +1,7 @@
-import type { WebQQMessageElement } from '../../types'
-import type { OneBotBot } from '../../../onebot/actions'
-import { getNumberField, getStringField } from '../../../onebot/data'
-import { resolveOneBotRecord, transcribeOneBotRecord } from '../../../onebot/media/records'
+import type { WebQQMessageElement } from '../types'
+import type { OneBotBot } from '../../onebot/actions'
+import { getNumberField, getStringField } from '../../onebot/data'
+import { resolveOneBotRecord, transcribeOneBotRecord } from '../../onebot/media/records'
 
 export async function normalizeRecordElement(data: Record<string, unknown>, bot: OneBotBot, mediaUrlResolver?: (file: string) => string): Promise<WebQQMessageElement> {
   const duration = getNumberField(data, ['duration', 'time', 'seconds'])

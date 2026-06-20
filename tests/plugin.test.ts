@@ -24,7 +24,7 @@ import { readWebQQGroupSenderMetadata } from '../src/webqq/adapters/onebot/group
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
-} from '../src/webqq/event-notices'
+} from '../src/webqq/notices/event-notices'
 import {
   applyWebQQReactionToLiveMessages,
   getWebQQLiveMessageKey,
@@ -85,7 +85,7 @@ const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/message-fl
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/media/image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender/sender-metadata.ts', import.meta.url), 'utf8')
 const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/adapters/onebot/group-sender-metadata.ts', import.meta.url), 'utf8')
-const webqqEventNoticesSource = await readFile(new URL('../src/webqq/event-notices.ts', import.meta.url), 'utf8')
+const webqqEventNoticesSource = await readFile(new URL('../src/webqq/notices/event-notices.ts', import.meta.url), 'utf8')
 const webqqSessionSource = await readFile(new URL('../src/webqq/message-flow/session.ts', import.meta.url), 'utf8')
 const pluginContextSource = await readFile(new URL('../src/plugin-context.ts', import.meta.url), 'utf8')
 
@@ -907,7 +907,7 @@ describe('chat capsule plugin wiring', () => {
     }) as unknown as Session
 
     expect(pluginSource).toContain("from './webqq/register'")
-    expect(webqqRegisterSource).toContain("from './event-notices'")
+    expect(webqqRegisterSource).toContain("from './notices/event-notices'")
     expect(pluginSource).not.toContain('function createWebQQFriendRequestNotice(')
     expect(webqqEventNoticesSource).toContain('export function createWebQQFriendRequestNotice')
     expect(createWebQQFriendRequestNotice(friendSession)).toMatchObject({

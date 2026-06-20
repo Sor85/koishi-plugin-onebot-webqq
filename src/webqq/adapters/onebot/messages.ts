@@ -17,7 +17,7 @@ import {
 } from './images'
 import {
   normalizeRecordElement,
-} from './records'
+} from '../../media/record'
 import type {
   WebQQMessage,
   WebQQMessageElement,
