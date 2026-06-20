@@ -884,7 +884,8 @@ describe('chat capsule plugin wiring', () => {
 
     expect(pluginSource).not.toContain("from './webqq/adapters/onebot/group-sender-metadata'")
     expect(capsuleRegisterSource).not.toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
-    expect(runtimeSource).toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
+    expect(runtimeSource).not.toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
     expect(pluginSource).not.toContain('async function readWebQQGroupSenderMetadata(')
     expect(webqqGroupSenderMetadataSource).toContain('export async function readWebQQGroupSenderMetadata')
     await expect(readWebQQGroupSenderMetadata(session, '30000', true)).resolves.toEqual({

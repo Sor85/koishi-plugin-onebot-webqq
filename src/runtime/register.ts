@@ -4,6 +4,7 @@ import type {
   ChatCapsuleContext,
   ChatLunaCharacterAfterChatPayload,
 } from '../plugin-context'
+import { readWebQQBotGroupSenderMetadata } from '../webqq/adapters/onebot/group-sender-metadata'
 import { registerWebQQ } from '../webqq/register'
 import { createPluginRuntime } from './create-runtime'
 
@@ -15,7 +16,6 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     imageUrlResolver,
     webqq,
     consoleAuthOptions,
-    readBotSenderMetadata,
   } = createPluginRuntime(ctx, config)
   const capsuleRuntime = registerCapsule({
     ctx,
@@ -23,7 +23,7 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     debug,
     bots: webqq,
     consoleAuthOptions,
-    readBotSenderMetadata,
+    readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
     logger,
   })
   const liveRuntime = registerWebQQ({

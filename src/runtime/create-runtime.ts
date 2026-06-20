@@ -1,6 +1,5 @@
 import type { Config as PluginConfig } from '../config'
 import type { ChatCapsuleContext } from '../plugin-context'
-import { readWebQQBotGroupSenderMetadata } from '../webqq/adapters/onebot/group-sender-metadata'
 import { createOneBotWebQQService } from '../webqq/adapters/onebot/service'
 import { createWebQQImageUrlResolver } from '../webqq/media/image-url-resolver'
 
@@ -41,7 +40,6 @@ export function createPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfi
     logger,
     imageUrlResolver,
     webqq,
-    readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
     consoleAuthOptions: { authority: 1 },
   }
 }
