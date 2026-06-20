@@ -1,10 +1,11 @@
 import type { Session } from 'koishi'
-import { getActionData, isRecord, readRecordText, toOneBotId } from '../shared/structured-text'
+import { getActionData, toOneBotId } from '../../../onebot/data'
+import { isRecord, readRecordText } from '../../../shared/record'
 import {
   hasWebQQSenderMetadata,
   readWebQQSenderMetadata,
   type WebQQSenderMetadata,
-} from './sender-metadata'
+} from '../../sender-metadata'
 
 async function readWebQQGroupMemberInfo(session: Session, userId: string, noCache: boolean) {
   if ((session.bot.platform || session.platform) !== 'onebot') return

@@ -10,9 +10,9 @@ import type {
   WebQQMessageQuery,
   WebQQNotice,
   WebQQNoticeAction,
-  OneBotRobotState,
   WebQQRecordTranscriptionQuery,
-} from './onebot'
+} from './webqq/types'
+import type { OneBotRobotState } from './onebot/types'
 import type { WebQQImageServer } from './webqq/image-url-resolver'
 import type {
   WebQQMessageCachePayload,

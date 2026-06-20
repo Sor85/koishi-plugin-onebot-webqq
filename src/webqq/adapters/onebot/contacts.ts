@@ -1,12 +1,14 @@
-import type { WebQQChatType, WebQQFriend, WebQQFriendCategory, WebQQGroup } from './types'
+import type { WebQQChatType, WebQQFriend, WebQQFriendCategory, WebQQGroup } from '../../types'
 import {
-  getGroupAvatar,
   getNumberField,
   getStringField,
-  getUserAvatar,
   isRecord,
   toArrayResult,
-} from './data'
+} from '../../../onebot/data'
+import {
+  getWebQQGroupAvatar,
+  getWebQQUserAvatar,
+} from '../../display'
 
 export function normalizeFriend(raw: unknown, category?: { id: string; name: string }): WebQQFriend {
   const item = isRecord(raw) ? raw : {}
@@ -17,7 +19,7 @@ export function normalizeFriend(raw: unknown, category?: { id: string; name: str
     userId,
     name: remark || nickname,
     nickname,
-    avatar: getUserAvatar(userId),
+    avatar: getWebQQUserAvatar(userId),
     ...(category ? { categoryId: category.id, categoryName: category.name } : {}),
   }
 }
@@ -37,7 +39,7 @@ export function normalizeGroup(raw: unknown): WebQQGroup {
     groupId,
     name: getStringField(item, ['group_name', 'groupName', 'name']) || groupId,
     memberCount: getNumberField(item, ['member_count', 'memberCount']),
-    avatar: getGroupAvatar(groupId),
+    avatar: getWebQQGroupAvatar(groupId),
   }
 }
 

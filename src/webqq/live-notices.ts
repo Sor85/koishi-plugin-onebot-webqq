@@ -1,7 +1,7 @@
 import type { Session } from 'koishi'
 import type { WebQQLiveMessage } from './types'
-import { isRecord, readRecordText } from '../shared/structured-text'
-import { readWebQQGroupMemberName } from './group-sender-metadata'
+import { isRecord, readRecordText } from '../shared/record'
+import { readWebQQGroupMemberName } from './adapters/onebot/group-sender-metadata'
 import { createWebQQEventMessage } from './live-message'
 import { readWebQQPeer } from './session'
 

@@ -1,12 +1,12 @@
-import type { WebQQNotice } from './types'
+import type { WebQQNotice } from '../../types'
 import {
   getBooleanField,
-  getGroupAvatar,
   getStringField,
   isRecord,
   toArrayResult,
   toTimestampMs,
-} from './data'
+} from '../../../onebot/data'
+import { getWebQQGroupAvatar } from '../../display'
 
 function isHandledGroupNotice(raw: unknown) {
   if (!isRecord(raw)) return false
@@ -47,7 +47,7 @@ function normalizeGroupNotice(raw: unknown, bucket: string, index: number): WebQ
     type: 'group-notice',
     title: groupName || '群通知',
     subtitle: requesterName ? `${requesterName} ${actionText}` : actionText,
-    avatar: groupId ? getGroupAvatar(groupId) : '',
+    avatar: groupId ? getWebQQGroupAvatar(groupId) : '',
     status: subType === 'leave' ? 'approved' : getGroupNoticeStatus(item),
     time: toTimestampMs(getStringField(item, ['time', 'timestamp', 'request_time', 'requestTime', 'create_time', 'createTime'])),
     subType,

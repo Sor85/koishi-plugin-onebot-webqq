@@ -1,6 +1,6 @@
-import type { WebQQMessageElement } from './types'
-import { callAction, type OneBotBot } from './actions'
-import { getStringField, isRecord } from './data'
+import type { WebQQMessageElement } from '../../types'
+import { callAction, type OneBotBot } from '../../../onebot/actions'
+import { getStringField, isRecord } from '../../../onebot/data'
 
 function isRemoteUrl(value: string) {
   return /^https?:\/\//.test(value)

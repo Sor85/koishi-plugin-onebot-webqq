@@ -1,11 +1,13 @@
-import type { WebQQGroupAnnouncement, WebQQGroupMember } from './types'
+import type { WebQQGroupAnnouncement, WebQQGroupMember } from '../../types'
 import {
   getStringField,
-  getUserAvatar,
   isRecord,
-  normalizeGroupRole,
   toTimestampMs,
-} from './data'
+} from '../../../onebot/data'
+import {
+  getWebQQUserAvatar,
+  normalizeWebQQGroupRole,
+} from '../../display'
 import { getTextValue } from './text'
 
 export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
@@ -13,12 +15,12 @@ export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
   const userId = getStringField(item, ['user_id', 'userId', 'uin', 'uid'])
   const nickname = getStringField(item, ['nickname', 'nick', 'name']) || userId
   const card = getStringField(item, ['card', 'group_card', 'groupCard'])
-  const role = normalizeGroupRole(getStringField(item, ['role']))
+  const role = normalizeWebQQGroupRole(getStringField(item, ['role']))
   return {
     userId,
     nickname,
     card,
-    avatar: getUserAvatar(userId),
+    avatar: getWebQQUserAvatar(userId),
     ...(role ? { role } : {}),
   }
 }

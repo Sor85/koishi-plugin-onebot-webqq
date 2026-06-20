@@ -1,6 +1,6 @@
-import type { WebQQMessageElement } from './types'
-import { callAction, type OneBotBot } from './actions'
-import { getActionData, getNumberField, getStringField, isRecord, toOneBotId } from './data'
+import type { WebQQMessageElement } from '../../types'
+import { callAction, type OneBotBot } from '../../../onebot/actions'
+import { getActionData, getNumberField, getStringField, isRecord, toOneBotId } from '../../../onebot/data'
 import { assertSafeOneBotMediaFile } from './images'
 
 function resolveRecordUrl(result: unknown, mediaUrlResolver?: (file: string) => string) {

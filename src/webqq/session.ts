@@ -1,7 +1,7 @@
 import type { Session } from 'koishi'
 import type { WebQQMessage } from './types'
-import { getGroupAvatar, getUserAvatar } from '../onebot/data'
-import { isRecord, readRecordText } from '../shared/structured-text'
+import { isRecord, readRecordText } from '../shared/record'
+import { getWebQQGroupAvatar, getWebQQUserAvatar } from './display'
 import { readWebQQSenderMetadata } from './sender-metadata'
 
 export function readBotProfile(session: Session) {
@@ -25,14 +25,6 @@ export function readMemberName(session: Session) {
 
 export function readUserName(session: Session) {
   return readMemberName(session) || session.event.user?.name || session.username
-}
-
-export function getWebQQUserAvatar(userId: string) {
-  return getUserAvatar(userId)
-}
-
-export function getWebQQGroupAvatar(groupId: string) {
-  return getGroupAvatar(groupId)
 }
 
 function readRawEventData(session: Session) {

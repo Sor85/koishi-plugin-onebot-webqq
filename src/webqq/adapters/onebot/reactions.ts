@@ -1,4 +1,4 @@
-import { getNumberField, getStringField, isRecord } from './data'
+import { getNumberField, getStringField, isRecord } from '../../../onebot/data'
 
 // NapCat / LLOneBot 的贴表情通过 OneBot11 通知 `group_msg_emoji_like` 上报，
 // 但 koishi-plugin-adapter-onebot 没有对应的事件映射，会在 dispatch 前丢弃，

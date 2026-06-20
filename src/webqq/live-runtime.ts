@@ -2,7 +2,7 @@ import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './thinking'
 import { parseThinkContent, readCharacterAfterChatText } from './thinking'
-import type { createOneBotWebQQService } from '../onebot'
+import type { createOneBotWebQQService } from './adapters/onebot/service'
 import type { WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from './types'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
@@ -12,11 +12,11 @@ import type { WebQQImageUrlResolver } from './live-elements'
 import {
   readWebQQPeer,
   readWebQQLiveDirection,
-  getWebQQUserAvatar,
 } from './session'
+import { getWebQQUserAvatar } from './display'
 import {
   readWebQQGroupSenderMetadata,
-} from './group-sender-metadata'
+} from './adapters/onebot/group-sender-metadata'
 import {
   fillWebQQMessageSenderMetadata,
   hasWebQQSenderMetadata,

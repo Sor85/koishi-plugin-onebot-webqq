@@ -8,8 +8,8 @@ import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
 import { summarizeWebQQElements } from '../src/webqq/live-elements'
 import { createWebQQLiveMessage } from '../src/webqq/live-message'
 import { createWebQQImageUrlResolver, getImageContentType } from '../src/webqq/image-url-resolver'
+import { getWebQQUserAvatar } from '../src/webqq/display'
 import {
-  getWebQQUserAvatar,
   readBotProfile,
   readUserName,
   readWebQQPeer,
@@ -20,7 +20,7 @@ import {
   readWebQQSenderMetadata,
   replaceWebQQMessageSenderMetadata,
 } from '../src/webqq/sender-metadata'
-import { readWebQQGroupSenderMetadata } from '../src/webqq/group-sender-metadata'
+import { readWebQQGroupSenderMetadata } from '../src/webqq/adapters/onebot/group-sender-metadata'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
@@ -81,7 +81,7 @@ const webqqLiveNoticesSource = await readFile(new URL('../src/webqq/live-notices
 const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/live-reactions.ts', import.meta.url), 'utf8')
 const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/image-url-resolver.ts', import.meta.url), 'utf8')
 const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender-metadata.ts', import.meta.url), 'utf8')
-const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/group-sender-metadata.ts', import.meta.url), 'utf8')
+const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/adapters/onebot/group-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqEventNoticesSource = await readFile(new URL('../src/webqq/event-notices.ts', import.meta.url), 'utf8')
 const webqqSessionSource = await readFile(new URL('../src/webqq/session.ts', import.meta.url), 'utf8')
 const pluginContextSource = await readFile(new URL('../src/plugin-context.ts', import.meta.url), 'utf8')
@@ -834,7 +834,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/group-sender-metadata'")
+    expect(pluginSource).toContain("from './webqq/adapters/onebot/group-sender-metadata'")
     expect(pluginSource).not.toContain('async function readWebQQGroupSenderMetadata(')
     expect(webqqGroupSenderMetadataSource).toContain('export async function readWebQQGroupSenderMetadata')
     await expect(readWebQQGroupSenderMetadata(session, '30000', true)).resolves.toEqual({

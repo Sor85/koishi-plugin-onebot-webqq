@@ -1,9 +1,10 @@
 import type { Session } from 'koishi'
 import type { WebQQMessageElement } from './types'
-import { normalizeCardElement } from '../onebot/card'
-import { normalizeFaceElement, summarizeElements } from '../onebot/messages'
-import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from '../onebot/text'
-import { isRecord, readRecordText, readStructuredText } from '../shared/structured-text'
+import { normalizeCardElement } from './adapters/onebot/card'
+import { normalizeFaceElement, summarizeElements } from './adapters/onebot/messages'
+import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from './adapters/onebot/text'
+import { isRecord, readRecordText } from '../shared/record'
+import { readStructuredText } from './structured-text'
 import { isRemoteImageSource } from './image-url-resolver'
 
 function readElementText(value: unknown) {

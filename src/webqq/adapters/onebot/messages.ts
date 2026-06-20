@@ -1,17 +1,15 @@
 import {
   getActionData,
   getStringField,
-  getUserAvatar,
   isRecord,
-  normalizeGroupRole,
   toArrayResult,
   toOneBotId,
   toTimestampMs,
-} from './data'
+} from '../../../onebot/data'
 import {
   callAction,
   type OneBotBot,
-} from './actions'
+} from '../../../onebot/actions'
 import { getTextValue, normalizeMentionMarkupText } from './text'
 import { normalizeCardElement } from './card'
 import {
@@ -23,7 +21,11 @@ import {
 import type {
   WebQQMessage,
   WebQQMessageElement,
-} from './types'
+} from '../../types'
+import {
+  getWebQQUserAvatar,
+  normalizeWebQQGroupRole,
+} from '../../display'
 
 export function normalizeFaceElement(data: Record<string, unknown>): WebQQMessageElement {
   const summary = getStringField(data, ['summary', 'text', 'name'])
@@ -97,7 +99,7 @@ async function normalizeForwardNode(raw: unknown, bot: OneBotBot, imageUrlResolv
     item: {
       ...(title ? { title } : {}),
       ...(senderId ? { senderId } : {}),
-      senderAvatar: senderId ? getUserAvatar(senderId) : getUserAvatar('0'),
+      senderAvatar: senderId ? getWebQQUserAvatar(senderId) : getWebQQUserAvatar('0'),
       elements: normalizedElements,
     },
     text: title ? `${title}：${summary}` : summary,
@@ -179,7 +181,7 @@ export async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlRes
   const sender = isRecord(item.sender) ? item.sender : {}
   const senderId = getStringField(sender, ['user_id', 'uin', 'uid']) || getStringField(item, ['user_id'])
   const elements = await normalizeMessageElements(item.message, bot, imageUrlResolver)
-  const senderRole = normalizeGroupRole(getStringField(sender, ['role']))
+  const senderRole = normalizeWebQQGroupRole(getStringField(sender, ['role']))
   const senderLevel = getStringField(sender, ['level', 'sender_level', 'senderLevel'])
   const senderTitle = getStringField(sender, ['title', 'special_title', 'specialTitle'])
   return {
@@ -188,7 +190,7 @@ export async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlRes
     time: toTimestampMs(item.time),
     senderId,
     senderName: getStringField(sender, ['card', 'nickname', 'name']) || senderId,
-    senderAvatar: senderId ? getUserAvatar(senderId) : '',
+    senderAvatar: senderId ? getWebQQUserAvatar(senderId) : '',
     ...(senderRole ? { senderRole } : {}),
     ...(senderLevel ? { senderLevel } : {}),
     ...(senderTitle ? { senderTitle } : {}),

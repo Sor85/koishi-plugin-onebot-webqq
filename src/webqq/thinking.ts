@@ -1,4 +1,5 @@
-import { isRecord, readStructuredText } from '../shared/structured-text'
+import { isRecord } from '../shared/record'
+import { readStructuredText } from './structured-text'
 
 export interface ChatLunaCharacterAfterChatPayload {
   session?: unknown

@@ -17,6 +17,8 @@ import {
 } from './capsule/state'
 import {
   createOneBotWebQQService,
+} from './webqq/adapters/onebot/service'
+import {
   WebQQContacts,
   WebQQGroupInfo,
   WebQQGroupInfoQuery,
@@ -27,9 +29,9 @@ import {
   WebQQNoticeAction,
   WebQQRecallPayload,
   WebQQRecordTranscriptionQuery,
-} from './onebot'
-import type { OneBotRobotState } from './onebot'
-import { registerWebQQReactionInterceptor } from './onebot/raw-event'
+} from './webqq/types'
+import type { OneBotRobotState } from './onebot/types'
+import { registerWebQQReactionInterceptor } from './webqq/adapters/onebot/reactions'
 import {
   chatCapsuleStorageTable,
 } from './webqq/storage'
@@ -45,7 +47,7 @@ import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
 } from './webqq/event-notices'
-import { readWebQQBotGroupSenderMetadata } from './webqq/group-sender-metadata'
+import { readWebQQBotGroupSenderMetadata } from './webqq/adapters/onebot/group-sender-metadata'
 import {
   createWebQQLiveRuntime,
 } from './webqq/live-runtime'

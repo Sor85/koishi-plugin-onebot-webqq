@@ -1,6 +1,6 @@
 import type { WebQQMessage } from './types'
-import { normalizeGroupRole } from '../onebot/data'
-import { readRecordText } from '../shared/structured-text'
+import { readRecordText } from '../shared/record'
+import { normalizeWebQQGroupRole } from './display'
 
 export interface WebQQSenderMetadata {
   senderRole?: string
@@ -15,7 +15,7 @@ const senderMetadataFields = [
 ]
 
 export function readWebQQSenderMetadata(source: unknown): WebQQSenderMetadata {
-  const role = normalizeGroupRole(readRecordText(source, ['role']))
+  const role = normalizeWebQQGroupRole(readRecordText(source, ['role']))
   const metadata: WebQQSenderMetadata = role ? { senderRole: role } : {}
   for (const field of senderMetadataFields) {
     const value = readRecordText(source, field.keys)
