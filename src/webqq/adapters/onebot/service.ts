@@ -8,12 +8,14 @@ import {
 } from '../../../onebot/data'
 import {
   callAction,
-  getAvailableOneBotBots,
-  selectBot,
   supportsOneBotAction,
   type OneBotBot,
-  type OneBotContext,
 } from '../../../onebot/actions'
+import {
+  getAvailableOneBotBots,
+  selectBot,
+  type OneBotContext,
+} from '../../../onebot/bots'
 import { getTextValue } from './text'
 import { normalizeGroupNotices } from './notices'
 import {
@@ -28,11 +30,11 @@ import {
 } from './contacts'
 import {
   resolveOneBotImage,
-} from './images'
+} from '../../../onebot/media/images'
 import {
   resolveOneBotRecord,
   transcribeOneBotRecord,
-} from './records'
+} from '../../../onebot/media/records'
 import {
   normalizeMessage,
   normalizeMessageElements,

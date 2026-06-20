@@ -5,6 +5,8 @@ import { createOneBotWebQQService } from '../src/onebot'
 const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const onebotDataSource = await readFile(new URL('../src/onebot/data.ts', import.meta.url), 'utf8')
 const onebotActionsSource = await readFile(new URL('../src/onebot/actions.ts', import.meta.url), 'utf8')
+const onebotBotsSource = await readFile(new URL('../src/onebot/bots.ts', import.meta.url), 'utf8')
+const onebotProtocolSource = await readFile(new URL('../src/onebot/protocol.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', import.meta.url), 'utf8')
 const onebotAdapterSource = await readFile(new URL('../src/webqq/adapters/onebot/service.ts', import.meta.url), 'utf8')
 const onebotTextSource = await readFile(new URL('../src/webqq/adapters/onebot/text.ts', import.meta.url), 'utf8')
@@ -13,6 +15,8 @@ const onebotNoticesSource = await readFile(new URL('../src/webqq/adapters/onebot
 const onebotGroupInfoSource = await readFile(new URL('../src/webqq/adapters/onebot/group-info.ts', import.meta.url), 'utf8')
 const onebotContactsSource = await readFile(new URL('../src/webqq/adapters/onebot/contacts.ts', import.meta.url), 'utf8')
 const onebotImagesSource = await readFile(new URL('../src/webqq/adapters/onebot/images.ts', import.meta.url), 'utf8')
+const onebotMediaImagesSource = await readFile(new URL('../src/onebot/media/images.ts', import.meta.url), 'utf8')
+const onebotMediaRecordsSource = await readFile(new URL('../src/onebot/media/records.ts', import.meta.url), 'utf8')
 const onebotMessagesSource = await readFile(new URL('../src/webqq/adapters/onebot/messages.ts', import.meta.url), 'utf8')
 const webqqDisplaySource = await readFile(new URL('../src/webqq/display.ts', import.meta.url), 'utf8')
 const webqqTypesSource = await readFile(new URL('../src/webqq/types.ts', import.meta.url), 'utf8')
@@ -90,21 +94,30 @@ describe('onebot webqq adapter', () => {
 
   it('keeps OneBot action selection outside the adapter entry', () => {
     expect(onebotAdapterSource).toContain("from '../../../onebot/actions'")
+    expect(onebotAdapterSource).toContain("from '../../../onebot/bots'")
     expect(onebotSource).not.toContain('function selectBot(')
     expect(onebotSource).not.toContain('async function callAction(')
     expect(onebotSource).not.toContain('function supportsAction(')
     expect(onebotAdapterSource).toContain('supportsOneBotAction')
-    expect(onebotActionsSource).toContain('export function selectBot')
+    expect(onebotBotsSource).toContain('export function selectBot')
     expect(onebotActionsSource).toContain('export async function callAction')
     expect(onebotActionsSource).toContain('export function supportsOneBotAction')
   })
 
+  it('keeps OneBot protocol types outside robot state types', () => {
+    expect(onebotProtocolSource).toContain("export type WebQQProtocol = 'napcat' | 'llbot'")
+    expect(onebotTypesSource).toContain("from './protocol'")
+  })
+
   it('keeps OneBot image resolving outside the adapter entry', () => {
-    expect(onebotAdapterSource).toContain("from './images'")
+    expect(onebotAdapterSource).toContain("from '../../../onebot/media/images'")
     expect(onebotSource).not.toContain('async function normalizeImageElement(')
     expect(onebotSource).not.toContain('async function resolveOneBotImage(')
     expect(onebotImagesSource).toContain('export async function normalizeImageElement')
-    expect(onebotImagesSource).toContain('export async function resolveOneBotImage')
+    expect(onebotImagesSource).not.toContain('export async function resolveOneBotImage')
+    expect(onebotMediaImagesSource).toContain('export async function resolveOneBotImage')
+    expect(onebotMediaRecordsSource).toContain('export async function resolveOneBotRecord')
+    expect(onebotMediaRecordsSource).toContain('export async function transcribeOneBotRecord')
   })
 
   it('keeps OneBot message element display helpers with message normalization', () => {

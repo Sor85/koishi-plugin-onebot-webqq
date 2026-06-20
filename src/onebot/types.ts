@@ -1,5 +1,6 @@
-// WebQQ 只读面板支持的 OneBot 实现协议。
-export type WebQQProtocol = 'napcat' | 'llbot'
+import type { WebQQProtocol } from './protocol'
+
+export type { WebQQProtocol } from './protocol'
 
 export interface OneBotRobotProfile {
   platform: string
