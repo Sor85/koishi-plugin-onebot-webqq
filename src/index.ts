@@ -11,9 +11,6 @@ import {
   setAvailableBots,
 } from './capsule/state'
 import {
-  createOneBotWebQQService,
-} from './webqq/adapters/onebot/service'
-import {
   WebQQContacts,
   WebQQGroupInfo,
   WebQQGroupInfoQuery,
@@ -32,10 +29,10 @@ import type {
   WebQQMessageCacheQuery,
   WebQQStoredState,
 } from './webqq/storage'
-import { createWebQQImageUrlResolver } from './webqq/image-url-resolver'
 import { readWebQQBotGroupSenderMetadata } from './webqq/adapters/onebot/group-sender-metadata'
 import { registerWebQQ } from './webqq/register'
 import { createMessageInput } from './capsule/message-input'
+import { createPluginRuntime } from './runtime/create-runtime'
 import type {
   ChatCapsuleContext,
   ChatLunaCharacterAfterChatPayload,
@@ -77,39 +74,17 @@ declare module 'koishi' {
   }
 }
 
-function normalizeOneBotSelfId(value?: string) {
-  const selfId = value?.trim()
-  return selfId || undefined
-}
-
-function getConfiguredOneBotSelfIds(config: PluginConfig) {
-  return Array.from(new Set([
-    ...(config.onebotSelfIds ?? []).map(normalizeOneBotSelfId),
-  ].filter((selfId): selfId is string => !!selfId)))
-}
-
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   const state = createCapsuleState()
-  const historyLimit = config.historyLimit ?? 100
-  const debug = !!config.debug
-  const logger = debug ? ctx.logger?.('onebot-webqq') : undefined
-  const configuredOneBotSelfIds = getConfiguredOneBotSelfIds(config)
-  const useRuntimeOneBotBots = config.onebotUseRuntimeBots ?? true
-  const initialOneBotSelfId = !useRuntimeOneBotBots ? configuredOneBotSelfIds[0] : undefined
-  const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger, {
-    cacheEnabled: config.webQQImageCacheEnabled ?? true,
-    cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024,
-    cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024,
-  })
-  const webqq = createOneBotWebQQService(ctx, {
-    selfId: initialOneBotSelfId,
-    selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
-    mockBotCount: config.onebotMockBotCount,
-    protocol: config.onebotProtocol,
+  const {
+    historyLimit,
+    debug,
+    logger,
     imageUrlResolver,
-  })
-  const consoleAuthOptions = { authority: 1 }
+    webqq,
+    consoleAuthOptions,
+  } = createPluginRuntime(ctx, config)
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
   const broadcast = () => {
     readBotState()

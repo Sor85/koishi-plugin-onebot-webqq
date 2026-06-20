@@ -68,6 +68,7 @@ vi.mock('koishi', () => koishiMock)
 
 const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
+const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
 const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-activity.ts', import.meta.url), 'utf8')
 const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
 const consoleEntrySource = await readFile(new URL('../src/capsule/console-entry.ts', import.meta.url), 'utf8')
@@ -213,6 +214,16 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginContextSource).toContain('export interface ChatLunaModelUsage')
   })
 
+  it('keeps shared runtime dependency creation outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './runtime/create-runtime'")
+    expect(pluginSource).not.toContain('function normalizeOneBotSelfId(')
+    expect(pluginSource).not.toContain('createOneBotWebQQService(ctx')
+    expect(pluginSource).not.toContain('createWebQQImageUrlResolver(ctx')
+    expect(runtimeSource).toContain('export function createPluginRuntime')
+    expect(runtimeSource).toContain('createOneBotWebQQService(ctx')
+    expect(runtimeSource).toContain('createWebQQImageUrlResolver(ctx')
+  })
+
   it('keeps console entry data outside the plugin entry', () => {
     expect(pluginSource).toContain("from './capsule/console-entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
@@ -348,12 +359,12 @@ describe('chat capsule plugin wiring', () => {
       },
     })
 
-    expect(pluginSource).toContain("from './webqq/image-url-resolver'")
+    expect(runtimeSource).toContain("from '../webqq/image-url-resolver'")
     expect(pluginSource).not.toContain('function createWebQQImageUrlResolver(')
     expect(webqqImageUrlResolverSource).toContain('export function createWebQQImageUrlResolver')
-    expect(pluginSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
-    expect(pluginSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
-    expect(pluginSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
+    expect(runtimeSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
+    expect(runtimeSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
+    expect(runtimeSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
     expect(serverGet).toHaveBeenCalledWith('/onebot-webqq/webqq/image/:id', expect.any(Function))
 
     const localImageFile = fileURLToPath(new URL('../src/webqq/image-url-resolver.ts', import.meta.url))
