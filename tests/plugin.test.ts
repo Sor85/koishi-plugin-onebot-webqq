@@ -69,6 +69,7 @@ vi.mock('koishi', () => koishiMock)
 const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
+const capsuleRegisterSource = await readFile(new URL('../src/capsule/register.ts', import.meta.url), 'utf8')
 const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-activity.ts', import.meta.url), 'utf8')
 const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
 const consoleEntrySource = await readFile(new URL('../src/capsule/console-entry.ts', import.meta.url), 'utf8')
@@ -225,7 +226,9 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps console entry data outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './capsule/console-entry'")
+    expect(pluginSource).toContain("from './capsule/register'")
+    expect(pluginSource).not.toContain("from './capsule/console-entry'")
+    expect(capsuleRegisterSource).toContain("from './console-entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
     expect(pluginSource).not.toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'koishi'")
     expect(consoleEntrySource).toContain('export function registerConsoleEntry')
@@ -234,7 +237,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps WebQQ console listeners outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './webqq/register'")
+    expect(pluginSource).not.toContain("from './webqq/register'")
+    expect(capsuleRegisterSource).toContain("from '../webqq/register'")
     expect(webqqRegisterSource).toContain("from './console'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/contacts'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/messages'")
@@ -246,7 +250,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps ChatLuna character lock syncing outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './capsule/character-lock'")
+    expect(pluginSource).not.toContain("from './capsule/character-lock'")
+    expect(capsuleRegisterSource).toContain("from './character-lock'")
     expect(pluginSource).not.toContain('service.acquireResponseLock = async')
     expect(pluginSource).not.toContain('service.releaseResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain('export function registerChatLunaCharacterLockSync')
@@ -256,7 +261,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps ChatLuna capsule activity outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './capsule/chatluna-activity'")
+    expect(pluginSource).not.toContain("from './capsule/chatluna-activity'")
+    expect(capsuleRegisterSource).toContain("from './chatluna-activity'")
     expect(pluginSource).not.toContain("ctx.on('chatluna/before-chat'")
     expect(pluginSource).not.toContain("ctx.on('chatluna/model-usage'")
     expect(pluginSource).not.toContain("ctx.on('chatluna_character/message_collect'")
@@ -267,7 +273,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps WebQQ live runtime outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './webqq/register'")
+    expect(pluginSource).not.toContain("from './webqq/register'")
+    expect(capsuleRegisterSource).toContain("from '../webqq/register'")
     expect(webqqRegisterSource).toContain("from './message-flow/live-runtime'")
     expect(pluginSource).not.toContain('const pendingWebQQThinking = new Map')
     expect(pluginSource).not.toContain('const liveSenderMetadata = new Map')
@@ -859,7 +866,8 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/adapters/onebot/group-sender-metadata'")
+    expect(pluginSource).not.toContain("from './webqq/adapters/onebot/group-sender-metadata'")
+    expect(capsuleRegisterSource).toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
     expect(pluginSource).not.toContain('async function readWebQQGroupSenderMetadata(')
     expect(webqqGroupSenderMetadataSource).toContain('export async function readWebQQGroupSenderMetadata')
     await expect(readWebQQGroupSenderMetadata(session, '30000', true)).resolves.toEqual({
@@ -906,7 +914,8 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/register'")
+    expect(pluginSource).not.toContain("from './webqq/register'")
+    expect(capsuleRegisterSource).toContain("from '../webqq/register'")
     expect(webqqRegisterSource).toContain("from './notices/event-notices'")
     expect(pluginSource).not.toContain('function createWebQQFriendRequestNotice(')
     expect(webqqEventNoticesSource).toContain('export function createWebQQFriendRequestNotice')
@@ -1733,7 +1742,8 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './capsule/message-input'")
+    expect(pluginSource).not.toContain("from './capsule/message-input'")
+    expect(capsuleRegisterSource).toContain("from './message-input'")
     expect(pluginSource).not.toContain('function createMessageInput(')
     expect(chatlunaMessageInputSource).not.toContain("from '../webqq")
     expect(chatlunaActivitySource).not.toContain("from '../webqq")
