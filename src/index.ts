@@ -2,7 +2,6 @@ import type { Config as PluginConfig } from './config'
 import {
   CapsuleSnapshot,
 } from './capsule/state'
-import { registerCapsule } from './capsule/register'
 import {
   WebQQContacts,
   WebQQGroupInfo,
@@ -26,10 +25,10 @@ import type {
 import type {
   WebQQStoredState,
 } from './webqq/storage/state'
-import { createPluginRuntime } from './runtime/create-runtime'
 import type {
   ChatCapsuleContext,
 } from './plugin-context'
+import { registerPluginRuntime } from './runtime/register'
 
 export { Config } from './config'
 export type { ChatCapsuleContext } from './plugin-context'
@@ -69,22 +68,5 @@ declare module 'koishi' {
 
 // 注册聊天胶囊的状态监听和控制台前端入口。
 export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
-  const {
-    historyLimit,
-    debug,
-    logger,
-    imageUrlResolver,
-    webqq,
-    consoleAuthOptions,
-  } = createPluginRuntime(ctx, config)
-  registerCapsule({
-    ctx,
-    config,
-    historyLimit,
-    debug,
-    webqq,
-    imageUrlResolver,
-    consoleAuthOptions,
-    logger,
-  })
+  registerPluginRuntime(ctx, config)
 }

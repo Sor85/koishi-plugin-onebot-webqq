@@ -69,6 +69,7 @@ vi.mock('koishi', () => koishiMock)
 const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
+const runtimeRegisterSource = await readFile(new URL('../src/runtime/register.ts', import.meta.url), 'utf8')
 const capsuleRegisterSource = await readFile(new URL('../src/capsule/register.ts', import.meta.url), 'utf8')
 const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-activity.ts', import.meta.url), 'utf8')
 const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
@@ -216,17 +217,20 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps shared runtime dependency creation outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './runtime/create-runtime'")
+    expect(pluginSource).toContain("from './runtime/register'")
+    expect(pluginSource).not.toContain("from './runtime/create-runtime'")
     expect(pluginSource).not.toContain('function normalizeOneBotSelfId(')
     expect(pluginSource).not.toContain('createOneBotWebQQService(ctx')
     expect(pluginSource).not.toContain('createWebQQImageUrlResolver(ctx')
+    expect(runtimeRegisterSource).toContain("from './create-runtime'")
     expect(runtimeSource).toContain('export function createPluginRuntime')
     expect(runtimeSource).toContain('createOneBotWebQQService(ctx')
     expect(runtimeSource).toContain('createWebQQImageUrlResolver(ctx')
   })
 
   it('keeps console entry data outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './capsule/register'")
+    expect(pluginSource).not.toContain("from './capsule/register'")
+    expect(runtimeRegisterSource).toContain("from '../capsule/register'")
     expect(pluginSource).not.toContain("from './capsule/console-entry'")
     expect(capsuleRegisterSource).toContain("from './console-entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
@@ -238,7 +242,8 @@ describe('chat capsule plugin wiring', () => {
 
   it('keeps WebQQ console listeners outside the plugin entry', () => {
     expect(pluginSource).not.toContain("from './webqq/register'")
-    expect(capsuleRegisterSource).toContain("from '../webqq/register'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/register'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/register'")
     expect(webqqRegisterSource).toContain("from './console'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/contacts'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/messages'")
@@ -274,7 +279,8 @@ describe('chat capsule plugin wiring', () => {
 
   it('keeps WebQQ live runtime outside the plugin entry', () => {
     expect(pluginSource).not.toContain("from './webqq/register'")
-    expect(capsuleRegisterSource).toContain("from '../webqq/register'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/register'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/register'")
     expect(webqqRegisterSource).toContain("from './message-flow/live-runtime'")
     expect(pluginSource).not.toContain('const pendingWebQQThinking = new Map')
     expect(pluginSource).not.toContain('const liveSenderMetadata = new Map')
@@ -295,6 +301,16 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqLiveNoticesSource).toContain('createWebQQEventMessage(peer')
     expect(webqqLiveReactionsSource).toContain('createWebQQEventMessage(peer')
     expect(webqqLiveReactionsSource).not.toContain('id: `reaction:${peer.type}:${peer.peerId}:${time}:${reaction.userId}:${reaction.messageId}`')
+  })
+
+  it('keeps message runtime orchestration order in the runtime register module', () => {
+    expect(pluginSource).not.toContain("ctx.on('message'")
+    expect(capsuleRegisterSource).not.toContain("ctx.on('message'")
+    expect(runtimeRegisterSource).toContain("ctx.on('message'")
+    expect(runtimeRegisterSource.indexOf('capsuleRuntime.recordIncomingMessage(session)'))
+      .toBeLessThan(runtimeRegisterSource.indexOf('await liveRuntime.recordWebQQLiveMessage(session)'))
+    expect(runtimeRegisterSource.indexOf('await liveRuntime.recordWebQQLiveMessage(session)'))
+      .toBeLessThan(runtimeRegisterSource.indexOf("await capsuleRuntime.refreshIdleScheduleActivity('message-schedule', session)"))
   })
 
   it('keeps WebQQ live element normalization outside the plugin entry', () => {
@@ -867,7 +883,8 @@ describe('chat capsule plugin wiring', () => {
     }) as unknown as Session
 
     expect(pluginSource).not.toContain("from './webqq/adapters/onebot/group-sender-metadata'")
-    expect(capsuleRegisterSource).toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
+    expect(runtimeSource).toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
     expect(pluginSource).not.toContain('async function readWebQQGroupSenderMetadata(')
     expect(webqqGroupSenderMetadataSource).toContain('export async function readWebQQGroupSenderMetadata')
     await expect(readWebQQGroupSenderMetadata(session, '30000', true)).resolves.toEqual({
@@ -915,7 +932,8 @@ describe('chat capsule plugin wiring', () => {
     }) as unknown as Session
 
     expect(pluginSource).not.toContain("from './webqq/register'")
-    expect(capsuleRegisterSource).toContain("from '../webqq/register'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/register'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/register'")
     expect(webqqRegisterSource).toContain("from './notices/event-notices'")
     expect(pluginSource).not.toContain('function createWebQQFriendRequestNotice(')
     expect(webqqEventNoticesSource).toContain('export function createWebQQFriendRequestNotice')

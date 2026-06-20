@@ -1,14 +1,10 @@
+import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
-import type { OneBotRobotState } from '../onebot/types'
+import type { OneBotRobotProfile, OneBotRobotState } from '../onebot/types'
 import type {
   ChatCapsuleContext,
-  ChatLunaCharacterAfterChatPayload,
   DebugLogger,
 } from '../plugin-context'
-import { readWebQQBotGroupSenderMetadata } from '../webqq/adapters/onebot/group-sender-metadata'
-import type { createOneBotWebQQService } from '../webqq/adapters/onebot/service'
-import type { WebQQImageUrlResolver } from '../webqq/media/image-url-resolver'
-import { registerWebQQ } from '../webqq/register'
 import { registerCapsuleChatLunaActivity } from './chatluna-activity'
 import { registerChatLunaCharacterLockSync } from './character-lock'
 import { registerConsoleEntry } from './console-entry'
@@ -21,26 +17,28 @@ import {
   setAvailableBots,
 } from './state'
 
-type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
+export interface CapsuleBotRuntime {
+  listBots(): OneBotRobotProfile[]
+  getSelectedSelfId(): string | undefined
+  selectSelfId(selfId: string): void
+}
 
 export function registerCapsule(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
-  historyLimit: number
   debug: boolean
-  webqq: OneBotWebQQService
-  imageUrlResolver: WebQQImageUrlResolver
+  bots: CapsuleBotRuntime
   consoleAuthOptions: { authority: number }
+  readBotSenderMetadata: Parameters<typeof registerCapsuleChatLunaActivity>[0]['readBotSenderMetadata']
   logger?: DebugLogger
 }) {
   const {
     ctx,
     config,
-    historyLimit,
     debug,
-    webqq,
-    imageUrlResolver,
+    bots: botRuntime,
     consoleAuthOptions,
+    readBotSenderMetadata,
     logger,
   } = options
   const state = createCapsuleState()
@@ -50,14 +48,14 @@ export function registerCapsule(options: {
     ctx.console?.broadcast('onebot-webqq/update', state.snapshot(), consoleAuthOptions)
   }
   const readBotState = (): OneBotRobotState => {
-    const bots = webqq.listBots()
-    const currentSelfId = webqq.getSelectedSelfId()
+    const bots = botRuntime.listBots()
+    const currentSelfId = botRuntime.getSelectedSelfId()
     const selectedSelfId = currentSelfId && bots.some((bot) => bot.selfId === currentSelfId)
       ? currentSelfId
       : bots[0]?.selfId
     if (selectedSelfId && selectedSelfId !== currentSelfId) {
       try {
-        webqq.selectSelfId(selectedSelfId)
+        botRuntime.selectSelfId(selectedSelfId)
       } catch (error) {
         logger?.info('select default onebot failed %s', error instanceof Error ? error.message : String(error))
       }
@@ -82,38 +80,18 @@ export function registerCapsule(options: {
     logSnapshot,
     broadcast,
     logger,
-    readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
-  })
-  const liveRuntime = registerWebQQ({
-    ctx,
-    config,
-    webqq,
-    imageUrlResolver,
-    consoleAuthOptions,
-    historyLimit,
-    logger,
-    getThinkingDurationMs: () => getCurrentThinkingDurationMs(state),
-    getThinkingUsage: () => state.snapshot()?.conversation.usage,
-    getStorageScope,
-    readBotState,
-    broadcastBotState,
+    readBotSenderMetadata,
   })
 
-  ctx.on('message', async (session) => {
+  const recordIncomingCapsuleMessage = (session: Session) => {
     recordIncomingMessage(state, createMessageInput(session))
     logSnapshot('message')
     broadcast()
-    await liveRuntime.recordWebQQLiveMessage(session)
-    await chatLunaActivity.refreshIdleScheduleActivity('message-schedule', session)
-  })
+  }
 
   ctx.setInterval(() => {
     void chatLunaActivity.refreshIdleScheduleActivity('schedule-activity')
   }, 60 * 1000)
-
-  ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
-    liveRuntime.updateLastOutgoingWebQQThinking(payload)
-  })
 
   ctx.before('send', async () => {
     recordOutgoingMessage(state)
@@ -142,4 +120,14 @@ export function registerCapsule(options: {
       clearActivity: chatLunaActivity.clearActivity,
     })
   })
+
+  return {
+    getThinkingDurationMs: () => getCurrentThinkingDurationMs(state),
+    getThinkingUsage: () => state.snapshot()?.conversation.usage,
+    getStorageScope,
+    readBotState,
+    broadcastBotState,
+    recordIncomingMessage: recordIncomingCapsuleMessage,
+    refreshIdleScheduleActivity: chatLunaActivity.refreshIdleScheduleActivity,
+  }
 }
