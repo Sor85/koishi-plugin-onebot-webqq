@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import type { CapsuleData } from '../client/capsule/state'
+import type { WebQQCapsuleData } from '../client/entry-state'
 import type { ConversationSummary, WebQQGroupInfo, WebQQMessage } from '../client/webqq/types'
 import { useWebQQContacts } from '../client/webqq/stores/webqq-contacts'
 import { useWebQQGroupInfo } from '../client/webqq/stores/webqq-group-info'
@@ -82,7 +82,7 @@ function runGetUnreadText(count: number) {
   return Function('count', `return ${returnExpression}`)(count)
 }
 
-function createCapsuleData(conversation: Partial<CapsuleData['conversation']> = {}): CapsuleData {
+function createCapsuleData(conversation: Partial<WebQQCapsuleData['conversation']> = {}): WebQQCapsuleData {
   return {
     bot: {
       platform: 'onebot',
@@ -297,6 +297,16 @@ describe('webqq observer view', () => {
   })
 
   it('keeps temporary bot thinking bubbles scoped to WebQQ conversations', () => {
+    const webqqSources = [
+      webqqView,
+      webqqMessageListStore,
+      webqqMessageView,
+    ].join('\n')
+    expect(webqqSources).not.toContain("from '../capsule")
+    expect(webqqSources).not.toContain("from '../../capsule")
+    expect(webqqView).toContain("import { webQQCapsule as capsule } from '../entry-state'")
+    expect(entryState).toContain('export const webQQCapsule = capsule')
+    expect(entryState).toContain('export type WebQQCapsuleData = CapsuleData')
     expect(webqqMessageListStore).toContain('const botThinkingMessages = ref<Record<string, WebQQMessage>>({})')
     expect(webqqMessageListStore).toContain('function syncBotThinkingMessage()')
     expect(webqqMessageListStore).toContain('createBotThinkingMessage(options.capsule.value, options.currentChat.value, messages.value)')
@@ -945,7 +955,7 @@ describe('webqq observer view', () => {
   it('keeps WebQQ message list display state inside a composable', () => {
     const scrollEvents: string[] = []
     const list = useWebQQMessageList({
-      capsule: ref<CapsuleData | undefined>(createCapsuleData()),
+      capsule: ref<WebQQCapsuleData | undefined>(createCapsuleData()),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
       chatStyle: ref('telegram'),
       messageCacheLimit: ref(100),
@@ -963,7 +973,7 @@ describe('webqq observer view', () => {
   })
 
   it('keeps the current WebQQ chat thinking bubble when another chat starts thinking', () => {
-    const capsule = ref<CapsuleData | undefined>(createCapsuleData())
+    const capsule = ref<WebQQCapsuleData | undefined>(createCapsuleData())
     const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
     const list = useWebQQMessageList({
       capsule,
@@ -994,7 +1004,7 @@ describe('webqq observer view', () => {
 
   it('limits the in-memory current WebQQ message list to the configured cache limit', () => {
     const list = useWebQQMessageList({
-      capsule: ref<CapsuleData | undefined>(),
+      capsule: ref<WebQQCapsuleData | undefined>(),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
       chatStyle: ref('telegram'),
       messageCacheLimit: ref(2),

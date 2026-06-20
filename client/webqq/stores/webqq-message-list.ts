@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import type { CapsuleData } from '../../capsule/state'
+import type { WebQQCapsuleData } from '../../entry-state'
 import type { WebQQMessage } from '../types'
 import type { WebQQChatSelection } from '../utils/webqq-contact-view'
 import {
@@ -13,7 +13,7 @@ import {
 } from '../utils/webqq-message-view'
 
 export function useWebQQMessageList(options: {
-  capsule: Ref<CapsuleData | undefined>
+  capsule: Ref<WebQQCapsuleData | undefined>
   currentChat: Ref<WebQQChatSelection | undefined>
   chatStyle: Readonly<Ref<string>>
   messageCacheLimit: Readonly<Ref<number>>

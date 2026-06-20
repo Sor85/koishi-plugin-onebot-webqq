@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { capsule } from './capsule/state'
+import { capsule, type CapsuleData } from './capsule/state'
 import { availableBots, selectedBotSelfId } from './onebot/bots'
 import {
   hideWebQQGroupLevel,
@@ -21,6 +21,8 @@ import {
 
 export const debug = ref(false)
 export const webQQOpen = ref(false)
+export const webQQCapsule = capsule
+export type WebQQCapsuleData = CapsuleData
 
 export function resetWebQQClientState() {
   capsule.value = undefined
