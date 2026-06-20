@@ -1735,6 +1735,9 @@ describe('chat capsule plugin wiring', () => {
 
     expect(pluginSource).toContain("from './capsule/message-input'")
     expect(pluginSource).not.toContain('function createMessageInput(')
+    expect(chatlunaMessageInputSource).not.toContain("from '../webqq")
+    expect(chatlunaActivitySource).not.toContain("from '../webqq")
+    expect(chatlunaCharacterLockSource).not.toContain("from '../webqq")
     expect(chatlunaMessageInputSource).toContain('export function createMessageInput')
     expect(createMessageInput(session, {
       id: '40000',

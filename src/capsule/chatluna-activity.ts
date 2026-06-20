@@ -4,7 +4,6 @@ import type {
   ChatLunaModelUsage,
   DebugLogger,
 } from '../plugin-context'
-import { readMemberName } from '../webqq/message-flow/session'
 import {
   clearConversationActivity,
   recordConversationActivity,
@@ -13,7 +12,7 @@ import {
   type CapsuleMessageInput,
   type CapsuleState,
 } from './state'
-import { createMessageInput, type ChatLunaMessage } from './message-input'
+import { createMessageInput, readCapsuleMemberName, type ChatLunaMessage } from './message-input'
 
 type CapsuleSenderMetadata = Pick<CapsuleMessageInput['user'], 'senderRole' | 'senderLevel' | 'senderTitle'>
 
@@ -62,7 +61,7 @@ export function registerCapsuleChatLunaActivity(options: {
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
     const thinkingStartedAt = Date.now()
     const input = createMessageInput(session, message)
-    input.user.name = readMemberName(session) || input.user.name
+    input.user.name = readCapsuleMemberName(session) || input.user.name
     recordConversationActivity(state, input, '正在思考', { conversationId, now: thinkingStartedAt })
     logSnapshot('generating')
     broadcast()

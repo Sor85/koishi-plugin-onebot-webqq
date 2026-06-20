@@ -1,10 +1,9 @@
 import type { ChatCapsuleContext, ChatLunaCharacterService } from '../plugin-context'
-import { createMessageInput } from './message-input'
+import { createMessageInput, readCapsuleMemberName } from './message-input'
 import {
   recordConversationActivity,
   type CapsuleState,
 } from './state'
-import { readMemberName } from '../webqq/message-flow/session'
 
 export function registerChatLunaCharacterLockSync(
   ctx: ChatCapsuleContext,
@@ -24,7 +23,7 @@ export function registerChatLunaCharacterLockSync(
     const acquired = await acquireResponseLock.call(service, session, message)
     if (acquired) {
       const input = createMessageInput(session, message)
-      input.user.name = readMemberName(session) || input.user.name
+      input.user.name = readCapsuleMemberName(session) || input.user.name
       recordConversationActivity(options.state, input, `正在与 ${input.user.name || input.user.id} 对话`)
       options.logSnapshot('character-lock')
       options.broadcast()
