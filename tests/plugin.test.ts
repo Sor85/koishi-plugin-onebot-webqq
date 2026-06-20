@@ -72,6 +72,7 @@ const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-a
 const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
 const consoleEntrySource = await readFile(new URL('../src/capsule/console-entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
+const webqqRegisterSource = await readFile(new URL('../src/webqq/register.ts', import.meta.url), 'utf8')
 const webqqConsoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
 const chatlunaMessageInputSource = await readFile(new URL('../src/capsule/message-input.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq/live-elements.ts', import.meta.url), 'utf8')
@@ -222,7 +223,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps WebQQ console listeners outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './webqq/console'")
+    expect(pluginSource).toContain("from './webqq/register'")
+    expect(webqqRegisterSource).toContain("from './console'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/contacts'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/messages'")
     expect(webqqConsoleSource).toContain('export function registerWebQQConsoleListeners')
@@ -254,7 +256,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps WebQQ live runtime outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './webqq/live-runtime'")
+    expect(pluginSource).toContain("from './webqq/register'")
+    expect(webqqRegisterSource).toContain("from './live-runtime'")
     expect(pluginSource).not.toContain('const pendingWebQQThinking = new Map')
     expect(pluginSource).not.toContain('const liveSenderMetadata = new Map')
     expect(pluginSource).not.toContain('const broadcastWebQQLivePayload =')
@@ -892,7 +895,8 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/event-notices'")
+    expect(pluginSource).toContain("from './webqq/register'")
+    expect(webqqRegisterSource).toContain("from './event-notices'")
     expect(pluginSource).not.toContain('function createWebQQFriendRequestNotice(')
     expect(webqqEventNoticesSource).toContain('export function createWebQQFriendRequestNotice')
     expect(createWebQQFriendRequestNotice(friendSession)).toMatchObject({

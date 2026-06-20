@@ -2,7 +2,6 @@ import type { Config as PluginConfig } from './config'
 import { registerCapsuleChatLunaActivity } from './capsule/chatluna-activity'
 import { registerChatLunaCharacterLockSync } from './capsule/character-lock'
 import { registerConsoleEntry } from './capsule/console-entry'
-import { registerWebQQConsoleListeners } from './webqq/console'
 import {
   CapsuleSnapshot,
   createCapsuleState,
@@ -27,10 +26,6 @@ import {
   WebQQRecordTranscriptionQuery,
 } from './webqq/types'
 import type { OneBotRobotState } from './onebot/types'
-import { registerWebQQReactionInterceptor } from './webqq/adapters/onebot/reactions'
-import {
-  chatCapsuleStorageTable,
-} from './webqq/storage'
 import type {
   ChatCapsuleStorageRow,
   WebQQMessageCachePayload,
@@ -38,14 +33,8 @@ import type {
   WebQQStoredState,
 } from './webqq/storage'
 import { createWebQQImageUrlResolver } from './webqq/image-url-resolver'
-import {
-  createWebQQFriendRequestNotice,
-  createWebQQGroupLeaveNotice,
-} from './webqq/event-notices'
 import { readWebQQBotGroupSenderMetadata } from './webqq/adapters/onebot/group-sender-metadata'
-import {
-  createWebQQLiveRuntime,
-} from './webqq/live-runtime'
+import { registerWebQQ } from './webqq/register'
 import { createMessageInput } from './capsule/message-input'
 import type {
   ChatCapsuleContext,
@@ -153,16 +142,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     const botState = readBotState()
     return botState.bots.length > 1 ? botState.selectedSelfId : undefined
   }
-  const friendRequestNotices = new Map<string, WebQQNotice>()
-  const groupLeaveNotices = new Map<string, WebQQNotice>()
-  ctx.model?.extend(chatCapsuleStorageTable, {
-    id: 'string(128)',
-    payload: 'object',
-    updatedAt: 'timestamp',
-  }, {
-    primary: 'id',
-  })
-
   const chatLunaActivity = registerCapsuleChatLunaActivity({
     ctx,
     state,
@@ -171,16 +150,19 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     logger,
     readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
   })
-  const liveRuntime = createWebQQLiveRuntime({
+  const liveRuntime = registerWebQQ({
     ctx,
     config,
     webqq,
     imageUrlResolver,
     consoleAuthOptions,
+    historyLimit,
     logger,
     getThinkingDurationMs: () => getCurrentThinkingDurationMs(state),
     getThinkingUsage: () => state.snapshot()?.conversation.usage,
     getStorageScope,
+    readBotState,
+    broadcastBotState,
   })
 
   ctx.on('message', async (session) => {
@@ -194,30 +176,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   ctx.setInterval(() => {
     void chatLunaActivity.refreshIdleScheduleActivity('schedule-activity')
   }, 60 * 1000)
-
-  ctx.on('message-deleted', async (session) => {
-    await liveRuntime.recordWebQQRecall(session)
-  })
-
-  ctx.on('internal/session', async (session) => {
-    await liveRuntime.recordWebQQNotice(session)
-  })
-
-  registerWebQQReactionInterceptor(ctx, (reaction) => {
-    liveRuntime.recordWebQQReaction(reaction)
-  })
-
-  ctx.on('friend-request', (session) => {
-    const notice = createWebQQFriendRequestNotice(session)
-    if (!notice) return
-    friendRequestNotices.set(notice.id, notice)
-  })
-
-  ctx.on('guild-member-removed', (session) => {
-    const notice = createWebQQGroupLeaveNotice(session)
-    if (!notice) return
-    groupLeaveNotices.set(notice.id, notice)
-  })
 
   ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
     liveRuntime.updateLastOutgoingWebQQThinking(payload)
@@ -236,23 +194,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     const console = inner.console
     if (!console) return
     registerConsoleEntry(console, state, config, { debug, logSnapshot, readBotState })
-    console.addListener('onebot-webqq/webqq/bot/select', async (input) => {
-      webqq.selectSelfId(input.selfId)
-      const botState = readBotState()
-      broadcastBotState(botState)
-      return botState
-    }, consoleAuthOptions)
-    registerWebQQConsoleListeners(console, inner, {
-      config,
-      webqq,
-      historyLimit,
-      liveMessages: liveRuntime.liveMessages,
-      friendRequestNotices,
-      groupLeaveNotices,
-      consoleAuthOptions,
-      getStorageScope,
-      logger,
-    })
   })
 
   ctx.inject({

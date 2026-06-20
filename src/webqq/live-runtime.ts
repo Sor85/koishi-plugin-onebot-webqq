@@ -38,6 +38,7 @@ const WEBQQ_LIVE_CONVERSATION_LIMIT = 100
 const WEBQQ_LIVE_SENDER_METADATA_LIMIT = 1000
 
 export type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
+export type WebQQLiveRuntime = ReturnType<typeof createWebQQLiveRuntime>
 
 function readRawRecallMessageId(session: Session) {
   const data = (session.event as { _data?: Record<string, unknown> })._data
