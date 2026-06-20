@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
-const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
-const capsuleStyle = await readFile(new URL('../client/styles/capsule.scss', import.meta.url), 'utf8')
+const capsuleView = await readFile(new URL('../client/capsule/Capsule.vue', import.meta.url), 'utf8')
+const capsuleStyle = await readFile(new URL('../client/capsule/styles.scss', import.meta.url), 'utf8')
 const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -43,7 +43,7 @@ describe('chat capsule view', () => {
     const guideSource = capsuleView.match(/<Transition\s+name="onebot-webqq-avatar-guide">[\s\S]*?<\/Transition>/)?.[0] ?? ''
     const missingRequirements = [
       guideSource ? '' : '缺少头像图形引导过渡容器',
-      guideSource.includes('webQQAvatarGuideVisible && !webqqOpen')
+      guideSource.includes('webQQAvatarGuideVisible && !webQQOpen')
         ? ''
         : '头像图形引导没有只在 WebQQ 未打开时显示',
       guideSource.includes('class="onebot-webqq__avatar-guide"')
@@ -124,7 +124,7 @@ describe('chat capsule view', () => {
       capsuleView.includes("localStorage.setItem(webQQAvatarGuideStorageKey, 'seen')")
         ? ''
         : '头像图形引导没有写入已展示状态',
-      capsuleView.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webqqOpen')
+      capsuleView.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webQQOpen')
         && !capsuleView.includes('if (hasMultipleBots.value) return')
         ? ''
         : '多机器人场景点击胶囊非头像区域时，应在当前 bot 头像上显示引导光圈',
@@ -185,7 +185,7 @@ describe('chat capsule view', () => {
   })
 
   it('renders total WebQQ unread count on the bot avatar when enabled', () => {
-    expect(capsuleView).toMatch(/import \{[^}]*\bshowWebQQCapsuleUnread\b[^}]*\bwebQQTotalUnread\b[^}]*\} from '\.\/state'/)
+    expect(capsuleView).toMatch(/import \{[^}]*\bshowWebQQCapsuleUnread\b[^}]*\bwebQQTotalUnread\b[^}]*\} from '\.\.\/webqq\/settings'/)
     expect(capsuleView).toContain('class="onebot-webqq__avatar-unread"')
     expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
     expect(capsuleView).toContain('{{ capsuleUnreadText }}')
@@ -304,7 +304,7 @@ describe('chat capsule view', () => {
         ? ''
         : '多机器人状态点应只显示在当前 bot 头像上，且 active 头像不应有额外强调样式',
       multiBotTemplate.includes('onebot-webqq-avatar-guide')
-        && multiBotTemplate.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webqqOpen')
+        && multiBotTemplate.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webQQOpen')
         && !capsuleView.includes('if (hasMultipleBots.value) return')
         ? ''
         : '多 bot 折叠态当前头像应能渲染正文点击触发的头像引导光圈',
@@ -352,9 +352,9 @@ describe('chat capsule view', () => {
 
   it('applies the configured WebQQ color mode to the main capsule', () => {
     const missingRequirements = [
-      /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\/state'/.test(capsuleView)
+      /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\.\/webqq\/settings'/.test(capsuleView)
         ? ''
-        : '主胶囊没有从 state 读取 webQQColorMode',
+        : '主胶囊没有从 webqq/settings 读取 webQQColorMode',
       capsuleView.includes("['onebot-webqq'") && capsuleView.includes('`is-color-${webQQColorMode}`')
         ? ''
         : '主胶囊根节点没有输出 is-color-${webQQColorMode} 类名',
@@ -368,9 +368,9 @@ describe('chat capsule view', () => {
 
   it('applies the configured compact capsule shadow option to the main capsule', () => {
     const missingRequirements = [
-      /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\/state'/.test(capsuleView)
+      /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\.\/webqq\/settings'/.test(capsuleView)
         ? ''
-        : '主胶囊没有从 state 读取 useCompactCapsuleShadow',
+        : '主胶囊没有从 webqq/settings 读取 useCompactCapsuleShadow',
       capsuleView.includes("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
         ? ''
         : '关闭紧凑阴影时主胶囊没有输出旧版宽阴影类名',
@@ -388,7 +388,10 @@ describe('chat capsule view', () => {
   })
 
   it('loads the configured WebQQ theme from console entry data', () => {
-    expect(clientEntry).toContain("import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'")
+    expect(clientEntry).toContain("from './capsule/state'")
+    expect(clientEntry).toContain("from './entry-state'")
+    expect(clientEntry).toContain("from './onebot/bots'")
+    expect(clientEntry).toContain("from './webqq/settings'")
     expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
     expect(clientEntry).toContain("bots?: OneBotRobotState['bots']")
     expect(clientEntry).toContain('selectedSelfId?: string')

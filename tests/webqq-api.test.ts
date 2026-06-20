@@ -16,7 +16,7 @@ const {
   requestWebQQMessages,
   requestWebQQNotices,
   requestWebQQRecordTranscription,
-} = await import('../client/api/webqq')
+} = await import('../client/webqq/api/webqq')
 
 describe('webqq client api', () => {
   it('normalizes invalid backend payloads to safe defaults', async () => {

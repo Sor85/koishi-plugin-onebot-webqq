@@ -1,13 +1,13 @@
-@use './styles/capsule';
-@use './styles/webqq-shell';
-@use './styles/webqq-chat';
-@use './styles/webqq-group-info';
-@use './styles/webqq-notices';
-@use './styles/webqq-messages';
-@use './styles/webqq-message-cards';
-@use './styles/webqq-message-overlays';
-@use './styles/webqq-message-effects';
-@use './styles/theme-colors';
+@use './capsule/styles';
+@use './webqq/styles/webqq-shell';
+@use './webqq/styles/webqq-chat';
+@use './webqq/styles/webqq-group-info';
+@use './webqq/styles/webqq-notices';
+@use './webqq/styles/webqq-messages';
+@use './webqq/styles/webqq-message-cards';
+@use './webqq/styles/webqq-message-overlays';
+@use './webqq/styles/webqq-message-effects';
+@use './webqq/styles/theme-colors';
 
 @keyframes onebot-webqq-thinking-shimmer {
   0% {

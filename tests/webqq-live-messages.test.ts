@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WebQQLiveMessage, WebQQMessage } from '../client/state'
-import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
+import type { WebQQLiveMessage, WebQQMessage } from '../client/webqq/types'
+import type { WebQQChatSelection } from '../client/webqq/utils/webqq-contact-view'
 
 const receiveState = vi.hoisted((): { listeners: Record<string, (payload: unknown) => void>; disposed: string[] } => ({ listeners: {}, disposed: [] }))
 
@@ -15,7 +15,7 @@ vi.mock('@koishijs/client', () => ({
   }),
 }))
 
-const { useWebQQLiveMessages } = await import('../client/stores/webqq-live-messages')
+const { useWebQQLiveMessages } = await import('../client/webqq/stores/webqq-live-messages')
 
 function createWebQQMessage(message: Partial<WebQQMessage> = {}): WebQQMessage {
   return {

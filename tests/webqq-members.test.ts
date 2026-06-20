@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { hideWebQQGroupLevel, showWebQQCapsuleUnread, sortWebQQGroupMembers, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread, type WebQQGroupMember } from '../client/state'
+import { sortWebQQGroupMembers, type WebQQGroupMember } from '../client/webqq/types'
+import { hideWebQQGroupLevel, showWebQQCapsuleUnread, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {

@@ -1,67 +1,72 @@
 import { readFile } from 'node:fs/promises'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import type { CapsuleData, ConversationSummary, WebQQGroupInfo, WebQQMessage } from '../client/state'
-import { useWebQQContacts } from '../client/stores/webqq-contacts'
-import { useWebQQGroupInfo } from '../client/stores/webqq-group-info'
-import { useWebQQForwardDialog } from '../client/stores/webqq-forward-dialog'
-import { useWebQQMessageHistory } from '../client/stores/webqq-message-history'
-import { useWebQQMessageList } from '../client/stores/webqq-message-list'
-import { useWebQQMessageScroll } from '../client/stores/webqq-message-scroll'
-import { useWebQQNotices } from '../client/stores/webqq-notices'
-import { useWebQQSenderMetadata } from '../client/stores/webqq-sender-metadata'
-import { useWebQQThinkingExpansion } from '../client/stores/webqq-thinking-expansion'
-import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/stores/webqq-conversation-state'
-import { fitWebQQBubbleToInlineLines } from '../client/utils/webqq-bubble-width'
-import { createBotThinkingMessage, mergeMessages, type WebQQMessageElement } from '../client/utils/webqq-message-view'
-import { applyWebQQRecallToMessages } from '../client/utils/webqq-recall-view'
-import type { WebQQChatSelection } from '../client/utils/webqq-contact-view'
-import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/utils/webqq-contact-view'
-import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/utils/webqq-theme-view'
+import type { CapsuleData } from '../client/capsule/state'
+import type { ConversationSummary, WebQQGroupInfo, WebQQMessage } from '../client/webqq/types'
+import { useWebQQContacts } from '../client/webqq/stores/webqq-contacts'
+import { useWebQQGroupInfo } from '../client/webqq/stores/webqq-group-info'
+import { useWebQQForwardDialog } from '../client/webqq/stores/webqq-forward-dialog'
+import { useWebQQMessageHistory } from '../client/webqq/stores/webqq-message-history'
+import { useWebQQMessageList } from '../client/webqq/stores/webqq-message-list'
+import { useWebQQMessageScroll } from '../client/webqq/stores/webqq-message-scroll'
+import { useWebQQNotices } from '../client/webqq/stores/webqq-notices'
+import { useWebQQSenderMetadata } from '../client/webqq/stores/webqq-sender-metadata'
+import { useWebQQThinkingExpansion } from '../client/webqq/stores/webqq-thinking-expansion'
+import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/webqq/stores/webqq-conversation-state'
+import { fitWebQQBubbleToInlineLines } from '../client/webqq/utils/webqq-bubble-width'
+import { createBotThinkingMessage, mergeMessages, type WebQQMessageElement } from '../client/webqq/utils/webqq-message-view'
+import { applyWebQQRecallToMessages } from '../client/webqq/utils/webqq-recall-view'
+import type { WebQQChatSelection } from '../client/webqq/utils/webqq-contact-view'
+import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/webqq/utils/webqq-contact-view'
+import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/webqq/utils/webqq-theme-view'
 
 vi.mock('@koishijs/client', () => ({
   send: vi.fn(async () => undefined),
 }))
 
-const capsuleView = await readFile(new URL('../client/Capsule.vue', import.meta.url), 'utf8')
-const clientState = await readFile(new URL('../client/state.ts', import.meta.url), 'utf8')
+const capsuleView = await readFile(new URL('../client/capsule/Capsule.vue', import.meta.url), 'utf8')
+const capsuleState = await readFile(new URL('../client/capsule/state.ts', import.meta.url), 'utf8')
+const entryState = await readFile(new URL('../client/entry-state.ts', import.meta.url), 'utf8')
+const webqqSettings = await readFile(new URL('../client/webqq/settings.ts', import.meta.url), 'utf8')
+const webqqTypes = await readFile(new URL('../client/webqq/types.ts', import.meta.url), 'utf8')
 const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
+const clientShell = await readFile(new URL('../client/ClientShell.vue', import.meta.url), 'utf8')
 const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', import.meta.url), 'utf8')
-const webqqView = await readFile(new URL('../client/WebQQObserver.vue', import.meta.url), 'utf8')
-const webqqApi = await readFile(new URL('../client/api/webqq.ts', import.meta.url), 'utf8')
-const webqqSidebar = await readFile(new URL('../client/components/WebQQSidebar.vue', import.meta.url), 'utf8')
-const webqqMessageListView = await readFile(new URL('../client/components/WebQQMessageList.vue', import.meta.url), 'utf8')
-const webqqMessageReactionsView = await readFile(new URL('../client/components/WebQQMessageReactions.vue', import.meta.url), 'utf8')
-const webqqContactList = await readFile(new URL('../client/components/WebQQContactList.vue', import.meta.url), 'utf8')
-const webqqForwardModal = await readFile(new URL('../client/components/WebQQForwardModal.vue', import.meta.url), 'utf8')
-const webqqGroupInfoPanel = await readFile(new URL('../client/components/WebQQGroupInfoPanel.vue', import.meta.url), 'utf8')
-const webqqImagePreviewView = await readFile(new URL('../client/components/WebQQImagePreview.vue', import.meta.url), 'utf8')
-const webqqNoticeMenu = await readFile(new URL('../client/components/WebQQNoticeMenu.vue', import.meta.url), 'utf8')
-const webqqMessageCache = await readFile(new URL('../client/webqq-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
-const webqqContactsStore = await readFile(new URL('../client/stores/webqq-contacts.ts', import.meta.url), 'utf8')
-const webqqConversationStateStore = await readFile(new URL('../client/stores/webqq-conversation-state.ts', import.meta.url), 'utf8')
-const webqqForwardDialogStore = await readFile(new URL('../client/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
-const webqqGroupInfoStore = await readFile(new URL('../client/stores/webqq-group-info.ts', import.meta.url), 'utf8')
-const webqqLiveMessagesStore = await readFile(new URL('../client/stores/webqq-live-messages.ts', import.meta.url), 'utf8')
-const webqqMessageHistoryStore = await readFile(new URL('../client/stores/webqq-message-history.ts', import.meta.url), 'utf8')
-const webqqMessageListStore = await readFile(new URL('../client/stores/webqq-message-list.ts', import.meta.url), 'utf8')
-const webqqMessageScroll = await readFile(new URL('../client/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
-const webqqNoticesStore = await readFile(new URL('../client/stores/webqq-notices.ts', import.meta.url), 'utf8')
-const webqqSenderMetadataStore = await readFile(new URL('../client/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
-const webqqThinkingExpansionStore = await readFile(new URL('../client/stores/webqq-thinking-expansion.ts', import.meta.url), 'utf8')
-const webqqStorage = await readFile(new URL('../client/stores/webqq-storage.ts', import.meta.url), 'utf8')
-const webqqBubbleWidth = await readFile(new URL('../client/utils/webqq-bubble-width.ts', import.meta.url), 'utf8').catch(() => '')
-const webqqScrollbarDirective = await readFile(new URL('../client/utils/webqq-scrollbar.ts', import.meta.url), 'utf8').catch(() => '')
-const webqqMessageView = await readFile(new URL('../client/utils/webqq-message-view.ts', import.meta.url), 'utf8')
-const webqqNoticeView = await readFile(new URL('../client/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
-const webqqContactView = await readFile(new URL('../client/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
-const webqqThemeView = await readFile(new URL('../client/utils/webqq-theme-view.ts', import.meta.url), 'utf8')
+const webqqView = await readFile(new URL('../client/webqq/WebQQObserver.vue', import.meta.url), 'utf8')
+const webqqApi = await readFile(new URL('../client/webqq/api/webqq.ts', import.meta.url), 'utf8')
+const webqqSidebar = await readFile(new URL('../client/webqq/components/WebQQSidebar.vue', import.meta.url), 'utf8')
+const webqqMessageListView = await readFile(new URL('../client/webqq/components/WebQQMessageList.vue', import.meta.url), 'utf8')
+const webqqMessageReactionsView = await readFile(new URL('../client/webqq/components/WebQQMessageReactions.vue', import.meta.url), 'utf8')
+const webqqContactList = await readFile(new URL('../client/webqq/components/WebQQContactList.vue', import.meta.url), 'utf8')
+const webqqForwardModal = await readFile(new URL('../client/webqq/components/WebQQForwardModal.vue', import.meta.url), 'utf8')
+const webqqGroupInfoPanel = await readFile(new URL('../client/webqq/components/WebQQGroupInfoPanel.vue', import.meta.url), 'utf8')
+const webqqImagePreviewView = await readFile(new URL('../client/webqq/components/WebQQImagePreview.vue', import.meta.url), 'utf8')
+const webqqNoticeMenu = await readFile(new URL('../client/webqq/components/WebQQNoticeMenu.vue', import.meta.url), 'utf8')
+const webqqMessageCache = await readFile(new URL('../client/webqq/storage/browser-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqContactsStore = await readFile(new URL('../client/webqq/stores/webqq-contacts.ts', import.meta.url), 'utf8')
+const webqqConversationStateStore = await readFile(new URL('../client/webqq/stores/webqq-conversation-state.ts', import.meta.url), 'utf8')
+const webqqForwardDialogStore = await readFile(new URL('../client/webqq/stores/webqq-forward-dialog.ts', import.meta.url), 'utf8')
+const webqqGroupInfoStore = await readFile(new URL('../client/webqq/stores/webqq-group-info.ts', import.meta.url), 'utf8')
+const webqqLiveMessagesStore = await readFile(new URL('../client/webqq/stores/webqq-live-messages.ts', import.meta.url), 'utf8')
+const webqqMessageHistoryStore = await readFile(new URL('../client/webqq/stores/webqq-message-history.ts', import.meta.url), 'utf8')
+const webqqMessageListStore = await readFile(new URL('../client/webqq/stores/webqq-message-list.ts', import.meta.url), 'utf8')
+const webqqMessageScroll = await readFile(new URL('../client/webqq/stores/webqq-message-scroll.ts', import.meta.url), 'utf8')
+const webqqNoticesStore = await readFile(new URL('../client/webqq/stores/webqq-notices.ts', import.meta.url), 'utf8')
+const webqqSenderMetadataStore = await readFile(new URL('../client/webqq/stores/webqq-sender-metadata.ts', import.meta.url), 'utf8')
+const webqqThinkingExpansionStore = await readFile(new URL('../client/webqq/stores/webqq-thinking-expansion.ts', import.meta.url), 'utf8')
+const webqqStorage = await readFile(new URL('../client/webqq/storage/webqq-storage.ts', import.meta.url), 'utf8')
+const webqqBubbleWidth = await readFile(new URL('../client/webqq/utils/webqq-bubble-width.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqScrollbarDirective = await readFile(new URL('../client/webqq/utils/webqq-scrollbar.ts', import.meta.url), 'utf8').catch(() => '')
+const webqqMessageView = await readFile(new URL('../client/webqq/utils/webqq-message-view.ts', import.meta.url), 'utf8')
+const webqqNoticeView = await readFile(new URL('../client/webqq/utils/webqq-notice-view.ts', import.meta.url), 'utf8')
+const webqqContactView = await readFile(new URL('../client/webqq/utils/webqq-contact-view.ts', import.meta.url), 'utf8')
+const webqqThemeView = await readFile(new URL('../client/webqq/utils/webqq-theme-view.ts', import.meta.url), 'utf8')
 const styleEntry = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
-const webqqMessagesStyle = await readFile(new URL('../client/styles/webqq-messages.scss', import.meta.url), 'utf8')
-const webqqMessageCardsStyle = await readFile(new URL('../client/styles/webqq-message-cards.scss', import.meta.url), 'utf8')
-const webqqMessageOverlaysStyle = await readFile(new URL('../client/styles/webqq-message-overlays.scss', import.meta.url), 'utf8')
-const webqqMessageEffectsStyle = await readFile(new URL('../client/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
+const webqqMessagesStyle = await readFile(new URL('../client/webqq/styles/webqq-messages.scss', import.meta.url), 'utf8')
+const webqqMessageCardsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-cards.scss', import.meta.url), 'utf8')
+const webqqMessageOverlaysStyle = await readFile(new URL('../client/webqq/styles/webqq-message-overlays.scss', import.meta.url), 'utf8')
+const webqqMessageEffectsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
 const style = `${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${styleEntry}`
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -130,20 +135,20 @@ function createWebQQMessage(message: Partial<WebQQMessage> = {}): WebQQMessage {
 
 describe('webqq observer view', () => {
   it('opens a read-only WebQQ panel from the capsule avatar', () => {
-    expect(capsuleView).toContain('import WebQQObserver from')
-    expect(capsuleView).toContain('const webqqOpen = ref(false)')
+    expect(clientShell).toContain("import WebQQObserver from './webqq/WebQQObserver.vue'")
+    expect(clientShell).toContain("import { webQQOpen } from './entry-state'")
     expect(capsuleView).toContain('@click="toggleWebQQ"')
-    expect(capsuleView).toContain('<WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />')
+    expect(clientShell).toContain('<WebQQObserver v-show="webQQOpen" :visible="webQQOpen" />')
   })
 
   it('keeps WebQQ mounted while hidden so unread counts can update the capsule', () => {
-    expect(capsuleView).toContain('<WebQQObserver v-show="webqqOpen" :visible="webqqOpen" />')
-    expect(capsuleView).not.toContain('v-if="webqqMounted"')
-    expect(capsuleView).not.toContain('const webqqMounted')
+    expect(clientShell).toContain('<WebQQObserver v-show="webQQOpen" :visible="webQQOpen" />')
+    expect(clientShell).not.toContain('v-if="webqqMounted"')
+    expect(clientShell).not.toContain('const webqqMounted')
   })
 
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
-    expect(webqqView).toContain("from './state'")
+    expect(webqqView).toContain("from './settings'")
     expect(webqqContactView).toContain('sortWebQQGroupMembers')
     expect(webqqView).toContain('useBotAvatarThemeColor')
     expect(webqqView).toContain('webQQAccentColor')
@@ -167,8 +172,8 @@ describe('webqq observer view', () => {
   })
 
   it('uses the configured WebQQ color mode without rendering an in-panel switcher', () => {
-    expect(clientState).toContain("export type WebQQColorMode = 'auto' | 'light' | 'dark'")
-    expect(clientState).toContain("export const webQQColorMode = ref<WebQQColorMode>('auto')")
+    expect(webqqSettings).toContain("export type WebQQColorMode = 'auto' | 'light' | 'dark'")
+    expect(webqqSettings).toContain("export const webQQColorMode = ref<WebQQColorMode>('auto')")
     expect(clientIndex).toContain('webQQColorMode')
     expect(clientIndex).toContain('type WebQQColorMode')
     expect(clientIndex).toMatch(/webQQColorMode\?:\s*WebQQColorMode/)
@@ -181,7 +186,7 @@ describe('webqq observer view', () => {
   })
 
   it('keeps compact capsule shadow enabled by default from console entry data', () => {
-    expect(clientState).toContain('export const useCompactCapsuleShadow = ref(true)')
+    expect(webqqSettings).toContain('export const useCompactCapsuleShadow = ref(true)')
     expect(clientIndex).toContain('useCompactCapsuleShadow')
     expect(clientIndex).toMatch(/useCompactCapsuleShadow\?:\s*boolean/)
     expect(clientIndex).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
@@ -220,7 +225,7 @@ describe('webqq observer view', () => {
   })
 
   it('passes panel visibility to the WebQQ observer', () => {
-    expect(capsuleView).toContain(':visible="webqqOpen"')
+    expect(clientShell).toContain(':visible="webQQOpen"')
     expect(webqqView).toContain('defineProps<{ visible: boolean }>()')
     expect(webqqView).toContain('isVisible: () => props.visible')
     expect(webqqLiveMessagesStore).toContain('!options.isVisible()')
@@ -259,7 +264,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('onBeforeUnmount')
     expect(webqqView).toContain('const disposeWebQQLiveMessages = useWebQQLiveMessages')
     expect(webqqView).toContain('onBeforeUnmount(() => disposeWebQQLiveMessages())')
-    expect(clientState).toContain('export function resetWebQQClientState()')
+    expect(entryState).toContain('export function resetWebQQClientState()')
     expect(clientIndex).toContain('resetWebQQClientState()')
     expect(clientIndex).toContain("receive('onebot-webqq/update', () => {})")
     expect(clientIndex).toContain("lastCheckedAvatar = ''")
@@ -313,7 +318,7 @@ describe('webqq observer view', () => {
 
   it('lets capsule conversation data carry group sender metadata', () => {
     const capsuleConversationSource = sourceBetween(
-      clientState,
+      capsuleState,
       'conversation: {',
       '  counters: {',
     )
@@ -324,8 +329,8 @@ describe('webqq observer view', () => {
   })
 
   it('lets WebQQ messages carry ChatLuna affinity badges', () => {
-    expect(clientState).toContain('senderAffinity?: number')
-    expect(clientState).toContain('senderRelationship?: string')
+    expect(webqqTypes).toContain('senderAffinity?: number')
+    expect(webqqTypes).toContain('senderRelationship?: string')
     expect(onebotTypesSource).toContain('senderAffinity?: number')
     expect(onebotTypesSource).toContain('senderRelationship?: string')
   })
@@ -589,7 +594,7 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId, scopeId)')
     expect(webqqStorage).toContain('const cachedMessages = messages.slice(-messageCacheLimit)')
     expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit, scopeId)')
-    expect(webqqView).toContain("import { loadCachedWebQQMessages as loadStoredWebQQMessages, saveCachedWebQQMessages as saveStoredWebQQMessages } from './stores/webqq-storage'")
+    expect(webqqView).toContain("import { loadCachedWebQQMessages as loadStoredWebQQMessages, saveCachedWebQQMessages as saveStoredWebQQMessages } from './storage/webqq-storage'")
     expect(webqqView).toContain("async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string)")
     expect(webqqView).toContain('return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value, webQQStorageScope.value)')
     expect(webqqView).toContain('await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value, webQQStorageScope.value)')
@@ -882,7 +887,7 @@ describe('webqq observer view', () => {
       'export interface WebQQLiveMessage',
     )
     const clientMessageSource = sourceBetween(
-      clientState,
+      webqqTypes,
       'export interface WebQQMessage {',
       'export interface WebQQLiveMessage',
     )
@@ -1172,15 +1177,15 @@ describe('webqq observer view', () => {
   })
 
   it('renders WebQQ recall events and recalled message marks', () => {
-    expect(clientState).toContain('recalled?: boolean')
-    expect(clientState).toContain("event?: {")
-    expect(clientState).toContain("type: 'recall'")
-    expect(clientState).toContain("type: 'recall' | 'poke' | 'mute' | 'reaction'")
-    expect(clientState).toContain('export interface WebQQMessageReactionUser')
-    expect(clientState).toContain('users?: WebQQMessageReactionUser[]')
-    expect(clientState).toContain('reactions?: WebQQMessageReaction[]')
-    expect(clientState).toContain('emojiUrl?: string')
-    expect(clientState).toContain('userAvatar?: string')
+    expect(webqqTypes).toContain('recalled?: boolean')
+    expect(webqqTypes).toContain("event?: {")
+    expect(webqqTypes).toContain("type: 'recall'")
+    expect(webqqTypes).toContain("type: 'recall' | 'poke' | 'mute' | 'reaction'")
+    expect(webqqTypes).toContain('export interface WebQQMessageReactionUser')
+    expect(webqqTypes).toContain('users?: WebQQMessageReactionUser[]')
+    expect(webqqTypes).toContain('reactions?: WebQQMessageReaction[]')
+    expect(webqqTypes).toContain('emojiUrl?: string')
+    expect(webqqTypes).toContain('userAvatar?: string')
     expect(webqqMessageListView).toContain('chatStyle: WebQQChatStyle')
     expect(webqqMessageListView).toContain("message.event")
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-event')
@@ -1570,7 +1575,7 @@ describe('webqq observer view', () => {
   })
 
   it('shares the summed WebQQ unread count with the capsule state', () => {
-    expect(webqqView).toMatch(/import\s+\{[^}]*webQQTotalUnread[^}]*\}\s+from '\.\/state'/)
+    expect(webqqView).toMatch(/import\s+\{[^}]*webQQTotalUnread[^}]*\}\s+from '\.\/settings'/)
     expect(webqqConversationStateStore).toContain('const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))')
     expect(webqqView).toContain('watch(totalUnreadCount, (count) => {')
     expect(webqqView).toContain('webQQTotalUnread.value = count')
@@ -1773,7 +1778,7 @@ describe('webqq observer view', () => {
 
   it('renders playable WebQQ record messages with voice transcription controls', () => {
     const clientElementSource = sourceBetween(
-      clientState,
+      webqqTypes,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessageReaction {',
     )
@@ -1831,7 +1836,7 @@ describe('webqq observer view', () => {
 
   it('lets clickable WebQQ quote blocks scroll to the original message in the current list', () => {
     const missingRequirements = [
-      clientState.includes('targetMessageId?: string')
+      webqqTypes.includes('targetMessageId?: string')
         ? ''
         : 'WebQQMessageElement 缺少引用目标消息 ID 字段',
       webqqMessageListView.includes(':ref="(element) => setMessageElementRef(message, element)"')
@@ -1870,7 +1875,7 @@ describe('webqq observer view', () => {
       'export interface WebQQMessageElement {',
     )
     const clientForwardItemSource = sourceBetween(
-      clientState,
+      webqqTypes,
       'export interface WebQQForwardItem {',
       'export interface WebQQMessageElement {',
     )
@@ -1880,7 +1885,7 @@ describe('webqq observer view', () => {
       'export interface WebQQMessage {',
     )
     const clientMessageSource = sourceBetween(
-      clientState,
+      webqqTypes,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessage {',
     )
@@ -1918,7 +1923,7 @@ describe('webqq observer view', () => {
       hasTotalEntryInBubble && hasTotalEntryText ? '' : 'forward bubble shows 查看${items.length}条转发消息 total entry',
       forwardBubbleSource.includes("@click.stop=\"emit('open-forward', run.element)\"") ? '' : 'forward total entry keeps emitting open-forward with run.element',
       forwardBubbleSource.includes("run.element.text || '[合并转发]'") ? '' : 'forward elements without items keep the existing [合并转发] fallback',
-      /webQQ.*Forward.*Preview/i.test(clientState) ? 'forward preview must not add a client state config option' : '',
+      /webQQ.*Forward.*Preview/i.test(webqqTypes) ? 'forward preview must not add a client state config option' : '',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -1931,7 +1936,7 @@ describe('webqq observer view', () => {
       'export interface WebQQMessage {',
     )
     const clientMessageSource = sourceBetween(
-      clientState,
+      webqqTypes,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessage {',
     )
