@@ -185,7 +185,8 @@ describe('chat capsule view', () => {
   })
 
   it('renders total WebQQ unread count on the bot avatar when enabled', () => {
-    expect(capsuleView).toMatch(/import \{[^}]*\bshowWebQQCapsuleUnread\b[^}]*\bwebQQTotalUnread\b[^}]*\} from '\.\.\/webqq\/settings'/)
+    expect(capsuleView).toMatch(/import \{[^}]*\bshowWebQQCapsuleUnread\b[^}]*\bwebQQTotalUnread\b[^}]*\} from '\.\.\/entry-state'/)
+    expect(capsuleView).not.toContain("from '../webqq/settings'")
     expect(capsuleView).toContain('class="onebot-webqq__avatar-unread"')
     expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
     expect(capsuleView).toContain('{{ capsuleUnreadText }}')
@@ -352,9 +353,9 @@ describe('chat capsule view', () => {
 
   it('applies the configured WebQQ color mode to the main capsule', () => {
     const missingRequirements = [
-      /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\.\/webqq\/settings'/.test(capsuleView)
+      /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
         ? ''
-        : '主胶囊没有从 webqq/settings 读取 webQQColorMode',
+        : '主胶囊没有从 entry-state 读取 webQQColorMode',
       capsuleView.includes("['onebot-webqq'") && capsuleView.includes('`is-color-${webQQColorMode}`')
         ? ''
         : '主胶囊根节点没有输出 is-color-${webQQColorMode} 类名',
@@ -368,9 +369,9 @@ describe('chat capsule view', () => {
 
   it('applies the configured compact capsule shadow option to the main capsule', () => {
     const missingRequirements = [
-      /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\.\/webqq\/settings'/.test(capsuleView)
+      /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
         ? ''
-        : '主胶囊没有从 webqq/settings 读取 useCompactCapsuleShadow',
+        : '主胶囊没有从 entry-state 读取 useCompactCapsuleShadow',
       capsuleView.includes("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
         ? ''
         : '关闭紧凑阴影时主胶囊没有输出旧版宽阴影类名',

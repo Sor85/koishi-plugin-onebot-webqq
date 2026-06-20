@@ -148,9 +148,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
 import { createLayout, type AutoLayout } from 'animejs'
-import { webQQOpen } from '../entry-state'
+import { showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
-import { showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQColorMode, webQQTotalUnread } from '../webqq/settings'
 import { capsule } from './state'
 
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'

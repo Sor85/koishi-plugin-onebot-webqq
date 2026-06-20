@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
-import { createOneBotWebQQService } from '../src/onebot'
+import { createOneBotWebQQService } from '../src/webqq/adapters/onebot/service'
 
 const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const onebotDataSource = await readFile(new URL('../src/onebot/data.ts', import.meta.url), 'utf8')
@@ -24,6 +24,7 @@ const webqqTypesSource = await readFile(new URL('../src/webqq/types.ts', import.
 describe('onebot webqq adapter', () => {
   it('keeps OneBot WebQQ public types outside the adapter entry', () => {
     expect(onebotSource).toContain("from './types'")
+    expect(onebotSource).not.toContain("from '../webqq/adapters/onebot/service'")
     expect(onebotSource).not.toContain('export interface WebQQMessage {')
     expect(onebotSource).not.toContain('export interface WebQQContacts {')
     expect(onebotTypesSource).not.toContain("from '../webqq/types'")

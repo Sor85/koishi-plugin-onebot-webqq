@@ -22,6 +22,12 @@ import {
 export const debug = ref(false)
 export const webQQOpen = ref(false)
 export const webQQCapsule = capsule
+export {
+  showWebQQCapsuleUnread,
+  useCompactCapsuleShadow,
+  webQQColorMode,
+  webQQTotalUnread,
+}
 export type WebQQCapsuleData = CapsuleData
 
 export function resetWebQQClientState() {
