@@ -28,7 +28,7 @@ import {
 import {
   loadKoishiWebQQRecalledMessageCache,
   saveKoishiWebQQRecalledMessageCache,
-} from '../storage'
+} from '../storage/recall-cache'
 import { createWebQQNoticeRuntime } from './live-notices'
 import { createWebQQReactionRuntime } from './live-reactions'
 

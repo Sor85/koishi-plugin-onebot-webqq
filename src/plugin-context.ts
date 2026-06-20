@@ -17,8 +17,10 @@ import type { WebQQImageServer } from './webqq/media/image-url-resolver'
 import type {
   WebQQMessageCachePayload,
   WebQQMessageCacheQuery,
+} from './webqq/storage/message-cache'
+import type {
   WebQQStoredState,
-} from './webqq/storage'
+} from './webqq/storage/state'
 
 export interface ConsoleEvents {
   'onebot-webqq/webqq/contacts': () => Promise<WebQQContacts>

@@ -1,0 +1,79 @@
+import type { Config } from '../../config'
+import { isRecord } from '../../shared/record'
+import { chatCapsuleStorageTable, getWebQQDatabase, type WebQQStorageContext } from './schema'
+import { getWebQQStateStorageId } from './scope'
+
+export interface WebQQConversationSummary {
+  summary: string
+  time: number
+}
+
+export interface WebQQStoredState {
+  conversationSummaries: Record<string, WebQQConversationSummary>
+  conversationUnreadCounts: Record<string, number>
+}
+
+function createEmptyWebQQStoredState(): WebQQStoredState {
+  return {
+    conversationSummaries: {},
+    conversationUnreadCounts: {},
+  }
+}
+
+function readWebQQStoredConversationSummaries(value: unknown) {
+  const summaries: Record<string, WebQQConversationSummary> = {}
+  if (!isRecord(value)) return summaries
+  for (const [key, raw] of Object.entries(value)) {
+    if (!isRecord(raw)) continue
+    if (typeof raw.summary === 'string' && typeof raw.time === 'number') summaries[key] = {
+      summary: raw.summary,
+      time: raw.time,
+    }
+  }
+  return summaries
+}
+
+function readWebQQStoredUnreadCounts(value: unknown) {
+  const counts: Record<string, number> = {}
+  if (!isRecord(value)) return counts
+  for (const [key, count] of Object.entries(value)) {
+    if (typeof count === 'number' && count > 0) counts[key] = count
+  }
+  return counts
+}
+
+function readWebQQStoredState(value: unknown): WebQQStoredState {
+  const empty = createEmptyWebQQStoredState()
+  if (!isRecord(value)) return empty
+  return {
+    conversationSummaries: readWebQQStoredConversationSummaries(value.conversationSummaries),
+    conversationUnreadCounts: readWebQQStoredUnreadCounts(value.conversationUnreadCounts),
+  }
+}
+
+async function loadKoishiWebQQStorage(ctx: WebQQStorageContext, scopeId?: string) {
+  const database = getWebQQDatabase(ctx)
+  const [row] = await database.get(chatCapsuleStorageTable, { id: getWebQQStateStorageId(scopeId) })
+  return readWebQQStoredState(isRecord(row) ? row.payload : undefined)
+}
+
+async function saveKoishiWebQQStorage(ctx: WebQQStorageContext, state: WebQQStoredState, scopeId?: string) {
+  const database = getWebQQDatabase(ctx)
+  await database.upsert(chatCapsuleStorageTable, [{
+    id: getWebQQStateStorageId(scopeId),
+    payload: state,
+    updatedAt: new Date(),
+  }])
+}
+
+export async function loadWebQQStorage(ctx: WebQQStorageContext, config: Config, scopeId?: string): Promise<WebQQStoredState> {
+  if (config.webQQStorageBackend === 'koishi') return loadKoishiWebQQStorage(ctx, scopeId)
+  return createEmptyWebQQStoredState()
+}
+
+export async function saveWebQQStorage(ctx: WebQQStorageContext, config: Config, state: WebQQStoredState, scopeId?: string): Promise<void> {
+  const normalized = readWebQQStoredState(state)
+  if (config.webQQStorageBackend === 'koishi') {
+    await saveKoishiWebQQStorage(ctx, normalized, scopeId)
+  }
+}

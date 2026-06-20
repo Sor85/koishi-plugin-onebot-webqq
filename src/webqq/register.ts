@@ -15,7 +15,7 @@ import {
 } from './message-flow/live-runtime'
 import {
   chatCapsuleStorageTable,
-} from './storage'
+} from './storage/schema'
 import type { WebQQMessage, WebQQNotice } from './types'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>

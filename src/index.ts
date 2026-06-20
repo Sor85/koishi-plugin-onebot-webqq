@@ -25,10 +25,14 @@ import {
 import type { OneBotRobotState } from './onebot/types'
 import type {
   ChatCapsuleStorageRow,
+} from './webqq/storage/schema'
+import type {
   WebQQMessageCachePayload,
   WebQQMessageCacheQuery,
+} from './webqq/storage/message-cache'
+import type {
   WebQQStoredState,
-} from './webqq/storage'
+} from './webqq/storage/state'
 import { readWebQQBotGroupSenderMetadata } from './webqq/adapters/onebot/group-sender-metadata'
 import { registerWebQQ } from './webqq/register'
 import { createMessageInput } from './capsule/message-input'
