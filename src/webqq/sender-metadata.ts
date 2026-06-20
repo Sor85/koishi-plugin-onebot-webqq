@@ -1,4 +1,4 @@
-import type { WebQQMessage } from '../onebot'
+import type { WebQQMessage } from './types'
 import { normalizeGroupRole } from '../onebot/data'
 import { readRecordText } from '../shared/structured-text'
 

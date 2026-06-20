@@ -1,6 +1,6 @@
 import * as qface from 'qface'
 import type { DebugLogger } from '../plugin-context'
-import type { WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQMessageReactionUser } from '../onebot'
+import type { WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQMessageReactionUser } from './types'
 import type { WebQQRawReaction } from '../onebot/raw-event'
 import { isRecord } from '../shared/structured-text'
 import { applyWebQQReactionToLiveMessages, getWebQQLiveMessageKey } from './live-cache'

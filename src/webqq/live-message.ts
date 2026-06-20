@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import type { WebQQChatType, WebQQLiveMessage, WebQQMessage } from '../onebot'
+import type { WebQQChatType, WebQQLiveMessage, WebQQMessage } from './types'
 import { isRecord, readRecordText } from '../shared/structured-text'
 import {
   normalizeLiveElements,

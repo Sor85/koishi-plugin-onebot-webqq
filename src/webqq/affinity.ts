@@ -1,5 +1,5 @@
 import type { Config } from '../config'
-import type { WebQQMessage } from '../onebot'
+import type { WebQQMessage } from './types'
 import { readRecordNumber, readRecordText } from '../shared/structured-text'
 
 interface WebQQAffinityContext {

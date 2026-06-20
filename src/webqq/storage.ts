@@ -1,5 +1,5 @@
 import type { Config } from '../config'
-import type { WebQQChatType, WebQQMessage, WebQQMessageElement, WebQQMessageReaction, WebQQMessageReactionUser } from '../onebot'
+import type { WebQQChatType, WebQQMessage, WebQQMessageElement, WebQQMessageReaction, WebQQMessageReactionUser } from './types'
 import { isRecord } from '../shared/structured-text'
 
 export interface WebQQConversationSummary {

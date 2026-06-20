@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import type { WebQQMessageElement } from '../onebot'
+import type { WebQQMessageElement } from './types'
 import { normalizeCardElement } from '../onebot/card'
 import { normalizeFaceElement, summarizeElements } from '../onebot/messages'
 import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from '../onebot/text'

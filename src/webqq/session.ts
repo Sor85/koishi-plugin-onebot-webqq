@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import type { WebQQMessage } from '../onebot'
+import type { WebQQMessage } from './types'
 import { getGroupAvatar, getUserAvatar } from '../onebot/data'
 import { isRecord, readRecordText } from '../shared/structured-text'
 import { readWebQQSenderMetadata } from './sender-metadata'

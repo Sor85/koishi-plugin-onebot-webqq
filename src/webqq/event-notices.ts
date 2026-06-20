@@ -1,5 +1,5 @@
 import type { Session } from 'koishi'
-import type { WebQQNotice } from '../onebot'
+import type { WebQQNotice } from './types'
 import { isRecord, readRecordText } from '../shared/structured-text'
 import { getWebQQGroupAvatar, getWebQQUserAvatar, readUserName } from './session'
 

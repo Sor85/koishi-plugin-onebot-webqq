@@ -6,7 +6,7 @@ import type {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecordTranscriptionQuery,
-} from '../onebot'
+} from './types'
 import type { createOneBotWebQQService } from '../onebot'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
