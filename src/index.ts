@@ -1,7 +1,7 @@
 import type { Session } from 'koishi'
 import type { Config as PluginConfig } from './config'
-import { registerChatLunaCharacterLockSync } from './chatluna/character-lock'
-import { registerConsoleEntry } from './console/entry'
+import { registerChatLunaCharacterLockSync } from './capsule/character-lock'
+import { registerConsoleEntry } from './capsule/console-entry'
 import { registerWebQQConsoleListeners } from './webqq/console'
 import {
   CapsuleSnapshot,
@@ -14,7 +14,7 @@ import {
   recordModelUsage,
   recordOutgoingMessage,
   setAvailableBots,
-} from './state'
+} from './capsule/state'
 import {
   createOneBotWebQQService,
   WebQQContacts,
@@ -49,7 +49,7 @@ import { readWebQQBotGroupSenderMetadata } from './webqq/group-sender-metadata'
 import {
   createWebQQLiveRuntime,
 } from './webqq/live-runtime'
-import { createMessageInput, type ChatLunaMessage } from './chatluna/message-input'
+import { createMessageInput, type ChatLunaMessage } from './capsule/message-input'
 import type {
   ChatCapsuleContext,
   ChatLunaCharacterAfterChatPayload,

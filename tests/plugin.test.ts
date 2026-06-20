@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import type { Session } from 'koishi'
 import { describe, expect, it, vi } from 'vitest'
 import type { ChatCapsuleContext, ChatLunaCharacterService, ConsoleEvents, ConsoleService, DatabaseService } from '../src/plugin-context'
-import type { CapsuleSnapshot } from '../src/state'
+import type { CapsuleSnapshot } from '../src/capsule/state'
 import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
 import { summarizeWebQQElements } from '../src/webqq/live-elements'
 import { createWebQQLiveMessage } from '../src/webqq/live-message'
@@ -30,7 +30,7 @@ import {
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
 } from '../src/webqq/live-cache'
-import { createMessageInput } from '../src/chatluna/message-input'
+import { createMessageInput } from '../src/capsule/message-input'
 
 const dnsMock = vi.hoisted(() => ({
   lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
@@ -68,11 +68,11 @@ vi.mock('koishi', () => koishiMock)
 
 const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
-const chatlunaCharacterLockSource = await readFile(new URL('../src/chatluna/character-lock.ts', import.meta.url), 'utf8')
-const consoleEntrySource = await readFile(new URL('../src/console/entry.ts', import.meta.url), 'utf8')
+const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
+const consoleEntrySource = await readFile(new URL('../src/capsule/console-entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const webqqConsoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
-const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna/message-input.ts', import.meta.url), 'utf8')
+const chatlunaMessageInputSource = await readFile(new URL('../src/capsule/message-input.ts', import.meta.url), 'utf8')
 const webqqLiveElementsSource = await readFile(new URL('../src/webqq/live-elements.ts', import.meta.url), 'utf8')
 const webqqLiveCacheSource = await readFile(new URL('../src/webqq/live-cache.ts', import.meta.url), 'utf8')
 const webqqLiveMessageSource = await readFile(new URL('../src/webqq/live-message.ts', import.meta.url), 'utf8')
@@ -212,7 +212,7 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps console entry data outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './console/entry'")
+    expect(pluginSource).toContain("from './capsule/console-entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
     expect(pluginSource).not.toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'koishi'")
     expect(consoleEntrySource).toContain('export function registerConsoleEntry')
@@ -232,7 +232,7 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps ChatLuna character lock syncing outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './chatluna/character-lock'")
+    expect(pluginSource).toContain("from './capsule/character-lock'")
     expect(pluginSource).not.toContain('service.acquireResponseLock = async')
     expect(pluginSource).not.toContain('service.releaseResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain('export function registerChatLunaCharacterLockSync')
@@ -1707,7 +1707,7 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './chatluna/message-input'")
+    expect(pluginSource).toContain("from './capsule/message-input'")
     expect(pluginSource).not.toContain('function createMessageInput(')
     expect(chatlunaMessageInputSource).toContain('export function createMessageInput')
     expect(createMessageInput(session, {

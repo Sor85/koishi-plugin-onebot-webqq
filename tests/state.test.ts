@@ -8,7 +8,7 @@ import {
   recordIncomingMessage,
   setAvailableBots,
   recordOutgoingMessage,
-} from '../src/state'
+} from '../src/capsule/state'
 
 describe('chat capsule state', () => {
   it('starts without a snapshot', () => {

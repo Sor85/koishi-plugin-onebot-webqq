@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseThinkContent, readCharacterAfterChatText } from '../../src/chatluna/thinking'
+import { parseThinkContent, readCharacterAfterChatText } from '../../src/webqq/thinking'
 
 describe('ChatLuna character thinking parser', () => {
   it('keeps searching payload candidates when an earlier response has no think tag', () => {

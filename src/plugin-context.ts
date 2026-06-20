@@ -1,7 +1,7 @@
 import type { Entry } from '@koishijs/console'
 import type { Session } from 'koishi'
-import type { ChatLunaMessage } from './chatluna/message-input'
-import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './chatluna/thinking'
+import type { ChatLunaMessage } from './capsule/message-input'
+import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './webqq/thinking'
 import type {
   WebQQContacts,
   WebQQGroupInfo,

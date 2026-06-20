@@ -3,7 +3,7 @@ import { createMessageInput } from './message-input'
 import {
   recordConversationActivity,
   type CapsuleState,
-} from '../state'
+} from './state'
 import { readMemberName } from '../webqq/session'
 
 export function registerChatLunaCharacterLockSync(

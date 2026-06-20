@@ -2,7 +2,7 @@ import { resolve } from 'path'
 import type { Config as PluginConfig } from '../config'
 import type { OneBotRobotState } from '../onebot'
 import type { ConsoleService } from '../plugin-context'
-import type { CapsuleState } from '../state'
+import type { CapsuleState } from './state'
 
 export function registerConsoleEntry(
   console: ConsoleService,
