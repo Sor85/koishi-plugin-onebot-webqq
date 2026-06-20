@@ -1,4 +1,4 @@
-import type { WebQQMessage, WebQQMessageQuery, WebQQMessageReaction, WebQQRecallPayload } from './types'
+import type { WebQQMessage, WebQQMessageQuery, WebQQMessageReaction, WebQQRecallPayload } from '../types'
 
 type WebQQLiveMessageKeyInput = Pick<WebQQMessageQuery, 'type' | 'peerId'>
 

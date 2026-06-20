@@ -10,7 +10,7 @@ import type {
 import type { createOneBotWebQQService } from './adapters/onebot/service'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
-import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
+import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './message-flow/live-cache'
 import {
   loadKoishiWebQQMessageCache,
   loadKoishiWebQQRecalledMessageCache,

@@ -1,7 +1,7 @@
 import type { Config as PluginConfig } from '../config'
 import type { ChatCapsuleContext } from '../plugin-context'
 import { createOneBotWebQQService } from '../webqq/adapters/onebot/service'
-import { createWebQQImageUrlResolver } from '../webqq/image-url-resolver'
+import { createWebQQImageUrlResolver } from '../webqq/media/image-url-resolver'
 
 function normalizeOneBotSelfId(value?: string) {
   const selfId = value?.trim()

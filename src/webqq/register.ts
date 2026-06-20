@@ -1,7 +1,7 @@
 import type { Config as PluginConfig } from '../config'
 import type { OneBotRobotState } from '../onebot/types'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
-import type { WebQQImageUrlResolver } from './live-elements'
+import type { WebQQImageUrlResolver } from './media/image-url-resolver'
 import { registerWebQQReactionInterceptor } from './adapters/onebot/reactions'
 import type { createOneBotWebQQService } from './adapters/onebot/service'
 import { registerWebQQConsoleListeners } from './console'
@@ -12,7 +12,7 @@ import {
 import {
   createWebQQLiveRuntime,
   type WebQQLiveRuntime,
-} from './live-runtime'
+} from './message-flow/live-runtime'
 import {
   chatCapsuleStorageTable,
 } from './storage'

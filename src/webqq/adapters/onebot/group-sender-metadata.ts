@@ -5,7 +5,7 @@ import {
   hasWebQQSenderMetadata,
   readWebQQSenderMetadata,
   type WebQQSenderMetadata,
-} from '../../sender-metadata'
+} from '../../sender/sender-metadata'
 
 async function readWebQQGroupMemberInfo(session: Session, userId: string, noCache: boolean) {
   if ((session.bot.platform || session.platform) !== 'onebot') return

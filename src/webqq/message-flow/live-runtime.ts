@@ -1,22 +1,22 @@
 import type { Session } from 'koishi'
-import type { Config as PluginConfig } from '../config'
-import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './thinking'
-import { parseThinkContent, readCharacterAfterChatText } from './thinking'
-import type { createOneBotWebQQService } from './adapters/onebot/service'
-import type { WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from './types'
-import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
-import { attachWebQQAffinityBadges } from './affinity'
+import type { Config as PluginConfig } from '../../config'
+import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../thinking'
+import { parseThinkContent, readCharacterAfterChatText } from '../thinking'
+import type { createOneBotWebQQService } from '../adapters/onebot/service'
+import type { WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from '../types'
+import type { ChatCapsuleContext, DebugLogger } from '../../plugin-context'
+import { attachWebQQAffinityBadges } from '../affinity'
 import { applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
 import { createWebQQLiveMessage } from './live-message'
-import type { WebQQImageUrlResolver } from './live-elements'
+import type { WebQQImageUrlResolver } from '../media/image-url-resolver'
 import {
   readWebQQPeer,
   readWebQQLiveDirection,
 } from './session'
-import { getWebQQUserAvatar } from './display'
+import { getWebQQUserAvatar } from '../display'
 import {
   readWebQQGroupSenderMetadata,
-} from './adapters/onebot/group-sender-metadata'
+} from '../adapters/onebot/group-sender-metadata'
 import {
   fillWebQQMessageSenderMetadata,
   hasWebQQSenderMetadata,
@@ -24,11 +24,11 @@ import {
   readWebQQMessageSenderMetadata,
   replaceWebQQMessageSenderMetadata,
   type WebQQSenderMetadata,
-} from './sender-metadata'
+} from '../sender/sender-metadata'
 import {
   loadKoishiWebQQRecalledMessageCache,
   saveKoishiWebQQRecalledMessageCache,
-} from './storage'
+} from '../storage'
 import { createWebQQNoticeRuntime } from './live-notices'
 import { createWebQQReactionRuntime } from './live-reactions'
 

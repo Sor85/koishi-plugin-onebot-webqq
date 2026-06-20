@@ -1,6 +1,6 @@
-import type { WebQQMessage } from './types'
-import { readRecordText } from '../shared/record'
-import { normalizeWebQQGroupRole } from './display'
+import type { WebQQMessage } from '../types'
+import { readRecordText } from '../../shared/record'
+import { normalizeWebQQGroupRole } from '../display'
 
 export interface WebQQSenderMetadata {
   senderRole?: string

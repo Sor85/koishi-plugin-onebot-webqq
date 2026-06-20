@@ -1,11 +1,11 @@
 import type { Session } from 'koishi'
-import type { WebQQMessageElement } from './types'
-import { normalizeCardElement } from './adapters/onebot/card'
-import { normalizeFaceElement, summarizeElements } from './adapters/onebot/messages'
-import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from './adapters/onebot/text'
-import { isRecord, readRecordText } from '../shared/record'
-import { readStructuredText } from './structured-text'
-import { isRemoteImageSource } from './image-url-resolver'
+import type { WebQQMessageElement } from '../types'
+import { normalizeCardElement } from '../adapters/onebot/card'
+import { normalizeFaceElement, summarizeElements } from '../adapters/onebot/messages'
+import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from '../adapters/onebot/text'
+import { isRecord, readRecordText } from '../../shared/record'
+import { readStructuredText } from '../structured-text'
+import { isRemoteImageSource } from '../media/image-url-resolver'
 
 function readElementText(value: unknown) {
   return value == null ? '' : String(value)
@@ -43,7 +43,6 @@ export type WebQQResolvedImage = {
 }
 
 export type WebQQImageResolver = (file: string, source?: 'url') => Promise<WebQQResolvedImage>
-export type WebQQImageUrlResolver = (file: string) => string
 export type WebQQQuoteResolver = (id: string) => Promise<WebQQMessageElement>
 export type WebQQForwardResolver = (id: string) => Promise<WebQQMessageElement>
 export type WebQQRecordResolver = WebQQImageResolver

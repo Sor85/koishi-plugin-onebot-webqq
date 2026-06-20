@@ -3,7 +3,7 @@ import * as dns from 'dns/promises'
 import { readFile } from 'fs/promises'
 import { isIP } from 'net'
 import { extname } from 'path'
-import type { WebQQImageUrlResolver } from './live-elements'
+export type WebQQImageUrlResolver = (file: string) => string
 
 export interface WebQQImageContext {
   params: Record<string, string>

@@ -5,21 +5,21 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChatCapsuleContext, ChatLunaCharacterService, ConsoleEvents, ConsoleService, DatabaseService } from '../src/plugin-context'
 import type { CapsuleSnapshot } from '../src/capsule/state'
 import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
-import { summarizeWebQQElements } from '../src/webqq/live-elements'
-import { createWebQQLiveMessage } from '../src/webqq/live-message'
-import { createWebQQImageUrlResolver, getImageContentType } from '../src/webqq/image-url-resolver'
+import { summarizeWebQQElements } from '../src/webqq/message-flow/live-elements'
+import { createWebQQLiveMessage } from '../src/webqq/message-flow/live-message'
+import { createWebQQImageUrlResolver, getImageContentType } from '../src/webqq/media/image-url-resolver'
 import { getWebQQUserAvatar } from '../src/webqq/display'
 import {
   readBotProfile,
   readUserName,
   readWebQQPeer,
   readWebQQLiveDirection,
-} from '../src/webqq/session'
+} from '../src/webqq/message-flow/session'
 import {
   fillWebQQMessageSenderMetadata,
   readWebQQSenderMetadata,
   replaceWebQQMessageSenderMetadata,
-} from '../src/webqq/sender-metadata'
+} from '../src/webqq/sender/sender-metadata'
 import { readWebQQGroupSenderMetadata } from '../src/webqq/adapters/onebot/group-sender-metadata'
 import {
   createWebQQFriendRequestNotice,
@@ -29,7 +29,7 @@ import {
   applyWebQQReactionToLiveMessages,
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
-} from '../src/webqq/live-cache'
+} from '../src/webqq/message-flow/live-cache'
 import { createMessageInput } from '../src/capsule/message-input'
 
 const dnsMock = vi.hoisted(() => ({
@@ -76,17 +76,17 @@ const configSource = await readFile(new URL('../src/config.ts', import.meta.url)
 const webqqRegisterSource = await readFile(new URL('../src/webqq/register.ts', import.meta.url), 'utf8')
 const webqqConsoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
 const chatlunaMessageInputSource = await readFile(new URL('../src/capsule/message-input.ts', import.meta.url), 'utf8')
-const webqqLiveElementsSource = await readFile(new URL('../src/webqq/live-elements.ts', import.meta.url), 'utf8')
-const webqqLiveCacheSource = await readFile(new URL('../src/webqq/live-cache.ts', import.meta.url), 'utf8')
-const webqqLiveMessageSource = await readFile(new URL('../src/webqq/live-message.ts', import.meta.url), 'utf8')
-const webqqLiveRuntimeSource = await readFile(new URL('../src/webqq/live-runtime.ts', import.meta.url), 'utf8')
-const webqqLiveNoticesSource = await readFile(new URL('../src/webqq/live-notices.ts', import.meta.url), 'utf8')
-const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/live-reactions.ts', import.meta.url), 'utf8')
-const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/image-url-resolver.ts', import.meta.url), 'utf8')
-const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender-metadata.ts', import.meta.url), 'utf8')
+const webqqLiveElementsSource = await readFile(new URL('../src/webqq/message-flow/live-elements.ts', import.meta.url), 'utf8')
+const webqqLiveCacheSource = await readFile(new URL('../src/webqq/message-flow/live-cache.ts', import.meta.url), 'utf8')
+const webqqLiveMessageSource = await readFile(new URL('../src/webqq/message-flow/live-message.ts', import.meta.url), 'utf8')
+const webqqLiveRuntimeSource = await readFile(new URL('../src/webqq/message-flow/live-runtime.ts', import.meta.url), 'utf8')
+const webqqLiveNoticesSource = await readFile(new URL('../src/webqq/message-flow/live-notices.ts', import.meta.url), 'utf8')
+const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/message-flow/live-reactions.ts', import.meta.url), 'utf8')
+const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/media/image-url-resolver.ts', import.meta.url), 'utf8')
+const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender/sender-metadata.ts', import.meta.url), 'utf8')
 const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/adapters/onebot/group-sender-metadata.ts', import.meta.url), 'utf8')
 const webqqEventNoticesSource = await readFile(new URL('../src/webqq/event-notices.ts', import.meta.url), 'utf8')
-const webqqSessionSource = await readFile(new URL('../src/webqq/session.ts', import.meta.url), 'utf8')
+const webqqSessionSource = await readFile(new URL('../src/webqq/message-flow/session.ts', import.meta.url), 'utf8')
 const pluginContextSource = await readFile(new URL('../src/plugin-context.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
@@ -268,7 +268,7 @@ describe('chat capsule plugin wiring', () => {
 
   it('keeps WebQQ live runtime outside the plugin entry', () => {
     expect(pluginSource).toContain("from './webqq/register'")
-    expect(webqqRegisterSource).toContain("from './live-runtime'")
+    expect(webqqRegisterSource).toContain("from './message-flow/live-runtime'")
     expect(pluginSource).not.toContain('const pendingWebQQThinking = new Map')
     expect(pluginSource).not.toContain('const liveSenderMetadata = new Map')
     expect(pluginSource).not.toContain('const broadcastWebQQLivePayload =')
@@ -297,13 +297,13 @@ describe('chat capsule plugin wiring', () => {
       { type: 'card', title: '春日影', text: 'MyGO!!!!!' },
     ]
 
-    expect(pluginSource).not.toContain("from './webqq/live-elements'")
+    expect(pluginSource).not.toContain("from './webqq/message-flow/live-elements'")
     expect(webqqLiveMessageSource).toContain("from './live-elements'")
     expect(pluginSource).not.toContain('function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('async function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('export async function normalizeLiveElements(')
     expect(webqqLiveElementsSource).toContain('summarizeElements as summarizeWebQQElements')
-    expect(webqqLiveElementsSource).toContain("from './image-url-resolver'")
+    expect(webqqLiveElementsSource).toContain("from '../media/image-url-resolver'")
     expect(webqqImageUrlResolverSource).toContain('export function getImageContentType')
     expect(summarizeWebQQElements(elements)).toBe('[图片]春日影')
     expect(getImageContentType('cover.webp')).toBe('image/webp')
@@ -359,7 +359,7 @@ describe('chat capsule plugin wiring', () => {
       },
     })
 
-    expect(runtimeSource).toContain("from '../webqq/image-url-resolver'")
+    expect(runtimeSource).toContain("from '../webqq/media/image-url-resolver'")
     expect(pluginSource).not.toContain('function createWebQQImageUrlResolver(')
     expect(webqqImageUrlResolverSource).toContain('export function createWebQQImageUrlResolver')
     expect(runtimeSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
@@ -367,7 +367,7 @@ describe('chat capsule plugin wiring', () => {
     expect(runtimeSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
     expect(serverGet).toHaveBeenCalledWith('/onebot-webqq/webqq/image/:id', expect.any(Function))
 
-    const localImageFile = fileURLToPath(new URL('../src/webqq/image-url-resolver.ts', import.meta.url))
+    const localImageFile = fileURLToPath(new URL('../src/webqq/media/image-url-resolver.ts', import.meta.url))
     const firstUrl = resolver(localImageFile)
     expect(firstUrl).toMatch(/^\/onebot-webqq\/webqq\/image\//)
     expect(resolver(localImageFile)).toBe(firstUrl)
@@ -824,8 +824,8 @@ describe('chat capsule plugin wiring', () => {
       special_title: '闪亮头衔',
     })
 
-    expect(webqqLiveRuntimeSource).toContain("from './sender-metadata'")
-    expect(pluginSource).not.toContain("from './webqq/sender-metadata'")
+    expect(webqqLiveRuntimeSource).toContain("from '../sender/sender-metadata'")
+    expect(pluginSource).not.toContain("from './webqq/sender/sender-metadata'")
     expect(pluginSource).not.toContain('function readWebQQSenderMetadata(')
     expect(webqqSenderMetadataSource).toContain('export function readWebQQSenderMetadata')
     expect(metadata).toEqual({
@@ -957,7 +957,7 @@ describe('chat capsule plugin wiring', () => {
     }
 
     expect(webqqLiveRuntimeSource).toContain("from './live-cache'")
-    expect(pluginSource).not.toContain("from './webqq/live-cache'")
+    expect(pluginSource).not.toContain("from './webqq/message-flow/live-cache'")
     expect(pluginSource).not.toContain('function mergeWebQQMessages(')
     expect(webqqLiveCacheSource).toContain('export function mergeWebQQLiveMessages')
     expect(getWebQQLiveMessageKey({ type: 'group', peerId: '20000' })).toBe('group:20000')

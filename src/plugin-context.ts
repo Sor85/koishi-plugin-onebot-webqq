@@ -13,7 +13,7 @@ import type {
   WebQQRecordTranscriptionQuery,
 } from './webqq/types'
 import type { OneBotRobotState } from './onebot/types'
-import type { WebQQImageServer } from './webqq/image-url-resolver'
+import type { WebQQImageServer } from './webqq/media/image-url-resolver'
 import type {
   WebQQMessageCachePayload,
   WebQQMessageCacheQuery,

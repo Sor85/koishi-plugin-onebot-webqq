@@ -1,6 +1,6 @@
 import type { Session } from 'koishi'
-import type { WebQQChatType, WebQQLiveMessage, WebQQMessage } from './types'
-import { isRecord, readRecordText } from '../shared/record'
+import type { WebQQChatType, WebQQLiveMessage, WebQQMessage } from '../types'
+import { isRecord, readRecordText } from '../../shared/record'
 import {
   normalizeLiveElements,
   summarizeWebQQElements,
@@ -16,7 +16,7 @@ import {
   readWebQQPeer,
   readWebQQLiveSenderMetadata,
 } from './session'
-import { getWebQQUserAvatar } from './display'
+import { getWebQQUserAvatar } from '../display'
 
 function readRawMessageData(session: Session) {
   const data = (session.event as { _data?: unknown })._data

@@ -1,11 +1,11 @@
 import * as qface from 'qface'
-import type { DebugLogger } from '../plugin-context'
-import type { WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQMessageReactionUser } from './types'
-import type { WebQQRawReaction } from './adapters/onebot/reactions'
-import { isRecord } from '../shared/record'
+import type { DebugLogger } from '../../plugin-context'
+import type { WebQQLiveMessage, WebQQMessage, WebQQMessageReaction, WebQQMessageReactionUser } from '../types'
+import type { WebQQRawReaction } from '../adapters/onebot/reactions'
+import { isRecord } from '../../shared/record'
 import { applyWebQQReactionToLiveMessages, getWebQQLiveMessageKey } from './live-cache'
 import { createWebQQEventMessage } from './live-message'
-import { getWebQQUserAvatar } from './display'
+import { getWebQQUserAvatar } from '../display'
 
 interface WebQQReactionService {
   getSelectedSelfId(): string | undefined

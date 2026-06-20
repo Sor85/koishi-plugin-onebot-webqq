@@ -4,7 +4,7 @@ import type {
   ChatLunaModelUsage,
   DebugLogger,
 } from '../plugin-context'
-import { readMemberName } from '../webqq/session'
+import { readMemberName } from '../webqq/message-flow/session'
 import {
   clearConversationActivity,
   recordConversationActivity,

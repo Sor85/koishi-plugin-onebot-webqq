@@ -4,7 +4,7 @@ import {
   readChannelName,
   readUserName,
   readWebQQLiveSenderMetadata,
-} from '../webqq/session'
+} from '../webqq/message-flow/session'
 
 export interface ChatLunaMessage {
   id?: string
