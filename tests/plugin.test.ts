@@ -68,6 +68,7 @@ vi.mock('koishi', () => koishiMock)
 
 const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
+const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-activity.ts', import.meta.url), 'utf8')
 const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
 const consoleEntrySource = await readFile(new URL('../src/capsule/console-entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
@@ -239,6 +240,17 @@ describe('chat capsule plugin wiring', () => {
     expect(chatlunaCharacterLockSource).toContain('service.acquireResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain('service.releaseResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain("ctx.on('dispose'")
+  })
+
+  it('keeps ChatLuna capsule activity outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './capsule/chatluna-activity'")
+    expect(pluginSource).not.toContain("ctx.on('chatluna/before-chat'")
+    expect(pluginSource).not.toContain("ctx.on('chatluna/model-usage'")
+    expect(pluginSource).not.toContain("ctx.on('chatluna_character/message_collect'")
+    expect(chatlunaActivitySource).toContain('export function registerCapsuleChatLunaActivity')
+    expect(chatlunaActivitySource).toContain("ctx.on('chatluna/before-chat'")
+    expect(chatlunaActivitySource).toContain("ctx.on('chatluna/model-usage'")
+    expect(chatlunaActivitySource).toContain("ctx.on('chatluna_character/message_collect'")
   })
 
   it('keeps WebQQ live runtime outside the plugin entry', () => {
@@ -726,7 +738,6 @@ describe('chat capsule plugin wiring', () => {
   it('keeps WebQQ session display helpers outside the plugin entry', () => {
     const session = createSession() as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/session'")
     expect(pluginSource).not.toContain('function readWebQQPeer(')
     expect(webqqSessionSource).toContain('export function readWebQQPeer')
     expect(readBotProfile(session)).toMatchObject({

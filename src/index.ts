@@ -1,17 +1,13 @@
-import type { Session } from 'koishi'
 import type { Config as PluginConfig } from './config'
+import { registerCapsuleChatLunaActivity } from './capsule/chatluna-activity'
 import { registerChatLunaCharacterLockSync } from './capsule/character-lock'
 import { registerConsoleEntry } from './capsule/console-entry'
 import { registerWebQQConsoleListeners } from './webqq/console'
 import {
   CapsuleSnapshot,
-  clearConversationActivity,
   createCapsuleState,
   getCurrentThinkingDurationMs,
-  recordIdleActivity,
-  recordConversationActivity,
   recordIncomingMessage,
-  recordModelUsage,
   recordOutgoingMessage,
   setAvailableBots,
 } from './capsule/state'
@@ -42,7 +38,6 @@ import type {
   WebQQStoredState,
 } from './webqq/storage'
 import { createWebQQImageUrlResolver } from './webqq/image-url-resolver'
-import { readMemberName } from './webqq/session'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
@@ -51,11 +46,10 @@ import { readWebQQBotGroupSenderMetadata } from './webqq/adapters/onebot/group-s
 import {
   createWebQQLiveRuntime,
 } from './webqq/live-runtime'
-import { createMessageInput, type ChatLunaMessage } from './capsule/message-input'
+import { createMessageInput } from './capsule/message-input'
 import type {
   ChatCapsuleContext,
   ChatLunaCharacterAfterChatPayload,
-  ChatLunaModelUsage,
 } from './plugin-context'
 
 export { Config } from './config'
@@ -92,12 +86,6 @@ declare module 'koishi' {
   interface Tables {
     onebot_webqq_storage: ChatCapsuleStorageRow
   }
-}
-
-const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
-
-function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
-  return visibleUsageSources.has(usage.source || '')
 }
 
 function normalizeOneBotSelfId(value?: string) {
@@ -167,24 +155,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   }
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
-  const readScheduleActivity = async (session?: Session) => {
-    const service = ctx.chatluna_schedule
-    if (!service) return ''
-    const activity = (await service.getCurrentActivity?.(session))?.trim()
-    if (activity) return activity
-    return (await service.getCurrentSummary?.(session))?.trim() || ''
-  }
-  const refreshIdleScheduleActivity = async (source: string, session?: Session) => {
-    try {
-      const activity = await readScheduleActivity(session)
-      if (!activity || !recordIdleActivity(state, activity)) return
-      logSnapshot(source)
-      broadcast()
-    } catch (error) {
-      logger?.info(`${source}-error %s`, error instanceof Error ? error.message : String(error))
-    }
-  }
-
   ctx.model?.extend(chatCapsuleStorageTable, {
     id: 'string(128)',
     payload: 'object',
@@ -193,31 +163,14 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     primary: 'id',
   })
 
-  const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
-    const thinkingStartedAt = Date.now()
-    const input = createMessageInput(session, message)
-    input.user.name = readMemberName(session) || input.user.name
-    recordConversationActivity(state, input, '正在思考', { conversationId, now: thinkingStartedAt })
-    logSnapshot('generating')
-    broadcast()
-    const botSenderMetadata = await readWebQQBotGroupSenderMetadata(session)
-    if (!botSenderMetadata) return
-    recordConversationActivity(state, {
-      ...input,
-      user: {
-        ...input.user,
-        ...botSenderMetadata,
-      },
-    }, '正在思考', { conversationId, now: thinkingStartedAt })
-    logSnapshot('generating-metadata')
-    broadcast()
-  }
-  const clearActivity = (source: string) => {
-    clearConversationActivity(state)
-    logSnapshot(source)
-    broadcast()
-    void refreshIdleScheduleActivity(`${source}-schedule`)
-  }
+  const chatLunaActivity = registerCapsuleChatLunaActivity({
+    ctx,
+    state,
+    logSnapshot,
+    broadcast,
+    logger,
+    readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
+  })
   const liveRuntime = createWebQQLiveRuntime({
     ctx,
     config,
@@ -235,11 +188,11 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     logSnapshot('message')
     broadcast()
     await liveRuntime.recordWebQQLiveMessage(session)
-    await refreshIdleScheduleActivity('message-schedule', session)
+    await chatLunaActivity.refreshIdleScheduleActivity('message-schedule', session)
   })
 
   ctx.setInterval(() => {
-    void refreshIdleScheduleActivity('schedule-activity')
+    void chatLunaActivity.refreshIdleScheduleActivity('schedule-activity')
   }, 60 * 1000)
 
   ctx.on('message-deleted', async (session) => {
@@ -266,19 +219,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
     groupLeaveNotices.set(notice.id, notice)
   })
 
-  ctx.on('chatluna/before-chat', async (conversationId, message, _variables, _chatInterface, session) => {
-    if (!session) return
-    await recordGenerating(session, message, conversationId)
-  })
-
-  ctx.on('chatluna/after-chat', () => {
-    clearActivity('after-chat')
-  })
-
-  ctx.on('chatluna/after-chat-error', () => {
-    clearActivity('after-chat-error')
-  })
-
   ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
     liveRuntime.updateLastOutgoingWebQQThinking(payload)
   })
@@ -286,18 +226,6 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
   ctx.before('send', async (session) => {
     recordOutgoingMessage(state)
     logSnapshot('send')
-    broadcast()
-  })
-
-  ctx.on('chatluna/model-usage', (usage: ChatLunaModelUsage) => {
-    if (!shouldDisplayModelUsage(usage)) return
-    const changed = recordModelUsage(state, {
-      conversationId: usage.context?.conversationId,
-      inputTokens: usage.usageMetadata?.input_tokens,
-      outputTokens: usage.usageMetadata?.output_tokens,
-    })
-    if (!changed) return
-    logSnapshot('model-usage')
     broadcast()
   })
 
@@ -336,12 +264,7 @@ export function apply(ctx: ChatCapsuleContext, config: PluginConfig = {}) {
       state,
       logSnapshot,
       broadcast,
-      clearActivity,
+      clearActivity: chatLunaActivity.clearActivity,
     })
-  })
-
-  ctx.on('chatluna_character/message_collect', async (session, messages) => {
-    if (!session) return
-    await recordGenerating(session, messages?.at(-1))
   })
 }
