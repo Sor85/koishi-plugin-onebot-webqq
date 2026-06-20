@@ -26,7 +26,7 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).toContain("from './types'")
     expect(onebotSource).not.toContain('export interface WebQQMessage {')
     expect(onebotSource).not.toContain('export interface WebQQContacts {')
-    expect(onebotTypesSource).toContain("from '../webqq/types'")
+    expect(onebotTypesSource).not.toContain("from '../webqq/types'")
     expect(onebotTypesSource).not.toContain('export interface WebQQMessage')
     expect(onebotTypesSource).not.toContain('export interface WebQQContacts')
     expect(webqqTypesSource).toContain('export interface WebQQMessage')

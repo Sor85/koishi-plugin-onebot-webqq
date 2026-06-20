@@ -1,5 +1,5 @@
 import { Schema } from 'koishi'
-import type { WebQQProtocol } from './onebot/types'
+import type { WebQQProtocol } from './onebot/protocol'
 
 export interface Config {
   debug?: boolean

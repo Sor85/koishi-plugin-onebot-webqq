@@ -22,27 +22,3 @@ export interface OneBotWebQQOptions {
   protocol?: WebQQProtocol
   imageUrlResolver?: (file: string) => string
 }
-
-export type {
-  WebQQChatType,
-  WebQQContacts,
-  WebQQForwardItem,
-  WebQQFriend,
-  WebQQFriendCategory,
-  WebQQGroup,
-  WebQQGroupAnnouncement,
-  WebQQGroupInfo,
-  WebQQGroupInfoQuery,
-  WebQQGroupMember,
-  WebQQLiveMessage,
-  WebQQMessage,
-  WebQQMessageElement,
-  WebQQMessageQuery,
-  WebQQMessageReaction,
-  WebQQMessageReactionUser,
-  WebQQNotice,
-  WebQQNoticeAction,
-  WebQQRecallPayload,
-  WebQQRecordTranscriptionQuery,
-  WebQQRecentContact,
-} from '../webqq/types'
