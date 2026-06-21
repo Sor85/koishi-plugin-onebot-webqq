@@ -321,9 +321,9 @@
   top: 1px;
   width: 44px;
   height: 44px;
-  border: 2px solid var(--k-color-primary, #409eff);
+  border: 2px solid var(--onebot-webqq-webqq-accent, #2563eb);
   border-radius: 50%;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--k-color-primary, #409eff) 24%, transparent);
+  box-shadow: 0 0 12px var(--onebot-webqq-webqq-accent-shadow, rgba(37, 99, 235, 0.24));
   animation: onebot-webqq-avatar-guide-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
@@ -331,7 +331,7 @@
   content: '';
   position: absolute;
   inset: -5px;
-  border: 1px solid color-mix(in srgb, var(--k-color-primary, #409eff) 36%, transparent);
+  border: 1px solid color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 36%, transparent);
   border-radius: inherit;
   animation: onebot-webqq-avatar-guide-halo 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }

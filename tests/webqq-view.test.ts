@@ -177,7 +177,7 @@ describe('webqq observer view', () => {
     expect(clientIndex).toContain('webQQColorMode')
     expect(clientIndex).toContain('type WebQQColorMode')
     expect(clientIndex).toMatch(/webQQColorMode\?:\s*WebQQColorMode/)
-    expect(clientIndex).toMatch(/webQQColorMode\.value\s*=\s*data\?\.value\?\.webQQColorMode\s*(?:\?\?|\|\|)\s*'auto'/)
+    expect(clientIndex).toMatch(/webQQColorMode\.value\s*=\s*value\?\.webQQColorMode\s*(?:\?\?|\|\|)\s*'auto'/)
     expect(webqqView).toContain('webQQColorMode')
     expect(webqqView).toContain('`is-color-${webQQColorMode}`')
     expect(webqqView).not.toContain('v-model="webQQColorMode"')
@@ -189,7 +189,7 @@ describe('webqq observer view', () => {
     expect(webqqSettings).toContain('export const useCompactCapsuleShadow = ref(true)')
     expect(clientIndex).toContain('useCompactCapsuleShadow')
     expect(clientIndex).toMatch(/useCompactCapsuleShadow\?:\s*boolean/)
-    expect(clientIndex).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
+    expect(clientIndex).toContain('useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true')
     expect(capsuleView).toContain("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
   })
 

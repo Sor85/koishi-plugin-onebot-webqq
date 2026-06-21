@@ -25,6 +25,7 @@ export const webQQCapsule = capsule
 export {
   showWebQQCapsuleUnread,
   useCompactCapsuleShadow,
+  webQQAccentColor,
   webQQColorMode,
   webQQTotalUnread,
 }

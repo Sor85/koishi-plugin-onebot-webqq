@@ -115,15 +115,15 @@ describe('chat capsule styles', () => {
         && ringBody.includes('height: 44px')
         ? ''
         : '头像光圈没有围绕当前 42px 头像外缘',
-      ringBody.includes('var(--k-color-primary, #409eff)')
+      ringBody.includes('var(--onebot-webqq-webqq-accent, #2563eb)')
         ? ''
-        : '头像光圈没有使用当前主题主色',
+        : '头像光圈没有使用 WebQQ 主题色变量',
       ringBody.includes('box-shadow: 0 0 12px')
         ? ''
         : '头像光圈阴影仍按旧头像尺寸扩散过宽',
-      style.includes('--onebot-webqq-avatar-guide-color')
-        ? '头像光圈不应再依赖 bot 头像主题色 CSS 变量'
-        : '',
+      ringBody.includes('var(--onebot-webqq-webqq-accent-shadow, rgba(37, 99, 235, 0.24))')
+        ? ''
+        : '头像光圈阴影没有使用 WebQQ 主题色阴影变量',
       ringBody.includes('border-radius: 50%') ? '' : '头像图形引导缺少圆形光圈',
       ringBody.includes('animation: onebot-webqq-avatar-guide-ring 2.4s cubic-bezier')
         ? ''

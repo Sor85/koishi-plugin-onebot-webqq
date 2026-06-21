@@ -380,6 +380,28 @@ describe('chat capsule view', () => {
     expect(missingRequirements).toEqual([])
   })
 
+  it('applies the configured WebQQ accent color to the avatar guide halo', () => {
+    const missingRequirements = [
+      /import \{[^}]*\bwebQQAccentColor\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
+        ? ''
+        : '头像引导光圈没有从 entry-state 读取 WebQQ 主题色',
+      capsuleView.includes("import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'")
+        ? ''
+        : '头像引导光圈没有复用 WebQQ 主题色样式变量',
+      capsuleView.includes(':style="capsuleHostStyle"')
+        ? ''
+        : 'WebQQ 主题色变量应绑定在小胶囊 host 上，避免被胶囊布局动画覆盖',
+      capsuleView.includes('const capsuleHostStyle = computed')
+        ? ''
+        : '小胶囊 host 缺少响应式主题色样式',
+      capsuleView.includes('getWebQQAccentStyle(webQQAccentColor.value)')
+        ? ''
+        : '主胶囊没有把 WebQQ 主题色写入同一套 WebQQ CSS 变量',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('caps the capsule total unread badge at 99999+ only above 99999', () => {
     expect([
       runGetCapsuleUnreadText(9999),
@@ -408,19 +430,29 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('showWebQQThinkingTokens?: boolean')
     expect(clientEntry).toContain('showWebQQThinkingTiming?: boolean')
     expect(clientEntry).toContain('showWebQQCapsuleUnread?: boolean')
-    expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
-    expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'telegram'")
-    expect(clientEntry).toContain('webQQTimBubbleTail.value = data?.value?.webQQTimBubbleTail ?? true')
-    expect(clientEntry).toContain("webQQColorMode.value = data?.value?.webQQColorMode || 'auto'")
-    expect(clientEntry).toContain("webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'koishi'")
-    expect(clientEntry).toContain('webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100')
-    expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
-    expect(clientEntry).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
-    expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true')
-    expect(clientEntry).toContain('showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false')
-    expect(clientEntry).toContain('showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false')
-    expect(clientEntry).toContain('showWebQQThinkingTokens.value = data?.value?.showWebQQThinkingTokens ?? true')
-    expect(clientEntry).toContain('showWebQQThinkingTiming.value = data?.value?.showWebQQThinkingTiming ?? true')
-    expect(clientEntry).toContain('showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true')
+    expect(clientEntry).toContain('function applyClientData(value?: ClientData)')
+    expect(clientEntry).toContain('applyClientData(data?.value)')
+    expect(clientEntry).toContain('watch(data, (value) => {')
+    expect(clientEntry).toContain('applyClientData(value)')
+    expect(clientEntry).toContain("webQQTheme.value = value?.webQQTheme || 'fresh'")
+    expect(clientEntry).toContain("webQQChatStyle.value = value?.webQQChatStyle || 'telegram'")
+    expect(clientEntry).toContain('webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true')
+    expect(clientEntry).toContain("webQQColorMode.value = value?.webQQColorMode || 'auto'")
+    expect(clientEntry).toContain("webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'")
+    expect(clientEntry).toContain('webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100')
+    expect(clientEntry).toContain("webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'")
+    expect(clientEntry).toContain('useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true')
+    expect(clientEntry).toContain('hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true')
+    expect(clientEntry).toContain('showWebQQAffinity.value = value?.showWebQQAffinity ?? false')
+    expect(clientEntry).toContain('showWebQQRelationship.value = value?.showWebQQRelationship ?? false')
+    expect(clientEntry).toContain('showWebQQThinkingTokens.value = value?.showWebQQThinkingTokens ?? true')
+    expect(clientEntry).toContain('showWebQQThinkingTiming.value = value?.showWebQQThinkingTiming ?? true')
+    expect(clientEntry).toContain('showWebQQCapsuleUnread.value = value?.showWebQQCapsuleUnread ?? true')
+  })
+
+  it('updates WebQQ settings when the console entry data ref changes', () => {
+    expect(clientEntry).toContain("import { watch, type Ref } from 'vue'")
+    expect(clientEntry).toContain('const stopDataWatch = data')
+    expect(clientEntry).toContain('stopDataWatch?.()')
   })
 })

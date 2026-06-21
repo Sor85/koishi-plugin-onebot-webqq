@@ -1,5 +1,5 @@
 import { Context, receive } from '@koishijs/client'
-import type { Ref } from 'vue'
+import { watch, type Ref } from 'vue'
 import ClientShell from './ClientShell.vue'
 import { capsule, type CapsuleData } from './capsule/state'
 import { debug, resetWebQQClientState } from './entry-state'
@@ -33,30 +33,42 @@ function applyOneBotRobotState(state?: Partial<OneBotRobotState>) {
   selectedBotSelfId.value = state?.selectedSelfId || ''
 }
 
+function applyClientData(value?: ClientData) {
+  capsule.value = value?.capsule
+  applyOneBotRobotState(value)
+  debug.value = !!value?.debug
+  webQQTheme.value = value?.webQQTheme || 'fresh'
+  webQQChatStyle.value = value?.webQQChatStyle || 'telegram'
+  webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true
+  webQQColorMode.value = value?.webQQColorMode || 'auto'
+  webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'
+  webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100
+  webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'
+  useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true
+  hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true
+  showWebQQAffinity.value = value?.showWebQQAffinity ?? false
+  showWebQQRelationship.value = value?.showWebQQRelationship ?? false
+  showWebQQThinkingTokens.value = value?.showWebQQThinkingTokens ?? true
+  showWebQQThinkingTiming.value = value?.showWebQQThinkingTiming ?? true
+  showWebQQCapsuleUnread.value = value?.showWebQQCapsuleUnread ?? true
+}
+
 export default function (ctx: Context, data?: Ref<ClientData>) {
-  capsule.value = data?.value?.capsule
-  applyOneBotRobotState(data?.value)
-  debug.value = !!data?.value?.debug
-  webQQTheme.value = data?.value?.webQQTheme || 'fresh'
-  webQQChatStyle.value = data?.value?.webQQChatStyle || 'telegram'
-  webQQTimBubbleTail.value = data?.value?.webQQTimBubbleTail ?? true
-  webQQColorMode.value = data?.value?.webQQColorMode || 'auto'
-  webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'koishi'
-  webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100
-  webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'
-  useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true
-  hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true
-  showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false
-  showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false
-  showWebQQThinkingTokens.value = data?.value?.showWebQQThinkingTokens ?? true
-  showWebQQThinkingTiming.value = data?.value?.showWebQQThinkingTiming ?? true
-  showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true
+  applyClientData(data?.value)
 
   if (debug.value) {
     console.debug('[onebot-webqq] entry data', data?.value)
   }
 
   ctx.effect(() => {
+    const stopDataWatch = data
+      ? watch(data, (value) => {
+        applyClientData(value)
+        if (debug.value) {
+          console.debug('[onebot-webqq] entry data update', value)
+        }
+      })
+      : undefined
     const disposeUpdateReceive = receive('onebot-webqq/update', (value) => {
       capsule.value = value as CapsuleData | undefined
       availableBots.value = capsule.value?.bots ?? availableBots.value
@@ -72,6 +84,7 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
     })
 
     return () => {
+      stopDataWatch?.()
       // Koishi client receive 旧实现没有 disposer；插件卸载时覆盖为空回调，避免 update 事件继续持有旧的全局 ref 闭包。
       if (typeof disposeUpdateReceive === 'function') disposeUpdateReceive()
       else receive('onebot-webqq/update', () => {})

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host">
+  <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host" :style="capsuleHostStyle">
     <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root">
       <div
         :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
@@ -148,8 +148,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
 import { createLayout, type AutoLayout } from 'animejs'
-import { showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
+import { showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
+import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
 import { capsule } from './state'
 
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
@@ -203,6 +204,7 @@ const collapsedBotStackWidth = computed(() => 42 + Math.max(0, collapsedBotVisib
 const expandedBotStackWidth = computed(() => 42 + Math.max(0, botStackBots.value.length - 1) * 31)
 const displayBotName = computed(() => displayBotProfile.value?.name || cachedBotProfile.value.name || '空闲')
 const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cachedBotProfile.value.avatar || '')
+const capsuleHostStyle = computed(() => getWebQQAccentStyle(webQQAccentColor.value))
 const capsuleStyle = computed(() => {
   if (!hasMultipleBots.value) return {}
   return {
