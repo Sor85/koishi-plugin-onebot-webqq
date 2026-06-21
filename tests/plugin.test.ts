@@ -1114,6 +1114,25 @@ describe('chat capsule plugin wiring', () => {
       otherMessage,
       liveMessage,
     ])
+    expect(mergeWebQQLiveMessages([{
+      ...oldMessage,
+      direction: 'outgoing',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 34,
+      },
+    }], [{
+      ...oldMessage,
+      direction: 'outgoing',
+      thinking: {
+        content: '先分析',
+        durationMs: 1200,
+        usage: {
+          inputTokens: 12,
+          outputTokens: 34,
+        },
+      },
+    }])[0]).not.toHaveProperty('usage')
   })
 
   it('preserves recalled WebQQ live message content when reaction-only updates merge into cache', () => {
@@ -1935,10 +1954,12 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度')")
     expect(configSource).toContain("showWebQQRelationship?: boolean")
     expect(configSource).toContain("Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 关系')")
+    expect(configSource).toContain("showWebQQCharacterThinking?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ 中显示 chatluna-character 的 think 内容')")
     expect(configSource).toContain("showWebQQThinkingTokens?: boolean")
-    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ think 旁显示 ChatLuna 输入/输出 token')")
+    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ 中显示 ChatLuna 输入/输出 token，使用主插件时需关闭`showWebQQCharacterThinking`才能正常显示')")
     expect(configSource).toContain("showWebQQThinkingTiming?: boolean")
-    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ think 旁显示 ChatLuna TTFT、TPS 和 Total')")
+    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ 中显示 ChatLuna TTFT、TPS 和 Total，使用主插件时需关闭`showWebQQCharacterThinking`才能正常显示')")
     expect(configSource).toContain("webQQAffinityScopeId?: string")
     expect(configSource).toContain("Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用')")
     expect(configSource).toContain("showWebQQCapsuleUnread?: boolean")
@@ -4061,6 +4082,72 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('adds ChatLuna usage to outgoing WebQQ messages without character thinking', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession({ bot }))
+    listeners['chatluna/model-usage'][0]({
+      source: 'chatluna',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 12,
+        output_tokens: 34,
+        total_tokens: 46,
+      },
+      timing: {
+        ttftMs: 120,
+        totalMs: 2400,
+        tps: 14.2,
+      },
+    })
+    await listeners.message[0](createSession({
+      bot,
+      userId: '10000',
+      timestamp: 1710000003600,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '10000', name: 'Capsule Bot' },
+        message: {
+          id: 'self-main',
+          elements: [{ type: 'text', attrs: { content: '主插件回复' } }],
+        },
+      },
+    }))
+
+    const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
+    expect(webQQCalls.at(-1)?.[1]?.message).toMatchObject({
+      id: 'self-main',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 34,
+        ttftMs: 120,
+        totalMs: 2400,
+        tps: 14.2,
+      },
+    })
+    expect(webQQCalls.at(-1)?.[1]?.message).not.toHaveProperty('thinking')
+  })
+
   it('uses character response locks and collect events to show active status', async () => {
     const character: ChatLunaCharacterService = {
       acquireResponseLock: vi.fn(async () => true),
@@ -4235,6 +4322,7 @@ describe('chat capsule plugin wiring', () => {
       const initialWebQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
       expect(initialWebQQCalls).toHaveLength(1)
       expect(initialWebQQCalls[0]?.[1]?.message).not.toHaveProperty('thinking')
+      expect(initialWebQQCalls[0]?.[1]?.message).not.toHaveProperty('usage')
 
       vi.setSystemTime(1710000004200)
       listeners['chatluna_character/after-chat'][0]({
@@ -4265,6 +4353,7 @@ describe('chat capsule plugin wiring', () => {
           },
         }),
       })
+      expect(webQQCalls.at(-1)?.[1]?.message).not.toHaveProperty('usage')
 
       const loadMessages = findConsoleListener(addListener, 'onebot-webqq/webqq/messages')
       await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
@@ -4283,6 +4372,91 @@ describe('chat capsule plugin wiring', () => {
           },
         }),
       ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not show completed character thinking when disabled', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1710000000000)
+      const bot = {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        internal: {
+          get_friend_list: vi.fn(async () => []),
+          get_group_list: vi.fn(async () => []),
+          get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        },
+        toJSON: () => ({
+          user: {
+            name: 'Capsule Bot',
+            avatar: 'https://example.com/avatar.png',
+          },
+        }),
+      }
+      const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+      const session = createSession({
+        bot,
+        timestamp: 1710000000000,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '30000', name: 'Alice' },
+        },
+      })
+
+      plugin.apply(ctx, { showWebQQCharacterThinking: false })
+      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+      listeners['chatluna/model-usage'][0]({
+        source: 'chatluna-character',
+        usageMetadata: {
+          input_tokens: 12,
+          output_tokens: 34,
+          total_tokens: 46,
+        },
+        timing: {
+          ttftMs: 180,
+          totalMs: 4200,
+          tps: 8.1,
+        },
+      })
+      await listeners.message[0](createSession({
+        bot,
+        userId: '10000',
+        timestamp: 1710000003600,
+        event: {
+          guild: { id: '20000', name: 'Guild Name' },
+          channel: { id: '20000', name: 'Guild Name' },
+          user: { id: '10000', name: 'Capsule Bot' },
+          message: {
+            id: 'self-1',
+            elements: [{ type: 'text', attrs: { content: '这是答案' } }],
+          },
+        },
+      }))
+
+      listeners['chatluna_character/after-chat'][0]({
+        session,
+        lastResponseMessage: {
+          content: '开头<think>\n不应显示\n</think>这是答案',
+        },
+      })
+
+      const webQQCalls = broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message')
+      expect(webQQCalls).toHaveLength(1)
+      expect(webQQCalls[0]?.[1]?.message).toMatchObject({
+        usage: {
+          inputTokens: 12,
+          outputTokens: 34,
+          ttftMs: 180,
+          totalMs: 4200,
+          tps: 8.1,
+        },
+      })
+      expect(webQQCalls[0]?.[1]?.message).not.toHaveProperty('thinking')
     } finally {
       vi.useRealTimers()
     }

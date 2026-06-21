@@ -5,11 +5,13 @@ import type { WebQQChatSelection } from '../utils/webqq-contact-view'
 import {
   createBotThinkingMessage,
   getLastOutgoingClusterThinkingMessage as getLastOutgoingClusterThinkingMessageFromView,
+  getLastOutgoingClusterUsageMessage as getLastOutgoingClusterUsageMessageFromView,
   getMessageClusterClass as getMessageClusterClassFromView,
   hasOutgoingMessageAfter,
   isMergedMessage as isMergedMessageFromView,
   mergeMessages,
   type WebQQThinkingMessage,
+  type WebQQUsageMessage,
 } from '../utils/webqq-message-view'
 
 export function useWebQQMessageList(options: {
@@ -89,6 +91,10 @@ export function useWebQQMessageList(options: {
     return getLastOutgoingClusterThinkingMessageFromView(visibleMessages.value, index)
   }
 
+  function getLastOutgoingClusterUsageMessage(index: number): WebQQUsageMessage | undefined {
+    return getLastOutgoingClusterUsageMessageFromView(visibleMessages.value, index)
+  }
+
   function isMergedMessage(index: number) {
     return isMergedMessageFromView(messages.value, index, options.chatStyle.value)
   }
@@ -112,6 +118,7 @@ export function useWebQQMessageList(options: {
     visibleMessages,
     isBotThinkingMessage,
     getLastOutgoingClusterThinkingMessage,
+    getLastOutgoingClusterUsageMessage,
     isMergedMessage,
     getMessageClusterClass,
     appendMessage,

@@ -78,6 +78,7 @@
               :is-merged-message="isMergedMessage"
               :transcribe-record="requestWebQQRecordTranscription"
               :get-last-outgoing-cluster-thinking-message="getLastOutgoingClusterThinkingMessage"
+              :get-last-outgoing-cluster-usage-message="getLastOutgoingClusterUsageMessage"
               :is-thinking-expanded="isThinkingExpanded"
               :format-thinking-duration="formatThinkingDuration"
               @open-image="openImagePreview"
@@ -305,6 +306,7 @@ const {
   visibleMessages,
   isBotThinkingMessage,
   getLastOutgoingClusterThinkingMessage,
+  getLastOutgoingClusterUsageMessage,
   isMergedMessage,
   getMessageClusterClass,
   appendMessage,

@@ -14,7 +14,7 @@ import { useWebQQSenderMetadata } from '../client/webqq/stores/webqq-sender-meta
 import { useWebQQThinkingExpansion } from '../client/webqq/stores/webqq-thinking-expansion'
 import { clearConversationUnreadCount, increaseConversationUnreadCount, setConversationSummary } from '../client/webqq/stores/webqq-conversation-state'
 import { fitWebQQBubbleToInlineLines } from '../client/webqq/utils/webqq-bubble-width'
-import { createBotThinkingMessage, mergeMessages, type WebQQMessageElement } from '../client/webqq/utils/webqq-message-view'
+import { createBotThinkingMessage, getLastOutgoingClusterUsageMessage, mergeMessages, type WebQQMessageElement } from '../client/webqq/utils/webqq-message-view'
 import { applyWebQQRecallToMessages } from '../client/webqq/utils/webqq-recall-view'
 import type { WebQQChatSelection } from '../client/webqq/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/webqq/utils/webqq-contact-view'
@@ -617,6 +617,21 @@ describe('webqq observer view', () => {
     expect(webqqMessageView).toContain('merged.thinking = next.thinking || current.thinking')
     expect(webqqMessageHistoryStore).toContain('options.messages.value = limitMessages(mergeMessages(options.messages.value, remoteMessages))')
     expect(webqqMessageHistoryStore).toContain('options.saveCachedMessages')
+    expect(mergeMessages([createWebQQMessage({
+      usage: {
+        inputTokens: 12,
+        outputTokens: 34,
+      },
+    })], [createWebQQMessage({
+      thinking: {
+        content: '先分析',
+        durationMs: 1200,
+        usage: {
+          inputTokens: 12,
+          outputTokens: 34,
+        },
+      },
+    })])[0]).not.toHaveProperty('usage')
   })
 
   it('preserves recalled message content when reaction-only updates merge into cached messages', () => {
@@ -905,6 +920,7 @@ describe('webqq observer view', () => {
     )
 
     for (const messageSource of [backendMessageSource, clientMessageSource]) {
+      expect(messageSource).toContain('usage?:')
       expect(messageSource).toContain('thinking?:')
       expect(messageSource).toContain('content: string')
       expect(messageSource).toContain('durationMs: number')
@@ -923,12 +939,17 @@ describe('webqq observer view', () => {
     expect(webqqThinkingExpansionStore).toContain('function isThinkingExpanded(message: WebQQMessage)')
     expect(webqqThinkingExpansionStore).toContain('function toggleThinking(message: WebQQMessage)')
     expect(webqqMessageListStore).toContain('function getLastOutgoingClusterThinkingMessage(index: number)')
+    expect(webqqMessageListStore).toContain('function getLastOutgoingClusterUsageMessage(index: number)')
     expect(webqqMessageView).toContain('function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], index: number)')
+    expect(webqqMessageView).toContain('function getLastOutgoingClusterUsageMessage(messages: WebQQMessage[], index: number)')
     expect(webqqMessageView).toContain('candidate.thinking?.content')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-row"')
+    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-row is-usage-only"')
+    expect(webqqMessageListView).toContain('shouldShowFallbackUsage(index)')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__thinking-toggle"')
     expect(webqqMessageListView).toContain('@click="toggleThinking(index)"')
     expect(webqqView).toContain('@toggle-thinking="toggleThinking"')
+    expect(webqqView).toContain(':get-last-outgoing-cluster-usage-message="getLastOutgoingClusterUsageMessage"')
     expect(webqqMessageListView).toContain('getThinkingDurationText(index)')
     expect(webqqMessageListView).toContain("{ 'is-expanded': isThinkingMessageExpanded(index) }")
     expect(webqqMessageListView).toContain('<Transition name="onebot-webqq-webqq-thinking" @before-leave="prepareThinkingPanelLeave">')
@@ -1288,6 +1309,49 @@ describe('webqq observer view', () => {
     )
     expect(webqqMessageView).toContain('function formatThinkingDuration(durationMs: number)')
     expect(webqqThinkingExpansionStore).toContain('function toggleThinking(message: WebQQMessage)')
+  })
+
+  it('uses the last outgoing cluster usage as fallback when no completed thinking is shown', () => {
+    const first = createWebQQMessage({
+      id: 'first',
+      sequence: 'first',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 34,
+        ttftMs: 120,
+        totalMs: 2400,
+        tps: 14.2,
+      },
+    })
+    const second = createWebQQMessage({
+      id: 'second',
+      sequence: 'second',
+      time: 1710000000001,
+      summary: '第二条',
+    })
+
+    expect(getLastOutgoingClusterUsageMessage([first, second], 0)).toBeUndefined()
+    expect(getLastOutgoingClusterUsageMessage([first, second], 1)).toMatchObject({
+      id: 'first',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 34,
+        ttftMs: 120,
+        totalMs: 2400,
+        tps: 14.2,
+      },
+    })
+    expect(getLastOutgoingClusterUsageMessage([{
+      ...first,
+      thinking: {
+        content: '先分析',
+        durationMs: 1200,
+      },
+    }, second], 1)).toBeUndefined()
+    expect(webqqMessageListView).toContain('shouldShowUsageTokens(getUsageMessage(index)?.usage)')
+    expect(webqqMessageListView).toContain('TTFT {{ formatThinkingMetricDuration(getUsageMessage(index)?.usage.ttftMs) }}')
+    expect(webqqMessageListView).toContain('TPS {{ formatThinkingTps(getUsageMessage(index)?.usage.tps) }}')
+    expect(webqqMessageListView).toContain('Total {{ formatThinkingMetricDuration(getUsageMessage(index)?.usage.totalMs) }}')
   })
 
   it('renders consecutive inline WebQQ elements inside one inline container', () => {

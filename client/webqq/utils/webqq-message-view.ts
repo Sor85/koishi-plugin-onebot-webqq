@@ -3,6 +3,7 @@ import type { WebQQForwardItem, WebQQGroupMember, WebQQMessage } from '../types'
 import type { WebQQChatSelection } from './webqq-contact-view'
 
 export type WebQQMessageElement = WebQQMessage['elements'][number]
+export type WebQQUsageMessage = WebQQMessage & { usage: NonNullable<WebQQMessage['usage']> }
 
 export type WebQQElementRun =
   | { type: 'inline'; elements: WebQQMessageElement[] }
@@ -29,6 +30,8 @@ export function mergeWebQQMessage(current: WebQQMessage | undefined, next: WebQQ
     ...next,
   }
   if (current.thinking || next.thinking) merged.thinking = next.thinking || current.thinking
+  // thinking.usage 会接管展示；后补 think 时必须清掉临时 fallback usage，避免同一回复显示两份指标。
+  if (next.thinking) delete merged.usage
   // 贴表情更新有时只带 reaction 状态，不带原消息正文；不能让它覆盖已缓存的撤回原文。
   if (hasMessageContent(current) && !hasMessageContent(next)) {
     merged.summary = current.summary
@@ -67,6 +70,24 @@ export function getLastOutgoingClusterThinkingMessage(messages: WebQQMessage[], 
       thinking: candidate.thinking,
     }
   }
+}
+
+export function getLastOutgoingClusterUsageMessage(messages: WebQQMessage[], index: number): WebQQUsageMessage | undefined {
+  const message = messages[index]
+  if (!message || message.direction !== 'outgoing') return
+  if (isSameOutgoingClusterMessage(message, messages[index + 1])) return
+  let usageMessage: WebQQUsageMessage | undefined
+  for (let cursor = index; cursor >= 0; cursor--) {
+    const candidate = messages[cursor]
+    if (!candidate) break
+    if (!isSameOutgoingClusterMessage(message, candidate)) break
+    if (candidate.thinking?.content) return
+    if (!usageMessage && candidate.usage) usageMessage = {
+      ...candidate,
+      usage: candidate.usage,
+    }
+  }
+  return usageMessage
 }
 
 export function hasOutgoingMessageAfter(messages: WebQQMessage[], timestamp: number) {

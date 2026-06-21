@@ -55,6 +55,7 @@ export function createWebQQLiveRuntime(options: {
   logger?: DebugLogger
   getThinkingDurationMs: () => number
   getThinkingUsage: () => WebQQThinking['usage'] | undefined
+  getThinkingUsageSource: () => string | undefined
   getStorageScope: () => string | undefined
 }) {
   const liveMessages = new Map<string, WebQQMessage[]>()
@@ -88,6 +89,21 @@ export function createWebQQLiveRuntime(options: {
     pendingWebQQThinking.delete(key)
     pendingWebQQThinking.set(key, thinking)
     trimOldestMapEntries(pendingWebQQThinking, WEBQQ_LIVE_CONVERSATION_LIMIT)
+  }
+
+  function attachCurrentWebQQUsage(message: WebQQMessage): WebQQMessage {
+    if (message.direction !== 'outgoing' || message.thinking?.content || message.usage) return message
+    const source = options.getThinkingUsageSource()
+    if ((options.config.showWebQQCharacterThinking ?? true) && (source === 'chatluna-character' || source === 'character')) return message
+    const usage = options.getThinkingUsage()
+    return usage ? { ...message, usage } : message
+  }
+
+  function withoutWebQQUsage(message: WebQQMessage): WebQQMessage {
+    if (!message.usage) return message
+    const next = { ...message }
+    delete next.usage
+    return next
   }
 
   const getLiveSenderMetadataKey = (groupId: string, userId: string) => `${groupId}:${userId}`
@@ -195,6 +211,10 @@ export function createWebQQLiveRuntime(options: {
         getLiveSenderMetadata(payload.type, payload.peerId, payload.message.senderId),
       ),
     })
+    payload = {
+      ...payload,
+      message: attachCurrentWebQQUsage(payload.message),
+    }
     const [messageWithAffinity = payload.message] = await attachWebQQAffinityBadges(options.ctx, options.config, [payload.message], options.logger)
     payload = {
       ...payload,
@@ -230,7 +250,7 @@ export function createWebQQLiveRuntime(options: {
     broadcastWebQQLivePayload({
       ...peer,
       message: {
-        ...message,
+        ...withoutWebQQUsage(message),
         thinking,
       },
     })

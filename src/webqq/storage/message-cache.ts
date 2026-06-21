@@ -129,6 +129,24 @@ function readWebQQMessageReaction(value: unknown): WebQQMessageReaction | undefi
   return reaction
 }
 
+function readWebQQMessageUsage(value: unknown): WebQQMessage['usage'] | undefined {
+  if (!isRecord(value)) return
+  const inputTokens = readNumberField(value, 'inputTokens')
+  const outputTokens = readNumberField(value, 'outputTokens')
+  const ttftMs = readNumberField(value, 'ttftMs')
+  const totalMs = readNumberField(value, 'totalMs')
+  const tps = readNumberField(value, 'tps')
+  const hasUsage = inputTokens != null || outputTokens != null || ttftMs != null || totalMs != null || tps != null
+  if (!hasUsage) return
+  return {
+    inputTokens: inputTokens ?? 0,
+    outputTokens: outputTokens ?? 0,
+    ...(ttftMs != null ? { ttftMs } : {}),
+    ...(totalMs != null ? { totalMs } : {}),
+    ...(tps != null ? { tps } : {}),
+  }
+}
+
 function readWebQQStoredMessage(value: unknown): WebQQMessage | undefined {
   if (!isRecord(value)) return
   const id = readStringField(value, 'id')
@@ -175,6 +193,8 @@ function readWebQQStoredMessage(value: unknown): WebQQMessage | undefined {
   if (senderRelationship != null) message.senderRelationship = senderRelationship
   if (recalled != null) message.recalled = recalled
   if (reactions.length) message.reactions = reactions
+  const usage = readWebQQMessageUsage(value.usage)
+  if (usage) message.usage = usage
   if (isRecord(value.event)) {
     const eventType = readWebQQMessageEventType(value.event.type)
     if (eventType) {
@@ -189,25 +209,11 @@ function readWebQQStoredMessage(value: unknown): WebQQMessage | undefined {
     const content = readStringField(value.thinking, 'content')
     const durationMs = readNumberField(value.thinking, 'durationMs')
     if (content != null && durationMs != null) {
-      const usage = isRecord(value.thinking.usage) ? value.thinking.usage : undefined
-      const inputTokens = usage ? readNumberField(usage, 'inputTokens') : undefined
-      const outputTokens = usage ? readNumberField(usage, 'outputTokens') : undefined
-      const ttftMs = usage ? readNumberField(usage, 'ttftMs') : undefined
-      const totalMs = usage ? readNumberField(usage, 'totalMs') : undefined
-      const tps = usage ? readNumberField(usage, 'tps') : undefined
-      const hasUsage = inputTokens != null || outputTokens != null || ttftMs != null || totalMs != null || tps != null
+      const usage = readWebQQMessageUsage(value.thinking.usage)
       message.thinking = {
         content,
         durationMs,
-        ...(hasUsage ? {
-          usage: {
-            inputTokens: inputTokens ?? 0,
-            outputTokens: outputTokens ?? 0,
-            ...(ttftMs != null ? { ttftMs } : {}),
-            ...(totalMs != null ? { totalMs } : {}),
-            ...(tps != null ? { tps } : {}),
-          },
-        } : {}),
+        ...(usage ? { usage } : {}),
       }
     }
   }

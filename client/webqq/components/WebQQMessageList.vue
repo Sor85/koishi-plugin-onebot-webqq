@@ -255,6 +255,38 @@
           </div>
         </Transition>
       </div>
+      <div
+        v-else-if="!message.event && shouldShowFallbackUsage(index)"
+        class="onebot-webqq-webqq__thinking-row is-usage-only"
+      >
+        <div class="onebot-webqq-webqq__thinking-usage" aria-label="本次 ChatLuna 调用指标">
+          <span v-if="shouldShowUsageTokens(getUsageMessage(index)?.usage)" class="onebot-webqq-webqq__thinking-usage-group">
+            <svg class="onebot-webqq-webqq__thinking-usage-icon is-input" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 20V8"></path>
+              <path d="m7 13 5-5 5 5"></path>
+              <path d="M5 4h14"></path>
+            </svg>
+            <span>{{ getUsageMessage(index)?.usage.inputTokens }}</span>
+            <svg class="onebot-webqq-webqq__thinking-usage-icon is-output" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4v12"></path>
+              <path d="m7 11 5 5 5-5"></path>
+              <path d="M5 20h14"></path>
+            </svg>
+            <span>{{ getUsageMessage(index)?.usage.outputTokens }}</span>
+          </span>
+          <span v-if="shouldShowUsageTiming(getUsageMessage(index)?.usage)" class="onebot-webqq-webqq__thinking-usage-group is-timing">
+            <span v-if="getUsageMessage(index)?.usage.ttftMs != null" class="onebot-webqq-webqq__thinking-metric">
+              TTFT {{ formatThinkingMetricDuration(getUsageMessage(index)?.usage.ttftMs) }}
+            </span>
+            <span v-if="getUsageMessage(index)?.usage.tps != null" class="onebot-webqq-webqq__thinking-metric">
+              TPS {{ formatThinkingTps(getUsageMessage(index)?.usage.tps) }}
+            </span>
+            <span v-if="getUsageMessage(index)?.usage.totalMs != null" class="onebot-webqq-webqq__thinking-metric">
+              Total {{ formatThinkingMetricDuration(getUsageMessage(index)?.usage.totalMs) }}
+            </span>
+          </span>
+        </div>
+      </div>
     </template>
   </template>
 </template>
@@ -278,6 +310,7 @@ import {
   isImageOnlyMessage,
   type WebQQMessageElement,
   type WebQQThinkingMessage,
+  type WebQQUsageMessage,
 } from '../utils/webqq-message-view'
 import { fitWebQQBubbleToInlineLines } from '../utils/webqq-bubble-width'
 
@@ -297,6 +330,7 @@ const props = defineProps<{
   isMergedMessage: (index: number) => boolean
   transcribeRecord: (messageId: string) => Promise<string>
   getLastOutgoingClusterThinkingMessage: (index: number) => WebQQThinkingMessage | undefined
+  getLastOutgoingClusterUsageMessage: (index: number) => WebQQUsageMessage | undefined
   isThinkingExpanded: (message: WebQQThinkingMessage) => boolean
   formatThinkingDuration: (durationMs: number) => string
 }>()
@@ -441,6 +475,10 @@ function getThinkingMessage(index: number) {
   return props.getLastOutgoingClusterThinkingMessage(index)
 }
 
+function getUsageMessage(index: number) {
+  return props.getLastOutgoingClusterUsageMessage(index)
+}
+
 function isThinkingMessageExpanded(index: number) {
   const message = getThinkingMessage(index)
   return message ? props.isThinkingExpanded(message) : false
@@ -451,21 +489,38 @@ function getThinkingDurationText(index: number) {
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
 }
 
-function hasThinkingTiming(message: WebQQThinkingMessage | undefined) {
-  const usage = message?.thinking.usage
+type WebQQUsage = NonNullable<WebQQMessage['usage']>
+
+function hasUsageTiming(usage: WebQQUsage | undefined) {
   return usage?.ttftMs != null || usage?.totalMs != null || usage?.tps != null
 }
 
+function shouldShowUsageTokens(usage: WebQQUsage | undefined) {
+  return props.showWebQQThinkingTokens && !!usage
+}
+
+function shouldShowUsageTiming(usage: WebQQUsage | undefined) {
+  return props.showWebQQThinkingTiming && hasUsageTiming(usage)
+}
+
+function shouldShowUsage(usage: WebQQUsage | undefined) {
+  return shouldShowUsageTokens(usage) || shouldShowUsageTiming(usage)
+}
+
 function shouldShowThinkingTokens(index: number) {
-  return props.showWebQQThinkingTokens && !!getThinkingMessage(index)?.thinking.usage
+  return shouldShowUsageTokens(getThinkingMessage(index)?.thinking.usage)
 }
 
 function shouldShowThinkingTiming(index: number) {
-  return props.showWebQQThinkingTiming && hasThinkingTiming(getThinkingMessage(index))
+  return shouldShowUsageTiming(getThinkingMessage(index)?.thinking.usage)
 }
 
 function shouldShowThinkingUsage(index: number) {
   return shouldShowThinkingTokens(index) || shouldShowThinkingTiming(index)
+}
+
+function shouldShowFallbackUsage(index: number) {
+  return shouldShowUsage(getUsageMessage(index)?.usage)
 }
 
 function formatThinkingMetricDuration(value: number | undefined) {

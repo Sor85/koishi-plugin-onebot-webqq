@@ -11,6 +11,7 @@ import { registerConsoleEntry } from './console-entry'
 import { createMessageInput } from './message-input'
 import {
   createCapsuleState,
+  getCurrentModelUsageSource,
   getCurrentThinkingDurationMs,
   recordIncomingMessage,
   recordOutgoingMessage,
@@ -124,6 +125,7 @@ export function registerCapsule(options: {
   return {
     getThinkingDurationMs: () => getCurrentThinkingDurationMs(state),
     getThinkingUsage: () => state.snapshot()?.conversation.usage,
+    getThinkingUsageSource: () => getCurrentModelUsageSource(state),
     getStorageScope,
     readBotState,
     broadcastBotState,

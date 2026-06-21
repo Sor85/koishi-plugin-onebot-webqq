@@ -28,6 +28,7 @@ export interface CapsuleActivityOptions {
 }
 
 export interface CapsuleModelUsageInput {
+  source?: string
   conversationId?: string
   inputTokens?: number
   outputTokens?: number

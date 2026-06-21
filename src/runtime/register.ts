@@ -36,6 +36,7 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     logger,
     getThinkingDurationMs: capsuleRuntime.getThinkingDurationMs,
     getThinkingUsage: capsuleRuntime.getThinkingUsage,
+    getThinkingUsageSource: capsuleRuntime.getThinkingUsageSource,
     getStorageScope: capsuleRuntime.getStorageScope,
     readBotState: capsuleRuntime.readBotState,
     broadcastBotState: capsuleRuntime.broadcastBotState,
@@ -48,6 +49,6 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
   })
 
   ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
-    liveRuntime.updateLastOutgoingWebQQThinking(payload)
+    if (config.showWebQQCharacterThinking ?? true) liveRuntime.updateLastOutgoingWebQQThinking(payload)
   })
 }

@@ -29,6 +29,7 @@ interface MutableCapsuleState {
     sent: number
   }
   thinkingStartedAt?: number
+  usageSource?: string
 }
 
 const states = new WeakMap<CapsuleState, MutableCapsuleState>()
@@ -162,6 +163,7 @@ export function recordConversationActivity(
 ) {
   const state = getState(capsule)
   state.thinkingStartedAt = activityText === '正在思考' ? options.now ?? Date.now() : undefined
+  state.usageSource = undefined
   const snapshot = createSnapshot(input, state)
   state.current = {
     ...snapshot,
@@ -218,7 +220,12 @@ export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsage
       },
     },
   }
+  state.usageSource = input.source
   return true
+}
+
+export function getCurrentModelUsageSource(capsule: CapsuleState) {
+  return getState(capsule).usageSource
 }
 
 function readThinkingDurationMs(state: MutableCapsuleState, now: number) {

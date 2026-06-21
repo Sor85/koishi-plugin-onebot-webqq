@@ -169,6 +169,24 @@ function normalizeWebQQReaction(value: unknown): WebQQMessageReaction | undefine
   return reaction
 }
 
+function normalizeWebQQUsage(value: unknown): WebQQMessage['usage'] | undefined {
+  if (!isRecord(value)) return
+  const inputTokens = readNumber(value.inputTokens)
+  const outputTokens = readNumber(value.outputTokens)
+  const ttftMs = readNumber(value.ttftMs)
+  const totalMs = readNumber(value.totalMs)
+  const tps = readNumber(value.tps)
+  const hasUsage = inputTokens != null || outputTokens != null || ttftMs != null || totalMs != null || tps != null
+  if (!hasUsage) return
+  return {
+    inputTokens: inputTokens ?? 0,
+    outputTokens: outputTokens ?? 0,
+    ...(ttftMs != null ? { ttftMs } : {}),
+    ...(totalMs != null ? { totalMs } : {}),
+    ...(tps != null ? { tps } : {}),
+  }
+}
+
 function normalizeWebQQMessage(value: unknown): WebQQMessage | undefined {
   if (!isRecord(value)) return
   const id = readStringField(value, 'id')
@@ -215,6 +233,8 @@ function normalizeWebQQMessage(value: unknown): WebQQMessage | undefined {
   if (senderRelationship != null) message.senderRelationship = senderRelationship
   if (recalled != null) message.recalled = recalled
   if (reactions.length) message.reactions = reactions
+  const usage = normalizeWebQQUsage(value.usage)
+  if (usage) message.usage = usage
   if (isRecord(value.event)) {
     const eventType = readEventType(value.event.type)
     if (eventType) {
@@ -229,25 +249,11 @@ function normalizeWebQQMessage(value: unknown): WebQQMessage | undefined {
     const content = readStringField(value.thinking, 'content')
     const durationMs = readNumber(value.thinking.durationMs)
     if (content != null && durationMs != null) {
-      const usage = isRecord(value.thinking.usage) ? value.thinking.usage : undefined
-      const inputTokens = usage ? readNumber(usage.inputTokens) : undefined
-      const outputTokens = usage ? readNumber(usage.outputTokens) : undefined
-      const ttftMs = usage ? readNumber(usage.ttftMs) : undefined
-      const totalMs = usage ? readNumber(usage.totalMs) : undefined
-      const tps = usage ? readNumber(usage.tps) : undefined
-      const hasUsage = inputTokens != null || outputTokens != null || ttftMs != null || totalMs != null || tps != null
+      const usage = normalizeWebQQUsage(value.thinking.usage)
       message.thinking = {
         content,
         durationMs,
-        ...(hasUsage ? {
-          usage: {
-            inputTokens: inputTokens ?? 0,
-            outputTokens: outputTokens ?? 0,
-            ...(ttftMs != null ? { ttftMs } : {}),
-            ...(totalMs != null ? { totalMs } : {}),
-            ...(tps != null ? { tps } : {}),
-          },
-        } : {}),
+        ...(usage ? { usage } : {}),
       }
     }
   }

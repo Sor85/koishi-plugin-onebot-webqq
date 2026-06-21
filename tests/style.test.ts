@@ -1173,12 +1173,22 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('opacity: 0')
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('visibility: hidden')
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('pointer-events: none')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('font-size: 12px')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('line-height: 18px')
     expect(style).toContain(`.onebot-webqq-webqq__thinking-toggle:hover .onebot-webqq-webqq__thinking-usage,
 .onebot-webqq-webqq__thinking-toggle:focus-visible .onebot-webqq-webqq__thinking-usage {
   opacity: 1;
   visibility: visible;
 }`)
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).not.toContain(' / ')
+  })
+
+  it('keeps fallback WebQQ usage visible below the last outgoing message', () => {
+    const fallbackUsageBody = ruleBody('.onebot-webqq-webqq__thinking-row.is-usage-only .onebot-webqq-webqq__thinking-usage')
+
+    expect(fallbackUsageBody).toContain('margin-right: 0')
+    expect(fallbackUsageBody).toContain('opacity: 1')
+    expect(fallbackUsageBody).toContain('visibility: visible')
   })
 
   it('keeps completed WebQQ thinking usage groups spaced from each other and the duration', () => {

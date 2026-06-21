@@ -23,6 +23,7 @@ export interface Config {
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
   showWebQQRelationship?: boolean
+  showWebQQCharacterThinking?: boolean
   showWebQQThinkingTokens?: boolean
   showWebQQThinkingTiming?: boolean
   webQQAffinityScopeId?: string
@@ -77,8 +78,9 @@ export const Config: Schema<Config> = Schema.intersect([
     hideWebQQGroupLevel: Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标'),
     showWebQQAffinity: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度'),
     showWebQQRelationship: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 关系'),
-    showWebQQThinkingTokens: Schema.boolean().default(true).description('在 WebQQ think 旁显示 ChatLuna 输入/输出 token'),
-    showWebQQThinkingTiming: Schema.boolean().default(true).description('在 WebQQ think 旁显示 ChatLuna TTFT、TPS 和 Total'),
+    showWebQQCharacterThinking: Schema.boolean().default(true).description('在 WebQQ 中显示 chatluna-character 的 think 内容'),
+    showWebQQThinkingTokens: Schema.boolean().default(true).description('在 WebQQ 中显示 ChatLuna 输入/输出 token，使用主插件时需关闭`showWebQQCharacterThinking`才能正常显示'),
+    showWebQQThinkingTiming: Schema.boolean().default(true).description('在 WebQQ 中显示 ChatLuna TTFT、TPS 和 Total，使用主插件时需关闭`showWebQQCharacterThinking`才能正常显示'),
     webQQAffinityScopeId: Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用'),
     showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
   }).description('消息显示'),

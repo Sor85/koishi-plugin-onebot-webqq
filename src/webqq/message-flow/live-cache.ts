@@ -17,6 +17,8 @@ function hasMessageContent(message: WebQQMessage) {
 function mergeWebQQLiveMessage(current: WebQQMessage | undefined, next: WebQQMessage) {
   if (!current) return next
   const merged = { ...current, ...next }
+  // thinking.usage 会接管展示；后补 think 时必须清掉临时 fallback usage，避免同一回复显示两份指标。
+  if (next.thinking) delete merged.usage
   // 贴表情事件可能只补 reactions，不带原消息正文；保留旧正文可避免撤回缓存重启后只剩表情。
   if (hasMessageContent(current) && !hasMessageContent(next)) {
     merged.summary = current.summary

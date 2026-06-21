@@ -30,6 +30,7 @@ export function registerWebQQ(options: {
   logger?: DebugLogger
   getThinkingDurationMs: () => number
   getThinkingUsage: () => NonNullable<WebQQMessage['thinking']>['usage'] | undefined
+  getThinkingUsageSource: () => string | undefined
   getStorageScope: () => string | undefined
   readBotState: () => OneBotRobotState
   broadcastBotState: (botState?: OneBotRobotState) => void
@@ -44,6 +45,7 @@ export function registerWebQQ(options: {
     logger,
     getThinkingDurationMs,
     getThinkingUsage,
+    getThinkingUsageSource,
     getStorageScope,
     readBotState,
     broadcastBotState,
@@ -68,6 +70,7 @@ export function registerWebQQ(options: {
     logger,
     getThinkingDurationMs,
     getThinkingUsage,
+    getThinkingUsageSource,
     getStorageScope,
   })
 

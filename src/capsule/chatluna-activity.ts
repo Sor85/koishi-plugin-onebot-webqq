@@ -101,6 +101,7 @@ export function registerCapsuleChatLunaActivity(options: {
   ctx.on('chatluna/model-usage', (usage: ChatLunaModelUsage) => {
     if (!shouldDisplayModelUsage(usage)) return
     const changed = recordModelUsage(state, {
+      source: usage.source,
       conversationId: usage.context?.conversationId,
       inputTokens: usage.usageMetadata?.input_tokens,
       outputTokens: usage.usageMetadata?.output_tokens,

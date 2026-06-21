@@ -77,6 +77,13 @@ export interface WebQQMessage {
     type: 'recall' | 'poke' | 'mute' | 'reaction'
     targetMessageId?: string
   }
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+    ttftMs?: number
+    totalMs?: number
+    tps?: number
+  }
   thinking?: {
     content: string
     durationMs: number

@@ -560,6 +560,8 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  font-size: 12px;
+  line-height: 18px;
   white-space: normal;
   transition: opacity 0.16s ease, visibility 0.16s ease;
 }
@@ -581,6 +583,12 @@
 
 .onebot-webqq-webqq__thinking-toggle:hover .onebot-webqq-webqq__thinking-usage,
 .onebot-webqq-webqq__thinking-toggle:focus-visible .onebot-webqq-webqq__thinking-usage {
+  opacity: 1;
+  visibility: visible;
+}
+
+.onebot-webqq-webqq__thinking-row.is-usage-only .onebot-webqq-webqq__thinking-usage {
+  margin-right: 0;
   opacity: 1;
   visibility: visible;
 }
