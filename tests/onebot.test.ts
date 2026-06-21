@@ -748,6 +748,43 @@ describe('onebot webqq adapter', () => {
     ])
   })
 
+  it('does not register refresh metadata for history image URL segments', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 8,
+            message_seq: 18,
+            time: 1710000007,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'image', data: { url: 'https://example.com/direct.jpg' } }],
+          }],
+        })),
+        get_image: vi.fn(),
+      },
+    }
+    const imageUrlResolver = vi.fn((file: string, _options?: { refresh?: () => Promise<string> }) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`)
+    const service = createOneBotWebQQService({ bots: [bot] }, {
+      imageUrlResolver,
+    })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        elements: [{ type: 'image', url: '/onebot-webqq/webqq/image/https%3A%2F%2Fexample.com%2Fdirect.jpg' }],
+      }),
+    ])
+    expect(bot.internal.get_image).not.toHaveBeenCalled()
+    expect(imageUrlResolver).toHaveBeenCalledTimes(1)
+    expect(imageUrlResolver.mock.calls[0][1]).toBeUndefined()
+  })
+
   it('resolves history mface file ids through get_image', async () => {
     const bot = {
       platform: 'onebot',
@@ -1052,6 +1089,51 @@ describe('onebot webqq adapter', () => {
         }],
       }),
     ])
+  })
+
+  it('registers refresh metadata for proxy URLs resolved from image file ids', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 5,
+            message_seq: 15,
+            time: 1710000004,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'image', data: { file: 'remote.image' } }],
+          }],
+        })),
+        get_image: vi.fn()
+          .mockResolvedValueOnce({
+            url: 'https://multimedia.nt.qq.com.cn/download?fileid=expired',
+          })
+          .mockResolvedValueOnce({
+            url: 'https://multimedia.nt.qq.com.cn/download?fileid=fresh',
+          }),
+      },
+    }
+    const imageUrlResolver = vi.fn((file: string, _options?: { refresh?: () => Promise<string> }) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`)
+    const service = createOneBotWebQQService({ bots: [bot] }, {
+      imageUrlResolver,
+    })
+
+    await service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })
+
+    expect(imageUrlResolver).toHaveBeenCalledTimes(1)
+    expect(imageUrlResolver.mock.calls[0][0]).toBe('https://multimedia.nt.qq.com.cn/download?fileid=expired')
+    const refresh = imageUrlResolver.mock.calls[0][1]?.refresh
+    await expect(refresh?.()).resolves.toBe('https://multimedia.nt.qq.com.cn/download?fileid=fresh')
+    expect(bot.internal.get_image).toHaveBeenCalledTimes(2)
+    expect(bot.internal.get_image).toHaveBeenNthCalledWith(2, {
+      file: 'remote.image',
+    })
   })
 
   it('renders reply segments as quote elements without adding them to the message summary', async () => {

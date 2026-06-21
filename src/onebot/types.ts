@@ -2,6 +2,8 @@ import type { WebQQProtocol } from './protocol'
 
 export type { WebQQProtocol } from './protocol'
 
+type OneBotImageUrlResolver = (file: string, options?: { refresh?: () => Promise<string> }) => string
+
 export interface OneBotRobotProfile {
   platform: string
   selfId: string
@@ -20,5 +22,5 @@ export interface OneBotWebQQOptions {
   selfIds?: string[]
   mockBotCount?: number
   protocol?: WebQQProtocol
-  imageUrlResolver?: (file: string) => string
+  imageUrlResolver?: OneBotImageUrlResolver
 }

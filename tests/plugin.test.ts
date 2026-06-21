@@ -457,6 +457,127 @@ describe('chat capsule plugin wiring', () => {
     }
   })
 
+  it('refreshes WebQQ image proxy URL when the remote source returns 400', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const refresh = vi.fn(async () => 'https://example.com/fresh.jpg')
+    const fetchMock = vi.fn(async (url: string) => ({
+      ok: url === 'https://example.com/fresh.jpg',
+      status: url === 'https://example.com/fresh.jpg' ? 200 : 400,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/expired.jpg', { refresh })
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://example.com/expired.jpg', { redirect: 'manual' })
+      expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://example.com/fresh.jpg', { redirect: 'manual' })
+      expect(routerCtx.status).toBe(200)
+      expect(routerCtx.set).toHaveBeenCalledWith('content-type', 'image/jpeg')
+      expect(routerCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('limits WebQQ image proxy URL refreshes to three attempts per request', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const refreshTargets = [
+      'https://example.com/retry-1.jpg',
+      'https://example.com/retry-2.jpg',
+      'https://example.com/retry-3.jpg',
+    ]
+    let refreshIndex = 0
+    const refresh = vi.fn(async () => refreshTargets[refreshIndex++] || 'https://example.com/retry-extra.jpg')
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      headers: {
+        get: vi.fn(() => null),
+      },
+      arrayBuffer: async () => Uint8Array.from([]).buffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/expired.jpg', { refresh })
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(refresh).toHaveBeenCalledTimes(3)
+      expect(fetchMock).toHaveBeenCalledTimes(4)
+      expect(fetchMock).toHaveBeenLastCalledWith('https://example.com/retry-3.jpg', { redirect: 'manual' })
+      expect(routerCtx.status).toBe(400)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('does not refresh WebQQ image proxy URL when the remote source returns non-400 errors', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const refresh = vi.fn(async () => 'https://example.com/fresh.jpg')
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 500,
+      headers: {
+        get: vi.fn(() => null),
+      },
+      arrayBuffer: async () => Uint8Array.from([]).buffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/error.jpg', { refresh })
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(refresh).not.toHaveBeenCalled()
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(routerCtx.status).toBe(500)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('rejects private WebQQ image proxy targets before fetching', async () => {
     const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
     const resolver = createWebQQImageUrlResolver({

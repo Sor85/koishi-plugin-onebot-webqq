@@ -3,7 +3,11 @@ import * as dns from 'dns/promises'
 import { readFile } from 'fs/promises'
 import { isIP } from 'net'
 import { extname } from 'path'
-export type WebQQImageUrlResolver = (file: string) => string
+export interface WebQQImageUrlResolverEntryOptions {
+  refresh?: () => Promise<string>
+}
+
+export type WebQQImageUrlResolver = (file: string, options?: WebQQImageUrlResolverEntryOptions) => string
 
 export interface WebQQImageContext {
   params: Record<string, string>
@@ -38,11 +42,17 @@ interface CachedWebQQImage {
   lastAccessed: number
 }
 
+interface WebQQImageMapping {
+  file: string
+  refresh?: () => Promise<string>
+}
+
 const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
 const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
 const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
 const WEBQQ_IMAGE_MAPPING_LIMIT = 1000
 const WEBQQ_IMAGE_REDIRECT_LIMIT = 5
+const WEBQQ_IMAGE_REFRESH_LIMIT = 3
 
 const BROWSER_INCOMPATIBLE_AUDIO = new Set(['audio/amr', 'application/octet-stream'])
 const LOCAL_HOSTNAMES = new Set(['localhost', 'localhost.localdomain'])
@@ -205,7 +215,7 @@ export function createWebQQImageUrlResolver(
   logger?: WebQQImageUrlResolverLogger,
   options: WebQQImageUrlResolverOptions = {},
 ): WebQQImageUrlResolver {
-  const files = new Map<string, string>()
+  const files = new Map<string, WebQQImageMapping>()
   const ids = new Map<string, string>()
   const imageCache = new Map<string, CachedWebQQImage>()
   let imageCacheSize = 0
@@ -229,17 +239,20 @@ export function createWebQQImageUrlResolver(
     while (files.size > WEBQQ_IMAGE_MAPPING_LIMIT) {
       const oldestId = files.keys().next().value
       if (!oldestId) break
-      const file = files.get(oldestId)
+      const mapping = files.get(oldestId)
       files.delete(oldestId)
-      if (file) ids.delete(file)
+      if (mapping) ids.delete(mapping.file)
       evictCachedImage(oldestId)
     }
   }
 
-  function rememberImageMapping(id: string, file: string) {
+  function rememberImageMapping(id: string, file: string, refresh?: () => Promise<string>) {
+    const current = files.get(id)
     files.delete(id)
+    if (current) ids.delete(current.file)
     ids.delete(file)
-    files.set(id, file)
+    if (current && current.file !== file) evictCachedImage(id)
+    files.set(id, { file, refresh: refresh || current?.refresh })
     ids.set(file, id)
     trimImageMappings()
   }
@@ -283,8 +296,8 @@ export function createWebQQImageUrlResolver(
 
   ctx.server?.get('/onebot-webqq/webqq/image/:id', async (routerCtx) => {
     const id = routerCtx.params.id
-    const file = files.get(id)
-    if (!file) {
+    let mapping = files.get(id)
+    if (!mapping) {
       routerCtx.status = 404
       return
     }
@@ -299,51 +312,65 @@ export function createWebQQImageUrlResolver(
       }
     }
     try {
-      logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
-      if (isRemoteImageSource(file)) {
-        // 入站消息里的远程 URL 由聊天发送方控制；这里必须校验 DNS 最终 IP，
-        // 并逐跳禁用自动重定向，避免域名重绑定或 302 跳转把控制台预览打到内网。
-        const resolved = await fetchRemoteImage(file)
-        if (!resolved) {
-          routerCtx.status = 403
+      let refreshCount = 0
+      while (true) {
+        const { file } = mapping
+        logger?.info('webqq image proxy %s', JSON.stringify({ id, file }))
+        if (isRemoteImageSource(file)) {
+          // 入站消息里的远程 URL 由聊天发送方控制；这里必须校验 DNS 最终 IP，
+          // 并逐跳禁用自动重定向，避免域名重绑定或 302 跳转把控制台预览打到内网。
+          const resolved = await fetchRemoteImage(file)
+          if (!resolved) {
+            routerCtx.status = 403
+            return
+          }
+          const { response, file: resolvedFile } = resolved
+          routerCtx.status = response.status
+          if (response.status === 400 && mapping.refresh && refreshCount < WEBQQ_IMAGE_REFRESH_LIMIT) {
+            refreshCount += 1
+            const refreshed = await mapping.refresh()
+            if (refreshed) {
+              rememberImageMapping(id, refreshed, mapping.refresh)
+              mapping = files.get(id) || mapping
+              continue
+            }
+          }
+          if (!response.ok) return
+          const rawBody = await readRemoteImageBody(response, cacheItemLimitBytes)
+          if (!rawBody) {
+            routerCtx.status = 413
+            return
+          }
+          const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(resolvedFile)
+          const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
+          setImageHeaders(routerCtx, id, contentType)
+          routerCtx.body = body
+          cacheImage(id, body, contentType)
           return
         }
-        const { response, file: resolvedFile } = resolved
-        routerCtx.status = response.status
-        if (!response.ok) return
-        const rawBody = await readRemoteImageBody(response, cacheItemLimitBytes)
-        if (!rawBody) {
-          routerCtx.status = 413
-          return
-        }
-        const rawContentType = detectMediaContentType(rawBody) || response.headers.get('content-type') || getImageContentType(resolvedFile)
+        const rawBody = await readFile(file)
+        const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
         const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
         setImageHeaders(routerCtx, id, contentType)
         routerCtx.body = body
         cacheImage(id, body, contentType)
         return
       }
-      const rawBody = await readFile(file)
-      const rawContentType = detectMediaContentType(rawBody) || getImageContentType(file)
-      const { body, contentType } = await transcodeIfNeeded(rawBody, rawContentType)
-      setImageHeaders(routerCtx, id, contentType)
-      routerCtx.body = body
-      cacheImage(id, body, contentType)
     } catch (error) {
-      logger?.info('webqq image proxy failed %s', JSON.stringify({ id, file, error: error instanceof Error ? error.message : String(error) }))
+      logger?.info('webqq image proxy failed %s', JSON.stringify({ id, file: mapping.file, error: error instanceof Error ? error.message : String(error) }))
       routerCtx.status = 502
     }
   })
 
-  return (file: string) => {
+  return (file, entryOptions = {}) => {
     if (!ctx.server) return ''
     const cached = ids.get(file)
     if (cached) {
-      rememberImageMapping(cached, file)
+      rememberImageMapping(cached, file, entryOptions.refresh)
       return `/onebot-webqq/webqq/image/${cached}`
     }
     const id = randomUUID()
-    rememberImageMapping(id, file)
+    rememberImageMapping(id, file, entryOptions.refresh)
     return `/onebot-webqq/webqq/image/${id}`
   }
 }
