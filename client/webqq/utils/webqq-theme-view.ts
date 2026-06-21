@@ -12,14 +12,6 @@ function hexToRgba(color: string, opacity: number) {
   return `rgba(${red}, ${green}, ${blue}, ${opacity})`
 }
 
-export function getWebQQEffectiveAccentColor(useBotAvatarColor: boolean, avatarAccentColor: string, accentColor: string) {
-  if (useBotAvatarColor) {
-    if (avatarAccentColor) return normalizeAccentColor(avatarAccentColor)
-    return defaultWebQQAccentColor
-  }
-  return normalizeAccentColor(accentColor)
-}
-
 export function getWebQQAccentStyle(accentColor: string) {
   return {
     '--onebot-webqq-webqq-accent': accentColor,

@@ -8,10 +8,8 @@ import {
   showWebQQRelationship,
   showWebQQThinkingTiming,
   showWebQQThinkingTokens,
-  useBotAvatarThemeColor,
   useCompactCapsuleShadow,
   webQQAccentColor,
-  webQQAvatarAccentColor,
   webQQChatStyle,
   webQQColorMode,
   webQQMessageCacheLimit,
@@ -42,12 +40,10 @@ export function resetWebQQClientState() {
   showWebQQRelationship.value = false
   showWebQQThinkingTokens.value = true
   showWebQQThinkingTiming.value = true
-  useBotAvatarThemeColor.value = false
   useCompactCapsuleShadow.value = true
   webQQOpen.value = false
   webQQTotalUnread.value = 0
   webQQAccentColor.value = '#2563eb'
-  webQQAvatarAccentColor.value = ''
   webQQChatStyle.value = 'telegram'
   webQQColorMode.value = 'auto'
   webQQMessageCacheLimit.value = 100

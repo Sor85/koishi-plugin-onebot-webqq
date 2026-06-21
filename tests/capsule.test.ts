@@ -50,7 +50,7 @@ describe('chat capsule view', () => {
         ? ''
         : '缺少头像图形引导层',
       guideSource.includes(':style="webQQAvatarGuideStyle"')
-        ? '头像图形引导不应再绑定 bot 头像主题色'
+        ? '头像图形引导不应绑定动态样式'
         : '',
       guideSource.includes('aria-hidden="true"') ? '' : '图形引导应该对读屏隐藏',
       guideSource.includes('class="onebot-webqq__avatar-guide-ring"')
@@ -77,8 +77,8 @@ describe('chat capsule view', () => {
       /import \{[^}]*\bcapsule\b[^}]*\} from '\.\/state'/.test(capsuleView)
         ? ''
         : '头像图形引导应读取胶囊共享状态',
-      capsuleView.includes('webQQAvatarGuideStyle') || capsuleView.includes('webQQAvatarAccentColor')
-        ? '头像图形引导不应读取 bot 头像主题色状态'
+      capsuleView.includes('webQQAvatarGuideStyle')
+        ? '头像图形引导不应读取额外样式状态'
         : '',
       capsuleView.includes('function hasSeenWebQQAvatarGuide()')
         ? ''
@@ -415,7 +415,6 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain("webQQStorageBackend.value = data?.value?.webQQStorageBackend || 'koishi'")
     expect(clientEntry).toContain('webQQMessageCacheLimit.value = data?.value?.webQQMessageCacheLimit ?? 100')
     expect(clientEntry).toContain("webQQAccentColor.value = data?.value?.webQQAccentColor || '#2563eb'")
-    expect(clientEntry).toContain('useBotAvatarThemeColor.value = data?.value?.useBotAvatarThemeColor ?? false')
     expect(clientEntry).toContain('useCompactCapsuleShadow.value = data?.value?.useCompactCapsuleShadow ?? true')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true')
     expect(clientEntry).toContain('showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false')
@@ -423,19 +422,5 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('showWebQQThinkingTokens.value = data?.value?.showWebQQThinkingTokens ?? true')
     expect(clientEntry).toContain('showWebQQThinkingTiming.value = data?.value?.showWebQQThinkingTiming ?? true')
     expect(clientEntry).toContain('showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true')
-  })
-
-  it('checks and caches bot avatar theme colors in the browser', () => {
-    expect(clientEntry).toContain("import { Context, receive, withProxy } from '@koishijs/client'")
-    expect(clientEntry).toContain("const webQQAvatarThemeStorageKey = 'onebot-webqq:webqq-avatar-theme:v1'")
-    expect(clientEntry).toContain('function loadCachedAvatarThemeColor(avatar: string)')
-    expect(clientEntry).toContain('function cacheAvatarThemeColor(avatar: string, color: string)')
-    expect(clientEntry).toContain('function extractDominantAvatarColor(avatar: string)')
-    expect(clientEntry).toContain('function updateWebQQAvatarThemeColor(data?: CapsuleData)')
-    expect(clientEntry).toContain('webQQAvatarAccentColor.value = cached ||')
-    expect(clientEntry).toContain('localStorage.getItem(webQQAvatarThemeStorageKey)')
-    expect(clientEntry).toContain('localStorage.setItem(webQQAvatarThemeStorageKey')
-    expect(clientEntry).toContain('image.src = withProxy(avatar)')
-    expect(clientEntry).toContain('updateWebQQAvatarThemeColor(capsule.value)')
   })
 })

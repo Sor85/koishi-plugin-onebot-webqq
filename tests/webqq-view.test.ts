@@ -18,7 +18,7 @@ import { createBotThinkingMessage, getLastOutgoingClusterUsageMessage, mergeMess
 import { applyWebQQRecallToMessages } from '../client/webqq/utils/webqq-recall-view'
 import type { WebQQChatSelection } from '../client/webqq/utils/webqq-contact-view'
 import { createFriendChatSelection, createGroupChatSelection as createGroupChatSelectionFromContact, createRecentChatSelection, getCurrentChatAvatar, getCurrentChatSubtitle, getCurrentChatTitle } from '../client/webqq/utils/webqq-contact-view'
-import { getWebQQAccentStyle, getWebQQEffectiveAccentColor, normalizeAccentColor } from '../client/webqq/utils/webqq-theme-view'
+import { getWebQQAccentStyle, normalizeAccentColor } from '../client/webqq/utils/webqq-theme-view'
 
 vi.mock('@koishijs/client', () => ({
   send: vi.fn(async () => undefined),
@@ -150,9 +150,7 @@ describe('webqq observer view', () => {
   it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
     expect(webqqView).toContain("from './settings'")
     expect(webqqContactView).toContain('sortWebQQGroupMembers')
-    expect(webqqView).toContain('useBotAvatarThemeColor')
     expect(webqqView).toContain('webQQAccentColor')
-    expect(webqqView).toContain('webQQAvatarAccentColor')
     expect(webqqView).toContain('webQQChatStyle')
     expect(webqqView).toContain('webQQTimBubbleTail')
     expect(webqqView).toContain('webQQTheme')
@@ -195,19 +193,11 @@ describe('webqq observer view', () => {
     expect(capsuleView).toContain("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
   })
 
-  it('uses bot avatar accent color ahead of the manual WebQQ accent color', () => {
-    expect(webqqView).toContain('const webQQEffectiveAccentColor = computed')
-    expect(webqqView).toContain('getWebQQEffectiveAccentColor(')
-    expect(webqqView).toContain('useBotAvatarThemeColor.value')
-    expect(webqqView).toContain('webQQAvatarAccentColor.value')
+  it('uses the configured WebQQ accent color for CSS variables', () => {
     expect(webqqView).toContain('webQQAccentColor.value')
     expect(webqqThemeView).toContain('function normalizeAccentColor(color: string)')
-    expect(webqqThemeView).toContain('if (useBotAvatarColor)')
-    expect(webqqThemeView).toContain('return normalizeAccentColor(avatarAccentColor)')
-    expect(webqqThemeView).toContain('return defaultWebQQAccentColor')
-    expect(webqqThemeView).toContain('return normalizeAccentColor(accentColor)')
     expect(webqqView).toContain('const webQQAccentStyle = computed')
-    expect(webqqView).toContain('getWebQQAccentStyle(webQQEffectiveAccentColor.value)')
+    expect(webqqView).toContain('getWebQQAccentStyle(webQQAccentColor.value)')
     expect(webqqThemeView).toContain("'--onebot-webqq-webqq-accent': accentColor")
     expect(webqqThemeView).toContain("'--onebot-webqq-webqq-accent-soft': hexToRgba(accentColor, 0.14)")
   })
@@ -215,9 +205,6 @@ describe('webqq observer view', () => {
   it('formats WebQQ accent colors for CSS variables', () => {
     expect(normalizeAccentColor('#123abc')).toBe('#123abc')
     expect(normalizeAccentColor('123abc')).toBe('#2563eb')
-    expect(getWebQQEffectiveAccentColor(true, '#abcdef', '#123456')).toBe('#abcdef')
-    expect(getWebQQEffectiveAccentColor(true, '', '#123456')).toBe('#2563eb')
-    expect(getWebQQEffectiveAccentColor(false, '#abcdef', '#123456')).toBe('#123456')
     expect(getWebQQAccentStyle('#336699')).toEqual({
       '--onebot-webqq-webqq-accent': '#336699',
       '--onebot-webqq-webqq-accent-soft': 'rgba(51, 102, 153, 0.14)',
@@ -269,7 +256,6 @@ describe('webqq observer view', () => {
     expect(entryState).toContain('export function resetWebQQClientState()')
     expect(clientIndex).toContain('resetWebQQClientState()')
     expect(clientIndex).toContain("receive('onebot-webqq/update', () => {})")
-    expect(clientIndex).toContain("lastCheckedAvatar = ''")
   })
 
   it('renders a transient outgoing bot thinking message after the real WebQQ messages', () => {

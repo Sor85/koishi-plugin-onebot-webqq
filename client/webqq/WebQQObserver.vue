@@ -149,7 +149,7 @@ import WebQQImagePreview from './components/WebQQImagePreview.vue'
 import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
-import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from './settings'
+import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from './settings'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './types'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
@@ -171,7 +171,7 @@ import {
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
-import { getWebQQAccentStyle, getWebQQEffectiveAccentColor } from './utils/webqq-theme-view'
+import { getWebQQAccentStyle } from './utils/webqq-theme-view'
 import { vWebqqScrollbar } from './utils/webqq-scrollbar'
 
 type RecentItem = WebQQRecentItem
@@ -259,12 +259,7 @@ const {
   toggleGroupInfo,
 } = useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })
 
-const webQQEffectiveAccentColor = computed(() => getWebQQEffectiveAccentColor(
-  useBotAvatarThemeColor.value,
-  webQQAvatarAccentColor.value,
-  webQQAccentColor.value,
-))
-const webQQAccentStyle = computed(() => getWebQQAccentStyle(webQQEffectiveAccentColor.value))
+const webQQAccentStyle = computed(() => getWebQQAccentStyle(webQQAccentColor.value))
 
 const {
   forwardDialog,

@@ -61,8 +61,7 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 - `webQQChatStyle`：TIM 或 QQ 聊天页面样式
 - `webQQTimBubbleTail`：显示 TIM 气泡小尖角，默认开启
 - `webQQColorMode`：自动、明亮或暗色模式
-- `webQQAccentColor`：手动主题色
-- `useBotAvatarThemeColor`：使用 bot 头像主色作为 WebQQ 主题色
+- `webQQAccentColor`：WebQQ 主题色
 
 ### 消息显示
 

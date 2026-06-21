@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sortWebQQGroupMembers, type WebQQGroupMember } from '../client/webqq/types'
-import { hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, useBotAvatarThemeColor, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
+import { hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -20,8 +20,6 @@ describe('webqq group members', () => {
     expect(webQQStorageBackend.value).toBe('koishi')
     expect(webQQMessageCacheLimit.value).toBe(100)
     expect(webQQAccentColor.value).toBe('#2563eb')
-    expect(webQQAvatarAccentColor.value).toBe('')
-    expect(useBotAvatarThemeColor.value).toBe(false)
     expect(hideWebQQGroupLevel.value).toBe(true)
     expect(showWebQQCapsuleUnread.value).toBe(true)
     expect(showWebQQThinkingTokens.value).toBe(true)
