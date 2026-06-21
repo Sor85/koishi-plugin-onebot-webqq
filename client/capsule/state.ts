@@ -18,13 +18,6 @@ export interface CapsuleData {
     senderLevel?: string
     senderTitle?: string
     activityText?: string
-    usage?: {
-      inputTokens: number
-      outputTokens: number
-      ttftMs?: number
-      totalMs?: number
-      tps?: number
-    }
     thinkingDurationMs?: number
     timestamp: number
   }

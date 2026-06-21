@@ -2,7 +2,6 @@ import type {
   CapsuleActivityOptions,
   CapsuleBotInput,
   CapsuleMessageInput,
-  CapsuleModelUsageInput,
   CapsuleSnapshot,
 } from './types'
 
@@ -10,7 +9,6 @@ export type {
   CapsuleActivityOptions,
   CapsuleBotInput,
   CapsuleMessageInput,
-  CapsuleModelUsageInput,
   CapsuleSnapshot,
 } from './types'
 
@@ -29,7 +27,6 @@ interface MutableCapsuleState {
     sent: number
   }
   thinkingStartedAt?: number
-  usageSource?: string
 }
 
 const states = new WeakMap<CapsuleState, MutableCapsuleState>()
@@ -37,12 +34,7 @@ const states = new WeakMap<CapsuleState, MutableCapsuleState>()
 function cloneSnapshot(snapshot: CapsuleSnapshot): CapsuleSnapshot {
   return {
     bot: { ...snapshot.bot },
-    conversation: {
-      ...snapshot.conversation,
-      ...(snapshot.conversation.usage ? {
-        usage: { ...snapshot.conversation.usage },
-      } : {}),
-    },
+    conversation: { ...snapshot.conversation },
     counters: { ...snapshot.counters },
     ...(snapshot.bots ? {
       bots: snapshot.bots.map((bot) => ({ ...bot })),
@@ -130,9 +122,6 @@ function copyActiveConversation(conversation: CapsuleSnapshot['conversation']) {
     ...(conversation.conversationId ? {
       conversationId: conversation.conversationId,
     } : {}),
-    ...(conversation.usage ? {
-      usage: conversation.usage,
-    } : {}),
     ...(conversation.thinkingDurationMs != null ? {
       thinkingDurationMs: conversation.thinkingDurationMs,
     } : {}),
@@ -163,7 +152,6 @@ export function recordConversationActivity(
 ) {
   const state = getState(capsule)
   state.thinkingStartedAt = activityText === '正在思考' ? options.now ?? Date.now() : undefined
-  state.usageSource = undefined
   const snapshot = createSnapshot(input, state)
   state.current = {
     ...snapshot,
@@ -182,52 +170,6 @@ export function recordConversationActivity(
   }
 }
 
-// 记录当前 ChatLuna 模型调用的 token 用量和 timing 指标。
-export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsageInput) {
-  const state = getState(capsule)
-  const conversation = state.current?.conversation
-  if (!state.current || !conversation) return false
-  if (
-    input.conversationId &&
-    conversation.conversationId &&
-    input.conversationId !== conversation.conversationId
-  ) {
-    return false
-  }
-  if (
-    input.inputTokens == null &&
-    input.outputTokens == null &&
-    input.ttftMs == null &&
-    input.totalMs == null &&
-    input.tps == null
-  ) return false
-  state.current = {
-    ...state.current,
-    conversation: {
-      ...conversation,
-      usage: {
-        inputTokens: input.inputTokens ?? conversation.usage?.inputTokens ?? 0,
-        outputTokens: input.outputTokens ?? conversation.usage?.outputTokens ?? 0,
-        ...(input.ttftMs != null || conversation.usage?.ttftMs != null ? {
-          ttftMs: input.ttftMs ?? conversation.usage?.ttftMs,
-        } : {}),
-        ...(input.totalMs != null || conversation.usage?.totalMs != null ? {
-          totalMs: input.totalMs ?? conversation.usage?.totalMs,
-        } : {}),
-        ...(input.tps != null || conversation.usage?.tps != null ? {
-          tps: input.tps ?? conversation.usage?.tps,
-        } : {}),
-      },
-    },
-  }
-  state.usageSource = input.source
-  return true
-}
-
-export function getCurrentModelUsageSource(capsule: CapsuleState) {
-  return getState(capsule).usageSource
-}
-
 function readThinkingDurationMs(state: MutableCapsuleState, now: number) {
   if (state.thinkingStartedAt == null) return state.current?.conversation.thinkingDurationMs
   return Math.max(0, now - state.thinkingStartedAt)
@@ -244,9 +186,6 @@ function copyIdleConversation(conversation: CapsuleSnapshot['conversation'], act
     timestamp: conversation.timestamp,
     ...(activityText ? {
       activityText,
-    } : {}),
-    ...(conversation.usage ? {
-      usage: conversation.usage,
     } : {}),
     ...(conversation.thinkingDurationMs != null ? {
       thinkingDurationMs: conversation.thinkingDurationMs,

@@ -108,6 +108,12 @@ function findConsoleListener<Event extends keyof ConsoleEvents>(
   return addListener.mock.calls.find(([name]) => name === event)?.[1] as ConsoleEvents[Event] | undefined
 }
 
+async function emitAll(listeners: Listener[] | undefined, ...payload: unknown[]) {
+  for (const listener of listeners ?? []) {
+    await listener(...payload)
+  }
+}
+
 function createFakeContext(options: { console?: boolean; character?: ChatCapsuleContext['chatluna_character']; schedule?: ChatCapsuleContext['chatluna_schedule']; bots?: unknown[]; server?: boolean; database?: DatabaseService } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
@@ -273,7 +279,7 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain("ctx.on('chatluna_character/message_collect'")
     expect(chatlunaActivitySource).toContain('export function registerCapsuleChatLunaActivity')
     expect(chatlunaActivitySource).toContain("ctx.on('chatluna/before-chat'")
-    expect(chatlunaActivitySource).toContain("ctx.on('chatluna/model-usage'")
+    expect(chatlunaActivitySource).not.toContain("ctx.on('chatluna/model-usage'")
     expect(chatlunaActivitySource).toContain("ctx.on('chatluna_character/message_collect'")
   })
 
@@ -287,6 +293,7 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain('const broadcastWebQQLivePayload =')
     expect(webqqLiveRuntimeSource).toContain('export function createWebQQLiveRuntime')
     expect(webqqLiveRuntimeSource).toContain('const pendingWebQQThinking = new Map')
+    expect(webqqLiveRuntimeSource).toContain("options.ctx.on('chatluna/model-usage'")
     expect(webqqLiveRuntimeSource).toContain('const liveSenderMetadata = new Map')
     expect(webqqLiveRuntimeSource).toContain('const broadcastWebQQLivePayload =')
     expect(webqqLiveRuntimeSource).toContain("from './live-notices'")
@@ -3941,147 +3948,6 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
-  it('updates usage from matching ChatLuna model usage events', () => {
-    const { ctx, listeners, broadcast } = createFakeContext()
-
-    plugin.apply(ctx)
-    listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession())
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'chatluna',
-      context: {
-        conversationId: 'conversation-2',
-      },
-      usageMetadata: {
-        input_tokens: 99,
-        output_tokens: 100,
-        total_tokens: 199,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toBeUndefined()
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'extension-agent',
-      context: {
-        conversationId: 'conversation-1',
-      },
-      usageMetadata: {
-        input_tokens: 56,
-        output_tokens: 78,
-        total_tokens: 134,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toBeUndefined()
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'chatluna',
-      context: {
-        conversationId: 'conversation-1',
-      },
-      usageMetadata: {
-        input_tokens: 12,
-        output_tokens: 34,
-        total_tokens: 46,
-      },
-      timing: {
-        ttftMs: 120,
-        totalMs: 2400,
-        tps: 14.2,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
-      inputTokens: 12,
-      outputTokens: 34,
-      ttftMs: 120,
-      totalMs: 2400,
-      tps: 14.2,
-    })
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'extension-tools',
-      context: {
-        conversationId: 'conversation-1',
-      },
-      usageMetadata: {
-        input_tokens: 90,
-        output_tokens: 91,
-        total_tokens: 181,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
-      inputTokens: 12,
-      outputTokens: 34,
-      ttftMs: 120,
-      totalMs: 2400,
-      tps: 14.2,
-    })
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'unknown',
-      context: {
-        conversationId: 'conversation-1',
-      },
-      usageMetadata: {
-        input_tokens: 101,
-        output_tokens: 102,
-        total_tokens: 203,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
-      inputTokens: 12,
-      outputTokens: 34,
-      ttftMs: 120,
-      totalMs: 2400,
-      tps: 14.2,
-    })
-  })
-
-  it('accepts ChatLuna character usage sources for the current conversation', () => {
-    const { ctx, listeners, broadcast } = createFakeContext()
-
-    plugin.apply(ctx)
-    listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession())
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'chatluna-character',
-      context: {
-        conversationId: 'conversation-1',
-      },
-      usageMetadata: {
-        input_tokens: 21,
-        output_tokens: 43,
-        total_tokens: 64,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
-      inputTokens: 21,
-      outputTokens: 43,
-    })
-
-    listeners['chatluna/model-usage'][0]({
-      source: 'character',
-      context: {
-        conversationId: 'conversation-1',
-      },
-      usageMetadata: {
-        input_tokens: 22,
-        output_tokens: 44,
-        total_tokens: 66,
-      },
-    })
-
-    expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
-      inputTokens: 22,
-      outputTokens: 44,
-    })
-  })
-
   it('adds ChatLuna usage to outgoing WebQQ messages without character thinking', async () => {
     const bot = {
       platform: 'onebot',
@@ -4102,8 +3968,30 @@ describe('chat capsule plugin wiring', () => {
     const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
 
     plugin.apply(ctx)
-    await listeners['chatluna/before-chat'][0]('conversation-1', { name: 'Alice' }, {}, {}, createSession({ bot }))
-    listeners['chatluna/model-usage'][0]({
+    await emitAll(listeners['chatluna/before-chat'], 'conversation-1', { name: 'Alice' }, {}, {}, createSession({ bot }))
+    await emitAll(listeners['chatluna/model-usage'], {
+      source: 'chatluna',
+      context: {
+        conversationId: 'conversation-2',
+      },
+      usageMetadata: {
+        input_tokens: 90,
+        output_tokens: 91,
+        total_tokens: 181,
+      },
+    })
+    await emitAll(listeners['chatluna/model-usage'], {
+      source: 'extension-agent',
+      context: {
+        conversationId: 'conversation-1',
+      },
+      usageMetadata: {
+        input_tokens: 56,
+        output_tokens: 78,
+        total_tokens: 134,
+      },
+    })
+    await emitAll(listeners['chatluna/model-usage'], {
       source: 'chatluna',
       context: {
         conversationId: 'conversation-1',
@@ -4146,6 +4034,23 @@ describe('chat capsule plugin wiring', () => {
       },
     })
     expect(webQQCalls.at(-1)?.[1]?.message).not.toHaveProperty('thinking')
+
+    await listeners.message[0](createSession({
+      bot,
+      userId: '10000',
+      timestamp: 1710000003700,
+      event: {
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '10000', name: 'Capsule Bot' },
+        message: {
+          id: 'self-main-2',
+          elements: [{ type: 'text', attrs: { content: '第二条回复' } }],
+        },
+      },
+    }))
+    expect(broadcast.mock.calls.filter(([event]) => event === 'onebot-webqq/webqq/message').at(-1)?.[1]?.message)
+      .not.toHaveProperty('usage')
   })
 
   it('uses character response locks and collect events to show active status', async () => {
@@ -4184,7 +4089,7 @@ describe('chat capsule plugin wiring', () => {
       activityText: '正在与 Group Card Alice 对话',
     })
 
-    listeners['chatluna_character/message_collect'][0](session, [{
+    await emitAll(listeners['chatluna_character/message_collect'], session, [{
       id: '30000',
       name: 'Alice',
     }], 'trigger')
@@ -4209,7 +4114,7 @@ describe('chat capsule plugin wiring', () => {
     expect(character.releaseResponseLock).toBe(originalReleaseResponseLock)
   })
 
-  it('carries group sender metadata from ChatLuna character collect sessions into thinking conversation', () => {
+  it('carries group sender metadata from ChatLuna character collect sessions into thinking conversation', async () => {
     const { ctx, listeners, broadcast } = createFakeContext()
     const session = createSession({
       event: {
@@ -4232,7 +4137,7 @@ describe('chat capsule plugin wiring', () => {
     })
 
     plugin.apply(ctx)
-    listeners['chatluna_character/message_collect'][0](session, [{
+    await emitAll(listeners['chatluna_character/message_collect'], session, [{
       id: '30000',
       name: 'Alice',
     }], 'trigger')
@@ -4279,21 +4184,21 @@ describe('chat capsule plugin wiring', () => {
       })
 
       plugin.apply(ctx)
-      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
-      listeners['chatluna/model-usage'][0]({
+      await emitAll(listeners['chatluna_character/message_collect'], session, [{ id: '30000', name: 'Alice' }])
+      await emitAll(listeners['chatluna/model-usage'], {
         source: 'chatluna-character',
-      usageMetadata: {
-        input_tokens: 12,
-        output_tokens: 34,
-        total_tokens: 46,
-      },
-      timing: {
-        ttftMs: 180,
-        totalMs: 4200,
-        tps: 8.1,
-      },
-    })
-      listeners['chatluna/model-usage'][0]({
+        usageMetadata: {
+          input_tokens: 12,
+          output_tokens: 34,
+          total_tokens: 46,
+        },
+        timing: {
+          ttftMs: 180,
+          totalMs: 4200,
+          tps: 8.1,
+        },
+      })
+      await emitAll(listeners['chatluna/model-usage'], {
         source: 'extension-agent',
         context: {
           conversationId: 'conversation-1',
@@ -4409,8 +4314,8 @@ describe('chat capsule plugin wiring', () => {
       })
 
       plugin.apply(ctx, { showWebQQCharacterThinking: false })
-      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
-      listeners['chatluna/model-usage'][0]({
+      await emitAll(listeners['chatluna_character/message_collect'], session, [{ id: '30000', name: 'Alice' }])
+      await emitAll(listeners['chatluna/model-usage'], {
         source: 'chatluna-character',
         usageMetadata: {
           input_tokens: 12,
@@ -4494,7 +4399,7 @@ describe('chat capsule plugin wiring', () => {
       })
 
       plugin.apply(ctx)
-      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+      await emitAll(listeners['chatluna_character/message_collect'], session, [{ id: '30000', name: 'Alice' }])
       await listeners.message[0](createSession({
         bot,
         userId: '10000',
@@ -4577,7 +4482,7 @@ describe('chat capsule plugin wiring', () => {
       })
 
       plugin.apply(ctx)
-      await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+      await emitAll(listeners['chatluna_character/message_collect'], session, [{ id: '30000', name: 'Alice' }])
 
       vi.setSystemTime(1710000004200)
       listeners['chatluna_character/after-chat'][0]({
@@ -4699,7 +4604,7 @@ describe('chat capsule plugin wiring', () => {
     })
 
     plugin.apply(ctx)
-    await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
+    await emitAll(listeners['chatluna_character/message_collect'], session, [{ id: '30000', name: 'Alice' }])
     await listeners.message[0](createSession({
       bot,
       userId: '10000',

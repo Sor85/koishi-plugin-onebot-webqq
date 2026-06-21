@@ -3,7 +3,6 @@ import {
   clearConversationActivity,
   createCapsuleState,
   recordIdleActivity,
-  recordModelUsage,
   recordConversationActivity,
   recordIncomingMessage,
   setAvailableBots,
@@ -343,51 +342,6 @@ describe('chat capsule state', () => {
       senderRole: '管理员',
       senderLevel: '100',
       senderTitle: '闪亮头衔',
-    })
-  })
-
-  it('records usage for the active conversation only', () => {
-    const state = createCapsuleState()
-
-    recordConversationActivity(state, {
-      bot: {
-        platform: 'onebot',
-        selfId: '10000',
-      },
-      channel: {
-        id: '20000',
-        name: 'General',
-      },
-      user: {
-        id: '30000',
-        name: 'Alice',
-      },
-      timestamp: 1710000000007,
-    }, '正在思考', {
-      conversationId: 'conversation-1',
-    })
-
-    expect(recordModelUsage(state, {
-      conversationId: 'conversation-2',
-      inputTokens: 99,
-      outputTokens: 100,
-    })).toBe(false)
-    expect(state.snapshot()?.conversation.usage).toBeUndefined()
-
-    expect(recordModelUsage(state, {
-      conversationId: 'conversation-1',
-      inputTokens: 12,
-      outputTokens: 34,
-      ttftMs: 120,
-      totalMs: 2400,
-      tps: 14.2,
-    })).toBe(true)
-    expect(state.snapshot()?.conversation.usage).toEqual({
-      inputTokens: 12,
-      outputTokens: 34,
-      ttftMs: 120,
-      totalMs: 2400,
-      tps: 14.2,
     })
   })
 

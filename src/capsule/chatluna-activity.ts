@@ -1,26 +1,18 @@
 import type { Session } from 'koishi'
 import type {
   ChatCapsuleContext,
-  ChatLunaModelUsage,
   DebugLogger,
 } from '../plugin-context'
 import {
   clearConversationActivity,
   recordConversationActivity,
   recordIdleActivity,
-  recordModelUsage,
   type CapsuleMessageInput,
   type CapsuleState,
 } from './state'
 import { createMessageInput, readCapsuleMemberName, type ChatLunaMessage } from './message-input'
 
 type CapsuleSenderMetadata = Pick<CapsuleMessageInput['user'], 'senderRole' | 'senderLevel' | 'senderTitle'>
-
-const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
-
-function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
-  return visibleUsageSources.has(usage.source || '')
-}
 
 export function registerCapsuleChatLunaActivity(options: {
   ctx: ChatCapsuleContext
@@ -96,22 +88,6 @@ export function registerCapsuleChatLunaActivity(options: {
 
   ctx.on('chatluna/after-chat-error', () => {
     clearActivity('after-chat-error')
-  })
-
-  ctx.on('chatluna/model-usage', (usage: ChatLunaModelUsage) => {
-    if (!shouldDisplayModelUsage(usage)) return
-    const changed = recordModelUsage(state, {
-      source: usage.source,
-      conversationId: usage.context?.conversationId,
-      inputTokens: usage.usageMetadata?.input_tokens,
-      outputTokens: usage.usageMetadata?.output_tokens,
-      ttftMs: usage.timing?.ttftMs,
-      totalMs: usage.timing?.totalMs,
-      tps: usage.timing?.tps,
-    })
-    if (!changed) return
-    logSnapshot('model-usage')
-    broadcast()
   })
 
   ctx.on('chatluna_character/message_collect', async (session, messages) => {

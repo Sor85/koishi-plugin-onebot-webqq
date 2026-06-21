@@ -27,16 +27,6 @@ export interface CapsuleActivityOptions {
   now?: number
 }
 
-export interface CapsuleModelUsageInput {
-  source?: string
-  conversationId?: string
-  inputTokens?: number
-  outputTokens?: number
-  ttftMs?: number
-  totalMs?: number
-  tps?: number
-}
-
 export interface CapsuleSnapshot {
   bot: {
     platform: string
@@ -55,13 +45,6 @@ export interface CapsuleSnapshot {
     senderTitle?: string
     activityText?: string
     conversationId?: string
-    usage?: {
-      inputTokens: number
-      outputTokens: number
-      ttftMs?: number
-      totalMs?: number
-      tps?: number
-    }
     thinkingDurationMs?: number
     timestamp: number
   }

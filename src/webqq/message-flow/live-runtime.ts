@@ -4,7 +4,7 @@ import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterCha
 import { parseThinkContent, readCharacterAfterChatText } from '../thinking'
 import type { createOneBotWebQQService } from '../adapters/onebot/service'
 import type { WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from '../types'
-import type { ChatCapsuleContext, DebugLogger } from '../../plugin-context'
+import type { ChatCapsuleContext, ChatLunaModelUsage, DebugLogger } from '../../plugin-context'
 import { attachWebQQAffinityBadges } from '../affinity'
 import { applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
 import { createWebQQLiveMessage } from './live-message'
@@ -34,8 +34,10 @@ import { createWebQQReactionRuntime } from './live-reactions'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>
+type WebQQUsage = NonNullable<WebQQMessage['usage']>
 const WEBQQ_LIVE_CONVERSATION_LIMIT = 100
 const WEBQQ_LIVE_SENDER_METADATA_LIMIT = 1000
+const visibleUsageSources = new Set(['chatluna', 'chatluna-character', 'character'])
 
 export type ChatLunaCharacterAfterChatPayload = BaseChatLunaCharacterAfterChatPayload & { session?: Session }
 export type WebQQLiveRuntime = ReturnType<typeof createWebQQLiveRuntime>
@@ -46,6 +48,10 @@ function readRawRecallMessageId(session: Session) {
   return value == null ? '' : String(value)
 }
 
+function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
+  return visibleUsageSources.has(usage.source || '')
+}
+
 export function createWebQQLiveRuntime(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
@@ -54,13 +60,15 @@ export function createWebQQLiveRuntime(options: {
   consoleAuthOptions: { authority: number }
   logger?: DebugLogger
   getThinkingDurationMs: () => number
-  getThinkingUsage: () => WebQQThinking['usage'] | undefined
-  getThinkingUsageSource: () => string | undefined
   getStorageScope: () => string | undefined
 }) {
   const liveMessages = new Map<string, WebQQMessage[]>()
   const pendingWebQQThinking = new Map<string, WebQQThinking>()
   const liveSenderMetadata = new Map<string, WebQQSenderMetadata>()
+  let currentUsageConversationId: string | undefined
+  let currentUsageSource: string | undefined
+  let currentUsage: WebQQUsage | undefined
+  let currentUsageActive = false
 
   function isSelectedWebQQSession(session: Session) {
     // 多 OneBot 实例会共享同一套 Koishi 事件；模拟 bot 的 selfId 又会映射回源 bot。
@@ -91,11 +99,58 @@ export function createWebQQLiveRuntime(options: {
     trimOldestMapEntries(pendingWebQQThinking, WEBQQ_LIVE_CONVERSATION_LIMIT)
   }
 
+  function resetCurrentWebQQUsage() {
+    currentUsageConversationId = undefined
+    currentUsageSource = undefined
+    currentUsage = undefined
+    currentUsageActive = false
+  }
+
+  function rememberCurrentWebQQUsage(usage: ChatLunaModelUsage) {
+    if (!currentUsageActive) return false
+    if (!shouldDisplayModelUsage(usage)) return false
+    const conversationId = usage.context?.conversationId
+    if (
+      conversationId &&
+      currentUsageConversationId &&
+      conversationId !== currentUsageConversationId
+    ) {
+      return false
+    }
+    if (
+      usage.usageMetadata?.input_tokens == null &&
+      usage.usageMetadata?.output_tokens == null &&
+      usage.timing?.ttftMs == null &&
+      usage.timing?.totalMs == null &&
+      usage.timing?.tps == null
+    ) return false
+    currentUsageSource = usage.source
+    currentUsage = {
+      inputTokens: usage.usageMetadata?.input_tokens ?? currentUsage?.inputTokens ?? 0,
+      outputTokens: usage.usageMetadata?.output_tokens ?? currentUsage?.outputTokens ?? 0,
+      ...(usage.timing?.ttftMs != null || currentUsage?.ttftMs != null ? {
+        ttftMs: usage.timing?.ttftMs ?? currentUsage?.ttftMs,
+      } : {}),
+      ...(usage.timing?.totalMs != null || currentUsage?.totalMs != null ? {
+        totalMs: usage.timing?.totalMs ?? currentUsage?.totalMs,
+      } : {}),
+      ...(usage.timing?.tps != null || currentUsage?.tps != null ? {
+        tps: usage.timing?.tps ?? currentUsage?.tps,
+      } : {}),
+    }
+    return true
+  }
+
+  function consumeCurrentWebQQUsage() {
+    const usage = currentUsage
+    resetCurrentWebQQUsage()
+    return usage
+  }
+
   function attachCurrentWebQQUsage(message: WebQQMessage): WebQQMessage {
     if (message.direction !== 'outgoing' || message.thinking?.content || message.usage) return message
-    const source = options.getThinkingUsageSource()
-    if ((options.config.showWebQQCharacterThinking ?? true) && (source === 'chatluna-character' || source === 'character')) return message
-    const usage = options.getThinkingUsage()
+    if ((options.config.showWebQQCharacterThinking ?? true) && (currentUsageSource === 'chatluna-character' || currentUsageSource === 'character')) return message
+    const usage = consumeCurrentWebQQUsage()
     return usage ? { ...message, usage } : message
   }
 
@@ -232,7 +287,7 @@ export function createWebQQLiveRuntime(options: {
     const peer = readWebQQPeer(payload.session)
     if (!peer) return
     const key = getWebQQLiveMessageKey(peer)
-    const usage = options.getThinkingUsage()
+    const usage = consumeCurrentWebQQUsage()
     const thinking = {
       content,
       durationMs: options.getThinkingDurationMs(),
@@ -255,6 +310,20 @@ export function createWebQQLiveRuntime(options: {
       },
     })
   }
+  options.ctx.on('chatluna/before-chat', (conversationId, _message, _variables, _chatInterface, session) => {
+    resetCurrentWebQQUsage()
+    if (!session || !isSelectedWebQQSession(session)) return
+    currentUsageConversationId = conversationId
+    currentUsageActive = true
+  })
+  options.ctx.on('chatluna_character/message_collect', (session) => {
+    resetCurrentWebQQUsage()
+    if (!session || !isSelectedWebQQSession(session)) return
+    currentUsageActive = true
+  })
+  options.ctx.on('chatluna/model-usage', (usage) => {
+    rememberCurrentWebQQUsage(usage)
+  })
   const recordWebQQRecall = async (session: Session | undefined) => {
     if (!session || (session.bot.platform || session.platform) !== 'onebot') return
     if (!isSelectedWebQQSession(session)) return

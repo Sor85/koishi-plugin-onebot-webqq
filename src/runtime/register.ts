@@ -35,8 +35,6 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     historyLimit,
     logger,
     getThinkingDurationMs: capsuleRuntime.getThinkingDurationMs,
-    getThinkingUsage: capsuleRuntime.getThinkingUsage,
-    getThinkingUsageSource: capsuleRuntime.getThinkingUsageSource,
     getStorageScope: capsuleRuntime.getStorageScope,
     readBotState: capsuleRuntime.readBotState,
     broadcastBotState: capsuleRuntime.broadcastBotState,

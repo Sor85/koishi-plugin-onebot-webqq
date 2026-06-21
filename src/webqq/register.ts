@@ -16,7 +16,7 @@ import {
 import {
   chatCapsuleStorageTable,
 } from './storage/schema'
-import type { WebQQMessage, WebQQNotice } from './types'
+import type { WebQQNotice } from './types'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 
@@ -29,8 +29,6 @@ export function registerWebQQ(options: {
   historyLimit: number
   logger?: DebugLogger
   getThinkingDurationMs: () => number
-  getThinkingUsage: () => NonNullable<WebQQMessage['thinking']>['usage'] | undefined
-  getThinkingUsageSource: () => string | undefined
   getStorageScope: () => string | undefined
   readBotState: () => OneBotRobotState
   broadcastBotState: (botState?: OneBotRobotState) => void
@@ -44,8 +42,6 @@ export function registerWebQQ(options: {
     historyLimit,
     logger,
     getThinkingDurationMs,
-    getThinkingUsage,
-    getThinkingUsageSource,
     getStorageScope,
     readBotState,
     broadcastBotState,
@@ -69,8 +65,6 @@ export function registerWebQQ(options: {
     consoleAuthOptions,
     logger,
     getThinkingDurationMs,
-    getThinkingUsage,
-    getThinkingUsageSource,
     getStorageScope,
   })
 
