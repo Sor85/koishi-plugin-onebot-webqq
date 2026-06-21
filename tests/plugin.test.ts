@@ -1935,6 +1935,10 @@ describe('chat capsule plugin wiring', () => {
 
   it('exports a Config schema for backend options', () => {
     expect(plugin.Config).toBeDefined()
+    expect(configSource).toContain("description('小胶囊设置')")
+    expect(configSource).toContain("description('WebQQ 设置')")
+    expect(configSource).not.toContain("description('界面外观')")
+    expect(configSource).not.toContain("description('消息显示')")
     expect(configSource).toContain('webQQTheme?:')
     expect(configSource).toContain("Schema.const('fresh').description('清爽')")
     expect(configSource).toContain("Schema.const('frosted').description('毛玻璃')")

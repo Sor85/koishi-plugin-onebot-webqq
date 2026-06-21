@@ -53,6 +53,11 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('历史与缓存'),
 
   Schema.object({
+    useCompactCapsuleShadow: Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影'),
+    showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
+  }).description('小胶囊设置'),
+
+  Schema.object({
     webQQTheme: Schema.union([
       Schema.const('fresh').description('清爽'),
       Schema.const('frosted').description('毛玻璃'),
@@ -68,10 +73,6 @@ export const Config: Schema<Config> = Schema.intersect([
       Schema.const('dark').description('暗色'),
     ]).default('auto').role('radio').description('WebQQ 颜色模式'),
     webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 主题色'),
-    useCompactCapsuleShadow: Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影'),
-  }).description('界面外观'),
-
-  Schema.object({
     webQQMarkRecalledMessages: Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息'),
     hideWebQQGroupLevel: Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标'),
     showWebQQAffinity: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度'),
@@ -80,8 +81,7 @@ export const Config: Schema<Config> = Schema.intersect([
     showWebQQThinkingTokens: Schema.boolean().default(true).description('在 WebQQ 中显示 ChatLuna 输入/输出 token，使用主插件时需关闭`showWebQQCharacterThinking`才能正常显示'),
     showWebQQThinkingTiming: Schema.boolean().default(true).description('在 WebQQ 中显示 ChatLuna TTFT、TPS 和 Total，使用主插件时需关闭`showWebQQCharacterThinking`才能正常显示'),
     webQQAffinityScopeId: Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用'),
-    showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
-  }).description('消息显示'),
+  }).description('WebQQ 设置'),
 
   Schema.object({
     onebotMockBotCount: Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动'),

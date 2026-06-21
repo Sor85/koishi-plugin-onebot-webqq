@@ -55,22 +55,23 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 - `webQQImageCacheLimitMB`：图片代理内存缓存总上限，默认 100 MB
 - `webQQImageCacheItemLimitMB`：单张图片写入内存缓存的大小上限，默认 10 MB
 
-### 界面外观
+### 小胶囊设置
+
+- `useCompactCapsuleShadow`：使用较窄的小胶囊阴影，默认开启
+- `showWebQQCapsuleUnread`：在右下角胶囊 bot 头像上显示 WebQQ 总未读数
+
+### WebQQ 设置
 
 - `webQQTheme`：清爽或毛玻璃主题
 - `webQQChatStyle`：TIM 或 QQ 聊天页面样式
 - `webQQTimBubbleTail`：显示 TIM 气泡小尖角，默认开启
 - `webQQColorMode`：自动、明亮或暗色模式
 - `webQQAccentColor`：WebQQ 主题色
-
-### 消息显示
-
 - `webQQMarkRecalledMessages`：保留被撤回消息并显示删除线，关闭后显示撤回事件并移除原消息
 - `hideWebQQGroupLevel`：隐藏群等级徽标
 - `showWebQQAffinity`：在用户昵称旁显示 ChatLuna 好感度
 - `showWebQQRelationship`：在用户昵称旁显示 ChatLuna 关系
 - `webQQAffinityScopeId`：指定 ChatLuna 好感度插件的 scopeId
-- `showWebQQCapsuleUnread`：在右下角胶囊 bot 头像上显示 WebQQ 总未读数
 
 ### 开发者选项
 
