@@ -74,7 +74,7 @@ WebQQ 观察窗的大致 UI 设计参考自 [LLBot](https://github.com/LLOneBot/
 
 ### 开发者选项
 
-- `debug`：显示前端调试信息
+- `debug`：显示调试信息
 
 ## 使用方式
 

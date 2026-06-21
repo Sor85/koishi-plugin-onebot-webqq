@@ -85,6 +85,6 @@ export const Config: Schema<Config> = Schema.intersect([
 
   Schema.object({
     onebotMockBotCount: Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动'),
-    debug: Schema.boolean().default(false).description('显示前端调试信息'),
+    debug: Schema.boolean().default(false).description('显示调试信息'),
   }).description('开发者选项'),
 ])
