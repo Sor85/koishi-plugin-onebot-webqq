@@ -104,6 +104,9 @@ export function registerCapsuleChatLunaActivity(options: {
       conversationId: usage.context?.conversationId,
       inputTokens: usage.usageMetadata?.input_tokens,
       outputTokens: usage.usageMetadata?.output_tokens,
+      ttftMs: usage.timing?.ttftMs,
+      totalMs: usage.timing?.totalMs,
+      tps: usage.timing?.tps,
     })
     if (!changed) return
     logSnapshot('model-usage')

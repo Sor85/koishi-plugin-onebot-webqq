@@ -1184,6 +1184,11 @@ describe('chat capsule styles', () => {
   it('keeps completed WebQQ thinking usage groups spaced from each other and the duration', () => {
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage-icon.is-output')).toContain('margin-left: 4px')
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('margin-right: 8px')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('gap: 6px')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-usage-group')).toContain('gap: 2px')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-usage-group.is-timing')).toContain('gap: 6px')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-metric')).toContain('white-space: nowrap')
+    expect(style).not.toContain('.onebot-webqq-webqq__thinking-metric strong')
   })
 
   it('aligns completed WebQQ thinking after outgoing bubbles instead of the avatar edge', () => {

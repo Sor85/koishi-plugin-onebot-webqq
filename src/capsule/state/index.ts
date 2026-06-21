@@ -180,7 +180,7 @@ export function recordConversationActivity(
   }
 }
 
-// 记录当前 ChatLuna 模型调用的 token 用量。
+// 记录当前 ChatLuna 模型调用的 token 用量和 timing 指标。
 export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsageInput) {
   const state = getState(capsule)
   const conversation = state.current?.conversation
@@ -192,7 +192,13 @@ export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsage
   ) {
     return false
   }
-  if (input.inputTokens == null && input.outputTokens == null) return false
+  if (
+    input.inputTokens == null &&
+    input.outputTokens == null &&
+    input.ttftMs == null &&
+    input.totalMs == null &&
+    input.tps == null
+  ) return false
   state.current = {
     ...state.current,
     conversation: {
@@ -200,6 +206,15 @@ export function recordModelUsage(capsule: CapsuleState, input: CapsuleModelUsage
       usage: {
         inputTokens: input.inputTokens ?? conversation.usage?.inputTokens ?? 0,
         outputTokens: input.outputTokens ?? conversation.usage?.outputTokens ?? 0,
+        ...(input.ttftMs != null || conversation.usage?.ttftMs != null ? {
+          ttftMs: input.ttftMs ?? conversation.usage?.ttftMs,
+        } : {}),
+        ...(input.totalMs != null || conversation.usage?.totalMs != null ? {
+          totalMs: input.totalMs ?? conversation.usage?.totalMs,
+        } : {}),
+        ...(input.tps != null || conversation.usage?.tps != null ? {
+          tps: input.tps ?? conversation.usage?.tps,
+        } : {}),
       },
     },
   }

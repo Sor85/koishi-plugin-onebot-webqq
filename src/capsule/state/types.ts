@@ -31,6 +31,9 @@ export interface CapsuleModelUsageInput {
   conversationId?: string
   inputTokens?: number
   outputTokens?: number
+  ttftMs?: number
+  totalMs?: number
+  tps?: number
 }
 
 export interface CapsuleSnapshot {
@@ -54,6 +57,9 @@ export interface CapsuleSnapshot {
     usage?: {
       inputTokens: number
       outputTokens: number
+      ttftMs?: number
+      totalMs?: number
+      tps?: number
     }
     thinkingDurationMs?: number
     timestamp: number

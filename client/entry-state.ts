@@ -6,6 +6,8 @@ import {
   showWebQQAffinity,
   showWebQQCapsuleUnread,
   showWebQQRelationship,
+  showWebQQThinkingTiming,
+  showWebQQThinkingTokens,
   useBotAvatarThemeColor,
   useCompactCapsuleShadow,
   webQQAccentColor,
@@ -38,6 +40,8 @@ export function resetWebQQClientState() {
   showWebQQAffinity.value = false
   showWebQQCapsuleUnread.value = true
   showWebQQRelationship.value = false
+  showWebQQThinkingTokens.value = true
+  showWebQQThinkingTiming.value = true
   useBotAvatarThemeColor.value = false
   useCompactCapsuleShadow.value = true
   webQQOpen.value = false

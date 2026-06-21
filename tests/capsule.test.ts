@@ -405,6 +405,8 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain('showWebQQAffinity?: boolean')
     expect(clientEntry).toContain('showWebQQRelationship?: boolean')
+    expect(clientEntry).toContain('showWebQQThinkingTokens?: boolean')
+    expect(clientEntry).toContain('showWebQQThinkingTiming?: boolean')
     expect(clientEntry).toContain('showWebQQCapsuleUnread?: boolean')
     expect(clientEntry).toContain("webQQTheme.value = data?.value?.webQQTheme || 'fresh'")
     expect(clientEntry).toContain("webQQChatStyle.value = data?.value?.webQQChatStyle || 'telegram'")
@@ -418,6 +420,8 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true')
     expect(clientEntry).toContain('showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false')
     expect(clientEntry).toContain('showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false')
+    expect(clientEntry).toContain('showWebQQThinkingTokens.value = data?.value?.showWebQQThinkingTokens ?? true')
+    expect(clientEntry).toContain('showWebQQThinkingTiming.value = data?.value?.showWebQQThinkingTiming ?? true')
     expect(clientEntry).toContain('showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true')
   })
 

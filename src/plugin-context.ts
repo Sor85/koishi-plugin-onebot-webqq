@@ -83,6 +83,12 @@ export interface ChatLunaModelUsage {
   usageMetadata?: {
     input_tokens?: number
     output_tokens?: number
+    total_tokens?: number
+  }
+  timing?: {
+    ttftMs?: number
+    totalMs?: number
+    tps?: number
   }
 }
 

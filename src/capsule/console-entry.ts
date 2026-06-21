@@ -38,6 +38,8 @@ export function registerConsoleEntry(
       hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? true,
       showWebQQAffinity: config.showWebQQAffinity ?? false,
       showWebQQRelationship: config.showWebQQRelationship ?? false,
+      showWebQQThinkingTokens: config.showWebQQThinkingTokens ?? true,
+      showWebQQThinkingTiming: config.showWebQQThinkingTiming ?? true,
       showWebQQCapsuleUnread: config.showWebQQCapsuleUnread ?? true,
       webQQStorageBackend: config.webQQStorageBackend ?? 'koishi',
     }

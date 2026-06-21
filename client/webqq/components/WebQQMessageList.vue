@@ -211,22 +211,35 @@
           @click="toggleThinking(index)"
         >
           <span
-            v-if="getThinkingMessage(index)?.thinking.usage"
+            v-if="shouldShowThinkingUsage(index)"
             class="onebot-webqq-webqq__thinking-usage"
-            aria-label="本次 token 用量"
+            aria-label="本次 ChatLuna 调用指标"
           >
-            <svg class="onebot-webqq-webqq__thinking-usage-icon is-input" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 20V8"></path>
-              <path d="m7 13 5-5 5 5"></path>
-              <path d="M5 4h14"></path>
-            </svg>
-            <span>{{ getThinkingMessage(index)?.thinking.usage?.inputTokens }}</span>
-            <svg class="onebot-webqq-webqq__thinking-usage-icon is-output" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 4v12"></path>
-              <path d="m7 11 5 5 5-5"></path>
-              <path d="M5 20h14"></path>
-            </svg>
-            <span>{{ getThinkingMessage(index)?.thinking.usage?.outputTokens }}</span>
+            <span v-if="shouldShowThinkingTokens(index)" class="onebot-webqq-webqq__thinking-usage-group">
+              <svg class="onebot-webqq-webqq__thinking-usage-icon is-input" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20V8"></path>
+                <path d="m7 13 5-5 5 5"></path>
+                <path d="M5 4h14"></path>
+              </svg>
+              <span>{{ getThinkingMessage(index)?.thinking.usage?.inputTokens }}</span>
+              <svg class="onebot-webqq-webqq__thinking-usage-icon is-output" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v12"></path>
+                <path d="m7 11 5 5 5-5"></path>
+                <path d="M5 20h14"></path>
+              </svg>
+              <span>{{ getThinkingMessage(index)?.thinking.usage?.outputTokens }}</span>
+            </span>
+            <span v-if="shouldShowThinkingTiming(index)" class="onebot-webqq-webqq__thinking-usage-group is-timing">
+              <span v-if="getThinkingMessage(index)?.thinking.usage?.ttftMs != null" class="onebot-webqq-webqq__thinking-metric">
+                TTFT {{ formatThinkingMetricDuration(getThinkingMessage(index)?.thinking.usage?.ttftMs) }}
+              </span>
+              <span v-if="getThinkingMessage(index)?.thinking.usage?.tps != null" class="onebot-webqq-webqq__thinking-metric">
+                TPS {{ formatThinkingTps(getThinkingMessage(index)?.thinking.usage?.tps) }}
+              </span>
+              <span v-if="getThinkingMessage(index)?.thinking.usage?.totalMs != null" class="onebot-webqq-webqq__thinking-metric">
+                Total {{ formatThinkingMetricDuration(getThinkingMessage(index)?.thinking.usage?.totalMs) }}
+              </span>
+            </span>
           </span>
           <span>{{ getThinkingDurationText(index) }}</span>
           <svg :class="['onebot-webqq-webqq__thinking-chevron', { 'is-expanded': isThinkingMessageExpanded(index) }]" viewBox="0 0 16 16" aria-hidden="true">
@@ -277,6 +290,8 @@ const props = defineProps<{
   showWebQQAffinity: boolean
   showWebQQRelationship: boolean
   hideWebQQGroupLevel: boolean
+  showWebQQThinkingTokens: boolean
+  showWebQQThinkingTiming: boolean
   isBotThinkingMessage: (message: WebQQMessage) => boolean
   getMessageClusterClass: (index: number) => string
   isMergedMessage: (index: number) => boolean
@@ -434,6 +449,34 @@ function isThinkingMessageExpanded(index: number) {
 function getThinkingDurationText(index: number) {
   const message = getThinkingMessage(index)
   return message ? props.formatThinkingDuration(message.thinking.durationMs) : ''
+}
+
+function hasThinkingTiming(message: WebQQThinkingMessage | undefined) {
+  const usage = message?.thinking.usage
+  return usage?.ttftMs != null || usage?.totalMs != null || usage?.tps != null
+}
+
+function shouldShowThinkingTokens(index: number) {
+  return props.showWebQQThinkingTokens && !!getThinkingMessage(index)?.thinking.usage
+}
+
+function shouldShowThinkingTiming(index: number) {
+  return props.showWebQQThinkingTiming && hasThinkingTiming(getThinkingMessage(index))
+}
+
+function shouldShowThinkingUsage(index: number) {
+  return shouldShowThinkingTokens(index) || shouldShowThinkingTiming(index)
+}
+
+function formatThinkingMetricDuration(value: number | undefined) {
+  if (value == null) return ''
+  if (value < 1000) return `${Math.round(value)}ms`
+  return `${(value / 1000).toFixed(1)}s`
+}
+
+function formatThinkingTps(value: number | undefined) {
+  if (value == null) return ''
+  return `${value.toFixed(value < 10 ? 1 : 0)}/s`
 }
 
 function readMessageRowRects() {

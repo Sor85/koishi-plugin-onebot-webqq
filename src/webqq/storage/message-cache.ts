@@ -189,12 +189,25 @@ function readWebQQStoredMessage(value: unknown): WebQQMessage | undefined {
     const content = readStringField(value.thinking, 'content')
     const durationMs = readNumberField(value.thinking, 'durationMs')
     if (content != null && durationMs != null) {
-      const inputTokens = isRecord(value.thinking.usage) ? readNumberField(value.thinking.usage, 'inputTokens') : undefined
-      const outputTokens = isRecord(value.thinking.usage) ? readNumberField(value.thinking.usage, 'outputTokens') : undefined
+      const usage = isRecord(value.thinking.usage) ? value.thinking.usage : undefined
+      const inputTokens = usage ? readNumberField(usage, 'inputTokens') : undefined
+      const outputTokens = usage ? readNumberField(usage, 'outputTokens') : undefined
+      const ttftMs = usage ? readNumberField(usage, 'ttftMs') : undefined
+      const totalMs = usage ? readNumberField(usage, 'totalMs') : undefined
+      const tps = usage ? readNumberField(usage, 'tps') : undefined
+      const hasUsage = inputTokens != null || outputTokens != null || ttftMs != null || totalMs != null || tps != null
       message.thinking = {
         content,
         durationMs,
-        ...(inputTokens != null && outputTokens != null ? { usage: { inputTokens, outputTokens } } : {}),
+        ...(hasUsage ? {
+          usage: {
+            inputTokens: inputTokens ?? 0,
+            outputTokens: outputTokens ?? 0,
+            ...(ttftMs != null ? { ttftMs } : {}),
+            ...(totalMs != null ? { totalMs } : {}),
+            ...(tps != null ? { tps } : {}),
+          },
+        } : {}),
       }
     }
   }

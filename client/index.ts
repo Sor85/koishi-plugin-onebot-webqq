@@ -4,7 +4,7 @@ import ClientShell from './ClientShell.vue'
 import { capsule, type CapsuleData } from './capsule/state'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
-import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './webqq/settings'
+import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './webqq/settings'
 import './style.scss'
 
 interface ClientData {
@@ -24,6 +24,8 @@ interface ClientData {
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
   showWebQQRelationship?: boolean
+  showWebQQThinkingTokens?: boolean
+  showWebQQThinkingTiming?: boolean
   showWebQQCapsuleUnread?: boolean
 }
 
@@ -144,6 +146,8 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   hideWebQQGroupLevel.value = data?.value?.hideWebQQGroupLevel ?? true
   showWebQQAffinity.value = data?.value?.showWebQQAffinity ?? false
   showWebQQRelationship.value = data?.value?.showWebQQRelationship ?? false
+  showWebQQThinkingTokens.value = data?.value?.showWebQQThinkingTokens ?? true
+  showWebQQThinkingTiming.value = data?.value?.showWebQQThinkingTiming ?? true
   showWebQQCapsuleUnread.value = data?.value?.showWebQQCapsuleUnread ?? true
   updateWebQQAvatarThemeColor(capsule.value)
 

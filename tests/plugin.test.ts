@@ -1935,6 +1935,10 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度')")
     expect(configSource).toContain("showWebQQRelationship?: boolean")
     expect(configSource).toContain("Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 关系')")
+    expect(configSource).toContain("showWebQQThinkingTokens?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ think 旁显示 ChatLuna 输入/输出 token')")
+    expect(configSource).toContain("showWebQQThinkingTiming?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('在 WebQQ think 旁显示 ChatLuna TTFT、TPS 和 Total')")
     expect(configSource).toContain("webQQAffinityScopeId?: string")
     expect(configSource).toContain("Schema.string().description('ChatLuna 好感度插件的 scopeId，留空且当前只有一个 scopeId 时自动使用')")
     expect(configSource).toContain("showWebQQCapsuleUnread?: boolean")
@@ -1985,6 +1989,8 @@ describe('chat capsule plugin wiring', () => {
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
       showWebQQRelationship: false,
+      showWebQQThinkingTokens: true,
+      showWebQQThinkingTiming: true,
       showWebQQCapsuleUnread: true,
       webQQStorageBackend: 'koishi',
       webQQMessageCacheLimit: 100,
@@ -3593,6 +3599,8 @@ describe('chat capsule plugin wiring', () => {
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
       showWebQQRelationship: false,
+      showWebQQThinkingTokens: true,
+      showWebQQThinkingTiming: true,
       showWebQQCapsuleUnread: true,
       webQQStorageBackend: 'koishi',
       webQQMessageCacheLimit: 100,
@@ -3612,6 +3620,8 @@ describe('chat capsule plugin wiring', () => {
       hideWebQQGroupLevel?: boolean
       showWebQQAffinity?: boolean
       showWebQQRelationship?: boolean
+      showWebQQThinkingTokens?: boolean
+      showWebQQThinkingTiming?: boolean
       webQQAffinityScopeId?: string
       showWebQQCapsuleUnread?: boolean
       webQQStorageBackend?: 'browser' | 'koishi'
@@ -3630,6 +3640,8 @@ describe('chat capsule plugin wiring', () => {
       hideWebQQGroupLevel: true,
       showWebQQAffinity: true,
       showWebQQRelationship: true,
+      showWebQQThinkingTokens: false,
+      showWebQQThinkingTiming: false,
       webQQAffinityScopeId: 'cat',
       showWebQQCapsuleUnread: false,
       webQQStorageBackend: 'koishi',
@@ -3651,6 +3663,8 @@ describe('chat capsule plugin wiring', () => {
       hideWebQQGroupLevel: true,
       showWebQQAffinity: true,
       showWebQQRelationship: true,
+      showWebQQThinkingTokens: false,
+      showWebQQThinkingTiming: false,
       showWebQQCapsuleUnread: false,
       webQQStorageBackend: 'koishi',
       webQQMessageCacheLimit: 50,
@@ -3950,11 +3964,19 @@ describe('chat capsule plugin wiring', () => {
         output_tokens: 34,
         total_tokens: 46,
       },
+      timing: {
+        ttftMs: 120,
+        totalMs: 2400,
+        tps: 14.2,
+      },
     })
 
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
       inputTokens: 12,
       outputTokens: 34,
+      ttftMs: 120,
+      totalMs: 2400,
+      tps: 14.2,
     })
 
     listeners['chatluna/model-usage'][0]({
@@ -3972,6 +3994,9 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
       inputTokens: 12,
       outputTokens: 34,
+      ttftMs: 120,
+      totalMs: 2400,
+      tps: 14.2,
     })
 
     listeners['chatluna/model-usage'][0]({
@@ -3989,6 +4014,9 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast.mock.calls.at(-1)?.[1]?.conversation?.usage).toEqual({
       inputTokens: 12,
       outputTokens: 34,
+      ttftMs: 120,
+      totalMs: 2400,
+      tps: 14.2,
     })
   })
 
@@ -4167,12 +4195,17 @@ describe('chat capsule plugin wiring', () => {
       await listeners['chatluna_character/message_collect'][0](session, [{ id: '30000', name: 'Alice' }])
       listeners['chatluna/model-usage'][0]({
         source: 'chatluna-character',
-        usageMetadata: {
-          input_tokens: 12,
-          output_tokens: 34,
-          total_tokens: 46,
-        },
-      })
+      usageMetadata: {
+        input_tokens: 12,
+        output_tokens: 34,
+        total_tokens: 46,
+      },
+      timing: {
+        ttftMs: 180,
+        totalMs: 4200,
+        tps: 8.1,
+      },
+    })
       listeners['chatluna/model-usage'][0]({
         source: 'extension-agent',
         context: {
@@ -4225,6 +4258,9 @@ describe('chat capsule plugin wiring', () => {
             usage: {
               inputTokens: 12,
               outputTokens: 34,
+              ttftMs: 180,
+              totalMs: 4200,
+              tps: 8.1,
             },
           },
         }),
@@ -4240,6 +4276,9 @@ describe('chat capsule plugin wiring', () => {
             usage: {
               inputTokens: 12,
               outputTokens: 34,
+              ttftMs: 180,
+              totalMs: 4200,
+              tps: 8.1,
             },
           },
         }),

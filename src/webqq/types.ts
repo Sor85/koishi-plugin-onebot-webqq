@@ -83,6 +83,9 @@ export interface WebQQMessage {
     usage?: {
       inputTokens: number
       outputTokens: number
+      ttftMs?: number
+      totalMs?: number
+      tps?: number
     }
   }
   elements: WebQQMessageElement[]

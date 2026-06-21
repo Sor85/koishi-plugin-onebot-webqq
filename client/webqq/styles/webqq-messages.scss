@@ -536,7 +536,10 @@
 .onebot-webqq-webqq__thinking-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 2px;
+  max-width: 100%;
   margin-top: 4px;
   padding: 0;
   border: 0;
@@ -550,13 +553,30 @@
 .onebot-webqq-webqq__thinking-usage {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-right: 8px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
   transition: opacity 0.16s ease, visibility 0.16s ease;
+}
+
+.onebot-webqq-webqq__thinking-usage-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.onebot-webqq-webqq__thinking-usage-group.is-timing {
+  gap: 6px;
+}
+
+.onebot-webqq-webqq__thinking-metric {
+  white-space: nowrap;
 }
 
 .onebot-webqq-webqq__thinking-toggle:hover .onebot-webqq-webqq__thinking-usage,

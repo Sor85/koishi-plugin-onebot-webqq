@@ -229,12 +229,25 @@ function normalizeWebQQMessage(value: unknown): WebQQMessage | undefined {
     const content = readStringField(value.thinking, 'content')
     const durationMs = readNumber(value.thinking.durationMs)
     if (content != null && durationMs != null) {
-      const inputTokens = isRecord(value.thinking.usage) ? readNumber(value.thinking.usage.inputTokens) : undefined
-      const outputTokens = isRecord(value.thinking.usage) ? readNumber(value.thinking.usage.outputTokens) : undefined
+      const usage = isRecord(value.thinking.usage) ? value.thinking.usage : undefined
+      const inputTokens = usage ? readNumber(usage.inputTokens) : undefined
+      const outputTokens = usage ? readNumber(usage.outputTokens) : undefined
+      const ttftMs = usage ? readNumber(usage.ttftMs) : undefined
+      const totalMs = usage ? readNumber(usage.totalMs) : undefined
+      const tps = usage ? readNumber(usage.tps) : undefined
+      const hasUsage = inputTokens != null || outputTokens != null || ttftMs != null || totalMs != null || tps != null
       message.thinking = {
         content,
         durationMs,
-        ...(inputTokens != null && outputTokens != null ? { usage: { inputTokens, outputTokens } } : {}),
+        ...(hasUsage ? {
+          usage: {
+            inputTokens: inputTokens ?? 0,
+            outputTokens: outputTokens ?? 0,
+            ...(ttftMs != null ? { ttftMs } : {}),
+            ...(totalMs != null ? { totalMs } : {}),
+            ...(tps != null ? { tps } : {}),
+          },
+        } : {}),
       }
     }
   }

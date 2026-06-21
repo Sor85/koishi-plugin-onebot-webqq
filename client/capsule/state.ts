@@ -21,6 +21,9 @@ export interface CapsuleData {
     usage?: {
       inputTokens: number
       outputTokens: number
+      ttftMs?: number
+      totalMs?: number
+      tps?: number
     }
     thinkingDurationMs?: number
     timestamp: number
