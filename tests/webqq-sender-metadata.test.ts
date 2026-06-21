@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata } from '../client/webqq-sender-metadata'
-import type { WebQQMessage } from '../client/state'
+import { applyCachedWebQQSenderMetadata, rememberWebQQSenderMetadata } from '../client/webqq/sender-metadata'
+import type { WebQQMessage } from '../client/webqq/types'
 
 function createMessage(message: Partial<WebQQMessage>): WebQQMessage {
   return {

@@ -1,7 +1,7 @@
 import type { Entry } from '@koishijs/console'
 import type { Session } from 'koishi'
-import type { ChatLunaMessage } from './chatluna/message-input'
-import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './chatluna/thinking'
+import type { ChatLunaMessage } from './capsule/message-input'
+import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './webqq/thinking'
 import type {
   WebQQContacts,
   WebQQGroupInfo,
@@ -10,15 +10,17 @@ import type {
   WebQQMessageQuery,
   WebQQNotice,
   WebQQNoticeAction,
-  OneBotRobotState,
   WebQQRecordTranscriptionQuery,
-} from './onebot'
-import type { WebQQImageServer } from './webqq/image-url-resolver'
+} from './webqq/types'
+import type { OneBotRobotState } from './onebot/types'
+import type { WebQQImageServer } from './webqq/media/image-url-resolver'
 import type {
   WebQQMessageCachePayload,
   WebQQMessageCacheQuery,
+} from './webqq/storage/message-cache'
+import type {
   WebQQStoredState,
-} from './webqq/storage'
+} from './webqq/storage/state'
 
 export interface ConsoleEvents {
   'onebot-webqq/webqq/contacts': () => Promise<WebQQContacts>

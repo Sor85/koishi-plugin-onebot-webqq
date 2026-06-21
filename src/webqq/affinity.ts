@@ -1,6 +1,6 @@
 import type { Config } from '../config'
-import type { WebQQMessage } from '../onebot'
-import { readRecordNumber, readRecordText } from '../shared/structured-text'
+import type { WebQQMessage } from './types'
+import { isRecord, readRecordText } from '../shared/record'
 
 interface WebQQAffinityContext {
   database?: {
@@ -39,6 +39,15 @@ const defaultWebQQRelationshipLevels: WebQQRelationshipLevel[] = [
   { min: 121, max: 180, relation: '友好' },
   { min: 181, max: 9999, relation: '亲密' },
 ]
+
+function readRecordNumber(source: unknown, key: string): number | undefined {
+  if (!isRecord(source)) return
+  const value = source[key]
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined
+  if (typeof value !== 'string' || !value.trim()) return
+  const number = Number(value)
+  return Number.isFinite(number) ? number : undefined
+}
 
 function readWebQQAffinityRecord(source: unknown): WebQQAffinityRecord | undefined {
   const scopeId = readRecordText(source, ['scopeId', 'scope_id'])

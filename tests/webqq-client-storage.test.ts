@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { WebQQMessage } from '../client/state'
+import type { WebQQMessage } from '../client/webqq/types'
 
 const clientMock = vi.hoisted(() => ({
   send: vi.fn(async () => undefined),
@@ -9,7 +9,7 @@ vi.mock('@koishijs/client', () => ({
   send: clientMock.send,
 }))
 
-const { saveCachedWebQQMessages } = await import('../client/stores/webqq-storage')
+const { saveCachedWebQQMessages } = await import('../client/webqq/storage/webqq-storage')
 
 function createWebQQMessage(id: string): WebQQMessage {
   return {

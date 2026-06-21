@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Config } from '../src/config'
-import { loadKoishiWebQQMessageCache } from '../src/webqq/storage'
+import { loadKoishiWebQQMessageCache } from '../src/webqq/storage/message-cache'
 
 describe('webqq koishi storage', () => {
   it('filters cached messages that do not satisfy WebQQMessage fields', async () => {

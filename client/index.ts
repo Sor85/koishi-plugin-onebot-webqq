@@ -1,7 +1,10 @@
 import { Context, receive, withProxy } from '@koishijs/client'
 import type { Ref } from 'vue'
-import Capsule from './Capsule.vue'
-import { availableBots, capsule, debug, hideWebQQGroupLevel, resetWebQQClientState, selectedBotSelfId, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type CapsuleData, type OneBotRobotState, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './state'
+import ClientShell from './ClientShell.vue'
+import { capsule, type CapsuleData } from './capsule/state'
+import { debug, resetWebQQClientState } from './entry-state'
+import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
+import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, useBotAvatarThemeColor, useCompactCapsuleShadow, webQQAccentColor, webQQAvatarAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './webqq/settings'
 import './style.scss'
 
 interface ClientData {
@@ -176,7 +179,7 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
 
   ctx.slot({
     type: 'global',
-    component: Capsule,
+    component: ClientShell,
     order: 100,
   })
 }

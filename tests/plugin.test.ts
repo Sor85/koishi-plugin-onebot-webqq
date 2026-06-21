@@ -3,34 +3,34 @@ import { fileURLToPath } from 'node:url'
 import type { Session } from 'koishi'
 import { describe, expect, it, vi } from 'vitest'
 import type { ChatCapsuleContext, ChatLunaCharacterService, ConsoleEvents, ConsoleService, DatabaseService } from '../src/plugin-context'
-import type { CapsuleSnapshot } from '../src/state'
-import type { WebQQMessage, WebQQMessageElement } from '../src/onebot'
-import { summarizeWebQQElements } from '../src/webqq/live-elements'
-import { createWebQQLiveMessage } from '../src/webqq/live-message'
-import { createWebQQImageUrlResolver, getImageContentType } from '../src/webqq/image-url-resolver'
+import type { CapsuleSnapshot } from '../src/capsule/state'
+import type { WebQQMessage, WebQQMessageElement } from '../src/webqq/types'
+import { summarizeWebQQElements } from '../src/webqq/message-flow/live-elements'
+import { createWebQQLiveMessage } from '../src/webqq/message-flow/live-message'
+import { createWebQQImageUrlResolver, getImageContentType } from '../src/webqq/media/image-url-resolver'
+import { getWebQQUserAvatar } from '../src/webqq/display'
 import {
-  getWebQQUserAvatar,
   readBotProfile,
   readUserName,
   readWebQQPeer,
   readWebQQLiveDirection,
-} from '../src/webqq/session'
+} from '../src/webqq/message-flow/session'
 import {
   fillWebQQMessageSenderMetadata,
   readWebQQSenderMetadata,
   replaceWebQQMessageSenderMetadata,
-} from '../src/webqq/sender-metadata'
-import { readWebQQGroupSenderMetadata } from '../src/webqq/group-sender-metadata'
+} from '../src/webqq/sender/sender-metadata'
+import { readWebQQGroupSenderMetadata } from '../src/webqq/adapters/onebot/group-sender-metadata'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
-} from '../src/webqq/event-notices'
+} from '../src/webqq/notices/event-notices'
 import {
   applyWebQQReactionToLiveMessages,
   getWebQQLiveMessageKey,
   mergeWebQQLiveMessages,
-} from '../src/webqq/live-cache'
-import { createMessageInput } from '../src/chatluna/message-input'
+} from '../src/webqq/message-flow/live-cache'
+import { createMessageInput } from '../src/capsule/message-input'
 
 const dnsMock = vi.hoisted(() => ({
   lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
@@ -68,22 +68,27 @@ vi.mock('koishi', () => koishiMock)
 
 const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
-const chatlunaCharacterLockSource = await readFile(new URL('../src/chatluna/character-lock.ts', import.meta.url), 'utf8')
-const consoleEntrySource = await readFile(new URL('../src/console/entry.ts', import.meta.url), 'utf8')
+const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
+const runtimeRegisterSource = await readFile(new URL('../src/runtime/register.ts', import.meta.url), 'utf8')
+const capsuleRegisterSource = await readFile(new URL('../src/capsule/register.ts', import.meta.url), 'utf8')
+const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-activity.ts', import.meta.url), 'utf8')
+const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
+const consoleEntrySource = await readFile(new URL('../src/capsule/console-entry.ts', import.meta.url), 'utf8')
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
+const webqqRegisterSource = await readFile(new URL('../src/webqq/register.ts', import.meta.url), 'utf8')
 const webqqConsoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
-const chatlunaMessageInputSource = await readFile(new URL('../src/chatluna/message-input.ts', import.meta.url), 'utf8')
-const webqqLiveElementsSource = await readFile(new URL('../src/webqq/live-elements.ts', import.meta.url), 'utf8')
-const webqqLiveCacheSource = await readFile(new URL('../src/webqq/live-cache.ts', import.meta.url), 'utf8')
-const webqqLiveMessageSource = await readFile(new URL('../src/webqq/live-message.ts', import.meta.url), 'utf8')
-const webqqLiveRuntimeSource = await readFile(new URL('../src/webqq/live-runtime.ts', import.meta.url), 'utf8')
-const webqqLiveNoticesSource = await readFile(new URL('../src/webqq/live-notices.ts', import.meta.url), 'utf8')
-const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/live-reactions.ts', import.meta.url), 'utf8')
-const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/image-url-resolver.ts', import.meta.url), 'utf8')
-const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender-metadata.ts', import.meta.url), 'utf8')
-const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/group-sender-metadata.ts', import.meta.url), 'utf8')
-const webqqEventNoticesSource = await readFile(new URL('../src/webqq/event-notices.ts', import.meta.url), 'utf8')
-const webqqSessionSource = await readFile(new URL('../src/webqq/session.ts', import.meta.url), 'utf8')
+const chatlunaMessageInputSource = await readFile(new URL('../src/capsule/message-input.ts', import.meta.url), 'utf8')
+const webqqLiveElementsSource = await readFile(new URL('../src/webqq/message-flow/live-elements.ts', import.meta.url), 'utf8')
+const webqqLiveCacheSource = await readFile(new URL('../src/webqq/message-flow/live-cache.ts', import.meta.url), 'utf8')
+const webqqLiveMessageSource = await readFile(new URL('../src/webqq/message-flow/live-message.ts', import.meta.url), 'utf8')
+const webqqLiveRuntimeSource = await readFile(new URL('../src/webqq/message-flow/live-runtime.ts', import.meta.url), 'utf8')
+const webqqLiveNoticesSource = await readFile(new URL('../src/webqq/message-flow/live-notices.ts', import.meta.url), 'utf8')
+const webqqLiveReactionsSource = await readFile(new URL('../src/webqq/message-flow/live-reactions.ts', import.meta.url), 'utf8')
+const webqqImageUrlResolverSource = await readFile(new URL('../src/webqq/media/image-url-resolver.ts', import.meta.url), 'utf8')
+const webqqSenderMetadataSource = await readFile(new URL('../src/webqq/sender/sender-metadata.ts', import.meta.url), 'utf8')
+const webqqGroupSenderMetadataSource = await readFile(new URL('../src/webqq/adapters/onebot/group-sender-metadata.ts', import.meta.url), 'utf8')
+const webqqEventNoticesSource = await readFile(new URL('../src/webqq/notices/event-notices.ts', import.meta.url), 'utf8')
+const webqqSessionSource = await readFile(new URL('../src/webqq/message-flow/session.ts', import.meta.url), 'utf8')
 const pluginContextSource = await readFile(new URL('../src/plugin-context.ts', import.meta.url), 'utf8')
 
 type Listener = (...payload: any[]) => void
@@ -211,8 +216,23 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginContextSource).toContain('export interface ChatLunaModelUsage')
   })
 
+  it('keeps shared runtime dependency creation outside the plugin entry', () => {
+    expect(pluginSource).toContain("from './runtime/register'")
+    expect(pluginSource).not.toContain("from './runtime/create-runtime'")
+    expect(pluginSource).not.toContain('function normalizeOneBotSelfId(')
+    expect(pluginSource).not.toContain('createOneBotWebQQService(ctx')
+    expect(pluginSource).not.toContain('createWebQQImageUrlResolver(ctx')
+    expect(runtimeRegisterSource).toContain("from './create-runtime'")
+    expect(runtimeSource).toContain('export function createPluginRuntime')
+    expect(runtimeSource).toContain('createOneBotWebQQService(ctx')
+    expect(runtimeSource).toContain('createWebQQImageUrlResolver(ctx')
+  })
+
   it('keeps console entry data outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './console/entry'")
+    expect(pluginSource).not.toContain("from './capsule/register'")
+    expect(runtimeRegisterSource).toContain("from '../capsule/register'")
+    expect(pluginSource).not.toContain("from './capsule/console-entry'")
+    expect(capsuleRegisterSource).toContain("from './console-entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
     expect(pluginSource).not.toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'koishi'")
     expect(consoleEntrySource).toContain('export function registerConsoleEntry')
@@ -221,7 +241,10 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps WebQQ console listeners outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './webqq/console'")
+    expect(pluginSource).not.toContain("from './webqq/register'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/register'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/register'")
+    expect(webqqRegisterSource).toContain("from './console'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/contacts'")
     expect(pluginSource).not.toContain("console.addListener('onebot-webqq/webqq/messages'")
     expect(webqqConsoleSource).toContain('export function registerWebQQConsoleListeners')
@@ -232,7 +255,8 @@ describe('chat capsule plugin wiring', () => {
   })
 
   it('keeps ChatLuna character lock syncing outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './chatluna/character-lock'")
+    expect(pluginSource).not.toContain("from './capsule/character-lock'")
+    expect(capsuleRegisterSource).toContain("from './character-lock'")
     expect(pluginSource).not.toContain('service.acquireResponseLock = async')
     expect(pluginSource).not.toContain('service.releaseResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain('export function registerChatLunaCharacterLockSync')
@@ -241,8 +265,23 @@ describe('chat capsule plugin wiring', () => {
     expect(chatlunaCharacterLockSource).toContain("ctx.on('dispose'")
   })
 
+  it('keeps ChatLuna capsule activity outside the plugin entry', () => {
+    expect(pluginSource).not.toContain("from './capsule/chatluna-activity'")
+    expect(capsuleRegisterSource).toContain("from './chatluna-activity'")
+    expect(pluginSource).not.toContain("ctx.on('chatluna/before-chat'")
+    expect(pluginSource).not.toContain("ctx.on('chatluna/model-usage'")
+    expect(pluginSource).not.toContain("ctx.on('chatluna_character/message_collect'")
+    expect(chatlunaActivitySource).toContain('export function registerCapsuleChatLunaActivity')
+    expect(chatlunaActivitySource).toContain("ctx.on('chatluna/before-chat'")
+    expect(chatlunaActivitySource).toContain("ctx.on('chatluna/model-usage'")
+    expect(chatlunaActivitySource).toContain("ctx.on('chatluna_character/message_collect'")
+  })
+
   it('keeps WebQQ live runtime outside the plugin entry', () => {
-    expect(pluginSource).toContain("from './webqq/live-runtime'")
+    expect(pluginSource).not.toContain("from './webqq/register'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/register'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/register'")
+    expect(webqqRegisterSource).toContain("from './message-flow/live-runtime'")
     expect(pluginSource).not.toContain('const pendingWebQQThinking = new Map')
     expect(pluginSource).not.toContain('const liveSenderMetadata = new Map')
     expect(pluginSource).not.toContain('const broadcastWebQQLivePayload =')
@@ -264,6 +303,16 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqLiveReactionsSource).not.toContain('id: `reaction:${peer.type}:${peer.peerId}:${time}:${reaction.userId}:${reaction.messageId}`')
   })
 
+  it('keeps message runtime orchestration order in the runtime register module', () => {
+    expect(pluginSource).not.toContain("ctx.on('message'")
+    expect(capsuleRegisterSource).not.toContain("ctx.on('message'")
+    expect(runtimeRegisterSource).toContain("ctx.on('message'")
+    expect(runtimeRegisterSource.indexOf('capsuleRuntime.recordIncomingMessage(session)'))
+      .toBeLessThan(runtimeRegisterSource.indexOf('await liveRuntime.recordWebQQLiveMessage(session)'))
+    expect(runtimeRegisterSource.indexOf('await liveRuntime.recordWebQQLiveMessage(session)'))
+      .toBeLessThan(runtimeRegisterSource.indexOf("await capsuleRuntime.refreshIdleScheduleActivity('message-schedule', session)"))
+  })
+
   it('keeps WebQQ live element normalization outside the plugin entry', () => {
     const elements: WebQQMessageElement[] = [
       { type: 'quote', text: '引用内容' },
@@ -271,13 +320,13 @@ describe('chat capsule plugin wiring', () => {
       { type: 'card', title: '春日影', text: 'MyGO!!!!!' },
     ]
 
-    expect(pluginSource).not.toContain("from './webqq/live-elements'")
+    expect(pluginSource).not.toContain("from './webqq/message-flow/live-elements'")
     expect(webqqLiveMessageSource).toContain("from './live-elements'")
     expect(pluginSource).not.toContain('function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('async function normalizeLiveElement(')
     expect(webqqLiveElementsSource).toContain('export async function normalizeLiveElements(')
     expect(webqqLiveElementsSource).toContain('summarizeElements as summarizeWebQQElements')
-    expect(webqqLiveElementsSource).toContain("from './image-url-resolver'")
+    expect(webqqLiveElementsSource).toContain("from '../media/image-url-resolver'")
     expect(webqqImageUrlResolverSource).toContain('export function getImageContentType')
     expect(summarizeWebQQElements(elements)).toBe('[图片]春日影')
     expect(getImageContentType('cover.webp')).toBe('image/webp')
@@ -333,15 +382,15 @@ describe('chat capsule plugin wiring', () => {
       },
     })
 
-    expect(pluginSource).toContain("from './webqq/image-url-resolver'")
+    expect(runtimeSource).toContain("from '../webqq/media/image-url-resolver'")
     expect(pluginSource).not.toContain('function createWebQQImageUrlResolver(')
     expect(webqqImageUrlResolverSource).toContain('export function createWebQQImageUrlResolver')
-    expect(pluginSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
-    expect(pluginSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
-    expect(pluginSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
+    expect(runtimeSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
+    expect(runtimeSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
+    expect(runtimeSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
     expect(serverGet).toHaveBeenCalledWith('/onebot-webqq/webqq/image/:id', expect.any(Function))
 
-    const localImageFile = fileURLToPath(new URL('../src/webqq/image-url-resolver.ts', import.meta.url))
+    const localImageFile = fileURLToPath(new URL('../src/webqq/media/image-url-resolver.ts', import.meta.url))
     const firstUrl = resolver(localImageFile)
     expect(firstUrl).toMatch(/^\/onebot-webqq\/webqq\/image\//)
     expect(resolver(localImageFile)).toBe(firstUrl)
@@ -403,6 +452,127 @@ describe('chat capsule plugin wiring', () => {
       expect(secondCtx.set).toHaveBeenCalledWith('content-type', 'image/jpeg')
       expect(secondCtx.set).toHaveBeenCalledWith('cache-control', 'private, max-age=86400, immutable')
       expect(secondCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('refreshes WebQQ image proxy URL when the remote source returns 400', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const body = Uint8Array.from([1, 2, 3, 4])
+    const refresh = vi.fn(async () => 'https://example.com/fresh.jpg')
+    const fetchMock = vi.fn(async (url: string) => ({
+      ok: url === 'https://example.com/fresh.jpg',
+      status: url === 'https://example.com/fresh.jpg' ? 200 : 400,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+      },
+      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/expired.jpg', { refresh })
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://example.com/expired.jpg', { redirect: 'manual' })
+      expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://example.com/fresh.jpg', { redirect: 'manual' })
+      expect(routerCtx.status).toBe(200)
+      expect(routerCtx.set).toHaveBeenCalledWith('content-type', 'image/jpeg')
+      expect(routerCtx.body).toEqual(Buffer.from(body))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('limits WebQQ image proxy URL refreshes to three attempts per request', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const refreshTargets = [
+      'https://example.com/retry-1.jpg',
+      'https://example.com/retry-2.jpg',
+      'https://example.com/retry-3.jpg',
+    ]
+    let refreshIndex = 0
+    const refresh = vi.fn(async () => refreshTargets[refreshIndex++] || 'https://example.com/retry-extra.jpg')
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      headers: {
+        get: vi.fn(() => null),
+      },
+      arrayBuffer: async () => Uint8Array.from([]).buffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/expired.jpg', { refresh })
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(refresh).toHaveBeenCalledTimes(3)
+      expect(fetchMock).toHaveBeenCalledTimes(4)
+      expect(fetchMock).toHaveBeenLastCalledWith('https://example.com/retry-3.jpg', { redirect: 'manual' })
+      expect(routerCtx.status).toBe(400)
+      expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('does not refresh WebQQ image proxy URL when the remote source returns non-400 errors', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const resolver = createWebQQImageUrlResolver({
+      server: {
+        get: serverGet,
+      },
+    })
+    const refresh = vi.fn(async () => 'https://example.com/fresh.jpg')
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 500,
+      headers: {
+        get: vi.fn(() => null),
+      },
+      arrayBuffer: async () => Uint8Array.from([]).buffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = resolver('https://example.com/error.jpg', { refresh })
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      expect(refresh).not.toHaveBeenCalled()
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(routerCtx.status).toBe(500)
+      expect(routerCtx.body).toBeUndefined()
     } finally {
       vi.unstubAllGlobals()
     }
@@ -726,7 +896,6 @@ describe('chat capsule plugin wiring', () => {
   it('keeps WebQQ session display helpers outside the plugin entry', () => {
     const session = createSession() as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/session'")
     expect(pluginSource).not.toContain('function readWebQQPeer(')
     expect(webqqSessionSource).toContain('export function readWebQQPeer')
     expect(readBotProfile(session)).toMatchObject({
@@ -799,8 +968,8 @@ describe('chat capsule plugin wiring', () => {
       special_title: '闪亮头衔',
     })
 
-    expect(webqqLiveRuntimeSource).toContain("from './sender-metadata'")
-    expect(pluginSource).not.toContain("from './webqq/sender-metadata'")
+    expect(webqqLiveRuntimeSource).toContain("from '../sender/sender-metadata'")
+    expect(pluginSource).not.toContain("from './webqq/sender/sender-metadata'")
     expect(pluginSource).not.toContain('function readWebQQSenderMetadata(')
     expect(webqqSenderMetadataSource).toContain('export function readWebQQSenderMetadata')
     expect(metadata).toEqual({
@@ -834,7 +1003,10 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/group-sender-metadata'")
+    expect(pluginSource).not.toContain("from './webqq/adapters/onebot/group-sender-metadata'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
+    expect(runtimeSource).not.toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/adapters/onebot/group-sender-metadata'")
     expect(pluginSource).not.toContain('async function readWebQQGroupSenderMetadata(')
     expect(webqqGroupSenderMetadataSource).toContain('export async function readWebQQGroupSenderMetadata')
     await expect(readWebQQGroupSenderMetadata(session, '30000', true)).resolves.toEqual({
@@ -881,7 +1053,10 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './webqq/event-notices'")
+    expect(pluginSource).not.toContain("from './webqq/register'")
+    expect(capsuleRegisterSource).not.toContain("from '../webqq/register'")
+    expect(runtimeRegisterSource).toContain("from '../webqq/register'")
+    expect(webqqRegisterSource).toContain("from './notices/event-notices'")
     expect(pluginSource).not.toContain('function createWebQQFriendRequestNotice(')
     expect(webqqEventNoticesSource).toContain('export function createWebQQFriendRequestNotice')
     expect(createWebQQFriendRequestNotice(friendSession)).toMatchObject({
@@ -931,7 +1106,7 @@ describe('chat capsule plugin wiring', () => {
     }
 
     expect(webqqLiveRuntimeSource).toContain("from './live-cache'")
-    expect(pluginSource).not.toContain("from './webqq/live-cache'")
+    expect(pluginSource).not.toContain("from './webqq/message-flow/live-cache'")
     expect(pluginSource).not.toContain('function mergeWebQQMessages(')
     expect(webqqLiveCacheSource).toContain('export function mergeWebQQLiveMessages')
     expect(getWebQQLiveMessageKey({ type: 'group', peerId: '20000' })).toBe('group:20000')
@@ -1707,8 +1882,12 @@ describe('chat capsule plugin wiring', () => {
       },
     }) as unknown as Session
 
-    expect(pluginSource).toContain("from './chatluna/message-input'")
+    expect(pluginSource).not.toContain("from './capsule/message-input'")
+    expect(capsuleRegisterSource).toContain("from './message-input'")
     expect(pluginSource).not.toContain('function createMessageInput(')
+    expect(chatlunaMessageInputSource).not.toContain("from '../webqq")
+    expect(chatlunaActivitySource).not.toContain("from '../webqq")
+    expect(chatlunaCharacterLockSource).not.toContain("from '../webqq")
     expect(chatlunaMessageInputSource).toContain('export function createMessageInput')
     expect(createMessageInput(session, {
       id: '40000',
@@ -1749,7 +1928,7 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("useBotAvatarThemeColor?: boolean")
     expect(configSource).toContain("Schema.boolean().default(false).description('使用 bot 头像主色作为 WebQQ 主题色，开启后手动主题色不生效')")
     expect(configSource).toContain("useCompactCapsuleShadow?: boolean")
-    expect(configSource).toContain("Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的旧阴影')")
+    expect(configSource).toContain("Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影')")
     expect(configSource).toContain("hideWebQQGroupLevel?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标')")
     expect(configSource).toContain("showWebQQAffinity?: boolean")
@@ -1774,7 +1953,7 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("webQQMarkRecalledMessages?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息')")
     expect(configSource).toContain('onebotMockBotCount?: number')
-    expect(configSource).toContain("Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，仅用于无多 bot 环境验证胶囊切换')")
+    expect(configSource).toContain("Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动')")
     expect(configSource).not.toContain("Schema.const('s3')")
     expect(configSource).not.toContain('webQQS3')
     expect(configSource).not.toContain('@aws-sdk/client-s3')

@@ -6,21 +6,25 @@ import type {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecordTranscriptionQuery,
-} from '../onebot'
-import type { createOneBotWebQQService } from '../onebot'
+} from './types'
+import type { createOneBotWebQQService } from './adapters/onebot/service'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
-import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
+import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './message-flow/live-cache'
 import {
   loadKoishiWebQQMessageCache,
-  loadKoishiWebQQRecalledMessageCache,
-  loadWebQQStorage,
   saveKoishiWebQQMessageCache,
-  saveWebQQStorage,
   type WebQQMessageCachePayload,
   type WebQQMessageCacheQuery,
+} from './storage/message-cache'
+import {
+  loadKoishiWebQQRecalledMessageCache,
+} from './storage/recall-cache'
+import {
+  loadWebQQStorage,
+  saveWebQQStorage,
   type WebQQStoredState,
-} from './storage'
+} from './storage/state'
 
 type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 

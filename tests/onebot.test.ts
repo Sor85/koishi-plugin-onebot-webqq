@@ -1,39 +1,50 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
-import { createOneBotWebQQService } from '../src/onebot'
+import { createOneBotWebQQService } from '../src/webqq/adapters/onebot/service'
 
 const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const onebotDataSource = await readFile(new URL('../src/onebot/data.ts', import.meta.url), 'utf8')
-const onebotTextSource = await readFile(new URL('../src/onebot/text.ts', import.meta.url), 'utf8')
-const onebotCardSource = await readFile(new URL('../src/onebot/card.ts', import.meta.url), 'utf8')
-const onebotNoticesSource = await readFile(new URL('../src/onebot/notices.ts', import.meta.url), 'utf8')
-const onebotGroupInfoSource = await readFile(new URL('../src/onebot/group-info.ts', import.meta.url), 'utf8')
-const onebotContactsSource = await readFile(new URL('../src/onebot/contacts.ts', import.meta.url), 'utf8')
 const onebotActionsSource = await readFile(new URL('../src/onebot/actions.ts', import.meta.url), 'utf8')
-const onebotImagesSource = await readFile(new URL('../src/onebot/images.ts', import.meta.url), 'utf8')
-const onebotMessagesSource = await readFile(new URL('../src/onebot/messages.ts', import.meta.url), 'utf8')
+const onebotBotsSource = await readFile(new URL('../src/onebot/bots.ts', import.meta.url), 'utf8')
+const onebotProtocolSource = await readFile(new URL('../src/onebot/protocol.ts', import.meta.url), 'utf8')
 const onebotTypesSource = await readFile(new URL('../src/onebot/types.ts', import.meta.url), 'utf8')
+const onebotAdapterSource = await readFile(new URL('../src/webqq/adapters/onebot/service.ts', import.meta.url), 'utf8')
+const onebotTextSource = await readFile(new URL('../src/webqq/adapters/onebot/text.ts', import.meta.url), 'utf8')
+const onebotCardSource = await readFile(new URL('../src/webqq/adapters/onebot/card.ts', import.meta.url), 'utf8')
+const onebotNoticesSource = await readFile(new URL('../src/webqq/adapters/onebot/notices.ts', import.meta.url), 'utf8')
+const onebotGroupInfoSource = await readFile(new URL('../src/webqq/adapters/onebot/group-info.ts', import.meta.url), 'utf8')
+const onebotContactsSource = await readFile(new URL('../src/webqq/adapters/onebot/contacts.ts', import.meta.url), 'utf8')
+const onebotImagesSource = await readFile(new URL('../src/webqq/adapters/onebot/images.ts', import.meta.url), 'utf8')
+const onebotMediaImagesSource = await readFile(new URL('../src/onebot/media/images.ts', import.meta.url), 'utf8')
+const onebotMediaRecordsSource = await readFile(new URL('../src/onebot/media/records.ts', import.meta.url), 'utf8')
+const onebotMessagesSource = await readFile(new URL('../src/webqq/adapters/onebot/messages.ts', import.meta.url), 'utf8')
+const webqqDisplaySource = await readFile(new URL('../src/webqq/display.ts', import.meta.url), 'utf8')
+const webqqTypesSource = await readFile(new URL('../src/webqq/types.ts', import.meta.url), 'utf8')
 
 describe('onebot webqq adapter', () => {
   it('keeps OneBot WebQQ public types outside the adapter entry', () => {
     expect(onebotSource).toContain("from './types'")
+    expect(onebotSource).not.toContain("from '../webqq/adapters/onebot/service'")
     expect(onebotSource).not.toContain('export interface WebQQMessage {')
     expect(onebotSource).not.toContain('export interface WebQQContacts {')
-    expect(onebotTypesSource).toContain('export interface WebQQMessage')
-    expect(onebotTypesSource).toContain('export interface WebQQContacts')
+    expect(onebotTypesSource).not.toContain("from '../webqq/types'")
+    expect(onebotTypesSource).not.toContain('export interface WebQQMessage')
+    expect(onebotTypesSource).not.toContain('export interface WebQQContacts')
+    expect(webqqTypesSource).toContain('export interface WebQQMessage')
+    expect(webqqTypesSource).toContain('export interface WebQQContacts')
   })
 
   it('keeps OneBot data field helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './data'")
+    expect(onebotAdapterSource).toContain("from '../../../onebot/data'")
     expect(onebotSource).not.toContain('function toArrayResult(')
     expect(onebotSource).not.toContain('function getActionData(')
-    expect(onebotDataSource).toContain("from '../shared/structured-text'")
-    expect(onebotDataSource).toContain('toArrayResult,')
-    expect(onebotDataSource).toContain('getActionData,')
+    expect(onebotDataSource).toContain("from '../shared/record'")
+    expect(onebotDataSource).toContain('export function toArrayResult')
+    expect(onebotDataSource).toContain('export function getActionData')
   })
 
   it('keeps OneBot text markup helpers outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './text'")
+    expect(onebotAdapterSource).toContain("from './text'")
     expect(onebotSource).not.toContain('function normalizeMentionMarkupText(')
     expect(onebotSource).not.toContain('function getTextValue(')
     expect(onebotTextSource).toContain('export function normalizeMentionMarkupText')
@@ -51,18 +62,20 @@ describe('onebot webqq adapter', () => {
     expect(onebotSource).not.toContain("from './display'")
     expect(onebotSource).not.toContain('function getUserAvatar(')
     expect(onebotSource).not.toContain('function normalizeGroupRole(')
-    expect(onebotDataSource).toContain('export function getUserAvatar')
-    expect(onebotDataSource).toContain('export function normalizeGroupRole')
+    expect(onebotDataSource).not.toContain('export function getUserAvatar')
+    expect(onebotDataSource).not.toContain('export function normalizeGroupRole')
+    expect(webqqDisplaySource).toContain('export function getWebQQUserAvatar')
+    expect(webqqDisplaySource).toContain('export function normalizeWebQQGroupRole')
   })
 
   it('keeps OneBot group notice normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './notices'")
+    expect(onebotAdapterSource).toContain("from './notices'")
     expect(onebotSource).not.toContain('function normalizeGroupNotices(')
     expect(onebotNoticesSource).toContain('export function normalizeGroupNotices')
   })
 
   it('keeps OneBot group info normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './group-info'")
+    expect(onebotAdapterSource).toContain("from './group-info'")
     expect(onebotSource).not.toContain('function normalizeGroupMember(')
     expect(onebotSource).not.toContain('function normalizeGroupAnnouncement(')
     expect(onebotGroupInfoSource).toContain('export function normalizeGroupMember')
@@ -70,7 +83,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot contact normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './contacts'")
+    expect(onebotAdapterSource).toContain("from './contacts'")
     expect(onebotSource).not.toContain('function getRecentPeerType(')
     expect(onebotSource).not.toContain('function normalizeFriend(')
     expect(onebotSource).not.toContain('function normalizeFriendCategory(')
@@ -81,22 +94,31 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot action selection outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './actions'")
+    expect(onebotAdapterSource).toContain("from '../../../onebot/actions'")
+    expect(onebotAdapterSource).toContain("from '../../../onebot/bots'")
     expect(onebotSource).not.toContain('function selectBot(')
     expect(onebotSource).not.toContain('async function callAction(')
     expect(onebotSource).not.toContain('function supportsAction(')
-    expect(onebotSource).toContain('supportsOneBotAction')
-    expect(onebotActionsSource).toContain('export function selectBot')
+    expect(onebotAdapterSource).toContain('supportsOneBotAction')
+    expect(onebotBotsSource).toContain('export function selectBot')
     expect(onebotActionsSource).toContain('export async function callAction')
     expect(onebotActionsSource).toContain('export function supportsOneBotAction')
   })
 
+  it('keeps OneBot protocol types outside robot state types', () => {
+    expect(onebotProtocolSource).toContain("export type WebQQProtocol = 'napcat' | 'llbot'")
+    expect(onebotTypesSource).toContain("from './protocol'")
+  })
+
   it('keeps OneBot image resolving outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './images'")
+    expect(onebotAdapterSource).toContain("from '../../../onebot/media/images'")
     expect(onebotSource).not.toContain('async function normalizeImageElement(')
     expect(onebotSource).not.toContain('async function resolveOneBotImage(')
     expect(onebotImagesSource).toContain('export async function normalizeImageElement')
-    expect(onebotImagesSource).toContain('export async function resolveOneBotImage')
+    expect(onebotImagesSource).not.toContain('export async function resolveOneBotImage')
+    expect(onebotMediaImagesSource).toContain('export async function resolveOneBotImage')
+    expect(onebotMediaRecordsSource).toContain('export async function resolveOneBotRecord')
+    expect(onebotMediaRecordsSource).toContain('export async function transcribeOneBotRecord')
   })
 
   it('keeps OneBot message element display helpers with message normalization', () => {
@@ -108,7 +130,7 @@ describe('onebot webqq adapter', () => {
   })
 
   it('keeps OneBot message normalization outside the adapter entry', () => {
-    expect(onebotSource).toContain("from './messages'")
+    expect(onebotAdapterSource).toContain("from './messages'")
     expect(onebotSource).not.toContain('async function normalizeSegment(')
     expect(onebotSource).not.toContain('async function normalizeMessage(')
     expect(onebotSource).not.toContain('async function resolveOneBotQuote(')
@@ -726,6 +748,43 @@ describe('onebot webqq adapter', () => {
     ])
   })
 
+  it('does not register refresh metadata for history image URL segments', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 8,
+            message_seq: 18,
+            time: 1710000007,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'image', data: { url: 'https://example.com/direct.jpg' } }],
+          }],
+        })),
+        get_image: vi.fn(),
+      },
+    }
+    const imageUrlResolver = vi.fn((file: string, _options?: { refresh?: () => Promise<string> }) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`)
+    const service = createOneBotWebQQService({ bots: [bot] }, {
+      imageUrlResolver,
+    })
+
+    await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({
+        elements: [{ type: 'image', url: '/onebot-webqq/webqq/image/https%3A%2F%2Fexample.com%2Fdirect.jpg' }],
+      }),
+    ])
+    expect(bot.internal.get_image).not.toHaveBeenCalled()
+    expect(imageUrlResolver).toHaveBeenCalledTimes(1)
+    expect(imageUrlResolver.mock.calls[0][1]).toBeUndefined()
+  })
+
   it('resolves history mface file ids through get_image', async () => {
     const bot = {
       platform: 'onebot',
@@ -1030,6 +1089,51 @@ describe('onebot webqq adapter', () => {
         }],
       }),
     ])
+  })
+
+  it('registers refresh metadata for proxy URLs resolved from image file ids', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({
+          messages: [{
+            message_id: 5,
+            message_seq: 15,
+            time: 1710000004,
+            sender: {
+              user_id: 30000,
+              nickname: 'Alice',
+            },
+            message: [{ type: 'image', data: { file: 'remote.image' } }],
+          }],
+        })),
+        get_image: vi.fn()
+          .mockResolvedValueOnce({
+            url: 'https://multimedia.nt.qq.com.cn/download?fileid=expired',
+          })
+          .mockResolvedValueOnce({
+            url: 'https://multimedia.nt.qq.com.cn/download?fileid=fresh',
+          }),
+      },
+    }
+    const imageUrlResolver = vi.fn((file: string, _options?: { refresh?: () => Promise<string> }) => `/onebot-webqq/webqq/image/${encodeURIComponent(file)}`)
+    const service = createOneBotWebQQService({ bots: [bot] }, {
+      imageUrlResolver,
+    })
+
+    await service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })
+
+    expect(imageUrlResolver).toHaveBeenCalledTimes(1)
+    expect(imageUrlResolver.mock.calls[0][0]).toBe('https://multimedia.nt.qq.com.cn/download?fileid=expired')
+    const refresh = imageUrlResolver.mock.calls[0][1]?.refresh
+    await expect(refresh?.()).resolves.toBe('https://multimedia.nt.qq.com.cn/download?fileid=fresh')
+    expect(bot.internal.get_image).toHaveBeenCalledTimes(2)
+    expect(bot.internal.get_image).toHaveBeenNthCalledWith(2, {
+      file: 'remote.image',
+    })
   })
 
   it('renders reply segments as quote elements without adding them to the message summary', async () => {

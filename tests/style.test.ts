@@ -2,16 +2,16 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const styleEntry = await readFile(new URL('../client/style.scss', import.meta.url), 'utf8')
-const capsuleStyle = await readFile(new URL('../client/styles/capsule.scss', import.meta.url), 'utf8')
-const webqqShellStyle = await readFile(new URL('../client/styles/webqq-shell.scss', import.meta.url), 'utf8')
-const webqqChatStyle = await readFile(new URL('../client/styles/webqq-chat.scss', import.meta.url), 'utf8')
-const webqqGroupInfoStyle = await readFile(new URL('../client/styles/webqq-group-info.scss', import.meta.url), 'utf8')
-const webqqNoticesStyle = await readFile(new URL('../client/styles/webqq-notices.scss', import.meta.url), 'utf8')
-const webqqMessagesStyle = await readFile(new URL('../client/styles/webqq-messages.scss', import.meta.url), 'utf8')
-const webqqMessageCardsStyle = await readFile(new URL('../client/styles/webqq-message-cards.scss', import.meta.url), 'utf8')
-const webqqMessageOverlaysStyle = await readFile(new URL('../client/styles/webqq-message-overlays.scss', import.meta.url), 'utf8')
-const webqqMessageEffectsStyle = await readFile(new URL('../client/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
-const themeColorsStyle = await readFile(new URL('../client/styles/theme-colors.scss', import.meta.url), 'utf8')
+const capsuleStyle = await readFile(new URL('../client/capsule/styles.scss', import.meta.url), 'utf8')
+const webqqShellStyle = await readFile(new URL('../client/webqq/styles/webqq-shell.scss', import.meta.url), 'utf8')
+const webqqChatStyle = await readFile(new URL('../client/webqq/styles/webqq-chat.scss', import.meta.url), 'utf8')
+const webqqGroupInfoStyle = await readFile(new URL('../client/webqq/styles/webqq-group-info.scss', import.meta.url), 'utf8')
+const webqqNoticesStyle = await readFile(new URL('../client/webqq/styles/webqq-notices.scss', import.meta.url), 'utf8')
+const webqqMessagesStyle = await readFile(new URL('../client/webqq/styles/webqq-messages.scss', import.meta.url), 'utf8')
+const webqqMessageCardsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-cards.scss', import.meta.url), 'utf8')
+const webqqMessageOverlaysStyle = await readFile(new URL('../client/webqq/styles/webqq-message-overlays.scss', import.meta.url), 'utf8')
+const webqqMessageEffectsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
+const themeColorsStyle = await readFile(new URL('../client/webqq/styles/theme-colors.scss', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
 function sourceBetween(source: string, start: string, end: string) {

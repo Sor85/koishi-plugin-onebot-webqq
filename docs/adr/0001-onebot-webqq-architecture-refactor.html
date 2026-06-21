@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture review — koishi-plugin-onebot-webqq</title>
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    .seam {
+      border-style: dashed;
+    }
+
+    .deep-module {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+    }
+
+    .thin-interface {
+      height: 22px;
+    }
+
+    .fat-interface {
+      height: 74px;
+    }
+
+    .deep-implementation {
+      height: 168px;
+    }
+
+    .thin-implementation {
+      height: 78px;
+    }
+
+    .leak-line {
+      stroke: #dc2626;
+      stroke-width: 2.5;
+      marker-end: url(#arrow-red);
+    }
+
+    .ok-line {
+      stroke: #475569;
+      stroke-width: 2;
+      marker-end: url(#arrow-slate);
+    }
+
+    .internal-box {
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(248, 250, 252, 0.08);
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .diagram-card {
+      min-height: 320px;
+    }
+
+    @media print {
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+  <main class="mx-auto max-w-6xl space-y-12 px-6 py-12">
+    <header class="space-y-5">
+      <div class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-wider text-slate-600">
+        <span class="rounded-full border border-slate-300 bg-white px-3 py-1">ADR 0001</span>
+        <span class="rounded-full border border-slate-300 bg-white px-3 py-1">2026-06-20</span>
+        <span class="rounded-full border border-slate-300 bg-white px-3 py-1">module / interface / seam / adapter</span>
+        <span class="rounded-full border border-slate-300 bg-white px-3 py-1">文件层级 + 代码架构</span>
+      </div>
+      <div class="space-y-3">
+        <h1 class="text-4xl font-semibold tracking-normal text-slate-950">OneBot WebQQ 代码库架构整理图</h1>
+        <p class="max-w-3xl text-slate-600">
+          这份 HTML 是 <code class="rounded border border-slate-300 bg-white px-1">0001-onebot-webqq-architecture-refactor.md</code> 的视觉版。它不只画目标文件树，也画 module、interface、seam、adapter、数据流和需要 deepening 的候选。
+        </p>
+      </div>
+      <div class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 md:grid-cols-4">
+        <div><span class="font-semibold text-slate-950">实线框</span><br>module</div>
+        <div><span class="font-semibold text-slate-950">虚线框</span><br>seam</div>
+        <div><span class="font-semibold text-red-700">红色箭头</span><br>leakage</div>
+        <div><span class="font-semibold text-slate-950">深色厚框</span><br>deep module</div>
+      </div>
+    </header>
+
+    <section class="space-y-5">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-normal">当前代码架构</h2>
+        <p class="mt-2 max-w-3xl text-slate-600">当前的问题不是只有文件位置。更关键的是几个 shallow module 的 interface 太宽，implementation 又把多个运行时概念混在一起。</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <pre class="mermaid">
+flowchart TD
+  Index["src/index.ts<br/>插件装配 + 胶囊状态 + WebQQ runtime + ChatLuna events"]
+  Console["src/console/entry.ts<br/>胶囊入口"]
+  State["src/state<br/>CapsuleState"]
+  WebQQConsole["src/webqq/console.ts<br/>Console RPC + cache merge + affinity"]
+  WebQQLive["src/webqq/live-runtime.ts<br/>message + recall + reaction + thinking + broadcast"]
+  WebQQStorage["src/webqq/storage.ts<br/>schema + state + message cache + recalled cache"]
+  OneBot["src/onebot/index.ts<br/>OneBot actions + WebQQ adapter"]
+  OneBotTypes["src/onebot/types.ts<br/>OneBot profile + WebQQ types"]
+  ChatLuna["src/chatluna<br/>current mixed folder"]
+  ClientIndex["client/index.ts<br/>entry + global refs + avatar theme"]
+  ClientState["client/state.ts<br/>capsule + onebot + webqq models + settings"]
+  ClientObserver["client/WebQQObserver.vue<br/>composition root for WebQQ UI"]
+  ClientStores["client/stores/*<br/>conversation + history + notices + storage"]
+
+  Index --> Console
+  Index --> State
+  Index --> WebQQLive
+  Index --> WebQQConsole
+  Index --> OneBot
+  Index --> ChatLuna
+  WebQQLive --> ChatLuna
+  WebQQLive --> WebQQStorage
+  WebQQLive --> OneBot
+  WebQQConsole --> OneBotTypes
+  OneBot --> OneBotTypes
+  ClientIndex --> ClientState
+  ClientObserver --> ClientState
+  ClientObserver --> ClientStores
+  ClientStores --> ClientState
+
+  classDef leak fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+  classDef shallow fill:#fff7ed,stroke:#ea580c,color:#7c2d12;
+  class Index,OneBotTypes,ClientState,WebQQLive shallow;
+  class OneBotTypes,ClientState leak;
+        </pre>
+      </div>
+    </section>
+
+    <section class="space-y-5">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-normal">目标代码架构</h2>
+        <p class="mt-2 max-w-3xl text-slate-600">目标不是多建目录，而是把 seam 放到调用者真正需要改变行为的位置：OneBot adapter seam、Console transport seam、storage seam。ChatLuna 相关代码按 capsule 和 webqq 的真实消费方归属。</p>
+        <p class="mt-2 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">不建立顶层 <code class="rounded border border-amber-300 bg-white px-1">chatluna/</code> 或 <code class="rounded border border-amber-300 bg-white px-1">integrations/chatluna/</code>。当前 affinity 只服务 WebQQ；完整 think 内容也只由 WebQQ 展示，胶囊只记录活动状态和 duration。</p>
+        <p class="mt-2 max-w-3xl rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700"><code class="rounded border border-slate-300 bg-slate-50 px-1">shared</code> 只保留 <code class="rounded border border-slate-300 bg-slate-50 px-1">record.ts</code>。OneBot field readers 和 action/id/time/result helpers 归 <code class="rounded border border-slate-300 bg-slate-50 px-1">onebot/data.ts</code>；<code class="rounded border border-slate-300 bg-slate-50 px-1">readStructuredText</code> 归 WebQQ thinking；affinity number reader 内联到 <code class="rounded border border-slate-300 bg-slate-50 px-1">webqq/affinity.ts</code>。</p>
+        <p class="mt-2 max-w-3xl rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700"><code class="rounded border border-slate-300 bg-slate-50 px-1">onebot</code> 不长期导出 <code class="rounded border border-slate-300 bg-slate-50 px-1">WebQQ*</code> view model 类型；这些类型归 <code class="rounded border border-slate-300 bg-slate-50 px-1">webqq/types.ts</code>。胶囊消息输入也不能复用 WebQQ session helper，避免 <code class="rounded border border-slate-300 bg-slate-50 px-1">capsule -> webqq</code> 依赖。</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <pre class="mermaid">
+flowchart TD
+  Index["src/index.ts<br/>only plugin metadata + register"]
+  Runtime["src/runtime<br/>create dependencies, no business flow"]
+  Capsule["src/capsule<br/>deep module: state + console entry + ChatLuna activity"]
+  WebQQ["src/webqq<br/>deep module: types + observer runtime + thinking + affinity"]
+  WebQQOneBot["src/webqq/adapters/onebot<br/>adapter: OneBot -> WebQQ model"]
+  OneBot["src/onebot<br/>deep module: action/protocol/raw action data"]
+  Shared["src/shared/record.ts<br/>isRecord + readRecordText only"]
+  ClientCapsule["client/capsule<br/>Capsule UI module"]
+  ClientWebQQ["client/webqq<br/>WebQQ UI module"]
+  ClientOneBot["client/onebot<br/>bot profile state"]
+
+  Index --> Runtime
+  Runtime --> Capsule
+  Runtime --> WebQQ
+  Capsule --> OneBot
+  Capsule --> Shared
+  WebQQ --> WebQQOneBot
+  WebQQ --> Shared
+  WebQQOneBot --> OneBot
+  WebQQOneBot --> Shared
+  OneBot --> Shared
+  ClientCapsule --> ClientOneBot
+  ClientCapsule -. explicit open/state seam .-> ClientWebQQ
+
+  classDef deep fill:#0f172a,stroke:#0f172a,color:#ffffff;
+  classDef adapter fill:#eef2ff,stroke:#4f46e5,color:#312e81;
+  classDef seam stroke-dasharray: 5 5;
+  class Capsule,WebQQ,OneBot deep;
+  class WebQQOneBot adapter;
+        </pre>
+      </div>
+    </section>
+
+    <section class="space-y-5">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-normal">目标文件层级</h2>
+        <p class="mt-2 max-w-3xl text-slate-600">文件树服务于代码架构。目录名称必须跟 module 的 interface 对齐，不能只是把现有文件换个位置。</p>
+      </div>
+      <div class="grid gap-5 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">后端 src</h3>
+          <pre class="overflow-auto rounded bg-slate-950 p-4 text-sm leading-6 text-slate-100">src/
+  index.ts
+  config.ts
+  plugin-context.ts
+  runtime/
+    create-runtime.ts
+    types.ts
+  capsule/
+    register.ts
+    console-entry.ts
+    chatluna-activity.ts
+    character-lock.ts
+    message-input.ts
+    state/
+      index.ts
+      types.ts
+  webqq/
+    types.ts
+    display.ts
+    register.ts
+    console-rpc.ts
+    affinity.ts
+    thinking.ts
+    message-flow/
+      session.ts
+      live-runtime.ts
+      live-message.ts
+      live-elements.ts
+      live-cache.ts
+      live-reactions.ts
+      live-notices.ts
+    storage/
+      schema.ts
+      state.ts
+      message-cache.ts
+      recall-cache.ts
+      scope.ts
+    notices/
+      event-notices.ts
+    media/
+      image-url-resolver.ts
+      record.ts
+    sender/
+      sender-metadata.ts
+    adapters/
+      onebot/
+        service.ts
+        contacts.ts
+        messages.ts
+        message-elements.ts
+        media.ts
+        text.ts
+        notices.ts
+        group-info.ts
+        group-sender-metadata.ts
+        reactions.ts
+  onebot/
+    actions.ts
+    bots.ts
+    protocol.ts
+    data.ts
+    media/
+      images.ts
+      records.ts
+  shared/
+    record.ts</pre>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">前端 client</h3>
+<pre class="overflow-auto rounded bg-slate-950 p-4 text-sm leading-6 text-slate-100">client/
+  index.ts
+  style.scss
+  entry-state.ts
+  capsule/
+    Capsule.vue
+    state.ts
+    api.ts
+    avatar-theme.ts
+    bot-stack.ts
+    styles.scss
+  webqq/
+    WebQQObserver.vue
+    api/
+      webqq.ts
+    components/
+      WebQQSidebar.vue
+      WebQQNoticeMenu.vue
+      WebQQMessageList.vue
+      WebQQImagePreview.vue
+      WebQQForwardModal.vue
+      WebQQGroupInfoPanel.vue
+      WebQQMessageReactions.vue
+      WebQQContactList.vue
+    stores/
+    storage/
+      browser-message-cache.ts
+      webqq-storage.ts
+    styles/
+    utils/
+    types.ts
+    settings.ts
+    sender-metadata.ts
+    unread.ts
+  onebot/
+    bots.ts</pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="candidates" class="space-y-10">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-normal">Deepening candidates</h2>
+        <p class="mt-2 max-w-3xl text-slate-600">每个候选都按 module、interface、implementation、depth、seam、adapter、leverage、locality 来描述。它们不是一次性全做，按后面的 top recommendation 排序。</p>
+      </div>
+
+      <article id="candidate-runtime" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="mr-auto text-xl font-semibold tracking-normal">Deepen the plugin runtime module</h3>
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-800">Strong</span>
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700">in-process</span>
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Files</div>
+            <ul class="mt-2 space-y-1 font-mono text-sm text-slate-700">
+              <li>src/index.ts</li>
+              <li>src/runtime/*</li>
+              <li>src/capsule/register.ts</li>
+              <li>src/webqq/register.ts</li>
+              <li>src/capsule/chatluna-activity.ts</li>
+            </ul>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="diagram-card rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Before</div>
+              <div class="relative h-72">
+                <svg class="absolute inset-0 h-full w-full" viewBox="0 0 360 260" aria-hidden="true">
+                  <defs>
+                    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"></path>
+                    </marker>
+                    <marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"></path>
+                    </marker>
+                  </defs>
+                  <path class="leak-line" d="M180 72 C80 92 60 138 74 198"></path>
+                  <path class="leak-line" d="M180 72 C146 118 143 150 146 198"></path>
+                  <path class="leak-line" d="M180 72 C221 118 224 150 218 198"></path>
+                  <path class="leak-line" d="M180 72 C286 92 310 138 292 198"></path>
+                </svg>
+                <div class="absolute left-20 top-3 w-48 rounded-lg border border-red-200 bg-red-50 p-3 text-center text-sm font-semibold text-red-900">src/index.ts<br><span class="font-normal text-red-700">wide interface, mixed implementation</span></div>
+                <div class="absolute bottom-3 left-0 w-24 rounded border border-slate-300 bg-white p-2 text-center text-xs">capsule</div>
+                <div class="absolute bottom-3 left-28 w-24 rounded border border-slate-300 bg-white p-2 text-center text-xs">webqq</div>
+                <div class="absolute bottom-3 right-28 w-24 rounded border border-slate-300 bg-white p-2 text-center text-xs">chatluna</div>
+                <div class="absolute bottom-3 right-0 w-24 rounded border border-slate-300 bg-white p-2 text-center text-xs">console</div>
+              </div>
+            </div>
+            <div class="diagram-card rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">After</div>
+              <div class="relative h-72">
+                <div class="absolute left-4 right-4 top-3 rounded-lg border border-slate-300 bg-white p-3 text-center text-sm font-semibold">src/index.ts<br><span class="font-normal text-slate-600">small interface: apply(ctx, config)</span></div>
+                <div class="deep-module absolute left-8 right-8 top-24 rounded-lg p-4 text-center text-sm font-semibold">
+                  src/runtime
+                  <div class="mt-3 grid grid-cols-3 gap-2 text-xs font-normal">
+                    <div class="internal-box rounded p-2">capsule register</div>
+                    <div class="internal-box rounded p-2">webqq register</div>
+                    <div class="internal-box rounded p-2">capsule ChatLuna activity</div>
+                  </div>
+                  <div class="mt-3 text-xs text-slate-300">implementation absorbs dependency wiring</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <p><span class="font-semibold">Problem：</span><code>src/index.ts</code> is shallow; deleting it would spread its ordering constraints across every feature.</p>
+          <p><span class="font-semibold">Solution：</span>Make a deep runtime module with one small interface and internal seams for capsule and WebQQ registration.</p>
+          <ul class="list-disc pl-5 text-slate-700">
+            <li>locality: wiring bugs concentrate</li>
+            <li>leverage: one runtime interface</li>
+            <li>tests hit one seam</li>
+          </ul>
+        </div>
+      </article>
+
+      <article id="candidate-onebot" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="mr-auto text-xl font-semibold tracking-normal">Move WebQQ model conversion behind the OneBot adapter seam</h3>
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-800">Strong</span>
+          <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-800">adapter</span>
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Files</div>
+            <ul class="mt-2 space-y-1 font-mono text-sm text-slate-700">
+              <li>src/onebot/index.ts</li>
+              <li>src/onebot/types.ts</li>
+              <li>src/onebot/card.ts</li>
+              <li>src/onebot/raw-event.ts</li>
+              <li>src/onebot/messages.ts</li>
+              <li>src/onebot/text.ts</li>
+              <li>src/webqq/group-sender-metadata.ts</li>
+              <li>src/webqq/adapters/onebot/*</li>
+            </ul>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Before</div>
+              <div class="grid h-72 content-center gap-3">
+                <div class="rounded border border-orange-300 bg-orange-50 p-3 text-sm">
+                  <div class="font-semibold text-orange-900">src/onebot</div>
+                  <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-orange-800">
+                    <div class="rounded bg-white p-2">action/protocol</div>
+                    <div class="rounded bg-red-50 p-2 text-red-800">WebQQMessage</div>
+                    <div class="rounded bg-white p-2">media</div>
+                    <div class="rounded bg-red-50 p-2 text-red-800">WebQQContacts</div>
+                  </div>
+                </div>
+                <div class="text-center text-xs font-semibold uppercase tracking-wider text-red-700">One module owns two concepts</div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">After</div>
+              <div class="grid h-72 content-center gap-3">
+                <div class="rounded border-2 border-slate-900 bg-slate-900 p-3 text-sm text-white">
+                  <div class="font-semibold">src/onebot</div>
+                  <div class="mt-2 text-xs text-slate-300">action, bot, protocol, raw action data</div>
+                </div>
+                <div class="seam rounded border-2 border-indigo-400 bg-indigo-50 p-3 text-sm text-indigo-950">
+                  <div class="font-semibold">src/webqq/adapters/onebot</div>
+                  <div class="mt-2 text-xs">adapter: OneBot raw data/events -> WebQQ model</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <p><span class="font-semibold">Problem：</span><code>src/onebot/types.ts</code> leaks WebQQ models across the OneBot seam; card/media/text normalization, group sender metadata fetching, and raw reaction interception are also WebQQ adapter behavior.</p>
+          <p><span class="font-semibold">Solution：</span>Move <code>WebQQ*</code> types to <code>webqq/types.ts</code>; keep OneBot as a deep protocol module and make WebQQ conversion an adapter module.</p>
+          <ul class="list-disc pl-5 text-slate-700">
+            <li>locality: protocol changes isolate</li>
+            <li>leverage: adapter owns conversion</li>
+            <li>interface stops leaking models</li>
+          </ul>
+        </div>
+      </article>
+
+      <article id="candidate-live-runtime" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="mr-auto text-xl font-semibold tracking-normal">Collapse WebQQ live message orchestration into a deeper module</h3>
+          <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-800">Worth exploring</span>
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700">in-process</span>
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Files</div>
+            <ul class="mt-2 space-y-1 font-mono text-sm text-slate-700">
+              <li>src/webqq/live-runtime.ts</li>
+              <li>src/webqq/live-message.ts</li>
+              <li>src/webqq/live-elements.ts</li>
+              <li>src/webqq/live-cache.ts</li>
+              <li>src/webqq/live-reactions.ts</li>
+              <li>src/webqq/live-notices.ts</li>
+            </ul>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Before</div>
+              <pre class="mermaid">
+flowchart TD
+  Runtime[live-runtime]
+  Msg[live-message]
+  Elem[live-elements]
+  Cache[live-cache]
+  React[live-reactions]
+  Notice[live-notices]
+  Store[storage]
+  Think[webqq/thinking]
+  Runtime --> Msg
+  Runtime --> Elem
+  Runtime --> Cache
+  Runtime --> React
+  Runtime --> Notice
+  Runtime --> Store
+  Runtime --> Think
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">After</div>
+              <div class="deep-module flex h-72 flex-col justify-between rounded-lg p-4">
+                <div>
+                  <div class="text-sm font-semibold">WebQQ message-flow module</div>
+                  <div class="mt-1 text-xs text-slate-300">small interface: recordMessage, recordRecall, recordReaction, updateThinking</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div class="internal-box rounded p-2">message normalize</div>
+                  <div class="internal-box rounded p-2">media resolve</div>
+                  <div class="internal-box rounded p-2">cache merge</div>
+                  <div class="internal-box rounded p-2">sender metadata</div>
+                  <div class="internal-box rounded p-2">reaction</div>
+                  <div class="internal-box rounded p-2">recall persist</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <p><span class="font-semibold">Problem：</span><code>live-runtime.ts</code> interface looks small, but its implementation mixes unrelated ordering constraints.</p>
+          <p><span class="font-semibold">Solution：</span>Keep one external interface, move internal seams under <code>message-flow/</code>, and test through that interface.</p>
+          <ul class="list-disc pl-5 text-slate-700">
+            <li>locality: event order lives here</li>
+            <li>leverage: one message-flow seam</li>
+            <li>tests stop poking internals</li>
+          </ul>
+        </div>
+      </article>
+
+      <article id="candidate-client-state" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="mr-auto text-xl font-semibold tracking-normal">Split the client state bag into domain modules</h3>
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-800">Strong</span>
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700">in-process</span>
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Files</div>
+            <ul class="mt-2 space-y-1 font-mono text-sm text-slate-700">
+              <li>client/state.ts</li>
+              <li>client/index.ts</li>
+              <li>client/Capsule.vue</li>
+              <li>client/WebQQObserver.vue</li>
+              <li>client/stores/*</li>
+            </ul>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Before: mass diagram</div>
+              <div class="grid h-72 content-center gap-2">
+                <div class="rounded-t border border-red-300 bg-red-100 p-3 text-center text-sm font-semibold text-red-900">wide interface: client/state.ts exports everything</div>
+                <div class="rounded-b border border-red-300 bg-white p-5 text-sm text-slate-700">
+                  capsule refs, bot refs, WebQQ types, settings, unread, reset, storage model
+                </div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">After: domain modules</div>
+              <div class="grid h-72 content-center gap-2">
+                <div class="rounded border-2 border-slate-900 bg-slate-900 p-3 text-sm text-white">client/capsule/state<br><span class="text-xs text-slate-300">capsule refs only</span></div>
+                <div class="rounded border-2 border-slate-900 bg-slate-900 p-3 text-sm text-white">client/webqq/types + settings + unread<br><span class="text-xs text-slate-300">WebQQ model and UI state</span></div>
+                <div class="rounded border border-slate-300 bg-white p-3 text-sm">client/onebot/bots<br><span class="text-xs text-slate-500">bot profile state</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <p><span class="font-semibold">Problem：</span><code>client/state.ts</code> is shallow; its interface nearly equals all front-end global knowledge.</p>
+          <p><span class="font-semibold">Solution：</span>Split by module ownership and keep a temporary entry-state aggregate only for migration.</p>
+          <ul class="list-disc pl-5 text-slate-700">
+            <li>locality: UI state narrows</li>
+            <li>leverage: stores import less</li>
+            <li>interface mirrors domains</li>
+          </ul>
+        </div>
+      </article>
+
+      <article id="candidate-storage" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="mr-auto text-xl font-semibold tracking-normal">Make WebQQ storage a deeper module</h3>
+          <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-800">Worth exploring</span>
+          <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-800">adapter</span>
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Files</div>
+            <ul class="mt-2 space-y-1 font-mono text-sm text-slate-700">
+              <li>src/webqq/storage.ts</li>
+              <li>client/stores/webqq-storage.ts</li>
+              <li>client/webqq-message-cache.ts</li>
+              <li>tests/webqq-storage.test.ts</li>
+              <li>tests/webqq-client-storage.test.ts</li>
+            </ul>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Before</div>
+              <pre class="mermaid">
+flowchart TD
+  Server[server storage.ts]
+  Client[client webqq-storage.ts]
+  IDB[client IndexedDB cache]
+  DB[(Koishi database)]
+  Local[(localStorage)]
+  Server --> DB
+  Client --> Server
+  Client --> Local
+  Client --> IDB
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">After</div>
+              <pre class="mermaid">
+flowchart TD
+  Interface[WebQQ storage interface]
+  Koishi[Koishi adapter]
+  Browser[Browser adapter]
+  Schema[schema + codec]
+  Interface --> Koishi
+  Interface --> Browser
+  Koishi --> Schema
+  Browser --> Schema
+              </pre>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <p><span class="font-semibold">Problem：</span>Storage codecs and adapter choices are split across server and client modules.</p>
+          <p><span class="font-semibold">Solution：</span>Put schema, codec, scope, state cache, message cache, and recall cache behind one storage interface per side.</p>
+          <ul class="list-disc pl-5 text-slate-700">
+            <li>locality: persistence bugs concentrate</li>
+            <li>leverage: one codec per model</li>
+            <li>adapter seam becomes real</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+
+    <section id="top-recommendation" class="rounded-xl border border-slate-200 bg-slate-950 p-6 text-white">
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Top recommendation</div>
+      <h2 class="mt-2 text-2xl font-semibold tracking-normal">Start with pure structure migration, then deepen runtime and the OneBot adapter seam.</h2>
+      <p class="mt-3 max-w-3xl text-slate-300">
+        First move files by domain without changing behavior, so import paths and ownership become visible. Then split <code>src/index.ts</code> into runtime/register modules and move WebQQ conversion behind <code>src/webqq/adapters/onebot</code>.
+      </p>
+      <div class="mt-5 flex flex-wrap gap-3 text-sm">
+        <a href="#candidate-client-state" class="rounded bg-white px-3 py-2 font-semibold text-slate-950">Open client state candidate</a>
+        <a href="#candidate-runtime" class="rounded bg-white px-3 py-2 font-semibold text-slate-950">Open runtime candidate</a>
+        <a href="#candidate-onebot" class="rounded border border-slate-600 px-3 py-2 font-semibold text-white">Open OneBot adapter candidate</a>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+      <h2 class="text-base font-semibold tracking-normal">执行约束</h2>
+      <p class="mt-2">第一轮迁移必须保持 Console 事件名、数据库表名、浏览器存储 key、配置项名称和 npm/Koishi 入口不变。每批改动后运行 <code class="rounded border border-amber-300 bg-white px-1">yarn typecheck</code>、<code class="rounded border border-amber-300 bg-white px-1">yarn test</code>、<code class="rounded border border-amber-300 bg-white px-1">yarn build</code>。</p>
+    </section>
+  </main>
+</body>
+</html>
