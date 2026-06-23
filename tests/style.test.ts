@@ -409,6 +409,7 @@ describe('chat capsule styles', () => {
 
   it('keeps the WebQQ shell aspect ratio while fitting the viewport', () => {
     const webQQShellBody = ruleBody('.onebot-webqq-webqq')
+    expect(webQQShellBody).toContain('grid-template-rows: minmax(0, 1fr)')
     expect(webQQShellBody).toContain('width: min(calc(100vw - 32px), calc(158.536585vh - 247.317073px))')
     expect(webQQShellBody).toContain('height: auto')
     expect(webQQShellBody).toContain('aspect-ratio: 1040 / 656')
