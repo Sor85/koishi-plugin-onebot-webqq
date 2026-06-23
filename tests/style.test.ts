@@ -516,6 +516,8 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-affinity')).toContain('background: #ec4899')
     expect(ruleBody('.onebot-webqq-webqq__message-affinity')).toContain('box-shadow: 0 2px 6px rgba(190, 24, 93, 0.24)')
     expect(ruleBody('.onebot-webqq-webqq__message-affinity-icon')).toContain('fill: currentColor')
+    expect(ruleBody('.onebot-webqq-webqq__message-affinity-sign')).toContain('margin-right: 1px')
+    expect(ruleBody('.onebot-webqq-webqq__message-affinity-sign')).toContain('transform: translateY(-1px)')
   })
 
   it('keeps WebQQ reaction avatars compact inside reaction pills', () => {
