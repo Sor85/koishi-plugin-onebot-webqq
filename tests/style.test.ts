@@ -869,6 +869,24 @@ describe('chat capsule styles', () => {
     expect(narrowBody).toContain('min-width: 0')
   })
 
+  it('moves the group info toggle into the narrow group info header', () => {
+    const narrowBody = mediaBody('@media screen and (max-width: 768px)')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-content')
+    expect(narrowBody).toContain('position: absolute')
+    expect(narrowBody).toContain('pointer-events: none')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__group-info')
+    expect(narrowBody).toContain('width: 100%')
+    expect(narrowBody).toContain('border-left: 0')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-header')
+    expect(narrowBody).toContain('position: absolute')
+    expect(narrowBody).toContain('justify-content: flex-end')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-title')
+    expect(narrowBody).toContain('display: none')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-body')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-header button')
+    expect(narrowBody).toContain('pointer-events: auto')
+  })
+
   it('adds a fresh WebQQ theme with plain gray-white surfaces and blue accents', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-theme-fresh')).toContain('background: #f4f6f8')
     expect(ruleBody('.onebot-webqq-webqq.is-theme-fresh')).toContain('border: 1px solid #d9e1ea')

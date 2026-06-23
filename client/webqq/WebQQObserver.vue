@@ -28,7 +28,7 @@
       @open-notices="openNotices"
       @handle-notice="handleNotice"
     />
-    <section class="onebot-webqq-webqq__chat">
+    <section :class="['onebot-webqq-webqq__chat', { 'is-mobile-group-info-open': groupInfoOpen && currentChat?.type === 'group' }]">
       <div :class="['onebot-webqq-webqq__chat-content', { 'is-mobile-notice-open': noticeOpen }]">
         <div v-if="noticeOpen" class="onebot-webqq-webqq__mobile-notice-page" @click.stop>
           <WebQQNoticeMenu
@@ -52,7 +52,7 @@
               <span>{{ currentSubtitle }}</span>
             </div>
           </div>
-          <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" aria-label="更多群信息" @click="toggleGroupInfo">
+          <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" :aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'" @click="toggleGroupInfo">
             <svg class="onebot-webqq-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="1"></circle>
               <circle cx="19" cy="12" r="1"></circle>

@@ -1524,9 +1524,8 @@ describe('webqq observer view', () => {
 
   it('opens a group-only WebQQ info panel with announcements and searchable members', () => {
     expect(webqqView).toContain('v-if="currentChat?.type === \'group\'"')
-    expect(webqqView).toContain('aria-label="更多群信息"')
+    expect(webqqView).toContain(`:aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'"`)
     expect(webqqView).toContain('@click="toggleGroupInfo"')
-    expect(webqqView).not.toContain('aria-label="关闭群信息"')
     expect(webqqView).not.toContain('@click="closeGroupInfo"')
     expect(webqqView).not.toContain('function closeGroupInfo()')
     expect(webqqView).toContain('useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })')
@@ -1629,7 +1628,7 @@ describe('webqq observer view', () => {
 
   it('uses an inline SVG three-dot button as the only group info toggle', () => {
     const buttonSource = webqqView.match(/<button v-if="currentChat\?\.type === 'group'"[\s\S]*?<\/button>/)?.[0] ?? ''
-    expect(buttonSource).toContain('aria-label="更多群信息"')
+    expect(buttonSource).toContain(`:aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'"`)
     expect(buttonSource).toContain('@click="toggleGroupInfo"')
     expect(buttonSource).toContain('class="onebot-webqq-webqq__header-icon"')
     expect(buttonSource.match(/<circle /g)).toHaveLength(3)
