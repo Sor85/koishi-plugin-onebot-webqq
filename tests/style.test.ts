@@ -403,6 +403,15 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__messages')).toContain('overflow-y: auto')
   })
 
+  it('keeps the WebQQ shell aspect ratio while fitting the viewport', () => {
+    const webQQShellBody = ruleBody('.onebot-webqq-webqq')
+    expect(webQQShellBody).toContain('width: min(calc(100vw - 32px), calc(152.941176vh - 275.294118px))')
+    expect(webQQShellBody).toContain('height: auto')
+    expect(webQQShellBody).toContain('aspect-ratio: 1040 / 680')
+    expect(webQQShellBody).not.toContain('width: min(980px')
+    expect(webQQShellBody).not.toContain('height: min(680px')
+  })
+
   it('styles the WebQQ return-to-bottom button as a clickable bottom overlay', () => {
     const scrollBottomBody = ruleBody('.onebot-webqq-webqq__scroll-bottom')
     const missingRequirements = [
