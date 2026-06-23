@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { capsule, type CapsuleData } from './capsule/state'
 import { availableBots, selectedBotSelfId } from './onebot/bots'
 import {
+  allowWebQQResize,
   hideWebQQGroupLevel,
   showWebQQAffinity,
   showWebQQCapsuleUnread,
@@ -35,6 +36,7 @@ export function resetWebQQClientState() {
   capsule.value = undefined
   availableBots.value = []
   debug.value = false
+  allowWebQQResize.value = false
   hideWebQQGroupLevel.value = true
   showWebQQAffinity.value = false
   showWebQQCapsuleUnread.value = true

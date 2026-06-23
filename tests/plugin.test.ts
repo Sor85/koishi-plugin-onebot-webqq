@@ -1955,6 +1955,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toMatch(/webQQColorMode:\s*Schema\.union\(\[[\s\S]*Schema\.const\('auto'\)\.description\('自动'\)[\s\S]*Schema\.const\('light'\)\.description\('明亮'\)[\s\S]*Schema\.const\('dark'\)\.description\('暗色'\)[\s\S]*\]\)\.default\('auto'\)\.role\('radio'\)/)
     expect(configSource).toContain("webQQAccentColor?:")
     expect(configSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 主题色')")
+    expect(configSource).toContain("allowWebQQResize?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(false).description('允许拖动 WebQQ 左边、上边和左上角调整窗口宽高')")
     expect(configSource).toContain("useCompactCapsuleShadow?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影')")
     expect(configSource).toContain("hideWebQQGroupLevel?: boolean")
@@ -2015,6 +2017,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useCompactCapsuleShadow: true,
+      allowWebQQResize: false,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
       showWebQQRelationship: false,
@@ -3624,6 +3627,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useCompactCapsuleShadow: true,
+      allowWebQQResize: false,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
       showWebQQRelationship: false,
@@ -3644,6 +3648,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode?: 'auto' | 'light' | 'dark'
       webQQAccentColor?: string
       useCompactCapsuleShadow?: boolean
+      allowWebQQResize?: boolean
       hideWebQQGroupLevel?: boolean
       showWebQQAffinity?: boolean
       showWebQQRelationship?: boolean
@@ -3663,6 +3668,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useCompactCapsuleShadow: false,
+      allowWebQQResize: true,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: true,
       showWebQQRelationship: true,
@@ -3685,6 +3691,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useCompactCapsuleShadow: false,
+      allowWebQQResize: true,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: true,
       showWebQQRelationship: true,

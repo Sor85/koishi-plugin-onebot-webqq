@@ -412,6 +412,15 @@ describe('chat capsule styles', () => {
     expect(webQQShellBody).not.toContain('height: min(680px')
   })
 
+  it('uses invisible top and left edge zones for optional WebQQ resizing', () => {
+    const resizeZoneBody = ruleBody('.onebot-webqq-webqq__resize-zone')
+    expect(resizeZoneBody).toContain('position: absolute')
+    expect(resizeZoneBody).toContain('background: transparent')
+    expect(ruleBody('.onebot-webqq-webqq__resize-zone.is-left')).toContain('cursor: ew-resize')
+    expect(ruleBody('.onebot-webqq-webqq__resize-zone.is-top')).toContain('cursor: ns-resize')
+    expect(ruleBody('.onebot-webqq-webqq__resize-zone.is-top-left')).toContain('cursor: nwse-resize')
+  })
+
   it('styles the WebQQ return-to-bottom button as a clickable bottom overlay', () => {
     const scrollBottomBody = ruleBody('.onebot-webqq-webqq__scroll-bottom')
     const missingRequirements = [

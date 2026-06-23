@@ -1,5 +1,5 @@
 <template>
-  <div :class="['onebot-webqq-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`, { 'has-tim-bubble-tail': webQQTimBubbleTail }, `is-color-${webQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div ref="webQQRoot" :class="['onebot-webqq-webqq', `is-theme-${webQQTheme}`, `is-chat-style-${webQQChatStyle}`, { 'has-tim-bubble-tail': webQQTimBubbleTail, 'is-resizable': allowWebQQResize }, `is-color-${webQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <WebQQSidebar
       v-model:search-query="searchQuery"
       v-model:notice-menu-tab="noticeMenuTab"
@@ -134,6 +134,9 @@
       :url="imagePreviewUrl"
       @close="closeImagePreview"
     />
+    <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-left" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('left', $event)"></span>
+    <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-top" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('top', $event)"></span>
+    <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-top-left" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('top-left', $event)"></span>
   </div>
 </template>
 
@@ -149,7 +152,7 @@ import WebQQImagePreview from './components/WebQQImagePreview.vue'
 import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
-import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from './settings'
+import { allowWebQQResize, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from './settings'
 import type { WebQQFriend, WebQQGroup, WebQQMessage } from './types'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
@@ -175,8 +178,24 @@ import { getWebQQAccentStyle } from './utils/webqq-theme-view'
 import { vWebqqScrollbar } from './utils/webqq-scrollbar'
 
 type RecentItem = WebQQRecentItem
+type WebQQResizeEdge = 'left' | 'top' | 'top-left'
+
+interface WebQQShellSize {
+  width: number
+  height: number
+}
+
+interface WebQQResizeState {
+  edge: WebQQResizeEdge
+  startX: number
+  startY: number
+  startWidth: number
+  startHeight: number
+}
 
 const props = defineProps<{ visible: boolean }>()
+const webQQRoot = ref<HTMLElement>()
+const webQQShellSize = ref<WebQQShellSize>()
 const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
 
 const {
@@ -259,7 +278,82 @@ const {
   toggleGroupInfo,
 } = useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })
 
-const webQQAccentStyle = computed(() => getWebQQAccentStyle(webQQAccentColor.value))
+const webQQResizeStorageKey = 'onebot-webqq:webqq:resize:v1'
+const webQQResizeMinWidth = 640
+const webQQResizeMinHeight = 420
+const webQQResizeViewportWidthGap = 32
+const webQQResizeViewportHeightGap = 180
+let webQQResizeState: WebQQResizeState | undefined
+let previousBodyCursor = ''
+let previousBodyUserSelect = ''
+
+function normalizeWebQQShellSize(value: unknown): WebQQShellSize | undefined {
+  if (!value || typeof value !== 'object') return
+  const width = Reflect.get(value, 'width')
+  const height = Reflect.get(value, 'height')
+  if (typeof width !== 'number' || typeof height !== 'number') return
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return
+  return { width, height }
+}
+
+function getWebQQResizeBounds() {
+  if (typeof window === 'undefined') {
+    return {
+      minWidth: webQQResizeMinWidth,
+      minHeight: webQQResizeMinHeight,
+      maxWidth: webQQResizeMinWidth,
+      maxHeight: webQQResizeMinHeight,
+    }
+  }
+  const maxWidth = Math.max(0, window.innerWidth - webQQResizeViewportWidthGap)
+  const maxHeight = Math.max(0, window.innerHeight - webQQResizeViewportHeightGap)
+  return {
+    minWidth: Math.min(webQQResizeMinWidth, maxWidth),
+    minHeight: Math.min(webQQResizeMinHeight, maxHeight),
+    maxWidth,
+    maxHeight,
+  }
+}
+
+function clampWebQQShellSize(size: WebQQShellSize): WebQQShellSize {
+  const bounds = getWebQQResizeBounds()
+  return {
+    width: Math.round(Math.min(Math.max(size.width, bounds.minWidth), bounds.maxWidth)),
+    height: Math.round(Math.min(Math.max(size.height, bounds.minHeight), bounds.maxHeight)),
+  }
+}
+
+function readStoredWebQQShellSize() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    return normalizeWebQQShellSize(JSON.parse(localStorage.getItem(webQQResizeStorageKey) || 'null'))
+  } catch {
+    return
+  }
+}
+
+function persistWebQQShellSize(size: WebQQShellSize) {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(webQQResizeStorageKey, JSON.stringify(size))
+  } catch {}
+}
+
+function loadStoredWebQQShellSize() {
+  const stored = readStoredWebQQShellSize()
+  if (!stored) return
+  webQQShellSize.value = clampWebQQShellSize(stored)
+}
+
+const webQQAccentStyle = computed(() => {
+  const style = getWebQQAccentStyle(webQQAccentColor.value)
+  if (!allowWebQQResize.value || !webQQShellSize.value) return style
+  return {
+    ...style,
+    width: `${webQQShellSize.value.width}px`,
+    height: `${webQQShellSize.value.height}px`,
+  }
+})
 
 const {
   forwardDialog,
@@ -365,6 +459,67 @@ function closeNoticeMenu() {
   closeForwardDialog()
 }
 
+function getWebQQResizeCursor(edge: WebQQResizeEdge) {
+  if (edge === 'left') return 'ew-resize'
+  if (edge === 'top') return 'ns-resize'
+  return 'nwse-resize'
+}
+
+function updateStoredWebQQShellSize(size: WebQQShellSize) {
+  webQQShellSize.value = clampWebQQShellSize(size)
+}
+
+function handleWebQQResizeMove(event: PointerEvent) {
+  if (!webQQResizeState) return
+  event.preventDefault()
+  const width = webQQResizeState.edge === 'top'
+    ? webQQResizeState.startWidth
+    : webQQResizeState.startWidth + webQQResizeState.startX - event.clientX
+  const height = webQQResizeState.edge === 'left'
+    ? webQQResizeState.startHeight
+    : webQQResizeState.startHeight + webQQResizeState.startY - event.clientY
+  updateStoredWebQQShellSize({ width, height })
+}
+
+function stopWebQQResize() {
+  if (!webQQResizeState) return
+  window.removeEventListener('pointermove', handleWebQQResizeMove)
+  window.removeEventListener('pointerup', stopWebQQResize)
+  window.removeEventListener('pointercancel', stopWebQQResize)
+  document.body.style.cursor = previousBodyCursor
+  document.body.style.userSelect = previousBodyUserSelect
+  webQQResizeState = undefined
+  if (webQQShellSize.value) persistWebQQShellSize(webQQShellSize.value)
+}
+
+function startWebQQResize(edge: WebQQResizeEdge, event: PointerEvent) {
+  if (!allowWebQQResize.value || event.button !== 0 || !webQQRoot.value) return
+  const rect = webQQRoot.value.getBoundingClientRect()
+  webQQResizeState = {
+    edge,
+    startX: event.clientX,
+    startY: event.clientY,
+    startWidth: rect.width,
+    startHeight: rect.height,
+  }
+  updateStoredWebQQShellSize({ width: rect.width, height: rect.height })
+  previousBodyCursor = document.body.style.cursor
+  previousBodyUserSelect = document.body.style.userSelect
+  document.body.style.cursor = getWebQQResizeCursor(edge)
+  document.body.style.userSelect = 'none'
+  window.addEventListener('pointermove', handleWebQQResizeMove)
+  window.addEventListener('pointerup', stopWebQQResize)
+  window.addEventListener('pointercancel', stopWebQQResize)
+}
+
+function clampCurrentWebQQShellSize() {
+  if (!allowWebQQResize.value || !webQQShellSize.value) return
+  const next = clampWebQQShellSize(webQQShellSize.value)
+  if (next.width === webQQShellSize.value.width && next.height === webQQShellSize.value.height) return
+  webQQShellSize.value = next
+  persistWebQQShellSize(next)
+}
+
 function selectFriend(friend: WebQQFriend) {
   noticeOpen.value = false
   groupInfoOpen.value = false
@@ -401,7 +556,16 @@ const disposeWebQQLiveMessages = useWebQQLiveMessages({
   saveCachedMessages: saveCachedWebQQMessages,
 })
 
-onBeforeUnmount(() => disposeWebQQLiveMessages())
+onBeforeUnmount(() => {
+  disposeWebQQLiveMessages()
+  stopWebQQResize()
+  window.removeEventListener('resize', clampCurrentWebQQShellSize)
+})
+
+watch(allowWebQQResize, (enabled) => {
+  if (enabled) loadStoredWebQQShellSize()
+  else stopWebQQResize()
+}, { immediate: true })
 
 watch(() => props.visible, (visible) => {
   if (!visible) return
@@ -433,6 +597,7 @@ watch(selectedBotSelfId, (selfId, oldSelfId) => {
 })
 
 onMounted(async () => {
+  window.addEventListener('resize', clampCurrentWebQQShellSize)
   await loadRemoteWebQQStoredState()
   await loadContacts()
 })

@@ -6,6 +6,7 @@ export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
 export const hideWebQQGroupLevel = ref(true)
+export const allowWebQQResize = ref(false)
 export const showWebQQAffinity = ref(false)
 export const showWebQQCapsuleUnread = ref(true)
 export const showWebQQRelationship = ref(false)

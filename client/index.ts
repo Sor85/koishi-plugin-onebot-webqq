@@ -4,7 +4,7 @@ import ClientShell from './ClientShell.vue'
 import { capsule, type CapsuleData } from './capsule/state'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
-import { hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './webqq/settings'
+import { allowWebQQResize, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './webqq/settings'
 import './style.scss'
 
 interface ClientData {
@@ -20,6 +20,7 @@ interface ClientData {
   webQQMessageCacheLimit?: number
   webQQAccentColor?: string
   useCompactCapsuleShadow?: boolean
+  allowWebQQResize?: boolean
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
   showWebQQRelationship?: boolean
@@ -45,6 +46,7 @@ function applyClientData(value?: ClientData) {
   webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100
   webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'
   useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true
+  allowWebQQResize.value = value?.allowWebQQResize ?? false
   hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true
   showWebQQAffinity.value = value?.showWebQQAffinity ?? false
   showWebQQRelationship.value = value?.showWebQQRelationship ?? false
