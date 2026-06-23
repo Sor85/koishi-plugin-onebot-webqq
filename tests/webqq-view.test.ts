@@ -756,6 +756,8 @@ describe('webqq observer view', () => {
     expect(webqqScrollbarDirective).toContain('ResizeObserver')
     expect(webqqScrollbarDirective).toContain('pointermove')
     expect(webqqScrollbarDirective).toContain('const overlayInset = 0')
+    expect(webqqScrollbarDirective).toContain("element.closest<HTMLElement>('.onebot-webqq-webqq')")
+    expect(webqqScrollbarDirective).toContain('const rect = getVisibleScrollbarRect(element)')
     expect(webqqScrollbarDirective).toContain('function stopEvent(event: Event)')
     expect(webqqScrollbarDirective).toContain('event.stopPropagation()')
     expect(webqqScrollbarDirective).toContain("addListener(thumb, 'click', stopEvent)")

@@ -22,6 +22,10 @@ function sourceBetween(source: string, start: string, end: string) {
 }
 
 function mediaBody(query: string) {
+  return blockBody(query)
+}
+
+function blockBody(query: string) {
   const start = style.indexOf(query)
   if (start < 0) return ''
   const bodyStart = style.indexOf('{', start) + 1
@@ -870,21 +874,23 @@ describe('chat capsule styles', () => {
   })
 
   it('moves the group info toggle into the narrow group info header', () => {
-    const narrowBody = mediaBody('@media screen and (max-width: 768px)')
-    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-content')
+    const narrowBody = blockBody('@container onebot-webqq (max-width: 780px)')
+    expect(webqqShellStyle).toContain('container: onebot-webqq / inline-size')
+    expect(styleEntry).toContain('@container onebot-webqq (max-width: 780px)')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat-content')
     expect(narrowBody).toContain('position: absolute')
     expect(narrowBody).toContain('pointer-events: none')
-    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__group-info')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__group-info')
     expect(narrowBody).toContain('width: 100%')
     expect(narrowBody).toContain('border-left: 0')
-    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-header')
-    expect(narrowBody).toContain('position: absolute')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat-header')
     expect(narrowBody).toContain('justify-content: flex-end')
-    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-title')
-    expect(narrowBody).toContain('display: none')
-    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-body')
-    expect(narrowBody).toContain('.onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-header button')
+    expect(narrowBody).toContain('button')
     expect(narrowBody).toContain('pointer-events: auto')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat-title')
+    expect(narrowBody).toContain('display: none')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__chat-body')
   })
 
   it('adds a fresh WebQQ theme with plain gray-white surfaces and blue accents', () => {

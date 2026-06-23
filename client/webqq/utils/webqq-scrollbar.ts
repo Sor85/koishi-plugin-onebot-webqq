@@ -68,10 +68,24 @@ function readAccentColor(element: HTMLElement) {
   return getComputedStyle(root).getPropertyValue('--onebot-webqq-webqq-accent').trim()
 }
 
+function getVisibleScrollbarRect(element: HTMLElement) {
+  const rect = element.getBoundingClientRect()
+  const shell = element.closest<HTMLElement>('.onebot-webqq-webqq')?.getBoundingClientRect()
+  if (!shell) return rect
+  return {
+    top: Math.max(rect.top, shell.top),
+    right: Math.min(rect.right, shell.right),
+    bottom: Math.min(rect.bottom, shell.bottom),
+    left: Math.max(rect.left, shell.left),
+    width: Math.max(0, Math.min(rect.right, shell.right) - Math.max(rect.left, shell.left)),
+    height: Math.max(0, Math.min(rect.bottom, shell.bottom) - Math.max(rect.top, shell.top)),
+  }
+}
+
 function updateScrollbar(state: WebQQScrollbarState) {
   state.frame = 0
   const { element, overlay } = state
-  const rect = element.getBoundingClientRect()
+  const rect = getVisibleScrollbarRect(element)
   const trackHeight = Math.max(0, rect.height - edgeGap * 2)
   const maxScrollTop = element.scrollHeight - element.clientHeight
   const isUsable = element.isConnected && rect.width > 0 && trackHeight > 0 && maxScrollTop > 1

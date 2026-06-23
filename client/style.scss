@@ -240,40 +240,6 @@
     display: none;
   }
 
-  .onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-content {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-  }
-
-  .onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__group-info {
-    width: 100%;
-    flex: 1;
-    border-left: 0;
-  }
-
-  .onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-header {
-    position: absolute;
-    inset: 0 0 auto;
-    justify-content: flex-end;
-    pointer-events: none;
-    background: transparent;
-    border-bottom: 0;
-  }
-
-  .onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-title {
-    display: none;
-  }
-
-  .onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-body {
-    display: none;
-  }
-
-  .onebot-webqq-webqq__chat.is-mobile-group-info-open .onebot-webqq-webqq__chat-header button {
-    pointer-events: auto;
-  }
-
   .onebot-webqq-webqq__mobile-notice-page {
     min-width: 0;
     min-height: 0;
@@ -296,5 +262,40 @@
     max-height: none;
     min-height: 0;
     flex: 1;
+  }
+}
+
+@container onebot-webqq (max-width: 780px) {
+  .onebot-webqq-webqq__chat.is-mobile-group-info-open {
+    .onebot-webqq-webqq__chat-content {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .onebot-webqq-webqq__group-info {
+      width: 100%;
+      flex: 1;
+      border-left: 0;
+    }
+
+    .onebot-webqq-webqq__chat-header {
+      position: absolute;
+      inset: 0 0 auto;
+      justify-content: flex-end;
+      pointer-events: none;
+      background: transparent;
+      border-bottom: 0;
+
+      button {
+        pointer-events: auto;
+      }
+    }
+
+    .onebot-webqq-webqq__chat-title,
+    .onebot-webqq-webqq__chat-body {
+      display: none;
+    }
   }
 }

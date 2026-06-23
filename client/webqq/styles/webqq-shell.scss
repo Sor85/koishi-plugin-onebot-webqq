@@ -4,6 +4,7 @@
   bottom: 116px;
   z-index: 10001;
   display: grid;
+  container: onebot-webqq / inline-size;
   grid-template-columns: 280px minmax(0, 1fr);
   width: min(calc(100vw - 32px), calc(158.536585vh - 247.317073px));
   height: auto;
