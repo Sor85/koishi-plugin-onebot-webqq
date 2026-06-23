@@ -74,7 +74,7 @@ export const Config: Schema<Config> = Schema.intersect([
       Schema.const('dark').description('暗色'),
     ]).default('auto').role('radio').description('WebQQ 颜色模式'),
     webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 主题色'),
-    allowWebQQResize: Schema.boolean().default(false).description('允许拖动 WebQQ 左边、上边和左上角调整窗口宽高'),
+    allowWebQQResize: Schema.boolean().default(true).description('允许拖动 WebQQ 以调整窗口宽高'),
     webQQMarkRecalledMessages: Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息'),
     hideWebQQGroupLevel: Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标'),
     showWebQQAffinity: Schema.boolean().default(false).description('在 WebQQ 用户昵称右侧显示 ChatLuna 好感度'),

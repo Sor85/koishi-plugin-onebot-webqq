@@ -282,7 +282,8 @@ const webQQResizeStorageKey = 'onebot-webqq:webqq:resize:v1'
 const webQQResizeMinWidth = 640
 const webQQResizeMinHeight = 420
 const webQQResizeViewportWidthGap = 32
-const webQQResizeViewportHeightGap = 180
+const webQQResizeViewportHeightGap = 6
+const webQQResizeDefaultBottomGap = 116
 let webQQResizeState: WebQQResizeState | undefined
 let previousBodyCursor = ''
 let previousBodyUserSelect = ''
@@ -306,7 +307,8 @@ function getWebQQResizeBounds() {
     }
   }
   const maxWidth = Math.max(0, window.innerWidth - webQQResizeViewportWidthGap)
-  const maxHeight = Math.max(0, window.innerHeight - webQQResizeViewportHeightGap)
+  const bottomGap = webQQRoot.value ? Math.max(0, window.innerHeight - webQQRoot.value.getBoundingClientRect().bottom) : webQQResizeDefaultBottomGap
+  const maxHeight = Math.max(0, window.innerHeight - bottomGap - webQQResizeViewportHeightGap)
   return {
     minWidth: Math.min(webQQResizeMinWidth, maxWidth),
     minHeight: Math.min(webQQResizeMinHeight, maxHeight),
