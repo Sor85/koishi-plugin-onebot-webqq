@@ -205,10 +205,10 @@ describe('webqq observer view', () => {
   })
 
   it('allows optional browser-local WebQQ shell resizing from invisible top and left edges', () => {
-    expect(webqqSettings).toContain('export const allowWebQQResize = ref(true)')
+    expect(webqqSettings).toContain('export const allowWebQQResize = ref(false)')
     expect(clientIndex).toContain('allowWebQQResize')
     expect(clientIndex).toMatch(/allowWebQQResize\?:\s*boolean/)
-    expect(clientIndex).toContain('allowWebQQResize.value = value?.allowWebQQResize ?? true')
+    expect(clientIndex).toContain('allowWebQQResize.value = value?.allowWebQQResize ?? false')
     expect(webqqView).toContain('const webQQResizeStorageKey = \'onebot-webqq:webqq:resize:v1\'')
     expect(webqqView).toContain('const webQQResizeMinWidth = 640')
     expect(webqqView).toContain('const webQQResizeMinHeight = 420')

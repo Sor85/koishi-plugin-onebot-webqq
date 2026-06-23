@@ -1956,7 +1956,7 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("webQQAccentColor?:")
     expect(configSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 主题色')")
     expect(configSource).toContain("allowWebQQResize?: boolean")
-    expect(configSource).toContain("Schema.boolean().default(true).description('允许拖动 WebQQ 以调整窗口宽高')")
+    expect(configSource).toContain("Schema.boolean().default(false).description('允许拖动 WebQQ 以调整窗口宽高')")
     expect(configSource).toContain("useCompactCapsuleShadow?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影')")
     expect(configSource).toContain("hideWebQQGroupLevel?: boolean")
@@ -2017,7 +2017,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useCompactCapsuleShadow: true,
-      allowWebQQResize: true,
+      allowWebQQResize: false,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
       showWebQQRelationship: false,
@@ -3627,7 +3627,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useCompactCapsuleShadow: true,
-      allowWebQQResize: true,
+      allowWebQQResize: false,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
       showWebQQRelationship: false,

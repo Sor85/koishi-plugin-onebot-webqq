@@ -36,7 +36,7 @@ export function resetWebQQClientState() {
   capsule.value = undefined
   availableBots.value = []
   debug.value = false
-  allowWebQQResize.value = true
+  allowWebQQResize.value = false
   hideWebQQGroupLevel.value = true
   showWebQQAffinity.value = false
   showWebQQCapsuleUnread.value = true

@@ -46,7 +46,7 @@ function applyClientData(value?: ClientData) {
   webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100
   webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'
   useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true
-  allowWebQQResize.value = value?.allowWebQQResize ?? true
+  allowWebQQResize.value = value?.allowWebQQResize ?? false
   hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true
   showWebQQAffinity.value = value?.showWebQQAffinity ?? false
   showWebQQRelationship.value = value?.showWebQQRelationship ?? false
