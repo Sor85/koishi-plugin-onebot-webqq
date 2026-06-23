@@ -171,10 +171,9 @@
                           <path d="M12 3a9 9 0 1 1-9 9"></path>
                         </svg>
                         <svg v-else class="onebot-webqq-webqq__record-transcribe-icon" viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M4 5h16"></path>
-                          <path d="M8 5c0 6 1.5 10 4 13"></path>
-                          <path d="M16 5c0 6-1.5 10-4 13"></path>
-                          <path d="M7 14h10"></path>
+                          <path d="M5 5.5h14a2.5 2.5 0 0 1 2.5 2.5v6a2.5 2.5 0 0 1-2.5 2.5h-7l-4.5 3v-3H5A2.5 2.5 0 0 1 2.5 14V8A2.5 2.5 0 0 1 5 5.5Z"></path>
+                          <path d="M7.5 9.5h9"></path>
+                          <path d="M7.5 13h6"></path>
                         </svg>
                       </button>
                     </div>

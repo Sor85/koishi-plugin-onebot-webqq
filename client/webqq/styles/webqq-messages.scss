@@ -196,10 +196,10 @@
   display: inline-flex;
   min-width: 102px;
   max-width: 200px;
-  height: 40px;
+  height: 34px;
   align-items: center;
-  gap: 8px;
-  padding: 0 12px;
+  gap: 7px;
+  padding: 0 10px;
   border: 0;
   border-radius: 999px;
   color: #02b95f;
@@ -223,8 +223,8 @@
 }
 
 .onebot-webqq-webqq__record-play-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
   fill: currentColor;
 }
@@ -243,9 +243,9 @@
 }
 
 .onebot-webqq-webqq__record-wave {
-  width: 24px;
-  height: 18px;
-  flex: 0 0 24px;
+  width: 22px;
+  height: 16px;
+  flex: 0 0 22px;
   fill: #11d36e;
 }
 
@@ -273,9 +273,9 @@
 .onebot-webqq-webqq__record-duration {
   min-width: 16px;
   color: #047857;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 16px;
   text-align: right;
   white-space: nowrap;
 }

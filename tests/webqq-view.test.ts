@@ -1923,6 +1923,8 @@ describe('webqq observer view', () => {
         ? '语音元素不能继续显示浏览器原生 audio controls'
         : '',
       webqqMessageListView.includes('<svg v-else class="onebot-webqq-webqq__record-transcribe-icon"') &&
+        webqqMessageListView.includes('M5 5.5h14a2.5 2.5 0 0 1 2.5 2.5v6') &&
+        webqqMessageListView.includes('M7.5 9.5h9') &&
         !webqqMessageListView.includes('<span v-else>文</span>')
         ? ''
         : '语音转文字按钮必须使用 SVG 图标',
