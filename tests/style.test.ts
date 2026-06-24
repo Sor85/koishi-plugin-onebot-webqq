@@ -915,7 +915,7 @@ describe('chat capsule styles', () => {
   background: rgba(244, 246, 248, 0.12)`)
     expect(ruleBody('.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat')).toContain('backdrop-filter: none')
-    expect(ruleBody('.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.52)')
+    expect(ruleBody('.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.92)')
     expect(ruleBody('.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__group-info')).toContain('background: rgba(248, 250, 252, 0.34)')
     expect(style).toContain(`.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notice-menu,
 .onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notice-card,
