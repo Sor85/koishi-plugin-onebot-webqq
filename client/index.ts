@@ -4,7 +4,7 @@ import ClientShell from './ClientShell.vue'
 import { capsule, type CapsuleData } from './capsule/state'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
-import { allowWebQQResize, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend, type WebQQTheme } from './webqq/settings'
+import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
 import './style.scss'
 
 interface ClientData {
@@ -12,13 +12,14 @@ interface ClientData {
   bots?: OneBotRobotState['bots']
   selectedSelfId?: string
   debug?: boolean
-  webQQTheme?: WebQQTheme
+  enableWebQQFrostedGlass?: boolean
   webQQChatStyle?: WebQQChatStyle
   webQQTimBubbleTail?: boolean
   webQQColorMode?: WebQQColorMode
   webQQStorageBackend?: WebQQStorageBackend
   webQQMessageCacheLimit?: number
   webQQAccentColor?: string
+  enableCapsuleFrostedGlass?: boolean
   useCompactCapsuleShadow?: boolean
   allowWebQQResize?: boolean
   hideWebQQGroupLevel?: boolean
@@ -38,13 +39,14 @@ function applyClientData(value?: ClientData) {
   capsule.value = value?.capsule
   applyOneBotRobotState(value)
   debug.value = !!value?.debug
-  webQQTheme.value = value?.webQQTheme || 'fresh'
+  enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true
   webQQChatStyle.value = value?.webQQChatStyle || 'telegram'
   webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true
   webQQColorMode.value = value?.webQQColorMode || 'auto'
   webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'
   webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100
   webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'
+  enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true
   useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true
   allowWebQQResize.value = value?.allowWebQQResize ?? false
   hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true

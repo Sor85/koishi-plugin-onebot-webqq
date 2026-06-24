@@ -1939,12 +1939,13 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("description('WebQQ 设置')")
     expect(configSource).not.toContain("description('界面外观')")
     expect(configSource).not.toContain("description('消息显示')")
-    expect(configSource).toContain('webQQTheme?:')
-    expect(configSource).toContain("Schema.const('fresh').description('清爽')")
-    expect(configSource).toContain("Schema.const('frosted').description('毛玻璃')")
+    expect(configSource).not.toContain('webQQTheme?:')
+    expect(configSource).not.toContain("Schema.const('fresh').description('清爽')")
+    expect(configSource).not.toContain("Schema.const('frosted').description('毛玻璃')")
     expect(configSource).not.toContain("Schema.const('glass').description('玻璃')")
-    expect(configSource).toContain(".default('fresh')")
-    expect(configSource).toContain("description('WebQQ 主题')")
+    expect(configSource).toContain('enableWebQQFrostedGlass?: boolean')
+    expect(configSource).toContain("Schema.boolean().default(true).description('启用 WebQQ 毛玻璃效果')")
+    expect(configSource).not.toContain("description('WebQQ 主题')")
     expect(configSource).toContain("webQQChatStyle?:")
     expect(configSource).toMatch(/webQQChatStyle:\s*Schema\.union\(\[[\s\S]*Schema\.const\('telegram'\)\.description\('TIM'\)[\s\S]*Schema\.const\('qq'\)\.description\('QQ'\)[\s\S]*\]\)\.default\('telegram'\)\.role\('radio'\)/)
     expect(configSource).not.toContain("Schema.const('telegram').description('Telegram')")
@@ -1954,7 +1955,9 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toMatch(/webQQColorMode\?:\s*'auto'\s*\|\s*'light'\s*\|\s*'dark'/)
     expect(configSource).toMatch(/webQQColorMode:\s*Schema\.union\(\[[\s\S]*Schema\.const\('auto'\)\.description\('自动'\)[\s\S]*Schema\.const\('light'\)\.description\('明亮'\)[\s\S]*Schema\.const\('dark'\)\.description\('暗色'\)[\s\S]*\]\)\.default\('auto'\)\.role\('radio'\)/)
     expect(configSource).toContain("webQQAccentColor?:")
-    expect(configSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 主题色')")
+    expect(configSource).toContain("Schema.string().default('#2563eb').role('color').description('WebQQ 强调色')")
+    expect(configSource).toContain("enableCapsuleFrostedGlass?: boolean")
+    expect(configSource).toContain("Schema.boolean().default(true).description('启用小胶囊毛玻璃效果')")
     expect(configSource).toContain("allowWebQQResize?: boolean")
     expect(configSource).toContain("Schema.boolean().default(false).description('允许拖动 WebQQ 以调整窗口宽高')")
     expect(configSource).toContain("useCompactCapsuleShadow?: boolean")
@@ -2011,7 +2014,8 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       bots: [],
       debug: false,
-      webQQTheme: 'fresh',
+      enableWebQQFrostedGlass: true,
+      enableCapsuleFrostedGlass: true,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: true,
       webQQColorMode: 'auto',
@@ -3621,7 +3625,8 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       bots: [],
       debug: true,
-      webQQTheme: 'fresh',
+      enableWebQQFrostedGlass: true,
+      enableCapsuleFrostedGlass: true,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: true,
       webQQColorMode: 'auto',
@@ -3639,10 +3644,11 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
-  it('passes configured WebQQ theme and accent settings to console entry data', () => {
+  it('passes configured WebQQ appearance settings to console entry data', () => {
     const { ctx, addEntry } = createFakeContext()
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
-      webQQTheme?: 'fresh' | 'frosted'
+      enableWebQQFrostedGlass?: boolean
+      enableCapsuleFrostedGlass?: boolean
       webQQChatStyle?: 'qq' | 'telegram'
       webQQTimBubbleTail?: boolean
       webQQColorMode?: 'auto' | 'light' | 'dark'
@@ -3662,7 +3668,8 @@ describe('chat capsule plugin wiring', () => {
     const applyWithConfig: ApplyWithConfig = plugin.apply
 
     applyWithConfig(ctx, {
-      webQQTheme: 'fresh',
+      enableWebQQFrostedGlass: false,
+      enableCapsuleFrostedGlass: false,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: false,
       webQQColorMode: 'dark',
@@ -3685,7 +3692,8 @@ describe('chat capsule plugin wiring', () => {
       capsule: undefined,
       bots: [],
       debug: false,
-      webQQTheme: 'fresh',
+      enableWebQQFrostedGlass: false,
+      enableCapsuleFrostedGlass: false,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: false,
       webQQColorMode: 'dark',

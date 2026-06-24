@@ -1,77 +1,77 @@
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__sidebar,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__tabs-row {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__sidebar,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__tabs-row {
   background: #f4f6f8;
   backdrop-filter: none;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__sidebar,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__tabs-row {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__tabs-row {
   background: rgba(244, 246, 248, 0.12);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__tabs button.is-active,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__notify:hover,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__notify.is-active,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__notice-tabs button.is-active,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__contact:hover,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__contact.is-active {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__tabs button.is-active,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notify:hover,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notify.is-active,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notice-tabs button.is-active,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__contact:hover,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__contact.is-active {
   color: var(--onebot-webqq-webqq-accent);
   background: #e8f0ff;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__tabs button.is-active,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notify:hover,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notify.is-active,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notice-tabs button.is-active,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__contact:hover,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__contact.is-active {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__tabs button.is-active,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notify:hover,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notify.is-active,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-tabs button.is-active,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__contact:hover,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__contact.is-active {
   color: var(--onebot-webqq-webqq-accent);
   background: rgba(232, 240, 255, 0.78);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__search input,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__group-members input {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__search input,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__group-members input {
   background: #ffffff;
   border-color: #d9e1ea;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__search input,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__group-members input {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__search input,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-members input {
   background: rgba(255, 255, 255, 0.72);
   border-color: rgba(217, 225, 234, 0.78);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__chat {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__chat {
   background: #f1f5f9;
   backdrop-filter: none;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__chat-main {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__chat-main {
   position: relative;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat-main {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-main {
   position: relative;
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__chat-header {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__chat-header {
   position: absolute;
   inset: 0 0 auto;
   z-index: 2;
-  background: rgba(248, 250, 252, 0.86);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: #f8fafc;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__chat-header {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header {
   position: absolute;
   inset: 0 0 auto;
   z-index: 2;
@@ -80,65 +80,67 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__messages {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__messages {
   padding: 84px 22px 20px;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__messages {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__messages {
   padding: 84px 22px 20px;
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__group-info {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__group-info {
   background: #f8fafc;
   backdrop-filter: none;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__group-info {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-info {
   background: rgba(248, 250, 252, 0.34);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__notice-actions button {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notice-actions button {
   color: var(--onebot-webqq-webqq-accent);
   background: #e8f0ff;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notice-actions button {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-actions button {
   color: var(--onebot-webqq-webqq-accent);
   background: rgba(232, 240, 255, 0.78);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__notice-menu,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__notice-card,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__group-announcement {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notice-menu,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notice-card,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__group-announcement {
   background: #ffffff;
   border-color: #d9e1ea;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notice-menu,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__notice-card,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__group-announcement {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-menu,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-announcement {
   background: rgba(255, 255, 255, 0.72);
   border-color: rgba(217, 225, 234, 0.78);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__bubble {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__bubble {
   background: #ffffff;
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__bubble {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__bubble {
   background: rgba(255, 255, 255, 0.9);
 }
 
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
   background: var(--onebot-webqq-webqq-accent);
   box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
 }
 
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
   background: var(--onebot-webqq-webqq-accent);
   box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
 }
@@ -202,6 +204,10 @@
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header {
   background: rgba(15, 23, 42, 0.88);
+}
+
+.onebot-webqq-webqq.is-plain.is-color-dark .onebot-webqq-webqq__chat-header {
+  background: #0f172a;
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header span,
@@ -338,6 +344,10 @@
     background: rgba(15, 23, 42, 0.88);
   }
 
+  .onebot-webqq-webqq.is-plain.is-color-auto .onebot-webqq-webqq__chat-header {
+    background: #0f172a;
+  }
+
   .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__chat-header span,
   .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__contact small,
   .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__contact-time,
@@ -469,10 +479,15 @@
   border-color: rgba(15, 23, 42, 0.96);
 }
 
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__scroll-bottom {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .onebot-webqq-webqq .onebot-webqq-webqq__message .onebot-webqq-webqq__bubble.is-record-only,
 .onebot-webqq-webqq .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq.is-theme-fresh .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq.is-theme-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
 .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only {
   color: inherit;

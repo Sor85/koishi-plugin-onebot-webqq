@@ -13,11 +13,12 @@ export interface Config {
   webQQImageCacheLimitMB?: number
   webQQImageCacheItemLimitMB?: number
   webQQMarkRecalledMessages?: boolean
-  webQQTheme?: 'fresh' | 'frosted'
+  enableWebQQFrostedGlass?: boolean
   webQQChatStyle?: 'qq' | 'telegram'
   webQQTimBubbleTail?: boolean
   webQQColorMode?: 'auto' | 'light' | 'dark'
   webQQAccentColor?: string
+  enableCapsuleFrostedGlass?: boolean
   useCompactCapsuleShadow?: boolean
   allowWebQQResize?: boolean
   hideWebQQGroupLevel?: boolean
@@ -54,15 +55,13 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('历史与缓存'),
 
   Schema.object({
+    enableCapsuleFrostedGlass: Schema.boolean().default(true).description('启用小胶囊毛玻璃效果'),
     useCompactCapsuleShadow: Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影'),
     showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
   }).description('小胶囊设置'),
 
   Schema.object({
-    webQQTheme: Schema.union([
-      Schema.const('fresh').description('清爽'),
-      Schema.const('frosted').description('毛玻璃'),
-    ]).default('fresh').role('radio').description('WebQQ 主题'),
+    enableWebQQFrostedGlass: Schema.boolean().default(true).description('启用 WebQQ 毛玻璃效果'),
     webQQChatStyle: Schema.union([
       Schema.const('telegram').description('TIM'),
       Schema.const('qq').description('QQ'),
@@ -73,7 +72,7 @@ export const Config: Schema<Config> = Schema.intersect([
       Schema.const('light').description('明亮'),
       Schema.const('dark').description('暗色'),
     ]).default('auto').role('radio').description('WebQQ 颜色模式'),
-    webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 主题色'),
+    webQQAccentColor: Schema.string().default('#2563eb').role('color').description('WebQQ 强调色'),
     allowWebQQResize: Schema.boolean().default(false).description('允许拖动 WebQQ 以调整窗口宽高'),
     webQQMarkRecalledMessages: Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息'),
     hideWebQQGroupLevel: Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标'),

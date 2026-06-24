@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sortWebQQGroupMembers, type WebQQGroupMember } from '../client/webqq/types'
-import { hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTheme, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
+import { enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -13,8 +13,9 @@ function member(userId: string, card: string, role?: string, nickname = card): W
 }
 
 describe('webqq group members', () => {
-  it('uses the fresh WebQQ theme as the frontend default', () => {
-    expect(webQQTheme.value).toBe('fresh')
+  it('enables WebQQ frosted glass as the frontend default', () => {
+    expect(enableWebQQFrostedGlass.value).toBe(true)
+    expect(enableCapsuleFrostedGlass.value).toBe(true)
     expect(webQQChatStyle.value).toBe('telegram')
     expect(webQQTimBubbleTail.value).toBe(true)
     expect(webQQStorageBackend.value).toBe('koishi')

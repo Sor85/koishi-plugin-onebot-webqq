@@ -1,10 +1,11 @@
 import { ref } from 'vue'
 
-export type WebQQTheme = 'fresh' | 'frosted'
 export type WebQQChatStyle = 'qq' | 'telegram'
 export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
+export const enableWebQQFrostedGlass = ref(true)
+export const enableCapsuleFrostedGlass = ref(true)
 export const hideWebQQGroupLevel = ref(true)
 export const allowWebQQResize = ref(false)
 export const showWebQQAffinity = ref(false)
@@ -19,5 +20,4 @@ export const webQQChatStyle = ref<WebQQChatStyle>('telegram')
 export const webQQColorMode = ref<WebQQColorMode>('auto')
 export const webQQMessageCacheLimit = ref(100)
 export const webQQStorageBackend = ref<WebQQStorageBackend>('koishi')
-export const webQQTheme = ref<WebQQTheme>('fresh')
 export const webQQTimBubbleTail = ref(true)

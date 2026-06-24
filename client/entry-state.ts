@@ -3,6 +3,8 @@ import { capsule, type CapsuleData } from './capsule/state'
 import { availableBots, selectedBotSelfId } from './onebot/bots'
 import {
   allowWebQQResize,
+  enableCapsuleFrostedGlass,
+  enableWebQQFrostedGlass,
   hideWebQQGroupLevel,
   showWebQQAffinity,
   showWebQQCapsuleUnread,
@@ -15,7 +17,6 @@ import {
   webQQColorMode,
   webQQMessageCacheLimit,
   webQQStorageBackend,
-  webQQTheme,
   webQQTimBubbleTail,
   webQQTotalUnread,
 } from './webqq/settings'
@@ -24,6 +25,7 @@ export const debug = ref(false)
 export const webQQOpen = ref(false)
 export const webQQCapsule = capsule
 export {
+  enableCapsuleFrostedGlass,
   showWebQQCapsuleUnread,
   useCompactCapsuleShadow,
   webQQAccentColor,
@@ -37,6 +39,8 @@ export function resetWebQQClientState() {
   availableBots.value = []
   debug.value = false
   allowWebQQResize.value = false
+  enableCapsuleFrostedGlass.value = true
+  enableWebQQFrostedGlass.value = true
   hideWebQQGroupLevel.value = true
   showWebQQAffinity.value = false
   showWebQQCapsuleUnread.value = true
@@ -51,7 +55,6 @@ export function resetWebQQClientState() {
   webQQColorMode.value = 'auto'
   webQQMessageCacheLimit.value = 100
   webQQStorageBackend.value = 'koishi'
-  webQQTheme.value = 'fresh'
   webQQTimBubbleTail.value = true
   selectedBotSelfId.value = ''
 }

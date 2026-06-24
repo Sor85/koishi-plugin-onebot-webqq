@@ -367,6 +367,19 @@ describe('chat capsule view', () => {
     expect(missingRequirements).toEqual([])
   })
 
+  it('applies the configured capsule frosted glass option to the main capsule', () => {
+    const missingRequirements = [
+      /import \{[^}]*\benableCapsuleFrostedGlass\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
+        ? ''
+        : '主胶囊没有从 entry-state 读取 enableCapsuleFrostedGlass',
+      capsuleView.includes("enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain'")
+        ? ''
+        : '主胶囊根节点没有根据 enableCapsuleFrostedGlass 输出毛玻璃类名',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('applies the configured compact capsule shadow option to the main capsule', () => {
     const missingRequirements = [
       /import \{[^}]*\buseCompactCapsuleShadow\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
@@ -410,12 +423,12 @@ describe('chat capsule view', () => {
     ]).toEqual(['9999', '99999', '99999+'])
   })
 
-  it('loads the configured WebQQ theme from console entry data', () => {
+  it('loads the configured frosted glass options from console entry data', () => {
     expect(clientEntry).toContain("from './capsule/state'")
     expect(clientEntry).toContain("from './entry-state'")
     expect(clientEntry).toContain("from './onebot/bots'")
     expect(clientEntry).toContain("from './webqq/settings'")
-    expect(clientEntry).toContain('webQQTheme?: WebQQTheme')
+    expect(clientEntry).toContain('enableWebQQFrostedGlass?: boolean')
     expect(clientEntry).toContain("bots?: OneBotRobotState['bots']")
     expect(clientEntry).toContain('selectedSelfId?: string')
     expect(clientEntry).toContain('webQQChatStyle?: WebQQChatStyle')
@@ -423,6 +436,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('webQQColorMode?: WebQQColorMode')
     expect(clientEntry).toContain('webQQStorageBackend?: WebQQStorageBackend')
     expect(clientEntry).toContain('webQQMessageCacheLimit?: number')
+    expect(clientEntry).toContain('enableCapsuleFrostedGlass?: boolean')
     expect(clientEntry).toContain('useCompactCapsuleShadow?: boolean')
     expect(clientEntry).toContain('allowWebQQResize?: boolean')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
@@ -435,13 +449,14 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('applyClientData(data?.value)')
     expect(clientEntry).toContain('watch(data, (value) => {')
     expect(clientEntry).toContain('applyClientData(value)')
-    expect(clientEntry).toContain("webQQTheme.value = value?.webQQTheme || 'fresh'")
+    expect(clientEntry).toContain('enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true')
     expect(clientEntry).toContain("webQQChatStyle.value = value?.webQQChatStyle || 'telegram'")
     expect(clientEntry).toContain('webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true')
     expect(clientEntry).toContain("webQQColorMode.value = value?.webQQColorMode || 'auto'")
     expect(clientEntry).toContain("webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'")
     expect(clientEntry).toContain('webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100')
     expect(clientEntry).toContain("webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'")
+    expect(clientEntry).toContain('enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true')
     expect(clientEntry).toContain('useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true')
     expect(clientEntry).toContain('allowWebQQResize.value = value?.allowWebQQResize ?? false')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true')

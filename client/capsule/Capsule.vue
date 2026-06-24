@@ -2,7 +2,7 @@
   <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host" :style="capsuleHostStyle">
     <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root">
       <div
-        :class="['onebot-webqq', `is-color-${webQQColorMode}`, {
+        :class="['onebot-webqq', enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain', `is-color-${webQQColorMode}`, {
           'is-bot-stack-expanded': botStackVisualExpanded,
           'is-capsule-shadow-wide': !useCompactCapsuleShadow,
         }]"
@@ -148,7 +148,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
 import { createLayout, type AutoLayout } from 'animejs'
-import { showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
+import { enableCapsuleFrostedGlass, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
 import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
 import { capsule } from './state'

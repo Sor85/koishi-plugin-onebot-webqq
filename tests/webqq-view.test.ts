@@ -147,13 +147,17 @@ describe('webqq observer view', () => {
     expect(clientShell).not.toContain('const webqqMounted')
   })
 
-  it('uses the configured WebQQ theme without rendering an in-panel theme selector', () => {
+  it('uses the configured WebQQ frosted glass option without rendering an in-panel theme selector', () => {
     expect(webqqView).toContain("from './settings'")
     expect(webqqContactView).toContain('sortWebQQGroupMembers')
+    expect(webqqSettings).toContain('export const enableWebQQFrostedGlass = ref(true)')
+    expect(clientIndex).toContain('enableWebQQFrostedGlass')
+    expect(clientIndex).toMatch(/enableWebQQFrostedGlass\?:\s*boolean/)
+    expect(clientIndex).toContain('enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true')
     expect(webqqView).toContain('webQQAccentColor')
     expect(webqqView).toContain('webQQChatStyle')
     expect(webqqView).toContain('webQQTimBubbleTail')
-    expect(webqqView).toContain('webQQTheme')
+    expect(webqqView).toContain('enableWebQQFrostedGlass')
     expect(webqqView).toContain('hideWebQQGroupLevel')
     expect(webqqView).toContain('showWebQQAffinity')
     expect(webqqView).toContain('showWebQQRelationship')
@@ -161,7 +165,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('showWebQQThinkingTiming')
     expect(webqqView).toContain('allowWebQQResize')
     expect(webqqView).toContain("['onebot-webqq-webqq'")
-    expect(webqqView).toContain('`is-theme-${webQQTheme}`')
+    expect(webqqView).toContain("enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain'")
     expect(webqqView).toContain('`is-chat-style-${webQQChatStyle}`')
     expect(webqqView).toContain("'has-tim-bubble-tail': webQQTimBubbleTail")
     expect(webqqView).toContain("'is-resizable': allowWebQQResize")
@@ -171,6 +175,7 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('aria-label="WebQQ 主题"')
     expect(webqqView).not.toContain('v-model="webQQTheme"')
     expect(webqqView).not.toContain('webQQThemeOptions')
+    expect(webqqView).not.toContain('`is-theme-${webQQTheme}`')
   })
 
   it('uses the configured WebQQ color mode without rendering an in-panel switcher', () => {
@@ -188,6 +193,11 @@ describe('webqq observer view', () => {
   })
 
   it('keeps compact capsule shadow enabled by default from console entry data', () => {
+    expect(webqqSettings).toContain('export const enableCapsuleFrostedGlass = ref(true)')
+    expect(clientIndex).toContain('enableCapsuleFrostedGlass')
+    expect(clientIndex).toMatch(/enableCapsuleFrostedGlass\?:\s*boolean/)
+    expect(clientIndex).toContain('enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true')
+    expect(capsuleView).toContain("enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain'")
     expect(webqqSettings).toContain('export const useCompactCapsuleShadow = ref(true)')
     expect(clientIndex).toContain('useCompactCapsuleShadow')
     expect(clientIndex).toMatch(/useCompactCapsuleShadow\?:\s*boolean/)
