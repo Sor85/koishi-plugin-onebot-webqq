@@ -13,7 +13,7 @@ describe('webqq koishi storage', () => {
       senderAvatar: '',
       direction: 'incoming',
       summary: 'hello',
-      elements: [{ type: 'text', text: 'hello' }],
+      elements: [{ type: 'face', text: '[表情 264]', emojiUrl: 'https://koishi.js.org/QFace/gif/s264.gif' }],
     }
     const database = {
       get: vi.fn(async () => [{

@@ -34,6 +34,7 @@
                   <span v-if="run.type === 'inline'" class="onebot-webqq-webqq__inline-run">
                     <template v-for="element in run.elements" :key="`forward:${itemIndex}:inline:${runIndex}:${element.type}:${element.text || element.url || element.title || ''}`">
                       <span v-if="element.type === 'text'">{{ element.text }}</span>
+                      <img v-else-if="element.type === 'face' && element.emojiUrl" class="onebot-webqq-webqq__message-face" :src="withProxy(element.emojiUrl)" :alt="element.text || '表情'" @load="emit('image-load')">
                       <span v-else>{{ element.text || '[消息]' }}</span>
                     </template>
                   </span>

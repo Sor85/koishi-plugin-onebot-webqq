@@ -11,7 +11,7 @@ function readRectValue(value: number) {
   return Number.isFinite(value) ? value : 0
 }
 
-type RenderedTextRect = {
+type RenderedContentRect = {
   top: number
   left: number
   right: number
@@ -26,11 +26,15 @@ type RenderedLineRect = {
 
 const lineTopTolerance = 2
 
-function getRenderedTextRects(node: HTMLElement): RenderedTextRect[] {
+function getRenderedContentRects(node: HTMLElement): RenderedContentRect[] {
   const range = document.createRange()
   range.selectNodeContents(node)
   try {
-    return [...range.getClientRects()]
+    const rangeRects = [...range.getClientRects()]
+    const imageRects = typeof node.querySelectorAll === 'function'
+      ? [...node.querySelectorAll<HTMLImageElement>('img')].map((image) => image.getBoundingClientRect())
+      : []
+    return [...rangeRects, ...imageRects]
       .map((rect) => {
         const width = readRectValue(rect.width)
         const left = readRectValue(rect.left)
@@ -71,7 +75,7 @@ function findMatchingLine(lines: RenderedLineRect[], top: number) {
   return lines.find((line) => Math.abs(line.top - top) <= lineTopTolerance)
 }
 
-function mergeRenderedLineRects(rects: RenderedTextRect[]) {
+function mergeRenderedLineRects(rects: RenderedContentRect[]) {
   const lines: RenderedLineRect[] = []
   for (const rect of rects) {
     const line = findMatchingLine(lines, rect.top)
@@ -88,7 +92,7 @@ function mergeRenderedLineRects(rects: RenderedTextRect[]) {
 function measureInlineLineWidths(inlineRuns: HTMLElement[]) {
   // Range 会在 @ 提及或相邻行内节点边界把同一视觉行拆成多个 rect；
   // 先按行合并可以避免只取到最长片段，导致本应一行的消息被压窄换行。
-  return mergeRenderedLineRects(inlineRuns.flatMap(getRenderedTextRects))
+  return mergeRenderedLineRects(inlineRuns.flatMap(getRenderedContentRects))
 }
 
 export function fitWebQQBubbleToInlineLines(bubble: HTMLElement) {

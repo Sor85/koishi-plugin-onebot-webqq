@@ -1,3 +1,4 @@
+import * as qface from 'qface'
 import {
   getActionData,
   getStringField,
@@ -27,11 +28,17 @@ import {
   normalizeWebQQGroupRole,
 } from '../../display'
 
+const QFACE_BASE = 'https://koishi.js.org/QFace'
+
 export function normalizeFaceElement(data: Record<string, unknown>): WebQQMessageElement {
   const summary = getStringField(data, ['summary', 'text', 'name'])
-  if (summary) return { type: 'face', text: summary }
   const id = getStringField(data, ['emoji_id', 'emojiId', 'id'])
-  return { type: 'face', text: id ? `[表情 ${id}]` : '[表情]' }
+  const emojiUrl = id ? qface.getUrl(id, QFACE_BASE) : ''
+  return {
+    type: 'face',
+    text: summary || (id ? `[表情 ${id}]` : '[表情]'),
+    ...(emojiUrl ? { emojiUrl } : {}),
+  }
 }
 
 export function summarizeElements(elements: WebQQMessageElement[]) {

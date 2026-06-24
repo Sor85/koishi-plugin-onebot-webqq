@@ -33,7 +33,7 @@ describe('webqq client api', () => {
         senderAvatar: '',
         direction: 'incoming',
         summary: 'hello',
-        elements: [{ type: 'text', text: 'hello' }],
+        elements: [{ type: 'face', text: '[表情 264]', emojiUrl: 'https://koishi.js.org/QFace/gif/s264.gif' }],
       },
       {},
       [],
@@ -47,7 +47,7 @@ describe('webqq client api', () => {
       senderAvatar: '',
       direction: 'incoming',
       summary: 'hello',
-      elements: [{ type: 'text', text: 'hello' }],
+      elements: [{ type: 'face', text: '[表情 264]', emojiUrl: 'https://koishi.js.org/QFace/gif/s264.gif' }],
     }])
 
     sendState.response = { announcements: {}, members: null }

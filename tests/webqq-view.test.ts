@@ -1390,6 +1390,21 @@ describe('webqq observer view', () => {
     expect(bubbleSource).not.toContain('v-for="(element, index) in message.elements"')
   })
 
+  it('renders WebQQ face elements with QQ emoji images when available', () => {
+    expect(serverWebqqTypesSource).toContain('emojiUrl?: string')
+    expect(webqqTypes).toContain('emojiUrl?: string')
+    expect(webqqApi).toContain("const emojiUrl = readStringField(value, 'emojiUrl')")
+    expect(webqqMessageListView).toContain("element.type === 'face' && element.emojiUrl")
+    expect(webqqMessageListView).toContain(':src="withProxy(element.emojiUrl)"')
+    expect(webqqForwardModal).toContain("element.type === 'face' && element.emojiUrl")
+    expect(style).toContain('.onebot-webqq-webqq__message-face')
+    const faceStyle = sourceBetween(style, '.onebot-webqq-webqq__message-face {', '}')
+    expect(faceStyle).toContain('display: inline-block')
+    expect(faceStyle).toContain('width: 18px')
+    expect(faceStyle).toContain('height: 18px')
+    expect(style).toContain('img:not(.onebot-webqq-webqq__message-reaction-avatar-image):not(.onebot-webqq-webqq__message-face)')
+  })
+
   it('fits pure inline text bubbles to the measured rendered line width', () => {
     expect(webqqMessageListView).toContain("import { fitWebQQBubbleToInlineLines } from '../utils/webqq-bubble-width'")
     expect(webqqMessageListView).toContain(':ref="(element) => setBubbleElementRef(message, element)"')
@@ -1402,7 +1417,7 @@ describe('webqq observer view', () => {
     expect(webqqBubbleWidth).toContain('export function fitWebQQBubbleToInlineLines(bubble: HTMLElement)')
     expect(webqqBubbleWidth).toContain('range.getClientRects()')
     expect(webqqBubbleWidth).toContain('const lineWidths = measureInlineLineWidths(inlineRuns)')
-    expect(webqqBubbleWidth).toContain('mergeRenderedLineRects(inlineRuns.flatMap(getRenderedTextRects))')
+    expect(webqqBubbleWidth).toContain('mergeRenderedLineRects(inlineRuns.flatMap(getRenderedContentRects))')
     expect(webqqBubbleWidth).toContain('setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)')
     expect(webqqBubbleWidth).not.toContain('lineWidths.length <=')
     expect(webqqBubbleWidth).not.toContain('let low =')

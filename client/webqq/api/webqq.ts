@@ -120,6 +120,7 @@ function normalizeWebQQMessageElement(value: unknown): WebQQMessageElement | und
   const duration = readNumber(value.duration)
   const transcript = readStringField(value, 'transcript')
   const url = readStringField(value, 'url')
+  const emojiUrl = readStringField(value, 'emojiUrl')
   const imageUrl = readStringField(value, 'imageUrl')
   const source = readStringField(value, 'source')
   const items = normalizeArray(value.items, normalizeWebQQForwardItem)
@@ -129,6 +130,7 @@ function normalizeWebQQMessageElement(value: unknown): WebQQMessageElement | und
   if (duration != null) element.duration = duration
   if (transcript != null) element.transcript = transcript
   if (url != null) element.url = url
+  if (emojiUrl != null) element.emojiUrl = emojiUrl
   if (imageUrl != null) element.imageUrl = imageUrl
   if (source != null) element.source = source
   if (items.length) element.items = items

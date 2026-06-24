@@ -2926,7 +2926,7 @@ describe('chat capsule plugin wiring', () => {
         },
         message: {
           id: 'mface-2',
-          elements: [{ type: 'mface', attrs: { id: '456' } }],
+          elements: [{ type: 'mface', attrs: { id: '264' } }],
         },
       },
     }))
@@ -2941,7 +2941,7 @@ describe('chat capsule plugin wiring', () => {
         message: expect.objectContaining({
           id: 'mface-1',
           summary: '[开心]',
-          elements: [{ type: 'face', text: '[开心]' }],
+          elements: [{ type: 'face', text: '[开心]', emojiUrl: 'https://koishi.js.org/QFace/gif/s123.gif' }],
         }),
       },
       { authority: 1 },
@@ -2953,8 +2953,8 @@ describe('chat capsule plugin wiring', () => {
         peerId: '20000',
         message: expect.objectContaining({
           id: 'mface-2',
-          summary: '[表情 456]',
-          elements: [{ type: 'face', text: '[表情 456]' }],
+          summary: '[表情 264]',
+          elements: [{ type: 'face', text: '[表情 264]', emojiUrl: 'https://koishi.js.org/QFace/gif/s264.gif' }],
         }),
       },
       { authority: 1 },

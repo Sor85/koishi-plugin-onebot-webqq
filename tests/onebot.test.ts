@@ -686,7 +686,7 @@ describe('onebot webqq adapter', () => {
               user_id: 30000,
               nickname: 'Alice',
             },
-            message: [{ type: 'mface', data: { emoji_id: '456' } }],
+            message: [{ type: 'mface', data: { emoji_id: '264' } }],
           }, {
             message_id: 7,
             message_seq: 17,
@@ -705,11 +705,11 @@ describe('onebot webqq adapter', () => {
     await expect(service.loadMessages({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
       expect.objectContaining({
         summary: '[开心]',
-        elements: [{ type: 'face', text: '[开心]' }],
+        elements: [{ type: 'face', text: '[开心]', emojiUrl: 'https://koishi.js.org/QFace/gif/s123.gif' }],
       }),
       expect.objectContaining({
-        summary: '[表情 456]',
-        elements: [{ type: 'face', text: '[表情 456]' }],
+        summary: '[表情 264]',
+        elements: [{ type: 'face', text: '[表情 264]', emojiUrl: 'https://koishi.js.org/QFace/gif/s264.gif' }],
       }),
       expect.objectContaining({
         summary: '[表情 789]',

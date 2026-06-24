@@ -35,6 +35,7 @@ export interface WebQQMessageElement {
   duration?: number
   transcript?: string
   url?: string
+  emojiUrl?: string
   imageUrl?: string
   source?: string
   items?: WebQQForwardItem[]
