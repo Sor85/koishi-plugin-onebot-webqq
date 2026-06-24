@@ -917,7 +917,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
     expect(style).toContain(`.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar,
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__tabs-row {
-  background: rgba(244, 246, 248, 0.12)`)
+  background: rgba(244, 246, 248, 0.02)`)
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat')).toContain('backdrop-filter: none')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.92)')
