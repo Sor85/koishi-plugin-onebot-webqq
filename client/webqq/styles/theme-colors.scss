@@ -483,14 +483,3 @@
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-
-.onebot-webqq-webqq .onebot-webqq-webqq__message .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only,
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble.is-record-only {
-  color: inherit;
-  background: transparent;
-  box-shadow: none;
-}

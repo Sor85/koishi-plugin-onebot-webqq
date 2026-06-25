@@ -631,14 +631,14 @@ describe('chat capsule styles', () => {
   })
 
   it('gates TIM-style WebQQ bubble tails behind the enabled option class', () => {
-    const baseTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before'
-    const enabledTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before'
+    const baseTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before'
+    const enabledTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before'
 
     expect(ruleBody(baseTailSelector)).toBe('')
     expect(ruleBody(enabledTailSelector)).toContain("content: ''")
     expect(ruleBody(enabledTailSelector)).toContain('background: inherit')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)')).toContain('border-top-left-radius: 0')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)')).toContain('border-top-right-radius: 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble')).toContain('border-top-left-radius: 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble')).toContain('border-top-right-radius: 0')
   })
 
   it('shows Telegram-style WebQQ message times outside bubbles on hover', () => {
@@ -1117,20 +1117,29 @@ describe('chat capsule styles', () => {
     const audioBody = ruleBody('.onebot-webqq-webqq__record-audio')
     const playerBody = ruleBody('.onebot-webqq-webqq__record-player')
     const waveBody = ruleBody('.onebot-webqq-webqq__record-wave')
+    const durationBody = ruleBody('.onebot-webqq-webqq__record-duration')
     const transcriptBody = ruleBody('.onebot-webqq-webqq__record-transcript')
 
     expect(recordBody, '缺少语音消息容器样式').toContain('display: flex')
     expect(recordBody).toContain('gap:')
     expect(audioBody, '语音 audio 应作为隐藏播放源存在').toContain('display: none')
-    expect(playerBody, '缺少 LLBot 风格语音胶囊样式').toContain('border-radius: 999px')
-    expect(playerBody).toContain('min-width: 102px')
-    expect(playerBody).toContain('height: 34px')
-    expect(playerBody).toContain('padding: 0 10px')
-    expect(playerBody).toContain('background:')
+    expect(playerBody, '缺少自定义语音播放条样式').toContain('min-width: 128px')
+    expect(playerBody).toContain('max-width: 220px')
+    expect(playerBody).toContain('height: 19px')
+    expect(playerBody).toContain('gap: 6px')
+    expect(playerBody).toContain('color: inherit')
+    expect(playerBody).toContain('background: transparent')
     expect(waveBody, '缺少语音波形样式').toContain('fill:')
-    expect(waveBody).toContain('height: 16px')
-    expect(waveBody).toContain('flex: 0 0 22px')
+    expect(waveBody).toContain('fill: currentColor')
+    expect(waveBody).toContain('height: 18px')
+    expect(waveBody).toContain('flex: 1 1 auto')
+    expect(durationBody).toContain('min-width: 18px')
+    expect(durationBody).toContain('margin-left: 4px')
+    expect(durationBody).toContain('text-align: left')
     expect(transcriptBody, '缺少语音转文字结果样式').toContain('font-size:')
+    expect(webqqMessagesStyle).not.toContain('is-record-only')
+    expect(webqqMessagesStyle).not.toContain('record-divider')
+    expect(themeColorsStyle).not.toContain('is-record-only')
   })
 
   it('highlights the WebQQ message targeted by a clicked quote', () => {

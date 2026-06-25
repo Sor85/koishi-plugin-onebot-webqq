@@ -1379,7 +1379,7 @@ describe('webqq observer view', () => {
   it('renders consecutive inline WebQQ elements inside one inline container', () => {
     const bubbleSource = sourceBetween(
       webqqMessageListView,
-      ':class="[\'onebot-webqq-webqq__bubble\'',
+      'class="onebot-webqq-webqq__bubble"',
       '<div class="onebot-webqq-webqq__message-time"',
     )
 
@@ -1941,9 +1941,12 @@ describe('webqq observer view', () => {
       webqqMessageListView.includes('onebot-webqq-webqq__record-player') &&
         webqqMessageListView.includes('toggleRecordPlayback(message, run.element, runIndex)') &&
         webqqMessageListView.includes('class="onebot-webqq-webqq__record-wave"') &&
-        webqqMessageListView.includes('viewBox="0 0 24 18"')
+        webqqMessageListView.includes('viewBox="0 0 60 18"') &&
+        webqqMessageListView.includes('Math.min(220, Math.max(128, 128 + duration * 3))') &&
+        !webqqMessageListView.includes('isRecordOnlyMessage') &&
+        !webqqMessageListView.includes('onebot-webqq-webqq__record-divider')
         ? ''
-        : '语音元素没有使用 LLBot 风格的自定义播放胶囊',
+        : '语音元素没有使用跟随普通气泡样式的自定义播放条',
       webqqMessageListView.includes('controls')
         ? '语音元素不能继续显示浏览器原生 audio controls'
         : '',

@@ -177,15 +177,14 @@
   max-width: 100%;
   min-width: 0;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 
 .onebot-webqq-webqq__record-row {
   display: flex;
   max-width: 100%;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .onebot-webqq-webqq__record-audio {
@@ -194,22 +193,23 @@
 
 .onebot-webqq-webqq__record-player {
   display: inline-flex;
-  min-width: 102px;
-  max-width: 200px;
-  height: 34px;
+  min-width: 128px;
+  max-width: 220px;
+  height: 19px;
   align-items: center;
-  gap: 7px;
-  padding: 0 10px;
+  gap: 6px;
+  padding: 0;
   border: 0;
-  border-radius: 999px;
-  color: #02b95f;
-  background: #d7fbe3;
+  color: inherit;
+  background: transparent;
   cursor: pointer;
-  transition: background 0.16s ease, transform 0.16s ease;
+  font: inherit;
+  line-height: inherit;
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
 .onebot-webqq-webqq__record-player:hover {
-  background: #c7f8d9;
+  opacity: 0.82;
 }
 
 .onebot-webqq-webqq__record-player:active {
@@ -243,10 +243,11 @@
 }
 
 .onebot-webqq-webqq__record-wave {
-  width: 22px;
-  height: 16px;
-  flex: 0 0 22px;
-  fill: #11d36e;
+  height: 18px;
+  flex: 1 1 auto;
+  min-width: 44px;
+  fill: currentColor;
+  opacity: 0.78;
 }
 
 .onebot-webqq-webqq__record-player.is-playing .onebot-webqq-webqq__record-wave rect {
@@ -271,12 +272,13 @@
 }
 
 .onebot-webqq-webqq__record-duration {
-  min-width: 16px;
-  color: #047857;
+  min-width: 18px;
+  margin-left: 4px;
+  color: inherit;
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
 }
 
@@ -284,23 +286,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 19px;
+  height: 19px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  color: #64748b;
-  background: rgba(241, 245, 249, 0.96);
+  color: inherit;
+  background: transparent;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  line-height: 28px;
-  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+  line-height: 19px;
+  opacity: 0.62;
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
 .onebot-webqq-webqq__record-transcribe:hover {
-  color: #334155;
-  background: #e2e8f0;
+  opacity: 0.9;
 }
 
 .onebot-webqq-webqq__record-transcribe:active {
@@ -314,8 +316,8 @@
 }
 
 .onebot-webqq-webqq__record-transcribe-icon {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   flex: 0 0 auto;
 }
 
@@ -338,41 +340,6 @@
   overflow-wrap: anywhere;
   text-align: left;
   white-space: pre-wrap;
-}
-
-.onebot-webqq-webqq .onebot-webqq-webqq__message .onebot-webqq-webqq__bubble.is-record-only {
-  padding: 0;
-  border-radius: 0;
-  color: inherit;
-  background: transparent;
-  box-shadow: none;
-}
-
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-player {
-  color: #86efac;
-  background: rgba(20, 83, 45, 0.64);
-}
-
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-player:hover {
-  background: rgba(22, 101, 52, 0.72);
-}
-
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-wave {
-  fill: #4ade80;
-}
-
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-duration {
-  color: #bbf7d0;
-}
-
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-transcribe {
-  color: #cbd5e1;
-  background: rgba(51, 65, 85, 0.82);
-}
-
-.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-transcribe:hover {
-  color: #f8fafc;
-  background: rgba(71, 85, 105, 0.92);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__record-transcript {
@@ -869,7 +836,7 @@
    斜边用二次贝塞尔曲线，在气泡边缘处垂直相切后平滑收向尖端，过渡比直线柔和。
    气泡背景半透明，故尖角全部伸出气泡外、贴边与气泡边缘 0 重叠共线，气泡该角设直角拼成一体。
    clip-path: path() 用绝对坐标、不随 left/right 翻转，左右两侧需各自镜像路径 */
-.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before {
+.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before {
   content: '';
   position: absolute;
   top: 0;
@@ -878,21 +845,21 @@
   background: inherit;
 }
 
-.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only) {
+.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble {
   border-top-left-radius: 0;
 }
 
-.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before {
+.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble::before {
   left: -8px;
   /* 尖端在左上(0,0)指向头像，贴边 x=8 与气泡左缘共线，曲线在(8,14)垂直相切 */
   clip-path: path('M 0 0 L 8 0 L 8 14 Q 8 3 0 0 Z');
 }
 
-.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only) {
+.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble {
   border-top-right-radius: 0;
 }
 
-.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble:not(.is-record-only)::before {
+.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble::before {
   right: -8px;
   /* 尖端在右上(8,0)指向头像，贴边 x=0 与气泡右缘共线，曲线在(0,14)垂直相切 */
   clip-path: path('M 8 0 L 0 0 L 0 14 Q 0 3 8 0 Z');
