@@ -1,7 +1,8 @@
 import { Context, receive } from '@koishijs/client'
 import { watch, type Ref } from 'vue'
 import ClientShell from './ClientShell.vue'
-import { capsule, type CapsuleData } from './capsule/state'
+import { capsule, hiddenCapsuleActivityIds, type CapsuleData } from './capsule/state'
+import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
 import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
@@ -21,6 +22,7 @@ interface ClientData {
   webQQAccentColor?: string
   enableCapsuleFrostedGlass?: boolean
   useCompactCapsuleShadow?: boolean
+  hiddenCapsuleActivityIds?: string[]
   allowWebQQResize?: boolean
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
@@ -48,6 +50,7 @@ function applyClientData(value?: ClientData) {
   webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'
   enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true
   useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true
+  hiddenCapsuleActivityIds.value = value?.hiddenCapsuleActivityIds ?? ['logs']
   allowWebQQResize.value = value?.allowWebQQResize ?? false
   hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true
   showWebQQAffinity.value = value?.showWebQQAffinity ?? false
@@ -96,6 +99,12 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
       else receive('onebot-webqq/bots/update', () => {})
       resetWebQQClientState()
     }
+  })
+
+  ctx.schema({
+    type: 'array',
+    role: 'onebot-webqq-activity-select',
+    component: CapsuleActivitySelect,
   })
 
   ctx.slot({

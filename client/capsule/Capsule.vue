@@ -151,7 +151,7 @@ import { createLayout, type AutoLayout } from 'animejs'
 import { enableCapsuleFrostedGlass, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
 import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
-import { capsule } from './state'
+import { capsule, hiddenCapsuleActivityIds } from './state'
 
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
 const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
@@ -180,9 +180,10 @@ let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 let botStackLayout: AutoLayout | undefined
 let botStackOverflowMotionTimer: ReturnType<typeof setTimeout> | undefined
 let capsuleTextResizeObserver: ResizeObserver | undefined
-const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')
+const currentActivityId = computed(() => router.currentRoute.value.meta?.activity?.id || '')
+const isHiddenActivity = computed(() => hiddenCapsuleActivityIds.value.includes(currentActivityId.value))
 const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))
-const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)
+const shouldShowCapsule = computed(() => isLoggedIn.value && !isHiddenActivity.value)
 const availableBots = computed(() => capsule.value?.bots?.length ? capsule.value.bots : runtimeBots.value)
 const hasMultipleBots = computed(() => availableBots.value.length > 1)
 const selectedBot = computed(() => availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value))

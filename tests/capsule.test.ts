@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const capsuleView = await readFile(new URL('../client/capsule/Capsule.vue', import.meta.url), 'utf8')
+const capsuleActivitySelect = await readFile(new URL('../client/capsule/CapsuleActivitySelect.vue', import.meta.url), 'utf8')
+const capsuleState = await readFile(new URL('../client/capsule/state.ts', import.meta.url), 'utf8')
 const capsuleStyle = await readFile(new URL('../client/capsule/styles.scss', import.meta.url), 'utf8')
 const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
@@ -26,17 +28,31 @@ function runGetCapsuleUnreadText(count: number) {
 const multiBotTemplate = sourceBetween(capsuleView, 'v-if="hasMultipleBots"', '<button\n            v-else')
 
 describe('chat capsule view', () => {
-  it('hides the capsule on the logger page', () => {
+  it('hides the capsule on configured activity pages', () => {
     expect(capsuleView).toContain("import { Universal, activities, router, store, withProxy } from '@koishijs/client'")
-    expect(capsuleView).toContain("const isLoggerRoute = computed(() => router.currentRoute.value.path === '/logs')")
-    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)')
+    expect(capsuleView).toContain("import { capsule, hiddenCapsuleActivityIds } from './state'")
+    expect(capsuleView).toContain("const currentActivityId = computed(() => router.currentRoute.value.meta?.activity?.id || '')")
+    expect(capsuleView).toContain('const isHiddenActivity = computed(() => hiddenCapsuleActivityIds.value.includes(currentActivityId.value))')
+    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isHiddenActivity.value)')
     expect(capsuleView).toContain('v-if="shouldShowCapsule"')
+    expect(capsuleState).toContain("export const hiddenCapsuleActivityIds = ref(['logs'])")
   })
 
   it('hides the capsule before the Koishi console user is logged in', () => {
     expect(capsuleView).toContain("const isLoggedIn = computed(() => !activities.login || ('user' in store && !!store.user))")
-    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isLoggerRoute.value)')
+    expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isHiddenActivity.value)')
     expect(capsuleView).toContain('v-if="shouldShowCapsule"')
+  })
+
+  it('registers a capsule settings field for global capsule visibility', () => {
+    expect(clientEntry).toContain("import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'")
+    expect(clientEntry).toContain("role: 'onebot-webqq-activity-select'")
+    expect(clientEntry).toContain('component: CapsuleActivitySelect')
+    expect(clientEntry).toContain('hiddenCapsuleActivityIds?: string[]')
+    expect(clientEntry).toContain("hiddenCapsuleActivityIds.value = value?.hiddenCapsuleActivityIds ?? ['logs']")
+    expect(capsuleActivitySelect).toContain('<SchemaBase>')
+    expect(capsuleActivitySelect).toContain('Object.values(ctx.$router.pages)')
+    expect(capsuleActivitySelect).toContain("emit('update:modelValue', [...values])")
   })
 
   it('renders a graphical WebQQ avatar guide without visible instruction text', () => {
@@ -438,6 +454,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('webQQMessageCacheLimit?: number')
     expect(clientEntry).toContain('enableCapsuleFrostedGlass?: boolean')
     expect(clientEntry).toContain('useCompactCapsuleShadow?: boolean')
+    expect(clientEntry).toContain('hiddenCapsuleActivityIds?: string[]')
     expect(clientEntry).toContain('allowWebQQResize?: boolean')
     expect(clientEntry).toContain('hideWebQQGroupLevel?: boolean')
     expect(clientEntry).toContain('showWebQQAffinity?: boolean')
@@ -458,6 +475,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain("webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'")
     expect(clientEntry).toContain('enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true')
     expect(clientEntry).toContain('useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true')
+    expect(clientEntry).toContain("hiddenCapsuleActivityIds.value = value?.hiddenCapsuleActivityIds ?? ['logs']")
     expect(clientEntry).toContain('allowWebQQResize.value = value?.allowWebQQResize ?? false')
     expect(clientEntry).toContain('hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true')
     expect(clientEntry).toContain('showWebQQAffinity.value = value?.showWebQQAffinity ?? false')

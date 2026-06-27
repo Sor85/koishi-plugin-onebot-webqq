@@ -1962,6 +1962,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.boolean().default(false).description('允许拖动 WebQQ 以调整窗口宽高')")
     expect(configSource).toContain("useCompactCapsuleShadow?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影')")
+    expect(configSource).toContain("hiddenCapsuleActivityIds?: string[]")
+    expect(configSource).toContain("Schema.array(Schema.string()).role('onebot-webqq-activity-select').default(['logs']).description('不显示小胶囊的控制台侧栏项')")
     expect(configSource).toContain("hideWebQQGroupLevel?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('隐藏 WebQQ 消息中的群等级徽标')")
     expect(configSource).toContain("showWebQQAffinity?: boolean")
@@ -2021,6 +2023,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useCompactCapsuleShadow: true,
+      hiddenCapsuleActivityIds: ['logs'],
       allowWebQQResize: false,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
@@ -3632,6 +3635,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
       useCompactCapsuleShadow: true,
+      hiddenCapsuleActivityIds: ['logs'],
       allowWebQQResize: false,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: false,
@@ -3654,6 +3658,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode?: 'auto' | 'light' | 'dark'
       webQQAccentColor?: string
       useCompactCapsuleShadow?: boolean
+      hiddenCapsuleActivityIds?: string[]
       allowWebQQResize?: boolean
       hideWebQQGroupLevel?: boolean
       showWebQQAffinity?: boolean
@@ -3675,6 +3680,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useCompactCapsuleShadow: false,
+      hiddenCapsuleActivityIds: ['logs', 'config'],
       allowWebQQResize: true,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: true,
@@ -3699,6 +3705,7 @@ describe('chat capsule plugin wiring', () => {
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
       useCompactCapsuleShadow: false,
+      hiddenCapsuleActivityIds: ['logs', 'config'],
       allowWebQQResize: true,
       hideWebQQGroupLevel: true,
       showWebQQAffinity: true,

@@ -35,6 +35,7 @@ export function registerConsoleEntry(
       webQQMessageCacheLimit: config.webQQMessageCacheLimit ?? 100,
       enableCapsuleFrostedGlass: config.enableCapsuleFrostedGlass ?? true,
       useCompactCapsuleShadow: config.useCompactCapsuleShadow ?? true,
+      hiddenCapsuleActivityIds: config.hiddenCapsuleActivityIds ?? ['logs'],
       allowWebQQResize: config.allowWebQQResize ?? false,
       hideWebQQGroupLevel: config.hideWebQQGroupLevel ?? true,
       showWebQQAffinity: config.showWebQQAffinity ?? false,

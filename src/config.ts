@@ -20,6 +20,7 @@ export interface Config {
   webQQAccentColor?: string
   enableCapsuleFrostedGlass?: boolean
   useCompactCapsuleShadow?: boolean
+  hiddenCapsuleActivityIds?: string[]
   allowWebQQResize?: boolean
   hideWebQQGroupLevel?: boolean
   showWebQQAffinity?: boolean
@@ -58,6 +59,7 @@ export const Config: Schema<Config> = Schema.intersect([
     enableCapsuleFrostedGlass: Schema.boolean().default(true).description('启用小胶囊毛玻璃效果'),
     useCompactCapsuleShadow: Schema.boolean().default(true).description('使用较窄的小胶囊阴影，关闭后使用较宽的阴影'),
     showWebQQCapsuleUnread: Schema.boolean().default(true).description('在小胶囊 bot 头像上显示 WebQQ 总未读数'),
+    hiddenCapsuleActivityIds: Schema.array(Schema.string()).role('onebot-webqq-activity-select').default(['logs']).description('不显示小胶囊的控制台侧栏项'),
   }).description('小胶囊设置'),
 
   Schema.object({
