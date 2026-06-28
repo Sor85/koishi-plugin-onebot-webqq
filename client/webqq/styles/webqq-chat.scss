@@ -126,11 +126,11 @@
   bottom: 20px;
   z-index: 3;
   width: min(620px, calc(100% - 44px));
-  min-height: 52px;
+  min-height: 44px;
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  padding: 8px;
+  gap: 4px;
+  padding: 4px;
   color: var(--k-text, var(--fg1, #1f2328));
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.66);
@@ -196,7 +196,7 @@
   width: 100%;
   max-height: 92px;
   display: block;
-  padding: 8px 2px;
+  padding: 4px 2px;
   overflow-y: auto;
   color: inherit;
   font: inherit;
@@ -212,8 +212,8 @@
 }
 
 .onebot-webqq-webqq__send-action {
-  width: 36px;
-  min-height: 36px;
+  width: 32px;
+  min-height: 32px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -231,6 +231,8 @@
   }
 
   &.is-primary {
+    width: 36px;
+    min-height: 36px;
     color: #fff;
     background: var(--onebot-webqq-webqq-accent);
   }
