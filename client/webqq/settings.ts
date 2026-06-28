@@ -5,6 +5,7 @@ export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
 export const enableWebQQFrostedGlass = ref(true)
+export const enableWebQQSend = ref(false)
 export const enableCapsuleFrostedGlass = ref(true)
 export const hideWebQQGroupLevel = ref(true)
 export const allowWebQQResize = ref(false)

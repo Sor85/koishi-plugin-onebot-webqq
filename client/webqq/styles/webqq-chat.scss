@@ -116,6 +116,136 @@
   padding: 20px 22px;
 }
 
+.onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__messages {
+  padding-bottom: 112px;
+}
+
+.onebot-webqq-webqq__send {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  z-index: 3;
+  width: min(620px, calc(100% - 44px));
+  min-height: 52px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px;
+  color: var(--k-text, var(--fg1, #1f2328));
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 999px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+  transform: translateX(-50%);
+}
+
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__send {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+}
+
+.onebot-webqq-webqq__send-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--onebot-webqq-webqq-accent-soft);
+}
+
+.onebot-webqq-webqq__send-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.onebot-webqq-webqq__send-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+.onebot-webqq-webqq__send-file {
+  max-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--onebot-webqq-webqq-accent-soft);
+  border-radius: 999px;
+
+  button {
+    flex: 0 0 auto;
+    width: 16px;
+    min-height: 16px;
+    padding: 0;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+}
+
+.onebot-webqq-webqq__send-text {
+  width: 100%;
+  max-height: 92px;
+  display: block;
+  padding: 8px 2px;
+  overflow-y: auto;
+  color: inherit;
+  font: inherit;
+  line-height: 20px;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.onebot-webqq-webqq__send-file-input {
+  display: none;
+}
+
+.onebot-webqq-webqq__send-action {
+  width: 36px;
+  min-height: 36px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--onebot-webqq-webqq-accent);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &.is-primary {
+    color: #fff;
+    background: var(--onebot-webqq-webqq-accent);
+  }
+}
+
+.onebot-webqq-webqq__send-icon {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .onebot-webqq-webqq__scroll-bottom {
   position: absolute;
   right: 22px;

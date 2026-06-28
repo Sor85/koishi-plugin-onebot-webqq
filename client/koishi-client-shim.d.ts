@@ -26,6 +26,9 @@ declare module '@koishijs/client' {
   export const router: { currentRoute: { value: { path: string; meta?: { activity?: { id?: string } } } } }
   export const store: Record<string, unknown>
   export const SchemaBase: Component
+  export const Binary: {
+    toBase64(value: ArrayBuffer): string
+  }
 
   export function useContext(): Context
   export function withProxy(url: string): string

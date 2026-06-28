@@ -5,6 +5,7 @@ import {
   allowWebQQResize,
   enableCapsuleFrostedGlass,
   enableWebQQFrostedGlass,
+  enableWebQQSend,
   hideWebQQGroupLevel,
   showWebQQAffinity,
   showWebQQCapsuleUnread,
@@ -41,6 +42,7 @@ export function resetWebQQClientState() {
   allowWebQQResize.value = false
   enableCapsuleFrostedGlass.value = true
   enableWebQQFrostedGlass.value = true
+  enableWebQQSend.value = false
   hideWebQQGroupLevel.value = true
   showWebQQAffinity.value = false
   showWebQQCapsuleUnread.value = true

@@ -28,6 +28,7 @@ export function registerConsoleEntry(
       ...botState,
       debug: options.debug,
       enableWebQQFrostedGlass: config.enableWebQQFrostedGlass ?? true,
+      enableWebQQSend: config.enableWebQQSend ?? false,
       webQQChatStyle: config.webQQChatStyle ?? 'telegram',
       webQQTimBubbleTail: config.webQQTimBubbleTail ?? true,
       webQQColorMode: config.webQQColorMode ?? 'auto',

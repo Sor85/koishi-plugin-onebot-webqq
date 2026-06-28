@@ -14,6 +14,7 @@ export interface Config {
   webQQImageCacheItemLimitMB?: number
   webQQMarkRecalledMessages?: boolean
   enableWebQQFrostedGlass?: boolean
+  enableWebQQSend?: boolean
   webQQChatStyle?: 'qq' | 'telegram'
   webQQTimBubbleTail?: boolean
   webQQColorMode?: 'auto' | 'light' | 'dark'
@@ -64,6 +65,7 @@ export const Config: Schema<Config> = Schema.intersect([
 
   Schema.object({
     enableWebQQFrostedGlass: Schema.boolean().default(true).description('启用 WebQQ 毛玻璃效果'),
+    enableWebQQSend: Schema.boolean().default(false).description('启用 WebQQ 消息发送功能'),
     webQQChatStyle: Schema.union([
       Schema.const('telegram').description('TIM'),
       Schema.const('qq').description('QQ'),

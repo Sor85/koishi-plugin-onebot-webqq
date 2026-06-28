@@ -67,6 +67,8 @@ import type {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecentContact,
+  WebQQSendElement,
+  WebQQSendPayload,
 } from '../../types'
 
 function toStringId(value: unknown) {
@@ -175,7 +177,19 @@ function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefi
   }
 }
 
-// 创建通过 OneBot action 读取 WebQQ 数据的只读服务。
+function toOneBotSendSegment(element: WebQQSendElement) {
+  if (element.type === 'text' && element.text) {
+    return { type: 'text', data: { text: element.text } }
+  }
+  if (element.type === 'image' && element.data) {
+    return { type: 'image', data: { file: element.data } }
+  }
+  if (element.type === 'file' && element.data) {
+    return { type: 'file', data: { file: element.data, name: element.name || 'file' } }
+  }
+}
+
+// 创建通过 OneBot action 读写 WebQQ 数据的服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   let selectedSelfId = options.selfId
   const getRealSelfId = (selfId = selectedSelfId) => {
@@ -287,6 +301,17 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         : { user_id: toOneBotId(query.peerId), ...baseParams }
       const result = await callAction(bot, action, params)
       return Promise.all(toArrayResult(result, 'messages').map((message) => normalizeMessage(message, bot, imageUrlResolver)))
+    },
+
+    async sendMessage(payload: WebQQSendPayload) {
+      const message = payload.elements.map(toOneBotSendSegment).filter((segment): segment is NonNullable<ReturnType<typeof toOneBotSendSegment>> => !!segment)
+      if (!message.length) return
+      const bot = getBot()
+      if (payload.type === 'group') {
+        await callAction(bot, 'send_group_msg', { group_id: toOneBotId(payload.peerId), message })
+        return
+      }
+      await callAction(bot, 'send_private_msg', { user_id: toOneBotId(payload.peerId), message })
     },
 
     async loadGroupInfo(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo> {

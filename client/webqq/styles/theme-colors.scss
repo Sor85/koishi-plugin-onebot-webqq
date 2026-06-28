@@ -282,6 +282,13 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
+.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__send {
+  color: #e5edf7;
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(148, 163, 184, 0.24);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
+}
+
 @media (prefers-color-scheme: dark) {
   .onebot-webqq-webqq.is-color-auto {
     color: #e5edf7;
@@ -418,6 +425,13 @@
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__send {
+    color: #e5edf7;
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(148, 163, 184, 0.24);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
   }
 
   .onebot-webqq.is-color-auto {
