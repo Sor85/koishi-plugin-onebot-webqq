@@ -87,7 +87,7 @@
               @toggle-thinking="toggleThinking"
             />
           </div>
-          <form v-if="enableWebQQSend && currentChat" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
+          <form v-if="enableWebQQSend && currentChat" ref="sendForm" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
             <img v-if="selectedBotAvatar" class="onebot-webqq-webqq__send-avatar" :src="withProxy(selectedBotAvatar)" alt="">
             <span v-else class="onebot-webqq-webqq__send-avatar" aria-hidden="true"></span>
             <div class="onebot-webqq-webqq__send-main">
@@ -174,7 +174,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Binary, withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
@@ -235,6 +235,28 @@ const props = defineProps<{ visible: boolean }>()
 const webQQRoot = ref<HTMLElement>()
 const webQQShellSize = ref<WebQQShellSize>()
 const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
+const webQQSendAvatarStorageKey = 'onebot-webqq:webqq-send-avatars:v1'
+
+function loadWebQQSendAvatarCache() {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    const data = JSON.parse(localStorage.getItem(webQQSendAvatarStorageKey) || '{}')
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return {}
+    return Object.fromEntries(Object.entries(data).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+  } catch {
+    return {}
+  }
+}
+
+const cachedSendBotAvatars = ref<Record<string, string>>(loadWebQQSendAvatarCache())
+
+function rememberSendBotAvatar(selfId?: string, avatar?: string) {
+  if (!selfId || !avatar || cachedSendBotAvatars.value[selfId] === avatar) return
+  cachedSendBotAvatars.value = { ...cachedSendBotAvatars.value, [selfId]: avatar }
+  try {
+    localStorage.setItem(webQQSendAvatarStorageKey, JSON.stringify(cachedSendBotAvatars.value))
+  } catch {}
+}
 
 const {
   conversationSummaries,
@@ -276,9 +298,19 @@ const sendText = ref('')
 const sendFiles = ref<WebQQSendFile[]>([])
 const sendingWebQQMessage = ref(false)
 const sendFileInput = ref<HTMLInputElement>()
+const sendForm = ref<HTMLElement>()
+const webQQSendSpace = ref(80)
 const selectedBotAvatar = computed(() => {
   const selected = availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value)
-  return selected?.avatar || availableBots.value[0]?.avatar || ''
+  const selectedSelfId = selected?.selfId || selectedBotSelfId.value
+  const capsuleBot = capsule.value?.bot
+  const fallback = availableBots.value[0]
+  return selected?.avatar ||
+    (selectedSelfId ? cachedSendBotAvatars.value[selectedSelfId] : '') ||
+    (!selectedSelfId || capsuleBot?.selfId === selectedSelfId ? capsuleBot?.avatar : '') ||
+    fallback?.avatar ||
+    (fallback?.selfId ? cachedSendBotAvatars.value[fallback.selfId] : '') ||
+    ''
 })
 const canSendWebQQMessage = computed(() => !!sendText.value.trim() || !!sendFiles.value.length)
 
@@ -454,13 +486,33 @@ function loadStoredWebQQShellSize() {
 
 const webQQAccentStyle = computed(() => {
   const style = getWebQQAccentStyle(webQQAccentColor.value)
-  if (!allowWebQQResize.value || !webQQShellSize.value) return style
+  const sendSpaceStyle = {
+    '--onebot-webqq-webqq-send-space': `${webQQSendSpace.value}px`,
+  }
+  if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle }
   return {
     ...style,
+    ...sendSpaceStyle,
     width: `${webQQShellSize.value.width}px`,
     height: `${webQQShellSize.value.height}px`,
   }
 })
+
+let sendFormResizeObserver: ResizeObserver | undefined
+
+function updateWebQQSendSpace() {
+  const form = sendForm.value
+  webQQSendSpace.value = form ? Math.ceil(form.getBoundingClientRect().height) + 28 : 80
+}
+
+async function observeWebQQSendForm() {
+  sendFormResizeObserver?.disconnect()
+  await nextTick()
+  updateWebQQSendSpace()
+  if (!sendForm.value || typeof ResizeObserver === 'undefined') return
+  sendFormResizeObserver = new ResizeObserver(updateWebQQSendSpace)
+  sendFormResizeObserver.observe(sendForm.value)
+}
 
 const {
   forwardDialog,
@@ -494,6 +546,10 @@ const {
   clearCurrentUnreadCount,
   shouldLoadOlderMessages: () => messageHistory.shouldLoadOlderMessages(),
   loadOlderMessages: () => { messageHistory.loadOlderMessages() },
+})
+
+watch(webQQSendSpace, () => {
+  if (trackingMessages.value) scrollMessagesToBottom()
 })
 
 const {
@@ -665,6 +721,7 @@ const disposeWebQQLiveMessages = useWebQQLiveMessages({
 
 onBeforeUnmount(() => {
   disposeWebQQLiveMessages()
+  sendFormResizeObserver?.disconnect()
   stopWebQQResize()
   window.removeEventListener('resize', clampCurrentWebQQShellSize)
 })
@@ -676,9 +733,14 @@ watch(allowWebQQResize, (enabled) => {
 
 watch(() => props.visible, (visible) => {
   if (!visible) return
+  observeWebQQSendForm()
   clearCurrentUnreadCount()
   if (trackingMessages.value) scrollMessagesToBottom()
 })
+
+watch(() => enableWebQQSend.value && !!currentChat.value, () => {
+  observeWebQQSendForm()
+}, { immediate: true })
 
 watch(totalUnreadCount, (count) => {
   webQQTotalUnread.value = count
@@ -702,6 +764,14 @@ watch(selectedBotSelfId, (selfId, oldSelfId) => {
   if (!selfId || selfId === oldSelfId) return
   void reloadWebQQForSelectedBot()
 })
+
+watch(availableBots, (bots) => {
+  for (const bot of bots) rememberSendBotAvatar(bot.selfId, bot.avatar)
+}, { immediate: true, deep: true })
+
+watch(() => capsule.value?.bot, (bot) => {
+  rememberSendBotAvatar(bot?.selfId, bot?.avatar)
+}, { immediate: true })
 
 onMounted(async () => {
   window.addEventListener('resize', clampCurrentWebQQShellSize)

@@ -88,6 +88,12 @@
   padding: 84px 22px 20px;
 }
 
+.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__messages,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__messages {
+  padding: 84px 22px var(--onebot-webqq-webqq-send-space, 80px);
+  scroll-padding-bottom: var(--onebot-webqq-webqq-send-space, 80px);
+}
+
 .onebot-webqq-webqq.is-plain .onebot-webqq-webqq__group-info {
   background: #f8fafc;
   backdrop-filter: none;
