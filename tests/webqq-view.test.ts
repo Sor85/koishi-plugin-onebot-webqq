@@ -281,6 +281,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('@keydown.enter.exact.prevent="sendCurrentWebQQMessage"')
     expect(webqqView).toContain('@paste="handleSendPaste"')
     expect(webqqView).toContain('Binary.toBase64(await file.arrayBuffer())')
+    expect(webqqView).toContain("const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'")
+    expect(webqqView).toContain('cachedCapsuleBotAvatar.value')
     expect(webqqView).not.toContain('只读模式')
     expect(webqqView).not.toContain('onebot-webqq-webqq__readonly-bar')
   })

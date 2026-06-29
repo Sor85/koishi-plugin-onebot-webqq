@@ -235,7 +235,18 @@ const props = defineProps<{ visible: boolean }>()
 const webQQRoot = ref<HTMLElement>()
 const webQQShellSize = ref<WebQQShellSize>()
 const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
+const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
 const webQQSendAvatarStorageKey = 'onebot-webqq:webqq-send-avatars:v1'
+
+function loadCachedCapsuleBotAvatar() {
+  if (typeof localStorage === 'undefined') return ''
+  try {
+    const data = JSON.parse(localStorage.getItem(capsuleProfileStorageKey) || '{}')
+    return data && typeof data === 'object' && typeof data.avatar === 'string' ? data.avatar : ''
+  } catch {
+    return ''
+  }
+}
 
 function loadWebQQSendAvatarCache() {
   if (typeof localStorage === 'undefined') return {}
@@ -249,6 +260,7 @@ function loadWebQQSendAvatarCache() {
 }
 
 const cachedSendBotAvatars = ref<Record<string, string>>(loadWebQQSendAvatarCache())
+const cachedCapsuleBotAvatar = ref(loadCachedCapsuleBotAvatar())
 
 function rememberSendBotAvatar(selfId?: string, avatar?: string) {
   if (!selfId || !avatar || cachedSendBotAvatars.value[selfId] === avatar) return
@@ -305,9 +317,10 @@ const selectedBotAvatar = computed(() => {
   const selectedSelfId = selected?.selfId || selectedBotSelfId.value
   const capsuleBot = capsule.value?.bot
   const fallback = availableBots.value[0]
-  return selected?.avatar ||
+  const displayBotAvatar = selected?.avatar || (!selectedSelfId || capsuleBot?.selfId === selectedSelfId ? capsuleBot?.avatar : '')
+  return displayBotAvatar ||
+    cachedCapsuleBotAvatar.value ||
     (selectedSelfId ? cachedSendBotAvatars.value[selectedSelfId] : '') ||
-    (!selectedSelfId || capsuleBot?.selfId === selectedSelfId ? capsuleBot?.avatar : '') ||
     fallback?.avatar ||
     (fallback?.selfId ? cachedSendBotAvatars.value[fallback.selfId] : '') ||
     ''
@@ -770,6 +783,7 @@ watch(availableBots, (bots) => {
 }, { immediate: true, deep: true })
 
 watch(() => capsule.value?.bot, (bot) => {
+  if (bot?.avatar) cachedCapsuleBotAvatar.value = bot.avatar
   rememberSendBotAvatar(bot?.selfId, bot?.avatar)
 }, { immediate: true })
 
