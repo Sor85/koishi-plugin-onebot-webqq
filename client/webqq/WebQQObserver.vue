@@ -60,7 +60,7 @@
             </svg>
           </button>
         </header>
-        <div class="onebot-webqq-webqq__chat-body">
+        <div :class="['onebot-webqq-webqq__chat-body', { 'has-send-input': enableWebQQSend && currentChat }]">
           <div ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages" @scroll="updateMessageTracking">
             <WebQQMessageList
               :loading="loading"
@@ -87,6 +87,63 @@
               @toggle-thinking="toggleThinking"
             />
           </div>
+          <div v-if="sendFiles.length" ref="sendAttachments" class="onebot-webqq-webqq__send-attachments">
+            <template v-for="file in sendFiles" :key="file.id">
+              <span v-if="!file.previewUrl" class="onebot-webqq-webqq__send-file">
+                <svg class="onebot-webqq-webqq__send-file-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"></path>
+                  <path d="M14 2v5h5"></path>
+                </svg>
+                <span class="onebot-webqq-webqq__send-file-name">
+                  <span class="onebot-webqq-webqq__send-file-base">{{ file.baseName }}</span><span>{{ file.extension }}</span>
+                </span>
+                <button type="button" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
+                  <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </span>
+              <span v-else class="onebot-webqq-webqq__send-image">
+                <button class="onebot-webqq-webqq__send-image-preview" type="button" :aria-label="`预览 ${file.file.name}`" @click="openLocalImagePreview(file.previewUrl)">
+                  <img :src="file.previewUrl" :alt="file.file.name">
+                </button>
+                <button type="button" class="onebot-webqq-webqq__send-image-remove" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
+                  <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </span>
+            </template>
+          </div>
+          <form v-if="enableWebQQSend && currentChat" ref="sendForm" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
+            <img v-if="selectedBotAvatar" class="onebot-webqq-webqq__send-avatar" :src="withProxy(selectedBotAvatar)" alt="">
+            <span v-else class="onebot-webqq-webqq__send-avatar" aria-hidden="true"></span>
+            <div class="onebot-webqq-webqq__send-main">
+              <textarea
+                v-model="sendText"
+                class="onebot-webqq-webqq__send-text"
+                rows="1"
+                placeholder="发送消息"
+                :disabled="sendingWebQQMessage"
+                @keydown.enter.exact.prevent="sendCurrentWebQQMessage"
+                @paste="handleSendPaste"
+              ></textarea>
+            </div>
+            <input ref="sendFileInput" class="onebot-webqq-webqq__send-file-input" type="file" multiple @change="handleSendFileSelect">
+            <button class="onebot-webqq-webqq__send-action" type="button" aria-label="选择文件" :disabled="sendingWebQQMessage" @click="openSendFilePicker">
+              <svg class="onebot-webqq-webqq__send-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 12.5 12.5 21a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9 9a2 2 0 0 1-2.8-2.8l8.5-8.5"></path>
+              </svg>
+            </button>
+            <button class="onebot-webqq-webqq__send-action is-primary" type="submit" aria-label="发送" :disabled="sendingWebQQMessage || !canSendWebQQMessage">
+              <svg class="onebot-webqq-webqq__send-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 2 11 13"></path>
+                <path d="m22 2-7 20-4-9-9-4Z"></path>
+              </svg>
+            </button>
+          </form>
           <Transition name="webqq-scroll-bottom">
             <button
               v-if="!trackingMessages && visibleMessages.length"
@@ -141,19 +198,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { withProxy } from '@koishijs/client'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Binary, withProxy } from '@koishijs/client'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQNoticeMenu from './components/WebQQNoticeMenu.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
-import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription } from './api/webqq'
+import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription, sendWebQQMessage } from './api/webqq'
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
-import { allowWebQQResize, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
-import type { WebQQFriend, WebQQGroup, WebQQMessage } from './types'
+import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
+import type { WebQQFriend, WebQQGroup, WebQQMessage, WebQQSendElement } from './types'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
@@ -193,10 +250,52 @@ interface WebQQResizeState {
   startHeight: number
 }
 
+interface WebQQSendFile {
+  id: string
+  file: File
+  previewUrl?: string
+  baseName: string
+  extension: string
+}
+
 const props = defineProps<{ visible: boolean }>()
 const webQQRoot = ref<HTMLElement>()
 const webQQShellSize = ref<WebQQShellSize>()
 const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
+const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
+const webQQSendAvatarStorageKey = 'onebot-webqq:webqq-send-avatars:v1'
+
+function loadCachedCapsuleBotAvatar() {
+  if (typeof localStorage === 'undefined') return ''
+  try {
+    const data = JSON.parse(localStorage.getItem(capsuleProfileStorageKey) || '{}')
+    return data && typeof data === 'object' && typeof data.avatar === 'string' ? data.avatar : ''
+  } catch {
+    return ''
+  }
+}
+
+function loadWebQQSendAvatarCache() {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    const data = JSON.parse(localStorage.getItem(webQQSendAvatarStorageKey) || '{}')
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return {}
+    return Object.fromEntries(Object.entries(data).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+  } catch {
+    return {}
+  }
+}
+
+const cachedSendBotAvatars = ref<Record<string, string>>(loadWebQQSendAvatarCache())
+const cachedCapsuleBotAvatar = ref(loadCachedCapsuleBotAvatar())
+
+function rememberSendBotAvatar(selfId?: string, avatar?: string) {
+  if (!selfId || !avatar || cachedSendBotAvatars.value[selfId] === avatar) return
+  cachedSendBotAvatars.value = { ...cachedSendBotAvatars.value, [selfId]: avatar }
+  try {
+    localStorage.setItem(webQQSendAvatarStorageKey, JSON.stringify(cachedSendBotAvatars.value))
+  } catch {}
+}
 
 const {
   conversationSummaries,
@@ -234,6 +333,28 @@ const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const loading = ref(false)
 const errorText = ref('')
 const imagePreviewUrl = ref('')
+const sendText = ref('')
+const sendFiles = ref<WebQQSendFile[]>([])
+const sendingWebQQMessage = ref(false)
+const sendFileInput = ref<HTMLInputElement>()
+const sendForm = ref<HTMLElement>()
+const sendAttachments = ref<HTMLElement>()
+const webQQSendSpace = ref(80)
+const webQQSendHeight = ref(44)
+const selectedBotAvatar = computed(() => {
+  const selected = availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value)
+  const selectedSelfId = selected?.selfId || selectedBotSelfId.value
+  const capsuleBot = capsule.value?.bot
+  const fallback = availableBots.value[0]
+  const displayBotAvatar = selected?.avatar || (!selectedSelfId || capsuleBot?.selfId === selectedSelfId ? capsuleBot?.avatar : '')
+  return displayBotAvatar ||
+    cachedCapsuleBotAvatar.value ||
+    (selectedSelfId ? cachedSendBotAvatars.value[selectedSelfId] : '') ||
+    fallback?.avatar ||
+    (fallback?.selfId ? cachedSendBotAvatars.value[fallback.selfId] : '') ||
+    ''
+})
+const canSendWebQQMessage = computed(() => !!sendText.value.trim() || !!sendFiles.value.length)
 
 async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
   return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value, webQQStorageScope.value)
@@ -249,6 +370,91 @@ function openImagePreview(url: string) {
 
 function closeImagePreview() {
   imagePreviewUrl.value = ''
+}
+
+function openLocalImagePreview(url: string) {
+  imagePreviewUrl.value = url
+}
+
+function getSendFileNameParts(name: string) {
+  const dotIndex = name.lastIndexOf('.')
+  if (dotIndex <= 0) return { baseName: name, extension: '' }
+  return {
+    baseName: name.slice(0, dotIndex),
+    extension: name.slice(dotIndex),
+  }
+}
+
+function addSendFiles(files: Iterable<File>) {
+  for (const file of files) {
+    sendFiles.value.push({
+      id: `${file.name}:${file.size}:${file.lastModified}:${sendFiles.value.length}`,
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      ...getSendFileNameParts(file.name),
+    })
+  }
+}
+
+function removeSendFile(id: string) {
+  const file = sendFiles.value.find((file) => file.id === id)
+  if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl)
+  sendFiles.value = sendFiles.value.filter((file) => file.id !== id)
+}
+
+function clearSendFiles() {
+  for (const file of sendFiles.value) {
+    if (file.previewUrl) URL.revokeObjectURL(file.previewUrl)
+  }
+  sendFiles.value = []
+}
+
+function openSendFilePicker() {
+  sendFileInput.value?.click()
+}
+
+function handleSendFileSelect(event: Event) {
+  const input = event.currentTarget as HTMLInputElement
+  if (input.files) addSendFiles(input.files)
+  input.value = ''
+}
+
+function handleSendPaste(event: ClipboardEvent) {
+  const files = Array.from(event.clipboardData?.files ?? [])
+  if (!files.length) return
+  event.preventDefault()
+  addSendFiles(files)
+}
+
+async function toSendElement(file: File): Promise<WebQQSendElement> {
+  return {
+    type: file.type.startsWith('image/') ? 'image' : 'file',
+    data: `data:${file.type || 'application/octet-stream'};base64,${Binary.toBase64(await file.arrayBuffer())}`,
+    name: file.name,
+  }
+}
+
+async function sendCurrentWebQQMessage() {
+  if (!currentChat.value || sendingWebQQMessage.value || !canSendWebQQMessage.value) return
+  sendingWebQQMessage.value = true
+  errorText.value = ''
+  try {
+    const elements: WebQQSendElement[] = [
+      ...(sendText.value.trim() ? [{ type: 'text' as const, text: sendText.value }] : []),
+      ...await Promise.all(sendFiles.value.map(({ file }) => toSendElement(file))),
+    ]
+    await sendWebQQMessage({
+      type: currentChat.value.type,
+      peerId: currentChat.value.peerId,
+      elements,
+    })
+    sendText.value = ''
+    clearSendFiles()
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '发送消息失败'
+  } finally {
+    sendingWebQQMessage.value = false
+  }
 }
 
 const {
@@ -349,13 +555,43 @@ function loadStoredWebQQShellSize() {
 
 const webQQAccentStyle = computed(() => {
   const style = getWebQQAccentStyle(webQQAccentColor.value)
-  if (!allowWebQQResize.value || !webQQShellSize.value) return style
+  const sendSpaceStyle = {
+    '--onebot-webqq-webqq-send-space': `${webQQSendSpace.value}px`,
+    '--onebot-webqq-webqq-send-height': `${webQQSendHeight.value}px`,
+  }
+  if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle }
   return {
     ...style,
+    ...sendSpaceStyle,
     width: `${webQQShellSize.value.width}px`,
     height: `${webQQShellSize.value.height}px`,
   }
 })
+
+let sendFormResizeObserver: ResizeObserver | undefined
+let sendAttachmentsResizeObserver: ResizeObserver | undefined
+
+function updateWebQQSendSpace() {
+  const form = sendForm.value
+  const attachments = sendAttachments.value
+  const attachmentHeight = attachments ? Math.ceil(attachments.getBoundingClientRect().height) : 0
+  webQQSendHeight.value = form ? Math.ceil(form.getBoundingClientRect().height) : 44
+  webQQSendSpace.value = webQQSendHeight.value + attachmentHeight + (attachmentHeight ? 36 : 28)
+}
+
+async function observeWebQQSendForm() {
+  sendFormResizeObserver?.disconnect()
+  sendAttachmentsResizeObserver?.disconnect()
+  await nextTick()
+  updateWebQQSendSpace()
+  if (typeof ResizeObserver === 'undefined') return
+  if (!sendForm.value) return
+  sendFormResizeObserver = new ResizeObserver(updateWebQQSendSpace)
+  sendFormResizeObserver.observe(sendForm.value)
+  if (!sendAttachments.value) return
+  sendAttachmentsResizeObserver = new ResizeObserver(updateWebQQSendSpace)
+  sendAttachmentsResizeObserver.observe(sendAttachments.value)
+}
 
 const {
   forwardDialog,
@@ -389,6 +625,10 @@ const {
   clearCurrentUnreadCount,
   shouldLoadOlderMessages: () => messageHistory.shouldLoadOlderMessages(),
   loadOlderMessages: () => { messageHistory.loadOlderMessages() },
+})
+
+watch(webQQSendSpace, () => {
+  if (trackingMessages.value) scrollMessagesToBottom()
 })
 
 const {
@@ -560,6 +800,9 @@ const disposeWebQQLiveMessages = useWebQQLiveMessages({
 
 onBeforeUnmount(() => {
   disposeWebQQLiveMessages()
+  clearSendFiles()
+  sendFormResizeObserver?.disconnect()
+  sendAttachmentsResizeObserver?.disconnect()
   stopWebQQResize()
   window.removeEventListener('resize', clampCurrentWebQQShellSize)
 })
@@ -571,8 +814,17 @@ watch(allowWebQQResize, (enabled) => {
 
 watch(() => props.visible, (visible) => {
   if (!visible) return
+  observeWebQQSendForm()
   clearCurrentUnreadCount()
   if (trackingMessages.value) scrollMessagesToBottom()
+})
+
+watch(() => enableWebQQSend.value && !!currentChat.value, () => {
+  observeWebQQSendForm()
+}, { immediate: true })
+
+watch(() => sendFiles.value.length, () => {
+  observeWebQQSendForm()
 })
 
 watch(totalUnreadCount, (count) => {
@@ -597,6 +849,15 @@ watch(selectedBotSelfId, (selfId, oldSelfId) => {
   if (!selfId || selfId === oldSelfId) return
   void reloadWebQQForSelectedBot()
 })
+
+watch(availableBots, (bots) => {
+  for (const bot of bots) rememberSendBotAvatar(bot.selfId, bot.avatar)
+}, { immediate: true, deep: true })
+
+watch(() => capsule.value?.bot, (bot) => {
+  if (bot?.avatar) cachedCapsuleBotAvatar.value = bot.avatar
+  rememberSendBotAvatar(bot?.selfId, bot?.avatar)
+}, { immediate: true })
 
 onMounted(async () => {
   window.addEventListener('resize', clampCurrentWebQQShellSize)

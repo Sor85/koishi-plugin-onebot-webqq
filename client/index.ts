@@ -5,7 +5,7 @@ import { capsule, hiddenCapsuleActivityIds, type CapsuleData } from './capsule/s
 import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
-import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
+import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
 import './style.scss'
 
 interface ClientData {
@@ -14,6 +14,7 @@ interface ClientData {
   selectedSelfId?: string
   debug?: boolean
   enableWebQQFrostedGlass?: boolean
+  enableWebQQSend?: boolean
   webQQChatStyle?: WebQQChatStyle
   webQQTimBubbleTail?: boolean
   webQQColorMode?: WebQQColorMode
@@ -42,6 +43,7 @@ function applyClientData(value?: ClientData) {
   applyOneBotRobotState(value)
   debug.value = !!value?.debug
   enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true
+  enableWebQQSend.value = value?.enableWebQQSend ?? false
   webQQChatStyle.value = value?.webQQChatStyle || 'telegram'
   webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true
   webQQColorMode.value = value?.webQQColorMode || 'auto'

@@ -11,6 +11,7 @@ import type {
   WebQQNotice,
   WebQQNoticeAction,
   WebQQRecordTranscriptionQuery,
+  WebQQSendPayload,
 } from './webqq/types'
 import type { OneBotRobotState } from './onebot/types'
 import type { WebQQImageServer } from './webqq/media/image-url-resolver'
@@ -29,6 +30,7 @@ export interface ConsoleEvents {
   'onebot-webqq/webqq/record/transcribe': (query: WebQQRecordTranscriptionQuery) => Promise<string>
   'onebot-webqq/webqq/notices': () => Promise<WebQQNotice[]>
   'onebot-webqq/webqq/notice-action': (action: WebQQNoticeAction) => Promise<void>
+  'onebot-webqq/webqq/send': (payload: WebQQSendPayload) => Promise<void>
   'onebot-webqq/webqq/bot/select': (input: { selfId: string }) => Promise<OneBotRobotState>
   'onebot-webqq/webqq/storage/load': () => Promise<WebQQStoredState>
   'onebot-webqq/webqq/storage/save': (state: WebQQStoredState) => Promise<void>

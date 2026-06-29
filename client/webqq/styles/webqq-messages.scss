@@ -61,6 +61,11 @@
   text-align: center;
 }
 
+.onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__message:last-child,
+.onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__message-event:last-child {
+  margin-bottom: 0;
+}
+
 .onebot-webqq-webqq__message-avatar-wrap {
   position: relative;
   width: var(--onebot-webqq-webqq-message-avatar-size);

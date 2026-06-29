@@ -196,3 +196,16 @@ export interface WebQQMessageQuery {
 export interface WebQQRecordTranscriptionQuery {
   messageId: string
 }
+
+export interface WebQQSendElement {
+  type: 'text' | 'image' | 'file'
+  text?: string
+  data?: string
+  name?: string
+}
+
+export interface WebQQSendPayload {
+  type: WebQQChatType
+  peerId: string
+  elements: WebQQSendElement[]
+}

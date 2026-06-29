@@ -87,6 +87,9 @@ export function registerWebQQConsoleListeners(
       status: action.approve ? 'approved' : 'rejected',
     })
   }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/send', (payload) => {
+    return webqq.sendMessage(payload)
+  }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/storage/load', () => {
     return loadWebQQStorage(inner, config, getStorageScope())
   }, consoleAuthOptions)

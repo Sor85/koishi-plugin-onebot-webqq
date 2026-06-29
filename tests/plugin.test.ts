@@ -1993,6 +1993,8 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.natural().min(1).max(1024).default(10).description('单张 WebQQ 图片超过此大小时不写入内存缓存，单位 MB')")
     expect(configSource).toContain("webQQMarkRecalledMessages?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('保留被撤回的 WebQQ 消息并显示删除线。关闭后显示撤回事件并移除原消息')")
+    expect(configSource).toContain('enableWebQQSend?: boolean')
+    expect(configSource).toContain("Schema.boolean().default(false).description('启用 WebQQ 消息发送功能')")
     expect(configSource).toContain('onebotMockBotCount?: number')
     expect(configSource).toContain("Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动')")
     expect(configSource).not.toContain("Schema.const('s3')")
@@ -2017,6 +2019,7 @@ describe('chat capsule plugin wiring', () => {
       bots: [],
       debug: false,
       enableWebQQFrostedGlass: true,
+      enableWebQQSend: false,
       enableCapsuleFrostedGlass: true,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: true,
@@ -2069,7 +2072,7 @@ describe('chat capsule plugin wiring', () => {
     }), { authority: 1 })
   })
 
-  it('registers read-only WebQQ console listeners backed by OneBot actions', async () => {
+  it('registers WebQQ console listeners backed by OneBot actions', async () => {
     const bot = {
       platform: 'onebot',
       selfId: '10000',
@@ -2078,6 +2081,7 @@ describe('chat capsule plugin wiring', () => {
         get_group_list: vi.fn(async () => []),
         get_group_msg_history: vi.fn(async () => ({ messages: [] })),
         get_group_member_list: vi.fn(async () => []),
+        send_group_msg: vi.fn(async () => ({ message_id: 1 })),
         voice_msg_to_text: vi.fn(async () => ({ text: '语音内容' })),
       },
     }
@@ -2091,22 +2095,32 @@ describe('chat capsule plugin wiring', () => {
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/record/transcribe', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/notices', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/notice-action', expect.any(Function), { authority: 1 })
+    expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/send', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/storage/load', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/storage/save', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages/cache/load', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages/cache/save', expect.any(Function), { authority: 1 })
-    expect(addListener).not.toHaveBeenCalledWith('onebot-webqq/webqq/send', expect.any(Function))
 
     const loadContacts = findConsoleListener(addListener, 'onebot-webqq/webqq/contacts')
     const loadMessages = findConsoleListener(addListener, 'onebot-webqq/webqq/messages')
     const loadGroupInfo = findConsoleListener(addListener, 'onebot-webqq/webqq/group-info')
     const transcribeRecord = findConsoleListener(addListener, 'onebot-webqq/webqq/record/transcribe')
+    const sendMessage = findConsoleListener(addListener, 'onebot-webqq/webqq/send')
 
     await expect(loadContacts?.()).resolves.toEqual({ friends: [], groups: [] })
     await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([])
     await expect(loadGroupInfo?.({ groupId: '20000' })).resolves.toEqual({ announcements: [], members: [] })
     await expect(transcribeRecord?.({ messageId: '12345' })).resolves.toBe('语音内容')
+    await expect(sendMessage?.({
+      type: 'group',
+      peerId: '20000',
+      elements: [{ type: 'text', text: 'hello' }],
+    })).resolves.toBeUndefined()
     expect(bot.internal.voice_msg_to_text).toHaveBeenCalledWith({ message_id: 12345 })
+    expect(bot.internal.send_group_msg).toHaveBeenCalledWith({
+      group_id: 20000,
+      message: [{ type: 'text', data: { text: 'hello' } }],
+    })
   })
 
   it('loads and saves WebQQ state and message cache through the Koishi database backend', async () => {
@@ -3629,6 +3643,7 @@ describe('chat capsule plugin wiring', () => {
       bots: [],
       debug: true,
       enableWebQQFrostedGlass: true,
+      enableWebQQSend: false,
       enableCapsuleFrostedGlass: true,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: true,
@@ -3652,6 +3667,7 @@ describe('chat capsule plugin wiring', () => {
     const { ctx, addEntry } = createFakeContext()
     type ApplyWithConfig = (ctx: ChatCapsuleContext, config?: {
       enableWebQQFrostedGlass?: boolean
+      enableWebQQSend?: boolean
       enableCapsuleFrostedGlass?: boolean
       webQQChatStyle?: 'qq' | 'telegram'
       webQQTimBubbleTail?: boolean
@@ -3674,6 +3690,7 @@ describe('chat capsule plugin wiring', () => {
 
     applyWithConfig(ctx, {
       enableWebQQFrostedGlass: false,
+      enableWebQQSend: true,
       enableCapsuleFrostedGlass: false,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: false,
@@ -3699,6 +3716,7 @@ describe('chat capsule plugin wiring', () => {
       bots: [],
       debug: false,
       enableWebQQFrostedGlass: false,
+      enableWebQQSend: true,
       enableCapsuleFrostedGlass: false,
       webQQChatStyle: 'telegram',
       webQQTimBubbleTail: false,

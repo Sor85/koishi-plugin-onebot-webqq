@@ -15,6 +15,7 @@ import type {
   WebQQMessageReactionUser,
   WebQQNotice,
   WebQQRecentContact,
+  WebQQSendPayload,
 } from '../types'
 
 export interface WebQQMessageQuery {
@@ -433,6 +434,10 @@ export async function approveWebQQNotice(notice: WebQQNotice, approve: boolean) 
     subType: notice.subType,
     approve,
   })
+}
+
+export async function sendWebQQMessage(payload: WebQQSendPayload) {
+  await send('onebot-webqq/webqq/send', payload)
 }
 
 export async function selectWebQQBot(selfId: string) {
