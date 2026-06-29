@@ -163,37 +163,126 @@
   justify-content: center;
 }
 
-.onebot-webqq-webqq__send-files {
+.onebot-webqq-webqq__send-attachments {
+  position: absolute;
+  left: 50%;
+  bottom: calc(28px + var(--onebot-webqq-webqq-send-height, 44px));
+  z-index: 3;
+  width: min(460px, calc(100% - 96px));
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap-reverse;
+  align-items: end;
   gap: 6px;
-  margin: 0 0 6px;
+  transform: translateX(-50%);
 }
 
 .onebot-webqq-webqq__send-file {
-  max-width: 180px;
+  max-width: 220px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
-  overflow: hidden;
+  padding: 4px 6px;
   font-size: 12px;
   line-height: 16px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  background: var(--onebot-webqq-webqq-accent-soft);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.66);
   border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
 
   button {
     flex: 0 0 auto;
-    width: 16px;
-    min-height: 16px;
+    width: 18px;
+    min-height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
     color: inherit;
     background: transparent;
     border: 0;
+    border-radius: 50%;
     cursor: pointer;
   }
+}
+
+.onebot-webqq-webqq__send-file-icon,
+.onebot-webqq-webqq__send-remove-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.onebot-webqq-webqq__send-file-icon {
+  flex: 0 0 auto;
+}
+
+.onebot-webqq-webqq__send-file-name {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.onebot-webqq-webqq__send-file-base {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.onebot-webqq-webqq__send-image {
+  position: relative;
+  width: var(--onebot-webqq-webqq-send-height, 44px);
+  height: var(--onebot-webqq-webqq-send-height, 44px);
+  flex: 0 0 auto;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+}
+
+.onebot-webqq-webqq__send-image-preview {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  background: var(--onebot-webqq-webqq-accent-soft);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.onebot-webqq-webqq__send-image-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.onebot-webqq-webqq__send-image-remove {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  min-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 .onebot-webqq-webqq__send-text {

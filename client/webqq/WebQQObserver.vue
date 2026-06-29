@@ -87,16 +87,40 @@
               @toggle-thinking="toggleThinking"
             />
           </div>
+          <div v-if="sendFiles.length" ref="sendAttachments" class="onebot-webqq-webqq__send-attachments">
+            <template v-for="file in sendFiles" :key="file.id">
+              <span v-if="!file.previewUrl" class="onebot-webqq-webqq__send-file">
+                <svg class="onebot-webqq-webqq__send-file-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"></path>
+                  <path d="M14 2v5h5"></path>
+                </svg>
+                <span class="onebot-webqq-webqq__send-file-name">
+                  <span class="onebot-webqq-webqq__send-file-base">{{ file.baseName }}</span><span>{{ file.extension }}</span>
+                </span>
+                <button type="button" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
+                  <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </span>
+              <span v-else class="onebot-webqq-webqq__send-image">
+                <button class="onebot-webqq-webqq__send-image-preview" type="button" :aria-label="`预览 ${file.file.name}`" @click="openLocalImagePreview(file.previewUrl)">
+                  <img :src="file.previewUrl" :alt="file.file.name">
+                </button>
+                <button type="button" class="onebot-webqq-webqq__send-image-remove" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
+                  <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </span>
+            </template>
+          </div>
           <form v-if="enableWebQQSend && currentChat" ref="sendForm" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
             <img v-if="selectedBotAvatar" class="onebot-webqq-webqq__send-avatar" :src="withProxy(selectedBotAvatar)" alt="">
             <span v-else class="onebot-webqq-webqq__send-avatar" aria-hidden="true"></span>
             <div class="onebot-webqq-webqq__send-main">
-              <div v-if="sendFiles.length" class="onebot-webqq-webqq__send-files">
-                <span v-for="file in sendFiles" :key="file.id" class="onebot-webqq-webqq__send-file">
-                  {{ file.file.name }}
-                  <button type="button" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">×</button>
-                </span>
-              </div>
               <textarea
                 v-model="sendText"
                 class="onebot-webqq-webqq__send-text"
@@ -229,6 +253,9 @@ interface WebQQResizeState {
 interface WebQQSendFile {
   id: string
   file: File
+  previewUrl?: string
+  baseName: string
+  extension: string
 }
 
 const props = defineProps<{ visible: boolean }>()
@@ -311,7 +338,9 @@ const sendFiles = ref<WebQQSendFile[]>([])
 const sendingWebQQMessage = ref(false)
 const sendFileInput = ref<HTMLInputElement>()
 const sendForm = ref<HTMLElement>()
+const sendAttachments = ref<HTMLElement>()
 const webQQSendSpace = ref(80)
+const webQQSendHeight = ref(44)
 const selectedBotAvatar = computed(() => {
   const selected = availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value)
   const selectedSelfId = selected?.selfId || selectedBotSelfId.value
@@ -343,14 +372,41 @@ function closeImagePreview() {
   imagePreviewUrl.value = ''
 }
 
+function openLocalImagePreview(url: string) {
+  imagePreviewUrl.value = url
+}
+
+function getSendFileNameParts(name: string) {
+  const dotIndex = name.lastIndexOf('.')
+  if (dotIndex <= 0) return { baseName: name, extension: '' }
+  return {
+    baseName: name.slice(0, dotIndex),
+    extension: name.slice(dotIndex),
+  }
+}
+
 function addSendFiles(files: Iterable<File>) {
   for (const file of files) {
-    sendFiles.value.push({ id: `${file.name}:${file.size}:${file.lastModified}:${sendFiles.value.length}`, file })
+    sendFiles.value.push({
+      id: `${file.name}:${file.size}:${file.lastModified}:${sendFiles.value.length}`,
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      ...getSendFileNameParts(file.name),
+    })
   }
 }
 
 function removeSendFile(id: string) {
+  const file = sendFiles.value.find((file) => file.id === id)
+  if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl)
   sendFiles.value = sendFiles.value.filter((file) => file.id !== id)
+}
+
+function clearSendFiles() {
+  for (const file of sendFiles.value) {
+    if (file.previewUrl) URL.revokeObjectURL(file.previewUrl)
+  }
+  sendFiles.value = []
 }
 
 function openSendFilePicker() {
@@ -393,7 +449,7 @@ async function sendCurrentWebQQMessage() {
       elements,
     })
     sendText.value = ''
-    sendFiles.value = []
+    clearSendFiles()
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '发送消息失败'
   } finally {
@@ -501,6 +557,7 @@ const webQQAccentStyle = computed(() => {
   const style = getWebQQAccentStyle(webQQAccentColor.value)
   const sendSpaceStyle = {
     '--onebot-webqq-webqq-send-space': `${webQQSendSpace.value}px`,
+    '--onebot-webqq-webqq-send-height': `${webQQSendHeight.value}px`,
   }
   if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle }
   return {
@@ -512,19 +569,28 @@ const webQQAccentStyle = computed(() => {
 })
 
 let sendFormResizeObserver: ResizeObserver | undefined
+let sendAttachmentsResizeObserver: ResizeObserver | undefined
 
 function updateWebQQSendSpace() {
   const form = sendForm.value
-  webQQSendSpace.value = form ? Math.ceil(form.getBoundingClientRect().height) + 28 : 80
+  const attachments = sendAttachments.value
+  const attachmentHeight = attachments ? Math.ceil(attachments.getBoundingClientRect().height) : 0
+  webQQSendHeight.value = form ? Math.ceil(form.getBoundingClientRect().height) : 44
+  webQQSendSpace.value = webQQSendHeight.value + attachmentHeight + (attachmentHeight ? 36 : 28)
 }
 
 async function observeWebQQSendForm() {
   sendFormResizeObserver?.disconnect()
+  sendAttachmentsResizeObserver?.disconnect()
   await nextTick()
   updateWebQQSendSpace()
-  if (!sendForm.value || typeof ResizeObserver === 'undefined') return
+  if (typeof ResizeObserver === 'undefined') return
+  if (!sendForm.value) return
   sendFormResizeObserver = new ResizeObserver(updateWebQQSendSpace)
   sendFormResizeObserver.observe(sendForm.value)
+  if (!sendAttachments.value) return
+  sendAttachmentsResizeObserver = new ResizeObserver(updateWebQQSendSpace)
+  sendAttachmentsResizeObserver.observe(sendAttachments.value)
 }
 
 const {
@@ -734,7 +800,9 @@ const disposeWebQQLiveMessages = useWebQQLiveMessages({
 
 onBeforeUnmount(() => {
   disposeWebQQLiveMessages()
+  clearSendFiles()
   sendFormResizeObserver?.disconnect()
+  sendAttachmentsResizeObserver?.disconnect()
   stopWebQQResize()
   window.removeEventListener('resize', clampCurrentWebQQShellSize)
 })
@@ -754,6 +822,10 @@ watch(() => props.visible, (visible) => {
 watch(() => enableWebQQSend.value && !!currentChat.value, () => {
   observeWebQQSendForm()
 }, { immediate: true })
+
+watch(() => sendFiles.value.length, () => {
+  observeWebQQSendForm()
+})
 
 watch(totalUnreadCount, (count) => {
   webQQTotalUnread.value = count
