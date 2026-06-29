@@ -170,14 +170,16 @@
   z-index: 3;
   width: min(460px, calc(100% - 96px));
   display: flex;
-  flex-wrap: wrap-reverse;
+  flex-wrap: wrap;
   align-items: end;
   gap: 6px;
   transform: translateX(-50%);
 }
 
 .onebot-webqq-webqq__send-file {
-  max-width: 220px;
+  min-width: 96px;
+  max-width: 180px;
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -224,6 +226,7 @@
 
 .onebot-webqq-webqq__send-file-name {
   min-width: 0;
+  flex: 1 1 auto;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -231,8 +234,13 @@
 
 .onebot-webqq-webqq__send-file-base {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.onebot-webqq-webqq__send-file-name span:last-child {
+  flex: 0 0 auto;
 }
 
 .onebot-webqq-webqq__send-image {
