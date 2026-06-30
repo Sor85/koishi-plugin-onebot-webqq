@@ -1,5 +1,7 @@
 .onebot-webqq-webqq__inline-run {
   display: inline;
+  // 只在用户文本 run 保留换行；放到 bubble 会让整个 flex 气泡继承预格式化空白，影响时间和富消息布局。
+  white-space: pre-line;
 }
 
 .onebot-webqq-webqq__thinking-dots {

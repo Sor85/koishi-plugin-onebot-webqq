@@ -566,6 +566,11 @@ describe('chat capsule styles', () => {
     expect(style).not.toContain('.onebot-webqq-webqq__bubble {\n  display: inline-flex')
   })
 
+  it('preserves user line breaks inside WebQQ text bubbles', () => {
+    expect(style).toMatch(/\n\.onebot-webqq-webqq__inline-run\s*{[\s\S]*?\n  white-space:\s*pre-line/)
+    expect(style).not.toMatch(/\n\.onebot-webqq-webqq__bubble\s*{[\s\S]*?\n  white-space:\s*pre-wrap/)
+  })
+
   it('shrinks WebQQ text bubbles to their own message content', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-content')).toContain('display: flex')
     expect(ruleBody('.onebot-webqq-webqq__message-content')).toContain('flex-direction: column')
@@ -644,6 +649,8 @@ describe('chat capsule styles', () => {
   it('shows Telegram-style WebQQ message times outside bubbles on hover', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-body')).toContain('display: flex')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-body')).toContain('flex-direction: row')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time')).toContain('align-self: flex-end')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time')).toContain('flex: 0 0 auto')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time')).toContain('opacity: 0')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:hover .onebot-webqq-webqq__message-time')).toContain('opacity: 1')
   })
@@ -708,6 +715,8 @@ describe('chat capsule styles', () => {
 .onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-body {
   flex-direction: row-reverse;
 }`)
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-time')).toContain('align-self: flex-end')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-time')).toContain('flex: 0 0 auto')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-time')).toContain('opacity: 0')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-time')).toContain('white-space: nowrap')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message:hover .onebot-webqq-webqq__message-time')).toContain('opacity: 1')

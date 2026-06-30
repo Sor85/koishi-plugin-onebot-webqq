@@ -685,6 +685,8 @@
 }
 
 .onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time {
+  align-self: flex-end;
+  flex: 0 0 auto;
   opacity: 0;
   white-space: nowrap;
   transition: opacity 0.16s ease;
@@ -792,6 +794,8 @@
 }
 
 .onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-time {
+  align-self: flex-end;
+  flex: 0 0 auto;
   opacity: 0;
   white-space: nowrap;
   transition: opacity 0.16s ease;
