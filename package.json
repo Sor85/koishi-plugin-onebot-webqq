@@ -31,6 +31,7 @@
     "build:client": "vite build --config vite.config.mts",
     "typecheck": "vue-tsc -p tsconfig.typecheck.json --noEmit",
     "test": "vitest run tests",
+    "postversion": "git push --follow-tags",
     "prepublishOnly": "yarn build"
   },
   "keywords": [
