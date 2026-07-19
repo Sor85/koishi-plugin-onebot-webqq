@@ -673,13 +673,13 @@ describe('chat capsule styles', () => {
     const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-users')
 
     expect(bubbleBody).toContain('gap: 2px')
-    expect(bubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%)')
-    expect(outgoingBubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #0f172a 12%)')
+    expect(bubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+    expect(outgoingBubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
     expect(reactionBody).toContain('background: var(--onebot-webqq-webqq-reaction-bg)')
     expect(outgoingReactionBody).not.toContain('background: color-mix')
     expect(reactionBody).toContain('gap: 4px')
     expect(reactionBody).toContain('min-height: unset')
-    expect(reactionBody).toContain('padding: 0 0 0 4px')
+    expect(reactionBody).toContain('padding: 0 0 0 2px')
     expect(usersBody).toContain('margin-right: 0')
   })
 
@@ -695,14 +695,14 @@ describe('chat capsule styles', () => {
     expect(stackBody).toContain('flex-direction: column')
     expect(stackBody).toContain('align-items: flex-start')
     expect(outgoingStackBody).toContain('align-items: flex-end')
-    expect(reactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%)')
+    expect(reactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
     expect(reactionsBody).toContain('align-self: flex-start')
     expect(reactionsBody).toContain('margin-top: 0')
-    expect(outgoingReactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #0f172a 12%)')
+    expect(outgoingReactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
     expect(outgoingReactionsBody).toContain('align-self: flex-end')
     expect(reactionBody).toContain('--onebot-webqq-webqq-reaction-avatar-size: 18px')
     expect(reactionBody).toContain('background: var(--onebot-webqq-webqq-reaction-bg)')
-    expect(reactionBody).toContain('padding: 0 0 0 4px')
+    expect(reactionBody).toContain('padding: 0 0 0 2px')
     expect(usersBody).toContain('margin-right: 0')
     expect(avatarBody).toContain('box-shadow: none')
   })
@@ -994,28 +994,28 @@ describe('chat capsule styles', () => {
         ? ''
         : '自动暗色媒体查询没有限制到 .onebot-webqq-webqq.is-color-auto',
       ...autoSelectors.map((selector) => autoDarkBody.includes(selector) ? '' : `缺少自动暗色关键选择器 ${selector}`),
-      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
+      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '强制暗色普通气泡没有覆盖 TIM 贴表情背景变量',
-      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
+      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '强制暗色发出气泡没有覆盖 TIM 贴表情背景变量',
-      autoBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
+      autoBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '自动暗色普通气泡没有覆盖 TIM 贴表情背景变量',
-      autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
+      autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '自动暗色发出气泡没有覆盖 TIM 贴表情背景变量',
-      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
+      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '强制暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
-      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
+      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '强制暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
-      autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
+      autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '自动暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
-      autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
+      autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
         ? ''
         : '自动暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
     ].filter(Boolean)
