@@ -44,7 +44,7 @@ function applyClientData(value?: ClientData) {
   debug.value = !!value?.debug
   enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true
   enableWebQQSend.value = value?.enableWebQQSend ?? false
-  webQQChatStyle.value = value?.webQQChatStyle || 'telegram'
+  webQQChatStyle.value = value?.webQQChatStyle || 'tim'
   webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true
   webQQColorMode.value = value?.webQQColorMode || 'auto'
   webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'

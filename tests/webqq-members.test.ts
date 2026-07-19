@@ -16,7 +16,7 @@ describe('webqq group members', () => {
   it('enables WebQQ frosted glass as the frontend default', () => {
     expect(enableWebQQFrostedGlass.value).toBe(true)
     expect(enableCapsuleFrostedGlass.value).toBe(true)
-    expect(webQQChatStyle.value).toBe('telegram')
+    expect(webQQChatStyle.value).toBe('tim')
     expect(webQQTimBubbleTail.value).toBe(true)
     expect(webQQStorageBackend.value).toBe('koishi')
     expect(webQQMessageCacheLimit.value).toBe(100)

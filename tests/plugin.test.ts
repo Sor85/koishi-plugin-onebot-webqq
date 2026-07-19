@@ -1947,8 +1947,7 @@ describe('chat capsule plugin wiring', () => {
     expect(configSource).toContain("Schema.boolean().default(true).description('启用 WebQQ 毛玻璃效果')")
     expect(configSource).not.toContain("description('WebQQ 主题')")
     expect(configSource).toContain("webQQChatStyle?:")
-    expect(configSource).toMatch(/webQQChatStyle:\s*Schema\.union\(\[[\s\S]*Schema\.const\('telegram'\)\.description\('TIM'\)[\s\S]*Schema\.const\('qq'\)\.description\('QQ'\)[\s\S]*\]\)\.default\('telegram'\)\.role\('radio'\)/)
-    expect(configSource).not.toContain("Schema.const('telegram').description('Telegram')")
+    expect(configSource).toMatch(/webQQChatStyle:\s*Schema\.union\(\[[\s\S]*Schema\.const\('tim'\)\.description\('TIM'\)[\s\S]*Schema\.const\('qq'\)\.description\('QQ'\)[\s\S]*\]\)\.default\('tim'\)\.role\('radio'\)/)
     expect(configSource).toContain("description('WebQQ 聊天页面样式')")
     expect(configSource).toContain("webQQTimBubbleTail?: boolean")
     expect(configSource).toContain("Schema.boolean().default(true).description('显示 TIM 气泡小尖角')")
@@ -2021,7 +2020,7 @@ describe('chat capsule plugin wiring', () => {
       enableWebQQFrostedGlass: true,
       enableWebQQSend: false,
       enableCapsuleFrostedGlass: true,
-      webQQChatStyle: 'telegram',
+      webQQChatStyle: 'tim',
       webQQTimBubbleTail: true,
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
@@ -3645,7 +3644,7 @@ describe('chat capsule plugin wiring', () => {
       enableWebQQFrostedGlass: true,
       enableWebQQSend: false,
       enableCapsuleFrostedGlass: true,
-      webQQChatStyle: 'telegram',
+      webQQChatStyle: 'tim',
       webQQTimBubbleTail: true,
       webQQColorMode: 'auto',
       webQQAccentColor: '#2563eb',
@@ -3669,7 +3668,7 @@ describe('chat capsule plugin wiring', () => {
       enableWebQQFrostedGlass?: boolean
       enableWebQQSend?: boolean
       enableCapsuleFrostedGlass?: boolean
-      webQQChatStyle?: 'qq' | 'telegram'
+      webQQChatStyle?: 'qq' | 'tim'
       webQQTimBubbleTail?: boolean
       webQQColorMode?: 'auto' | 'light' | 'dark'
       webQQAccentColor?: string
@@ -3692,7 +3691,7 @@ describe('chat capsule plugin wiring', () => {
       enableWebQQFrostedGlass: false,
       enableWebQQSend: true,
       enableCapsuleFrostedGlass: false,
-      webQQChatStyle: 'telegram',
+      webQQChatStyle: 'tim',
       webQQTimBubbleTail: false,
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',
@@ -3718,7 +3717,7 @@ describe('chat capsule plugin wiring', () => {
       enableWebQQFrostedGlass: false,
       enableWebQQSend: true,
       enableCapsuleFrostedGlass: false,
-      webQQChatStyle: 'telegram',
+      webQQChatStyle: 'tim',
       webQQTimBubbleTail: false,
       webQQColorMode: 'dark',
       webQQAccentColor: '#22c55e',

@@ -29,7 +29,7 @@ export function registerConsoleEntry(
       debug: options.debug,
       enableWebQQFrostedGlass: config.enableWebQQFrostedGlass ?? true,
       enableWebQQSend: config.enableWebQQSend ?? false,
-      webQQChatStyle: config.webQQChatStyle ?? 'telegram',
+      webQQChatStyle: config.webQQChatStyle ?? 'tim',
       webQQTimBubbleTail: config.webQQTimBubbleTail ?? true,
       webQQColorMode: config.webQQColorMode ?? 'auto',
       webQQAccentColor: config.webQQAccentColor ?? '#2563eb',

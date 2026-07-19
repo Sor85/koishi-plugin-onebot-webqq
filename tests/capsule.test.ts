@@ -467,7 +467,7 @@ describe('chat capsule view', () => {
     expect(clientEntry).toContain('watch(data, (value) => {')
     expect(clientEntry).toContain('applyClientData(value)')
     expect(clientEntry).toContain('enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true')
-    expect(clientEntry).toContain("webQQChatStyle.value = value?.webQQChatStyle || 'telegram'")
+    expect(clientEntry).toContain("webQQChatStyle.value = value?.webQQChatStyle || 'tim'")
     expect(clientEntry).toContain('webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true')
     expect(clientEntry).toContain("webQQColorMode.value = value?.webQQColorMode || 'auto'")
     expect(clientEntry).toContain("webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'")

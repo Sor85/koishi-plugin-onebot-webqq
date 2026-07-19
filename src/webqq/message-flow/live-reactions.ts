@@ -101,7 +101,7 @@ export function createWebQQReactionRuntime(options: {
   const resolveWebQQReactionUsers = async (reaction: WebQQRawReaction, entry: WebQQMessageReaction) => {
     try {
       // `group_msg_emoji_like` 只带本次操作者和总数；人数更多时要拉完整列表，
-      // 否则 Telegram 风格只能显示一个头像再跟 count，无法展示所有贴表情用户。
+      // 否则 TIM 风格只能显示一个头像再跟 count，无法展示所有贴表情用户。
       const users = await options.webqq.loadReactionUsers(reaction.messageId, reaction.emojiId, reaction.count)
       const nextUsers = users.map((user) => {
         // 同一个操作者在事件里已有稳定的 OneBot user_id 头像，避免被补查列表里的临时 headUrl 覆盖。

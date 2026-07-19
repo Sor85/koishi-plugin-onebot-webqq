@@ -882,7 +882,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain(':alt="message.senderName"')
   })
 
-  it('marks consecutive messages from the same sender as merged in Telegram chat style', () => {
+  it('marks consecutive messages from the same sender as merged in TIM chat style', () => {
     expect(webqqMessageListView).toMatch(/v-for="\(message, index\) in (messages|visibleMessages)"/)
     expect(webqqMessageListView).toContain("'is-merged': isMergedMessage(index)")
     expect(webqqMessageListView).toContain('getMessageClusterClass(index)')
@@ -891,7 +891,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageListStore).toContain('getMessageClusterClassFromView(messages.value, index, options.chatStyle.value)')
     expect(webqqMessageListStore).toContain('function isMergedMessage(index: number)')
     expect(webqqMessageListStore).toContain('isMergedMessageFromView(messages.value, index, options.chatStyle.value)')
-    expect(webqqMessageView).toContain("chatStyle !== 'telegram'")
+    expect(webqqMessageView).toContain("chatStyle !== 'tim'")
     expect(webqqMessageView).toContain("return 'is-cluster-middle'")
     expect(webqqMessageView).toContain("return 'is-cluster-first'")
     expect(webqqMessageView).toContain("return 'is-cluster-last'")
@@ -902,7 +902,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageView).toContain('const hasNext = !!getClusterBubbleMessage(messages, index, 1)')
   })
 
-  it('wraps WebQQ message bubbles with their time for Telegram hover layout', () => {
+  it('wraps WebQQ message bubbles with their time for TIM hover layout', () => {
     expect(webqqView).toContain(':chat-style="webQQChatStyle"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-body"')
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__bubble')
@@ -1020,7 +1020,7 @@ describe('webqq observer view', () => {
     const list = useWebQQMessageList({
       capsule: ref<WebQQCapsuleData | undefined>(createCapsuleData()),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
-      chatStyle: ref('telegram'),
+      chatStyle: ref('tim'),
       messageCacheLimit: ref(100),
       applyMessageSenderMetadata: (message) => message,
       shouldScrollToBottom: () => true,
@@ -1041,7 +1041,7 @@ describe('webqq observer view', () => {
     const list = useWebQQMessageList({
       capsule,
       currentChat,
-      chatStyle: ref('telegram'),
+      chatStyle: ref('tim'),
       messageCacheLimit: ref(100),
       applyMessageSenderMetadata: (message) => message,
       shouldScrollToBottom: () => false,
@@ -1069,7 +1069,7 @@ describe('webqq observer view', () => {
     const list = useWebQQMessageList({
       capsule: ref<WebQQCapsuleData | undefined>(),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
-      chatStyle: ref('telegram'),
+      chatStyle: ref('tim'),
       messageCacheLimit: ref(2),
       applyMessageSenderMetadata: (message) => message,
       shouldScrollToBottom: () => false,
@@ -1272,8 +1272,8 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain(':get-web-q-q-element-runs="getWebQQElementRuns"')
     expect(webqqView).not.toContain(':get-sender-authority-text="getSenderAuthorityText"')
     expect(webqqMessageListView).toContain('message.reactions')
-    expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle === 'telegram'")
-    expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle !== 'telegram'")
+    expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle === 'tim'")
+    expect(webqqMessageListView).toContain("message.reactions?.length && chatStyle !== 'tim'")
     expect(webqqMessageReactionsView).toContain('onebot-webqq-webqq__message-reactions')
     expect(webqqMessageReactionsView).toContain('getReactionUsers(reaction)')
     expect(webqqMessageReactionsView).toContain('getReactionUserZIndex(reaction, userIndex)')
@@ -1300,7 +1300,7 @@ describe('webqq observer view', () => {
   it('renders QQ-style WebQQ reactions outside bubbles without user avatars', () => {
     const outsideReactionSource = sourceBetween(
       webqqMessageListView,
-      "message.reactions?.length && chatStyle !== 'telegram'",
+      "message.reactions?.length && chatStyle !== 'tim'",
       'class="onebot-webqq-webqq__message-recall-status"',
     )
 
@@ -1308,8 +1308,8 @@ describe('webqq observer view', () => {
     expect(outsideReactionSource).toContain(':chat-style="chatStyle"')
     expect(webqqMessageReactionsView).toContain('function shouldShowReactionUsers(reaction: WebQQMessageReaction)')
     expect(webqqMessageReactionsView).toContain('function shouldShowReactionCount(reaction: WebQQMessageReaction)')
-    expect(webqqMessageReactionsView).toContain("if (props.chatStyle !== 'telegram') return reaction.count > 1")
-    expect(webqqMessageReactionsView).toContain("return props.chatStyle === 'telegram' && getReactionUsers(reaction).length > 0")
+    expect(webqqMessageReactionsView).toContain("if (props.chatStyle !== 'tim') return reaction.count > 1")
+    expect(webqqMessageReactionsView).toContain("return props.chatStyle === 'tim' && getReactionUsers(reaction).length > 0")
   })
 
   it('renders completed WebQQ thinking usage as icons before the thinking duration', () => {
@@ -2149,7 +2149,7 @@ describe('webqq observer view', () => {
   })
 
   it('keeps forward modal state and style-aware grouping in a focused store', () => {
-    const chatStyle = ref('telegram')
+    const chatStyle = ref('tim')
     const store = useWebQQForwardDialog(chatStyle)
     const forwardElement: WebQQMessageElement = {
       type: 'forward',

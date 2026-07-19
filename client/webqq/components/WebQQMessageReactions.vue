@@ -31,11 +31,11 @@ function getReactionUsers(reaction: WebQQMessageReaction): WebQQMessageReactionU
 }
 
 function shouldShowReactionUsers(reaction: WebQQMessageReaction) {
-  return props.chatStyle === 'telegram' && getReactionUsers(reaction).length > 0
+  return props.chatStyle === 'tim' && getReactionUsers(reaction).length > 0
 }
 
 function shouldShowReactionCount(reaction: WebQQMessageReaction) {
-  if (props.chatStyle !== 'telegram') return reaction.count > 1
+  if (props.chatStyle !== 'tim') return reaction.count > 1
   return reaction.count > Math.max(getReactionUsers(reaction).length, 1)
 }
 

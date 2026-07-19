@@ -53,7 +53,7 @@ export function resetWebQQClientState() {
   webQQOpen.value = false
   webQQTotalUnread.value = 0
   webQQAccentColor.value = '#2563eb'
-  webQQChatStyle.value = 'telegram'
+  webQQChatStyle.value = 'tim'
   webQQColorMode.value = 'auto'
   webQQMessageCacheLimit.value = 100
   webQQStorageBackend.value = 'koishi'

@@ -54,7 +54,7 @@
                 </button>
               </div>
               <WebQQMessageReactions
-                v-if="message.reactions?.length && chatStyle === 'telegram'"
+                v-if="message.reactions?.length && chatStyle === 'tim'"
                 :reactions="message.reactions ?? []"
                 :chat-style="chatStyle"
               />
@@ -189,13 +189,13 @@
                 </template>
               </template>
               <WebQQMessageReactions
-                v-if="message.reactions?.length && chatStyle === 'telegram'"
+                v-if="message.reactions?.length && chatStyle === 'tim'"
                 :reactions="message.reactions ?? []"
                 :chat-style="chatStyle"
               />
             </div>
             <WebQQMessageReactions
-              v-if="message.reactions?.length && chatStyle !== 'telegram'"
+              v-if="message.reactions?.length && chatStyle !== 'tim'"
               :reactions="message.reactions ?? []"
               :chat-style="chatStyle"
             />

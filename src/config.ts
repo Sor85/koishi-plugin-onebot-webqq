@@ -15,7 +15,7 @@ export interface Config {
   webQQMarkRecalledMessages?: boolean
   enableWebQQFrostedGlass?: boolean
   enableWebQQSend?: boolean
-  webQQChatStyle?: 'qq' | 'telegram'
+  webQQChatStyle?: 'qq' | 'tim'
   webQQTimBubbleTail?: boolean
   webQQColorMode?: 'auto' | 'light' | 'dark'
   webQQAccentColor?: string
@@ -67,9 +67,9 @@ export const Config: Schema<Config> = Schema.intersect([
     enableWebQQFrostedGlass: Schema.boolean().default(true).description('启用 WebQQ 毛玻璃效果'),
     enableWebQQSend: Schema.boolean().default(false).description('启用 WebQQ 消息发送功能'),
     webQQChatStyle: Schema.union([
-      Schema.const('telegram').description('TIM'),
+      Schema.const('tim').description('TIM'),
       Schema.const('qq').description('QQ'),
-    ]).default('telegram').role('radio').description('WebQQ 聊天页面样式'),
+    ]).default('tim').role('radio').description('WebQQ 聊天页面样式'),
     webQQTimBubbleTail: Schema.boolean().default(true).description('显示 TIM 气泡小尖角'),
     webQQColorMode: Schema.union([
       Schema.const('auto').description('自动'),

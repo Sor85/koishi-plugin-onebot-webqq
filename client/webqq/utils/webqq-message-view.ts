@@ -187,12 +187,12 @@ function isSameForwardItemSender(left: WebQQForwardItem | undefined, right: WebQ
 }
 
 export function isMergedForwardItem(items: WebQQForwardItem[], index: number, chatStyle: string) {
-  return chatStyle === 'telegram' &&
+  return chatStyle === 'tim' &&
     isSameForwardItemSender(items[index - 1], items[index])
 }
 
 export function getForwardItemClusterClass(items: WebQQForwardItem[], index: number, chatStyle: string) {
-  if (chatStyle !== 'telegram') return ''
+  if (chatStyle !== 'tim') return ''
   const hasPrevious = isSameForwardItemSender(items[index - 1], items[index])
   const hasNext = isSameForwardItemSender(items[index], items[index + 1])
   if (hasPrevious && hasNext) return 'is-cluster-middle'
@@ -216,7 +216,7 @@ function getClusterBubbleMessage(messages: WebQQMessage[], index: number, step: 
 }
 
 export function isMergedMessage(messages: WebQQMessage[], index: number, chatStyle: string) {
-  if (chatStyle !== 'telegram') return false
+  if (chatStyle !== 'tim') return false
   const message = messages[index]
   const previous = messages[index - 1]
   return !!message &&
@@ -226,7 +226,7 @@ export function isMergedMessage(messages: WebQQMessage[], index: number, chatSty
 }
 
 export function getMessageClusterClass(messages: WebQQMessage[], index: number, chatStyle: string) {
-  if (chatStyle !== 'telegram') return ''
+  if (chatStyle !== 'tim') return ''
   const message = messages[index]
   if (!message) return ''
   const hasPrevious = !!getClusterBubbleMessage(messages, index, -1)

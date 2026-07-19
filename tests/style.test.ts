@@ -622,42 +622,42 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__sender-line + .onebot-webqq-webqq__message-body')).toContain('margin-top: 6px')
   })
 
-  it('hides repeated avatars on merged Telegram-style WebQQ messages', () => {
+  it('hides repeated avatars on merged TIM-style WebQQ messages', () => {
     expect(ruleBody('.onebot-webqq-webqq__message.is-merged')).toContain('margin-top: -14px')
     expect(ruleBody('.onebot-webqq-webqq__message.is-merged .onebot-webqq-webqq__message-avatar-wrap')).toContain('visibility: hidden')
   })
 
-  it('rounds Telegram-style WebQQ message clusters like stacked capsules', () => {
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble')).toContain('margin: 1px 0')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-cluster-first:not(.is-outgoing) .onebot-webqq-webqq__bubble')).toContain('border-bottom-left-radius: 3px')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-cluster-middle:not(.is-outgoing) .onebot-webqq-webqq__bubble')).toContain('border-radius: 3px 18px 18px 3px')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-cluster-last:not(.is-outgoing) .onebot-webqq-webqq__bubble')).toContain('border-top-left-radius: 3px')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing.is-cluster-middle .onebot-webqq-webqq__bubble')).toContain('border-radius: 18px 3px 3px 18px')
+  it('rounds TIM-style WebQQ message clusters like stacked capsules', () => {
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble')).toContain('margin: 1px 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message.is-cluster-first:not(.is-outgoing) .onebot-webqq-webqq__bubble')).toContain('border-bottom-left-radius: 3px')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message.is-cluster-middle:not(.is-outgoing) .onebot-webqq-webqq__bubble')).toContain('border-radius: 3px 18px 18px 3px')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message.is-cluster-last:not(.is-outgoing) .onebot-webqq-webqq__bubble')).toContain('border-top-left-radius: 3px')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message.is-outgoing.is-cluster-middle .onebot-webqq-webqq__bubble')).toContain('border-radius: 18px 3px 3px 18px')
   })
 
   it('gates TIM-style WebQQ bubble tails behind the enabled option class', () => {
-    const baseTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before'
-    const enabledTailSelector = '.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before'
+    const baseTailSelector = '.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before'
+    const enabledTailSelector = '.onebot-webqq-webqq.is-chat-style-tim.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-merged) .onebot-webqq-webqq__bubble::before'
 
     expect(ruleBody(baseTailSelector)).toBe('')
     expect(ruleBody(enabledTailSelector)).toContain("content: ''")
     expect(ruleBody(enabledTailSelector)).toContain('background: inherit')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble')).toContain('border-top-left-radius: 0')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble')).toContain('border-top-right-radius: 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim.has-tim-bubble-tail .onebot-webqq-webqq__message:not(.is-outgoing):not(.is-merged) .onebot-webqq-webqq__bubble')).toContain('border-top-left-radius: 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim.has-tim-bubble-tail .onebot-webqq-webqq__message.is-outgoing:not(.is-merged) .onebot-webqq-webqq__bubble')).toContain('border-top-right-radius: 0')
   })
 
-  it('shows Telegram-style WebQQ message times outside bubbles on hover', () => {
+  it('shows TIM-style WebQQ message times outside bubbles on hover', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-body')).toContain('display: flex')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-body')).toContain('flex-direction: row')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time')).toContain('align-self: flex-end')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time')).toContain('flex: 0 0 auto')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-time')).toContain('opacity: 0')
-    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message:hover .onebot-webqq-webqq__message-time')).toContain('opacity: 1')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-body')).toContain('flex-direction: row')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-time')).toContain('align-self: flex-end')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-time')).toContain('flex: 0 0 auto')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-time')).toContain('opacity: 0')
+    expect(ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message:hover .onebot-webqq-webqq__message-time')).toContain('opacity: 1')
   })
 
-  it('places Telegram-style WebQQ reactions inside message bubbles', () => {
-    const bubbleBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble')
-    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reactions')
+  it('places TIM-style WebQQ reactions inside message bubbles', () => {
+    const bubbleBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble')
+    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reactions')
 
     expect(bubbleBody).toContain('gap: 2px')
     expect(reactionBody).toContain('margin-top: 0')
@@ -665,12 +665,12 @@ describe('chat capsule styles', () => {
     expect(reactionBody).toContain('align-self: flex-start')
   })
 
-  it('makes Telegram-style WebQQ reaction pills compact and bubble-tinted', () => {
-    const bubbleBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble')
-    const outgoingBubbleBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__bubble')
-    const outgoingReactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction')
-    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction')
-    const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-users')
+  it('makes TIM-style WebQQ reaction pills compact and bubble-tinted', () => {
+    const bubbleBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble')
+    const outgoingBubbleBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .is-outgoing .onebot-webqq-webqq__bubble')
+    const outgoingReactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .is-outgoing .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction')
+    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction')
+    const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-users')
 
     expect(bubbleBody).toContain('gap: 2px')
     expect(bubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, #ffffff 88%, #0f172a 12%)')
@@ -683,14 +683,14 @@ describe('chat capsule styles', () => {
     expect(usersBody).toContain('margin-right: 0')
   })
 
-  it('keeps Telegram-style WebQQ image reactions below images with bubble reaction styling', () => {
+  it('keeps TIM-style WebQQ image reactions below images with bubble reaction styling', () => {
     const stackBody = ruleBody('.onebot-webqq-webqq__message-media-stack')
     const outgoingStackBody = ruleBody('.onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack')
-    const reactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
-    const outgoingReactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
-    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction')
-    const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-users')
-    const avatarBody = ruleBody('.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-avatar')
+    const reactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
+    const outgoingReactionsBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
+    const reactionBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction')
+    const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-users')
+    const avatarBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions .onebot-webqq-webqq__message-reaction-avatar')
 
     expect(stackBody).toContain('flex-direction: column')
     expect(stackBody).toContain('align-items: flex-start')
@@ -711,7 +711,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-body')).toContain('flex-direction: row')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-body')).toContain('align-items: flex-end')
     expect(ruleBody('.onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message-body')).toContain('gap: 6px')
-    expect(style).toContain(`.onebot-webqq-webqq.is-chat-style-telegram .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-body,
+    expect(style).toContain(`.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-body,
 .onebot-webqq-webqq.is-chat-style-qq .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-body {
   flex-direction: row-reverse;
 }`)
@@ -996,28 +996,28 @@ describe('chat capsule styles', () => {
       ...autoSelectors.map((selector) => autoDarkBody.includes(selector) ? '' : `缺少自动暗色关键选择器 ${selector}`),
       forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
         ? ''
-        : '强制暗色普通气泡没有覆盖 Telegram 贴表情背景变量',
+        : '强制暗色普通气泡没有覆盖 TIM 贴表情背景变量',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
         ? ''
-        : '强制暗色发出气泡没有覆盖 Telegram 贴表情背景变量',
+        : '强制暗色发出气泡没有覆盖 TIM 贴表情背景变量',
       autoBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
         ? ''
-        : '自动暗色普通气泡没有覆盖 Telegram 贴表情背景变量',
+        : '自动暗色普通气泡没有覆盖 TIM 贴表情背景变量',
       autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
         ? ''
-        : '自动暗色发出气泡没有覆盖 Telegram 贴表情背景变量',
+        : '自动暗色发出气泡没有覆盖 TIM 贴表情背景变量',
       forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
         ? ''
-        : '强制暗色图片贴表情没有覆盖 Telegram 贴表情背景变量',
+        : '强制暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
       forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
         ? ''
-        : '强制暗色发出图片贴表情没有覆盖 Telegram 贴表情背景变量',
+        : '强制暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
       autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, rgba(30, 41, 59, 0.96) 88%, #ffffff 12%)')
         ? ''
-        : '自动暗色图片贴表情没有覆盖 Telegram 贴表情背景变量',
+        : '自动暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
       autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 88%, #ffffff 12%)')
         ? ''
-        : '自动暗色发出图片贴表情没有覆盖 Telegram 贴表情背景变量',
+        : '自动暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])

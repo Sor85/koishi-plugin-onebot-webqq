@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export type WebQQChatStyle = 'qq' | 'telegram'
+export type WebQQChatStyle = 'qq' | 'tim'
 export type WebQQColorMode = 'auto' | 'light' | 'dark'
 export type WebQQStorageBackend = 'browser' | 'koishi'
 
@@ -17,7 +17,7 @@ export const showWebQQThinkingTiming = ref(true)
 export const useCompactCapsuleShadow = ref(true)
 export const webQQTotalUnread = ref(0)
 export const webQQAccentColor = ref('#2563eb')
-export const webQQChatStyle = ref<WebQQChatStyle>('telegram')
+export const webQQChatStyle = ref<WebQQChatStyle>('tim')
 export const webQQColorMode = ref<WebQQColorMode>('auto')
 export const webQQMessageCacheLimit = ref(100)
 export const webQQStorageBackend = ref<WebQQStorageBackend>('koishi')
