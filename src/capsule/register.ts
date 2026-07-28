@@ -75,6 +75,10 @@ export function registerCapsule(options: {
     const botState = readBotState()
     return botState.bots.length > 1 ? botState.selectedSelfId : undefined
   }
+  // Bot 在页面加载后上线时不会产生消息事件，必须由生命周期事件同步列表和 selectedSelfId，否则胶囊会永久使用初始离线状态。
+  ctx.on('login-added', () => broadcastBotState())
+  ctx.on('login-removed', () => broadcastBotState())
+  ctx.on('login-updated', () => broadcastBotState())
   const chatLunaActivity = registerCapsuleChatLunaActivity({
     ctx,
     state,

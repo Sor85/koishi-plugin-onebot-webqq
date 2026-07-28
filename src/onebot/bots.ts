@@ -18,6 +18,12 @@ function isOneBotReady(bot: OneBotBot) {
   return (typeof bot.status !== 'number' || bot.status === oneBotOnlineStatus) && supportsOneBotAction(bot)
 }
 
+export function getOneBotProfileStatus(bot: OneBotBot) {
+  if (typeof bot.status === 'number') return bot.status
+  // 部分 OneBot 实现 action 可用但未提供 Satori 数字状态；仅通过现有可用性检查后才推导在线，避免把未知 Bot 误标为在线。
+  return isOneBotReady(bot) ? oneBotOnlineStatus : undefined
+}
+
 export function getAvailableOneBotBots(ctx: OneBotContext, selfIds?: string[]) {
   const allowList = new Set((selfIds ?? []).map((selfId) => selfId.trim()).filter(Boolean))
   if (selfIds && !allowList.size) return []

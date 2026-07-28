@@ -13,6 +13,7 @@ import {
 } from '../../../onebot/actions'
 import {
   getAvailableOneBotBots,
+  getOneBotProfileStatus,
   selectBot,
   type OneBotContext,
 } from '../../../onebot/bots'
@@ -86,7 +87,7 @@ function toOneBotRobotProfile(bot: OneBotBot): OneBotRobotProfile | undefined {
   return {
     platform: bot.platform || 'onebot',
     selfId: bot.selfId,
-    status: bot.status,
+    status: getOneBotProfileStatus(bot),
     name: getBotDisplayName(bot),
     avatar: bot.avatar || bot.user?.avatar || getWebQQUserAvatar(bot.selfId),
   }
