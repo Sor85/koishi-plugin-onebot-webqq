@@ -279,6 +279,9 @@ describe('onebot webqq adapter', () => {
     }
     const service = createOneBotWebQQService({ bots: [bot] })
 
+    expect(service.listBots()).toEqual([
+      expect.objectContaining({ selfId: '10000', status: 1 }),
+    ])
     await expect(service.loadContacts()).resolves.toEqual({
       friends: [{
         userId: '30000',
@@ -295,7 +298,7 @@ describe('onebot webqq adapter', () => {
     })
   })
 
-  it('skips connecting OneBot bots when loading contacts', async () => {
+  it('skips explicitly non-online OneBot bots when loading contacts', async () => {
     const connectingBot = {
       platform: 'onebot',
       selfId: '10000',
@@ -304,6 +307,18 @@ describe('onebot webqq adapter', () => {
         get_friend_list: vi.fn(async () => [{
           user_id: 30000,
           nickname: 'Connecting Bot Friend',
+        }]),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const offlineBot = {
+      platform: 'onebot',
+      selfId: '10002',
+      status: 0,
+      internal: {
+        get_friend_list: vi.fn(async () => [{
+          user_id: 30002,
+          nickname: 'Offline Bot Friend',
         }]),
         get_group_list: vi.fn(async () => []),
       },
@@ -320,7 +335,7 @@ describe('onebot webqq adapter', () => {
         get_group_list: vi.fn(async () => []),
       },
     }
-    const service = createOneBotWebQQService({ bots: [connectingBot, onlineBot] })
+    const service = createOneBotWebQQService({ bots: [connectingBot, offlineBot, onlineBot] })
 
     await expect(service.loadContacts()).resolves.toMatchObject({
       friends: [{
@@ -329,6 +344,7 @@ describe('onebot webqq adapter', () => {
       }],
     })
     expect(connectingBot.internal.get_friend_list).not.toHaveBeenCalled()
+    expect(offlineBot.internal.get_friend_list).not.toHaveBeenCalled()
     expect(onlineBot.internal.get_friend_list).toHaveBeenCalled()
   })
 

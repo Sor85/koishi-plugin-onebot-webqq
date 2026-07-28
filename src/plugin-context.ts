@@ -103,6 +103,9 @@ export interface CapsuleEvents {
   'internal/session': (session: Session) => unknown
   'friend-request': (session: Session) => unknown
   'guild-member-removed': (session: Session) => unknown
+  'login-added': (session: Session) => unknown
+  'login-removed': (session: Session) => unknown
+  'login-updated': (session: Session) => unknown
   'chatluna/before-chat': (
     conversationId: string,
     message: ChatLunaMessage | undefined,

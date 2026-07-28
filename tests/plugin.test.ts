@@ -2038,6 +2038,47 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('broadcasts Bot state when a runtime Bot changes lifecycle status', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      name: 'Capsule Bot',
+      status: 0,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const { ctx, listeners, addEntry, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+
+    const data = addEntry.mock.calls[0][1]
+    expect(data?.()).toMatchObject({ bots: [] })
+
+    bot.status = 1
+    await emitAll(listeners['login-updated'])
+
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/bots/update', {
+      bots: [expect.objectContaining({ selfId: '10000', status: 1 })],
+      selectedSelfId: '10000',
+    }, { authority: 1 })
+    expect(data?.()).toMatchObject({
+      bots: [expect.objectContaining({ selfId: '10000', status: 1 })],
+      selectedSelfId: '10000',
+    })
+
+    bot.status = 0
+    await emitAll(listeners['login-updated'])
+
+    expect(broadcast).toHaveBeenLastCalledWith('onebot-webqq/update', undefined, { authority: 1 })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/bots/update', {
+      bots: [],
+    }, { authority: 1 })
+    expect(listeners['login-added']).toHaveLength(1)
+    expect(listeners['login-removed']).toHaveLength(1)
+  })
+
   it('adds configured mock OneBot robots to console entry data', async () => {
     const bot = {
       platform: 'onebot',
@@ -2084,10 +2125,14 @@ describe('chat capsule plugin wiring', () => {
         voice_msg_to_text: vi.fn(async () => ({ text: '语音内容' })),
       },
     }
-    const { ctx, addListener } = createFakeContext({ bots: [bot] })
+    const { ctx, addEntry, addListener } = createFakeContext({ bots: [bot] })
 
     plugin.apply(ctx)
 
+    const data = addEntry.mock.calls[0][1]
+    expect(data?.()).toMatchObject({
+      bots: [{ selfId: '10000', status: 1 }],
+    })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/contacts', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/messages', expect.any(Function), { authority: 1 })
     expect(addListener).toHaveBeenCalledWith('onebot-webqq/webqq/group-info', expect.any(Function), { authority: 1 })
