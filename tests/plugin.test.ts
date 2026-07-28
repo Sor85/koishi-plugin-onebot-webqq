@@ -3755,6 +3755,51 @@ describe('chat capsule plugin wiring', () => {
     )
   })
 
+  it('ignores incoming and outgoing events from hidden bots', async () => {
+    const visibleBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const hiddenBot = {
+      ...visibleBot,
+      hidden: true,
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [visibleBot, hiddenBot] })
+    const hiddenSession = createSession({ bot: hiddenBot })
+
+    plugin.apply(ctx)
+    broadcast.mockClear()
+    await listeners.message[0](hiddenSession)
+    await listeners['before:send'][0](hiddenSession)
+
+    expect(broadcast).not.toHaveBeenCalledWith('onebot-webqq/update', expect.anything(), { authority: 1 })
+    expect(broadcast).not.toHaveBeenCalledWith('onebot-webqq/webqq/message', expect.anything(), { authority: 1 })
+  })
+
+  it('ignores ChatLuna activity from hidden bots', async () => {
+    const { ctx, listeners, broadcast } = createFakeContext()
+    const session = createSession({
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+        status: 1,
+        hidden: true,
+      },
+    })
+
+    plugin.apply(ctx)
+    broadcast.mockClear()
+    await listeners['chatluna/before-chat'][0]('conversation-hidden', { name: 'Alice' }, {}, {}, session)
+    await listeners['chatluna_character/message_collect'][0](session, [{ name: 'Alice' }])
+
+    expect(broadcast).not.toHaveBeenCalledWith('onebot-webqq/update', expect.anything(), { authority: 1 })
+  })
+
   it('broadcasts normalized state when a message is received', () => {
     const { ctx, listeners, broadcast } = createFakeContext()
 

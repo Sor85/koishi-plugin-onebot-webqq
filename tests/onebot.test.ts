@@ -332,6 +332,33 @@ describe('onebot webqq adapter', () => {
     expect(onlineBot.internal.get_friend_list).toHaveBeenCalled()
   })
 
+  it('excludes hidden Satori bots from the capsule bot list', () => {
+    const hiddenBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      hidden: true,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const visibleBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [hiddenBot, visibleBot] })
+
+    expect(service.listBots()).toEqual([
+      expect.objectContaining({ selfId: '10001' }),
+    ])
+  })
+
   it('adds mock OneBot profiles and maps selected mock bots back to the real bot', async () => {
     const bot = {
       platform: 'onebot',

@@ -13,6 +13,7 @@ export interface OneBotBot {
   }
   avatar?: string
   status?: number
+  hidden?: boolean
   internal: OneBotInternal
 }
 

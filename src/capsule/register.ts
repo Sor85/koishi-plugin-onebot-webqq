@@ -1,6 +1,7 @@
 import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
 import type { OneBotRobotProfile, OneBotRobotState } from '../onebot/types'
+import { isVisibleBotSession } from '../onebot/session'
 import type {
   ChatCapsuleContext,
   DebugLogger,
@@ -93,7 +94,8 @@ export function registerCapsule(options: {
     void chatLunaActivity.refreshIdleScheduleActivity('schedule-activity')
   }, 60 * 1000)
 
-  ctx.before('send', async () => {
+  ctx.before('send', async (session) => {
+    if (!isVisibleBotSession(session)) return
     recordOutgoingMessage(state)
     logSnapshot('send')
     broadcast()

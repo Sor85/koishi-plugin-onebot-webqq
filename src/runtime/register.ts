@@ -5,6 +5,7 @@ import type {
   ChatLunaCharacterAfterChatPayload,
 } from '../plugin-context'
 import { readWebQQBotGroupSenderMetadata } from '../webqq/adapters/onebot/group-sender-metadata'
+import { isVisibleBotSession } from '../onebot/session'
 import { registerWebQQ } from '../webqq/register'
 import { createPluginRuntime } from './create-runtime'
 
@@ -41,6 +42,8 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
   })
 
   ctx.on('message', async (session) => {
+    // hidden Bot 仍会发出标准 Koishi 事件；在共享扇出边界阻断，避免胶囊状态和 WebQQ 未读一起被污染。
+    if (!isVisibleBotSession(session)) return
     capsuleRuntime.recordIncomingMessage(session)
     await liveRuntime.recordWebQQLiveMessage(session)
     await capsuleRuntime.refreshIdleScheduleActivity('message-schedule', session)

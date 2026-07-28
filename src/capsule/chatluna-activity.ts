@@ -1,4 +1,5 @@
 import type { Session } from 'koishi'
+import { isVisibleBotSession } from '../onebot/session'
 import type {
   ChatCapsuleContext,
   DebugLogger,
@@ -51,6 +52,7 @@ export function registerCapsuleChatLunaActivity(options: {
   }
 
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
+    if (!isVisibleBotSession(session)) return
     const thinkingStartedAt = Date.now()
     const input = createMessageInput(session, message)
     input.user.name = readCapsuleMemberName(session) || input.user.name

@@ -1,4 +1,5 @@
 import type { Session } from 'koishi'
+import { isVisibleBotSession } from '../../onebot/session'
 import type { Config as PluginConfig } from '../../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../thinking'
@@ -73,7 +74,7 @@ export function createWebQQLiveRuntime(options: {
   function isSelectedWebQQSession(session: Session) {
     // 多 OneBot 实例会共享同一套 Koishi 事件；模拟 bot 的 selfId 又会映射回源 bot。
     // 因此匹配规则必须由 OneBot WebQQ 服务统一判断，避免真实消息在切到模拟头像后被误过滤。
-    return options.webqq.isSelectedSelfId(session.bot.selfId)
+    return isVisibleBotSession(session) && options.webqq.isSelectedSelfId(session.bot.selfId)
   }
 
   function trimOldestMapEntries<TKey, TValue>(map: Map<TKey, TValue>, limit: number, onEvict?: (key: TKey) => void) {

@@ -9,7 +9,8 @@ const oneBotOnlineStatus = 1
 
 export function getOneBotBots(ctx: OneBotContext) {
   return (ctx.bots ?? []).filter((bot): bot is OneBotBot => {
-    return isRecord(bot) && isRecord(bot.internal)
+    // Satori 的 hidden 用于保留运行时能力但阻止 UI 发现，虚拟 Bot 仍需留在 ctx.bots 中接收事件。
+    return isRecord(bot) && bot.hidden !== true && isRecord(bot.internal)
   })
 }
 
