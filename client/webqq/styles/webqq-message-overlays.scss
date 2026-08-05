@@ -52,7 +52,6 @@
     background: transparent;
     border: 0;
     border-radius: 50%;
-    cursor: pointer;
   }
 
   button:hover {
@@ -88,7 +87,6 @@
   padding: 32px;
   box-sizing: border-box;
   background: rgba(15, 23, 42, 0.78);
-  cursor: default;
   outline: none;
 }
 
@@ -97,7 +95,6 @@
   max-height: calc(100vh - 64px);
   border-radius: 8px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
-  cursor: default;
   object-fit: contain;
 }
 
@@ -115,5 +112,4 @@
   background: rgba(15, 23, 42, 0.58);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 8px;
-  cursor: pointer;
 }

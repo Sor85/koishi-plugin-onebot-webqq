@@ -80,6 +80,10 @@ function ruleBodyIncluding(selector: string, source = style) {
 }
 
 describe('chat capsule styles', () => {
+  it('never overrides the mouse cursor in WebQQ styles', () => {
+    expect(style).not.toMatch(/cursor\s*:/)
+  })
+
   it('keeps the status dot visible outside the avatar curve', () => {
     expect(ruleBody('.onebot-webqq__avatar')).not.toContain('overflow: hidden')
     expect(ruleBody('.onebot-webqq__avatar').match(/img\s*{[\s\S]*border-radius:\s*inherit/)).toBeTruthy()
@@ -426,9 +430,6 @@ describe('chat capsule styles', () => {
     const resizeZoneBody = ruleBody('.onebot-webqq-webqq__resize-zone')
     expect(resizeZoneBody).toContain('position: absolute')
     expect(resizeZoneBody).toContain('background: transparent')
-    expect(ruleBody('.onebot-webqq-webqq__resize-zone.is-left')).toContain('cursor: ew-resize')
-    expect(ruleBody('.onebot-webqq-webqq__resize-zone.is-top')).toContain('cursor: ns-resize')
-    expect(ruleBody('.onebot-webqq-webqq__resize-zone.is-top-left')).toContain('cursor: nwse-resize')
   })
 
   it('styles the WebQQ return-to-bottom button as a clickable bottom overlay', () => {
@@ -439,7 +440,6 @@ describe('chat capsule styles', () => {
         ? ''
         : '返回底部按钮没有固定或绝对定位',
       /bottom:\s*[^;]+;/.test(scrollBottomBody) ? '' : '返回底部按钮没有定位到聊天主体底部附近',
-      scrollBottomBody.includes('cursor: pointer') ? '' : '返回底部按钮缺少可点击控件样式',
       /display:\s*(inline-flex|flex)\s*;/.test(scrollBottomBody)
         ? ''
         : '返回底部按钮没有使用 flex 对齐按钮内容',
@@ -585,13 +585,11 @@ describe('chat capsule styles', () => {
   })
 
   it('styles WebQQ message images as clickable previews', () => {
-    expect(ruleBody('.onebot-webqq-webqq__message-image')).toContain('cursor: pointer')
     expect(ruleBody('.onebot-webqq-webqq__message-image')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq__image-preview')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq-webqq__image-preview')).toContain('inset: 0')
     expect(ruleBody('.onebot-webqq-webqq__image-preview')).toContain('z-index: 10002')
     expect(ruleBody('.onebot-webqq-webqq__image-preview')).toContain('background: rgba(15, 23, 42, 0.78)')
-    expect(ruleBody('.onebot-webqq-webqq__image-preview')).toContain('cursor: default')
     expect(ruleBody('.onebot-webqq-webqq__image-preview img')).toContain('max-width: min(1120px, calc(100vw - 64px))')
     expect(ruleBody('.onebot-webqq-webqq__image-preview img')).toContain('max-height: calc(100vh - 64px)')
     expect(ruleBody('.onebot-webqq-webqq__image-preview-close')).toContain('position: fixed')
@@ -673,8 +671,8 @@ describe('chat capsule styles', () => {
     const usersBody = ruleBody('.onebot-webqq-webqq.is-chat-style-tim .onebot-webqq-webqq__bubble .onebot-webqq-webqq__message-reaction-users')
 
     expect(bubbleBody).toContain('gap: 2px')
-    expect(bubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
-    expect(outgoingBubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+    expect(bubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #64748b 12%)')
+    expect(outgoingBubbleBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
     expect(reactionBody).toContain('background: var(--onebot-webqq-webqq-reaction-bg)')
     expect(outgoingReactionBody).not.toContain('background: color-mix')
     expect(reactionBody).toContain('gap: 4px')
@@ -695,10 +693,10 @@ describe('chat capsule styles', () => {
     expect(stackBody).toContain('flex-direction: column')
     expect(stackBody).toContain('align-items: flex-start')
     expect(outgoingStackBody).toContain('align-items: flex-end')
-    expect(reactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+    expect(reactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #64748b 12%)')
     expect(reactionsBody).toContain('align-self: flex-start')
     expect(reactionsBody).toContain('margin-top: 0')
-    expect(outgoingReactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+    expect(outgoingReactionsBody).toContain('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
     expect(outgoingReactionsBody).toContain('align-self: flex-end')
     expect(reactionBody).toContain('--onebot-webqq-webqq-reaction-avatar-size: 18px')
     expect(reactionBody).toContain('background: var(--onebot-webqq-webqq-reaction-bg)')
@@ -868,14 +866,11 @@ describe('chat capsule styles', () => {
     expect(thumbBody).toContain('width: 4px')
     expect(thumbBody).toContain('min-height: 28px')
     expect(thumbBody).toContain('border-radius: 999px')
-    expect(thumbBody).toContain('cursor: default')
-    expect(thumbBody).not.toContain('cursor: grab')
     expect(thumbBody).toContain('top: var(--onebot-webqq-webqq-scrollbar-thumb-top)')
     expect(thumbBody).toContain('height: var(--onebot-webqq-webqq-scrollbar-thumb-height)')
     expect(wideThumbBody).toContain('right: 2px')
     expect(wideThumbBody).toContain('width: 6px')
     expect(narrowHiddenOverlayBody).toContain('display: none')
-    expect(ruleBody('.onebot-webqq-webqq__scrollbar-thumb.is-dragging')).toContain('cursor: default')
   })
 
   it('shows the mobile notification page instead of the sidebar dropdown on narrow screens', () => {
@@ -994,28 +989,28 @@ describe('chat capsule styles', () => {
         ? ''
         : '自动暗色媒体查询没有限制到 .onebot-webqq-webqq.is-color-auto',
       ...autoSelectors.map((selector) => autoDarkBody.includes(selector) ? '' : `缺少自动暗色关键选择器 ${selector}`),
-      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '强制暗色普通气泡没有覆盖 TIM 贴表情背景变量',
-      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '强制暗色发出气泡没有覆盖 TIM 贴表情背景变量',
-      autoBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      autoBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '自动暗色普通气泡没有覆盖 TIM 贴表情背景变量',
-      autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '自动暗色发出气泡没有覆盖 TIM 贴表情背景变量',
-      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '强制暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
-      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '强制暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
-      autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '自动暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
-      autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 16%, #ffffff 84%)')
+      autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '自动暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
     ].filter(Boolean)
@@ -1160,7 +1155,6 @@ describe('chat capsule styles', () => {
 
     expect(targetBody, '缺少被引用消息的高亮气泡样式').toContain('animation:')
     expect(targetBody).toContain('onebot-webqq-webqq-quote-target')
-    expect(clickableQuoteBody, '可点击引用块缺少按钮式交互样式').toContain('cursor: pointer')
     expect(clickableQuoteBody).toContain('text-align: left')
   })
 
@@ -1220,7 +1214,6 @@ describe('chat capsule styles', () => {
   })
 
   it('keeps completed WebQQ thinking disclosure clickable and readable', () => {
-    expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('cursor: pointer')
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('border: 0')
     expect(ruleBody('.onebot-webqq-webqq__thinking-toggle')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq__thinking-chevron')).toContain('transition: transform 0.16s ease')

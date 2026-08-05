@@ -39,7 +39,6 @@
   bottom: 12px;
   left: 0;
   width: 8px;
-  cursor: ew-resize;
 }
 
 .onebot-webqq-webqq__resize-zone.is-top {
@@ -47,7 +46,6 @@
   right: 12px;
   left: 12px;
   height: 8px;
-  cursor: ns-resize;
 }
 
 .onebot-webqq-webqq__resize-zone.is-top-left {
@@ -55,7 +53,6 @@
   left: 0;
   width: 14px;
   height: 14px;
-  cursor: nwse-resize;
 }
 
 .onebot-webqq-webqq.is-plain {
@@ -115,7 +112,6 @@
   height: var(--onebot-webqq-webqq-scrollbar-thumb-height);
   border-radius: 999px;
   background: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 78%, #60a5fa 22%);
-  cursor: default;
   pointer-events: auto;
   transition: width 0.14s ease, right 0.14s ease, background 0.14s ease;
 }
@@ -127,7 +123,6 @@
 }
 
 .onebot-webqq-webqq__scrollbar-thumb.is-dragging {
-  cursor: default;
 }
 
 .onebot-webqq-webqq__sidebar {
@@ -171,7 +166,6 @@
     border-radius: 8px 8px 0 0;
     color: #6b7280;
     background: transparent;
-    cursor: pointer;
     font-size: 13px;
     transition: background 160ms ease, color 160ms ease;
 
@@ -200,7 +194,6 @@
   border-radius: 9px;
   color: #6b7280;
   background: transparent;
-  cursor: pointer;
 
   &:hover {
     color: var(--onebot-webqq-webqq-accent);
@@ -252,7 +245,6 @@
     border-radius: 8px;
     color: #64748b;
     background: transparent;
-    cursor: pointer;
     font-size: 13px;
     font-weight: 600;
 
@@ -352,7 +344,6 @@
   text-align: left;
   color: inherit;
   background: transparent;
-  cursor: pointer;
   transition: background 160ms ease;
 
   &:hover,

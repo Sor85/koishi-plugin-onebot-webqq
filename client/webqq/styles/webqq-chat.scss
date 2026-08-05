@@ -68,7 +68,6 @@
     background: transparent;
     border: 0;
     border-radius: 0;
-    cursor: pointer;
 
     &.is-active {
       background: transparent;
@@ -205,7 +204,6 @@
     background: transparent;
     border: 0;
     border-radius: 50%;
-    cursor: pointer;
   }
 }
 
@@ -266,7 +264,6 @@
   background: var(--onebot-webqq-webqq-accent-soft);
   border: 0;
   border-radius: 10px;
-  cursor: pointer;
 }
 
 .onebot-webqq-webqq__send-image-preview img {
@@ -290,7 +287,6 @@
   background: rgba(15, 23, 42, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 50%;
-  cursor: pointer;
 }
 
 .onebot-webqq-webqq__send-text {
@@ -325,11 +321,9 @@
   background: transparent;
   border: 0;
   border-radius: 50%;
-  cursor: pointer;
 
   &:disabled {
     opacity: 0.45;
-    cursor: not-allowed;
   }
 
   &.is-primary {
@@ -368,7 +362,6 @@
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  cursor: pointer;
 }
 
 .onebot-webqq-webqq__scroll-bottom-icon {

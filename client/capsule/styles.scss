@@ -112,7 +112,6 @@
   background: transparent;
   border: 0;
   border-radius: 50%;
-  cursor: pointer;
   pointer-events: auto;
 
   .onebot-webqq__avatar {
@@ -163,7 +162,6 @@
   background: transparent;
   border: 0;
   border-radius: 50%;
-  cursor: pointer;
   // 折叠/展开靠 Anime.js FLIP 同步位移当前 bot 头像；这里只能用 opacity 隐藏多余头像。
   // 用 visibility/display 隐藏会让 FLIP 把它判定为 enter/leave 节点，跳过抵消外层胶囊位移的位移补偿，
   // 余量头像会被钉在录制坐标上、随胶囊折叠被拖过当前 bot 头像，露出底部伪影/波纹/虚影。

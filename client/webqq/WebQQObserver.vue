@@ -122,6 +122,7 @@
             <span v-else class="onebot-webqq-webqq__send-avatar" aria-hidden="true"></span>
             <div class="onebot-webqq-webqq__send-main">
               <textarea
+                ref="sendTextInput"
                 v-model="sendText"
                 class="onebot-webqq-webqq__send-text"
                 rows="1"
@@ -336,6 +337,7 @@ const imagePreviewUrl = ref('')
 const sendText = ref('')
 const sendFiles = ref<WebQQSendFile[]>([])
 const sendingWebQQMessage = ref(false)
+const sendTextInput = ref<HTMLTextAreaElement>()
 const sendFileInput = ref<HTMLInputElement>()
 const sendForm = ref<HTMLElement>()
 const sendAttachments = ref<HTMLElement>()
@@ -435,7 +437,11 @@ async function toSendElement(file: File): Promise<WebQQSendElement> {
 }
 
 async function sendCurrentWebQQMessage() {
-  if (!currentChat.value || sendingWebQQMessage.value || !canSendWebQQMessage.value) return
+  const chat = currentChat.value
+  if (!chat || sendingWebQQMessage.value || !canSendWebQQMessage.value) return
+  // 捕获发送发起时的 textarea 和会话；异步期间切换会话时，不能把焦点错误地抢到新会话输入框。
+  const requestInput = sendTextInput.value
+  const requestChatKey = `${chat.type}:${chat.peerId}`
   sendingWebQQMessage.value = true
   errorText.value = ''
   try {
@@ -444,8 +450,8 @@ async function sendCurrentWebQQMessage() {
       ...await Promise.all(sendFiles.value.map(({ file }) => toSendElement(file))),
     ]
     await sendWebQQMessage({
-      type: currentChat.value.type,
-      peerId: currentChat.value.peerId,
+      type: chat.type,
+      peerId: chat.peerId,
       elements,
     })
     sendText.value = ''
@@ -454,6 +460,12 @@ async function sendCurrentWebQQMessage() {
     errorText.value = error instanceof Error ? error.message : '发送消息失败'
   } finally {
     sendingWebQQMessage.value = false
+    // 与 onebot-sandbox 保持一致：必须等 disabled 解除后再恢复焦点，否则浏览器会忽略 focus。
+    await nextTick()
+    const activeChat = currentChat.value
+    if (activeChat && `${activeChat.type}:${activeChat.peerId}` === requestChatKey && sendTextInput.value === requestInput) {
+      requestInput?.focus()
+    }
   }
 }
 
@@ -491,7 +503,6 @@ const webQQResizeViewportWidthGap = 32
 const webQQResizeViewportHeightGap = 6
 const webQQResizeDefaultBottomGap = 116
 let webQQResizeState: WebQQResizeState | undefined
-let previousBodyCursor = ''
 let previousBodyUserSelect = ''
 
 function normalizeWebQQShellSize(value: unknown): WebQQShellSize | undefined {
@@ -701,12 +712,6 @@ function closeNoticeMenu() {
   closeForwardDialog()
 }
 
-function getWebQQResizeCursor(edge: WebQQResizeEdge) {
-  if (edge === 'left') return 'ew-resize'
-  if (edge === 'top') return 'ns-resize'
-  return 'nwse-resize'
-}
-
 function updateStoredWebQQShellSize(size: WebQQShellSize) {
   webQQShellSize.value = clampWebQQShellSize(size)
 }
@@ -728,7 +733,6 @@ function stopWebQQResize() {
   window.removeEventListener('pointermove', handleWebQQResizeMove)
   window.removeEventListener('pointerup', stopWebQQResize)
   window.removeEventListener('pointercancel', stopWebQQResize)
-  document.body.style.cursor = previousBodyCursor
   document.body.style.userSelect = previousBodyUserSelect
   webQQResizeState = undefined
   if (webQQShellSize.value) persistWebQQShellSize(webQQShellSize.value)
@@ -745,9 +749,7 @@ function startWebQQResize(edge: WebQQResizeEdge, event: PointerEvent) {
     startHeight: rect.height,
   }
   updateStoredWebQQShellSize({ width: rect.width, height: rect.height })
-  previousBodyCursor = document.body.style.cursor
   previousBodyUserSelect = document.body.style.userSelect
-  document.body.style.cursor = getWebQQResizeCursor(edge)
   document.body.style.userSelect = 'none'
   window.addEventListener('pointermove', handleWebQQResizeMove)
   window.addEventListener('pointerup', stopWebQQResize)

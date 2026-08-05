@@ -43,11 +43,9 @@
     border-radius: 7px;
     color: var(--onebot-webqq-webqq-accent);
     background: var(--onebot-webqq-webqq-accent-soft);
-    cursor: pointer;
     font-size: 12px;
 
     &:disabled {
-      cursor: default;
       opacity: 0.56;
     }
 
