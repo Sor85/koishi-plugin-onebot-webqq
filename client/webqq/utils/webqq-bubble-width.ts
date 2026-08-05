@@ -95,6 +95,12 @@ function measureInlineLineWidths(inlineRuns: HTMLElement[]) {
   return mergeRenderedLineRects(inlineRuns.flatMap(getRenderedContentRects))
 }
 
+function measureReactionWidth(bubble: HTMLElement) {
+  if (typeof bubble.querySelector !== 'function') return 0
+  const reactions = bubble.querySelector<HTMLElement>('.onebot-webqq-webqq__message-reactions')
+  return reactions ? readRectValue(reactions.getBoundingClientRect().width) : 0
+}
+
 export function fitWebQQBubbleToInlineLines(bubble: HTMLElement) {
   const inlineRuns = getInlineRuns(bubble)
   if (!inlineRuns.length) {
@@ -106,7 +112,11 @@ export function fitWebQQBubbleToInlineLines(bubble: HTMLElement) {
   const horizontalInset = getBubbleBoxInset(bubble)
   const lineWidths = measureInlineLineWidths(inlineRuns)
   const maxLineWidth = getMaxLineWidth(lineWidths)
-  if (!maxLineWidth) return
+  const reactionWidth = measureReactionWidth(bubble)
+  const contentWidth = Math.max(maxLineWidth, reactionWidth)
+  if (!contentWidth) return
 
-  setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)
+  // onebot-sandbox 依靠 reaction 的固有宽度撑开 column flex 气泡；这里的纯文本拟合会写死 width，
+  // 因此必须把 reaction 宽度纳入同一次测量，避免短文本把贴表情胶囊挤出消息气泡。
+  setBubbleContentWidth(bubble, contentWidth, horizontalInset)
 }

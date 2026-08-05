@@ -1437,7 +1437,9 @@ describe('webqq observer view', () => {
     expect(webqqBubbleWidth).toContain('range.getClientRects()')
     expect(webqqBubbleWidth).toContain('const lineWidths = measureInlineLineWidths(inlineRuns)')
     expect(webqqBubbleWidth).toContain('mergeRenderedLineRects(inlineRuns.flatMap(getRenderedContentRects))')
-    expect(webqqBubbleWidth).toContain('setBubbleContentWidth(bubble, maxLineWidth, horizontalInset)')
+    expect(webqqBubbleWidth).toContain('const reactionWidth = measureReactionWidth(bubble)')
+    expect(webqqBubbleWidth).toContain('const contentWidth = Math.max(maxLineWidth, reactionWidth)')
+    expect(webqqBubbleWidth).toContain('setBubbleContentWidth(bubble, contentWidth, horizontalInset)')
     expect(webqqBubbleWidth).not.toContain('lineWidths.length <=')
     expect(webqqBubbleWidth).not.toContain('let low =')
     expect(webqqBubbleWidth).not.toContain('let high =')
@@ -1524,6 +1526,43 @@ describe('webqq observer view', () => {
 
     expect(bubble.style.width).toBe('307px')
     expect(getClientRects).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('lets TIM reactions widen a fitted short-text bubble like onebot-sandbox', () => {
+    const inlineRun = {} as HTMLElement
+    const reactions = {
+      getBoundingClientRect: vi.fn(() => ({ width: 86.4 })),
+    } as unknown as HTMLElement
+    const getClientRects = vi.fn(() => [
+      { top: 0, left: 0, right: 18, width: 18 },
+    ])
+    const bubble = {
+      style: { width: '40px' },
+      querySelector: vi.fn(() => reactions),
+      querySelectorAll: vi.fn(() => [inlineRun]),
+    } as unknown as HTMLElement
+    vi.stubGlobal('document', {
+      createRange: vi.fn(() => ({
+        selectNodeContents: vi.fn(),
+        getClientRects,
+        detach: vi.fn(),
+      })),
+    })
+    vi.stubGlobal('window', {
+      getComputedStyle: vi.fn(() => ({
+        boxSizing: 'border-box',
+        paddingLeft: '11px',
+        paddingRight: '11px',
+        borderLeftWidth: '0px',
+        borderRightWidth: '0px',
+      })),
+    })
+
+    fitWebQQBubbleToInlineLines(bubble)
+
+    expect(bubble.style.width).toBe('109px')
+    expect(reactions.getBoundingClientRect).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
   })
 
