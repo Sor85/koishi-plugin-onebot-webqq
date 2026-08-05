@@ -1098,6 +1098,9 @@ describe('chat capsule styles', () => {
     const previewLineBody = ruleBody('.onebot-webqq-webqq__forward > span:not(.onebot-webqq-webqq__forward-entry)')
 
     expect(previewLineBody).toContain('display: block')
+    expect(previewLineBody).toContain('width: 100%')
+    expect(previewLineBody).toContain('min-width: 0')
+    expect(previewLineBody).toContain('max-width: 100%')
     expect(previewLineBody).toContain('overflow: hidden')
     expect(previewLineBody).toContain('white-space: nowrap')
     expect(previewLineBody).toContain('text-overflow: ellipsis')

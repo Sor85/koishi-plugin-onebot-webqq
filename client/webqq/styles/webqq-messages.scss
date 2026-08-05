@@ -954,6 +954,10 @@
 
 .onebot-webqq-webqq__forward > span:not(.onebot-webqq-webqq__forward-entry) {
   display: block;
+  // Flex 子项默认可能按内容宽度参与布局，长转发文本不会形成可截断边界；显式限制到卡片内容区才能稳定显示省略号。
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
