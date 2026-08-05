@@ -26,7 +26,7 @@
         </button>
       </div>
 
-      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 140 }" class="webqq-forward-target-list" role="listbox" aria-label="目标会话">
+      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10202 }" class="webqq-forward-target-list" role="listbox" aria-label="目标会话">
         <button
           v-for="target in visibleTargets"
           :key="target.id"

@@ -13,6 +13,9 @@ const webqqMessageOverlaysStyle = await readFile(new URL('../client/webqq/styles
 const webqqMessageEffectsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
 const themeColorsStyle = await readFile(new URL('../client/webqq/styles/theme-colors.scss', import.meta.url), 'utf8')
 const webqqInteractionsStyle = await readFile(new URL('../client/webqq/styles/webqq-interactions.scss', import.meta.url), 'utf8')
+const dialogContentView = await readFile(new URL('../client/components/ui/dialog/DialogContent.vue', import.meta.url), 'utf8')
+const webqqEmojiPickerView = await readFile(new URL('../client/webqq/components/WebQQEmojiPicker.vue', import.meta.url), 'utf8')
+const webqqForwardTargetDialogView = await readFile(new URL('../client/webqq/components/WebQQForwardTargetDialog.vue', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -98,6 +101,26 @@ describe('chat capsule styles', () => {
 
     expect(shellZIndex).toBe(10001)
     expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
+  })
+
+  it('keeps every portalled dialog layer and floating scrollbar above the WebQQ shell', () => {
+    const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
+    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const overlayZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-overlay\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const contentZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const dialogScrollbarZIndex = Number(dialogContentView.match(/zIndex:\s*(\d+)/)?.[1])
+    const emojiScrollbarZIndex = Number(webqqEmojiPickerView.match(/zIndex:\s*(\d+)/)?.[1])
+    const forwardScrollbarZIndex = Number(webqqForwardTargetDialogView.match(/zIndex:\s*(\d+)/)?.[1])
+
+    expect(shellZIndex).toBe(10001)
+    expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
+    expect(menuZIndex).toBeGreaterThan(secondaryPageZIndex)
+    expect(overlayZIndex).toBeGreaterThan(menuZIndex)
+    expect(contentZIndex).toBeGreaterThan(overlayZIndex)
+    expect(dialogScrollbarZIndex).toBeGreaterThan(contentZIndex)
+    expect(emojiScrollbarZIndex).toBeGreaterThan(secondaryPageZIndex)
+    expect(forwardScrollbarZIndex).toBeGreaterThan(contentZIndex)
   })
 
   it('fully styles the selection cancel button without inherited theme tokens', () => {

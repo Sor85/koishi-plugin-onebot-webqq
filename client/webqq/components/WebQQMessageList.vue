@@ -39,7 +39,7 @@
             @contextmenu="rememberFloatingPanelAnchor($event)"
           >
             <span
-              v-if="selectionMode"
+              v-if="selectionMode && isMessageSelectable(message)"
               class="onebot-webqq-webqq__message-select-marker"
               :class="{ 'is-checked': isMessageSelected(message.id) }"
               aria-hidden="true"

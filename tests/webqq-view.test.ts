@@ -787,6 +787,13 @@ describe('webqq observer view', () => {
     expect(webqqSidebar).toContain('<WebQQNoticeMenu')
   })
 
+  it('does not render selection markers for recalled messages', () => {
+    expect(webqqMessageListView).toContain('function isMessageSelectable(message: WebQQMessage)')
+    expect(webqqMessageListView).toContain('return !message.event && !message.recalled && !!message.id')
+    expect(webqqMessageListView).toContain('v-if="selectionMode && isMessageSelectable(message)"')
+    expect(webqqMessageListView).not.toContain('v-if="selectionMode"\n              class="onebot-webqq-webqq__message-select-marker"')
+  })
+
   it('attaches the WebQQ overlay scrollbar directive to every WebQQ scroll area', () => {
     expect(webqqScrollbarDirective).toContain('export const vWebqqScrollbar')
     expect(webqqScrollbarDirective).toContain('document.body.appendChild')

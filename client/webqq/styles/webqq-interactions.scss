@@ -72,7 +72,8 @@
 .webqq-dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 150;
+  // 所有 Dialog 都 Portal 到 body；统一放到二级页和右键菜单之上，避免资料操作、群名片和合并转发弹窗被 WebQQ 根窗口遮挡。
+  z-index: 10200;
   background: rgb(15 23 42 / 35%);
   backdrop-filter: blur(2px);
 }
@@ -83,7 +84,7 @@
   position: fixed;
   inset-inline: 0;
   top: 16px;
-  z-index: 151;
+  z-index: 10201;
   display: grid;
   width: min(520px, calc(100vw - 24px));
   max-height: calc(100vh - 32px);
