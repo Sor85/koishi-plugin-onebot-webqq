@@ -1,11 +1,19 @@
 import type { Config as PluginConfig } from '../config'
 import type {
+  WebQQForwardSendInput,
+  WebQQFriendAction,
+  WebQQGroupAction,
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageReactionInput,
+  WebQQMessageRecallInput,
   WebQQNotice,
   WebQQNoticeAction,
+  WebQQProfileQuery,
   WebQQRecordTranscriptionQuery,
+  WebQQSelfProfileUpdate,
+  WebQQSendPayload,
 } from './types'
 import type { createOneBotWebQQService } from './adapters/onebot/service'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
@@ -87,8 +95,29 @@ export function registerWebQQConsoleListeners(
       status: action.approve ? 'approved' : 'rejected',
     })
   }, consoleAuthOptions)
-  console.addListener('onebot-webqq/webqq/send', (payload) => {
+  console.addListener('onebot-webqq/webqq/send', (payload: WebQQSendPayload) => {
     return webqq.sendMessage(payload)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/message-recall', (input: WebQQMessageRecallInput) => {
+    return webqq.recallMessage(input)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/message-reaction', (input: WebQQMessageReactionInput) => {
+    return webqq.setMessageReaction(input)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/profile', (query: WebQQProfileQuery) => {
+    return webqq.loadProfile(query)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/self-profile', (input: WebQQSelfProfileUpdate) => {
+    return webqq.updateSelfProfile(input)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/friend-action', (input: WebQQFriendAction) => {
+    return webqq.performFriendAction(input)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/group-action', (input: WebQQGroupAction) => {
+    return webqq.performGroupAction(input)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/forward-send', (input: WebQQForwardSendInput) => {
+    return webqq.sendForward(input)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/storage/load', () => {
     return loadWebQQStorage(inner, config, getStorageScope())

@@ -3,18 +3,27 @@ import type { OneBotRobotState } from '../../onebot/bots'
 import type {
   WebQQContacts,
   WebQQForwardItem,
+  WebQQForwardSendInput,
   WebQQFriend,
+  WebQQFriendAction,
   WebQQFriendCategory,
   WebQQGroup,
+  WebQQGroupAction,
   WebQQGroupAnnouncement,
   WebQQGroupInfo,
   WebQQGroupMember,
   WebQQMessage,
   WebQQMessageElement,
   WebQQMessageReaction,
+  WebQQMessageReactionInput,
   WebQQMessageReactionUser,
+  WebQQMessageRecallInput,
   WebQQNotice,
+  WebQQProfile,
+  WebQQProfileField,
+  WebQQProfileQuery,
   WebQQRecentContact,
+  WebQQSelfProfileUpdate,
   WebQQSendPayload,
 } from '../types'
 
@@ -235,7 +244,8 @@ function normalizeWebQQMessage(value: unknown): WebQQMessage | undefined {
   if (senderAffinity != null) message.senderAffinity = senderAffinity
   if (senderRelationship != null) message.senderRelationship = senderRelationship
   if (recalled != null) message.recalled = recalled
-  if (reactions.length) message.reactions = reactions
+  // 空数组也是有效的 reaction 快照，表示最后一个表情已被取消；不能按长度过滤，否则合并时旧胶囊会残留。
+  if (Array.isArray(value.reactions)) message.reactions = reactions
   const usage = normalizeWebQQUsage(value.usage)
   if (usage) message.usage = usage
   if (isRecord(value.event)) {
@@ -442,4 +452,90 @@ export async function sendWebQQMessage(payload: WebQQSendPayload) {
 
 export async function selectWebQQBot(selfId: string) {
   return await send('onebot-webqq/webqq/bot/select', { selfId }) as OneBotRobotState
+}
+
+function normalizeWebQQProfileField(value: unknown): WebQQProfileField | undefined {
+  if (!isRecord(value)) return
+  const group = readStringField(value, 'group')
+  const label = readStringField(value, 'label')
+  const fieldValue = readStringField(value, 'value')
+  if (group == null || label == null || fieldValue == null) return
+  return { group, label, value: fieldValue }
+}
+
+function normalizeWebQQProfile(value: unknown): WebQQProfile | undefined {
+  if (!isRecord(value)) return
+  const kind = value.kind === 'bot' ? 'bot' : value.kind === 'user' ? 'user' : undefined
+  const id = readStringField(value, 'id')
+  const name = readStringField(value, 'name')
+  const avatar = readStringField(value, 'avatar')
+  if (!kind || id == null || name == null || avatar == null) return
+  const profile: WebQQProfile = {
+    kind,
+    id,
+    name,
+    avatar,
+    fields: normalizeArray(value.fields, normalizeWebQQProfileField),
+  }
+  const nickname = readStringField(value, 'nickname')
+  const remark = readStringField(value, 'remark')
+  const personalNote = readStringField(value, 'personalNote')
+  const sex = readStringField(value, 'sex')
+  const age = readNumber(value.age)
+  const qid = readStringField(value, 'qid')
+  const level = readStringField(value, 'level')
+  const groupId = readStringField(value, 'groupId')
+  const groupCard = readStringField(value, 'groupCard')
+  const groupTitle = readStringField(value, 'groupTitle')
+  const groupRole = readStringField(value, 'groupRole')
+  const rawRole = value.rawRole === 'owner' || value.rawRole === 'admin' || value.rawRole === 'member'
+    ? value.rawRole
+    : undefined
+  const canEditSelf = readBoolean(value.canEditSelf)
+  const canEditAvatar = readBoolean(value.canEditAvatar)
+  if (nickname != null) profile.nickname = nickname
+  if (remark != null) profile.remark = remark
+  if (personalNote != null) profile.personalNote = personalNote
+  if (sex != null) profile.sex = sex
+  if (age != null) profile.age = age
+  if (qid != null) profile.qid = qid
+  if (level != null) profile.level = level
+  if (groupId != null) profile.groupId = groupId
+  if (groupCard != null) profile.groupCard = groupCard
+  if (groupTitle != null) profile.groupTitle = groupTitle
+  if (groupRole != null) profile.groupRole = groupRole
+  if (rawRole != null) profile.rawRole = rawRole
+  if (canEditSelf != null) profile.canEditSelf = canEditSelf
+  if (canEditAvatar != null) profile.canEditAvatar = canEditAvatar
+  return profile
+}
+
+export async function recallWebQQMessage(input: WebQQMessageRecallInput) {
+  await send('onebot-webqq/webqq/message-recall', input)
+}
+
+export async function setWebQQMessageReaction(input: WebQQMessageReactionInput) {
+  await send('onebot-webqq/webqq/message-reaction', input)
+}
+
+export async function requestWebQQProfile(query: WebQQProfileQuery) {
+  const profile = normalizeWebQQProfile(await send('onebot-webqq/webqq/profile', query))
+  if (!profile) throw new Error('加载资料失败')
+  return profile
+}
+
+export async function updateWebQQSelfProfile(input: WebQQSelfProfileUpdate) {
+  await send('onebot-webqq/webqq/self-profile', input)
+}
+
+export async function performWebQQFriendAction(input: WebQQFriendAction) {
+  await send('onebot-webqq/webqq/friend-action', input)
+}
+
+export async function performWebQQGroupAction(input: WebQQGroupAction) {
+  await send('onebot-webqq/webqq/group-action', input)
+}
+
+export async function sendWebQQForward(input: WebQQForwardSendInput) {
+  await send('onebot-webqq/webqq/forward-send', input)
 }

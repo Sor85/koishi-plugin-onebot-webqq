@@ -492,6 +492,14 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
   if (!webQQOpen.value) return
   const target = event.target
   if (target instanceof Node && capsuleHost.value?.contains(target)) return
+  // Reka 菜单和 WebQQ 二级页会 Portal/Teleport 到 body，它们在 DOM 上不属于胶囊，
+  // 但仍是 WebQQ 交互面；否则选择“贴表情”或“撤回”的 pointerdown 会先把整个 WebQQ 关闭。
+  if (target instanceof Element && target.closest([
+    '.webqq-context-menu-content',
+    '.webqq-secondary-page',
+    '.webqq-dialog-overlay',
+    '.webqq-dialog-content',
+  ].join(', '))) return
   webQQOpen.value = false
 }
 

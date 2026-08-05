@@ -4,13 +4,21 @@ import type { ChatLunaMessage } from './capsule/message-input'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './webqq/thinking'
 import type {
   WebQQContacts,
+  WebQQForwardSendInput,
+  WebQQFriendAction,
+  WebQQGroupAction,
   WebQQGroupInfo,
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageReactionInput,
+  WebQQMessageRecallInput,
   WebQQNotice,
   WebQQNoticeAction,
+  WebQQProfile,
+  WebQQProfileQuery,
   WebQQRecordTranscriptionQuery,
+  WebQQSelfProfileUpdate,
   WebQQSendPayload,
 } from './webqq/types'
 import type { OneBotRobotState } from './onebot/types'
@@ -31,6 +39,13 @@ export interface ConsoleEvents {
   'onebot-webqq/webqq/notices': () => Promise<WebQQNotice[]>
   'onebot-webqq/webqq/notice-action': (action: WebQQNoticeAction) => Promise<void>
   'onebot-webqq/webqq/send': (payload: WebQQSendPayload) => Promise<void>
+  'onebot-webqq/webqq/message-recall': (input: WebQQMessageRecallInput) => Promise<void>
+  'onebot-webqq/webqq/message-reaction': (input: WebQQMessageReactionInput) => Promise<void>
+  'onebot-webqq/webqq/profile': (query: WebQQProfileQuery) => Promise<WebQQProfile>
+  'onebot-webqq/webqq/self-profile': (input: WebQQSelfProfileUpdate) => Promise<void>
+  'onebot-webqq/webqq/friend-action': (input: WebQQFriendAction) => Promise<void>
+  'onebot-webqq/webqq/group-action': (input: WebQQGroupAction) => Promise<void>
+  'onebot-webqq/webqq/forward-send': (input: WebQQForwardSendInput) => Promise<void>
   'onebot-webqq/webqq/bot/select': (input: { selfId: string }) => Promise<OneBotRobotState>
   'onebot-webqq/webqq/storage/load': () => Promise<WebQQStoredState>
   'onebot-webqq/webqq/storage/save': (state: WebQQStoredState) => Promise<void>

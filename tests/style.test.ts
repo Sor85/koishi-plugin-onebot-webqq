@@ -12,6 +12,7 @@ const webqqMessageCardsStyle = await readFile(new URL('../client/webqq/styles/we
 const webqqMessageOverlaysStyle = await readFile(new URL('../client/webqq/styles/webqq-message-overlays.scss', import.meta.url), 'utf8')
 const webqqMessageEffectsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
 const themeColorsStyle = await readFile(new URL('../client/webqq/styles/theme-colors.scss', import.meta.url), 'utf8')
+const webqqInteractionsStyle = await readFile(new URL('../client/webqq/styles/webqq-interactions.scss', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -81,7 +82,35 @@ function ruleBodyIncluding(selector: string, source = style) {
 
 describe('chat capsule styles', () => {
   it('never overrides the mouse cursor in WebQQ styles', () => {
-    expect(style).not.toMatch(/cursor\s*:/)
+    expect(`${style}\n${webqqInteractionsStyle}`).not.toMatch(/cursor\s*:/)
+  })
+
+  it('keeps portalled context menus above the WebQQ shell', () => {
+    const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
+    const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    expect(shellZIndex).toBe(10001)
+    expect(menuZIndex).toBeGreaterThan(shellZIndex)
+  })
+
+  it('keeps teleported secondary pages above the WebQQ shell', () => {
+    const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
+    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+
+    expect(shellZIndex).toBe(10001)
+    expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
+  })
+
+  it('fully styles the selection cancel button without inherited theme tokens', () => {
+    const selector = ".onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline']"
+    const buttonBody = ruleBodyIncluding(selector, webqqInteractionsStyle)
+    const focusBody = ruleBodyIncluding(`${selector}:focus-visible`, webqqInteractionsStyle)
+
+    expect(buttonBody).toContain('border: 1px solid rgba(217, 225, 234, 0.9)')
+    expect(buttonBody).toContain('color: #202938')
+    expect(buttonBody).toContain('background: #fff')
+    expect(buttonBody).toContain('outline: none')
+    expect(focusBody).toContain('border-color:')
+    expect(focusBody).toContain('box-shadow: 0 0 0 3px')
   })
 
   it('keeps the status dot visible outside the avatar curve', () => {
@@ -568,7 +597,7 @@ describe('chat capsule styles', () => {
 
   it('preserves user line breaks inside WebQQ text bubbles', () => {
     expect(style).toMatch(/\n\.onebot-webqq-webqq__inline-run\s*{[\s\S]*?\n  white-space:\s*pre-line/)
-    expect(style).not.toMatch(/\n\.onebot-webqq-webqq__bubble\s*{[\s\S]*?\n  white-space:\s*pre-wrap/)
+    expect(ruleBody('.onebot-webqq-webqq__bubble')).not.toContain('white-space: pre-wrap')
   })
 
   it('shrinks WebQQ text bubbles to their own message content', () => {

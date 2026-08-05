@@ -114,7 +114,7 @@ async function emitAll(listeners: Listener[] | undefined, ...payload: unknown[])
   }
 }
 
-function createFakeContext(options: { console?: boolean; character?: ChatCapsuleContext['chatluna_character']; schedule?: ChatCapsuleContext['chatluna_schedule']; bots?: unknown[]; server?: boolean; database?: DatabaseService } = {}) {
+function createFakeContext(options: { console?: boolean; character?: ChatCapsuleContext['chatluna_character']; schedule?: ChatCapsuleContext['chatluna_schedule']; bots?: unknown[]; server?: boolean; database?: DatabaseService; logger?: TestLogger } = {}) {
   const listeners: Record<string, Listener[]> = {}
   const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
   const broadcast = vi.fn((_type: string, _body: TestBroadcastBody, _options?: { authority?: number }) => {})
@@ -139,6 +139,7 @@ function createFakeContext(options: { console?: boolean; character?: ChatCapsule
     const ctx: ChatCapsuleContext & { console: NonNullable<ChatCapsuleContext['console']>; bots?: unknown[] } = {
       ...base,
       ...(options.bots ? { bots: options.bots } : {}),
+      ...(options.logger ? { logger: (_name: string) => options.logger! } : {}),
       console: {
         addEntry,
         broadcast,
@@ -159,6 +160,7 @@ function createFakeContext(options: { console?: boolean; character?: ChatCapsule
   const ctx: ChatCapsuleContext & { bots?: unknown[] } = {
     ...base,
     ...(options.bots ? { bots: options.bots } : {}),
+    ...(options.logger ? { logger: (_name: string) => options.logger! } : {}),
     ...(options.server ? { server: { get: serverGet } } : {}),
     ...(options.character ? { chatluna_character: options.character } : {}),
     ...(options.schedule ? { chatluna_schedule: options.schedule } : {}),
@@ -1758,6 +1760,165 @@ describe('chat capsule plugin wiring', () => {
         elements: [{ type: 'unknown', text: '40000 给一条消息贴了 赞' }],
       }),
     }, { authority: 1 })
+  })
+
+  it('ignores reactions from an old Socket after the selected Bot goes offline', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const bot = {
+      platform: 'onebot',
+      selfId: '1018193431',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_emoji_like: vi.fn(async () => ({ emojiLikesList: [] })),
+        get_msg: vi.fn(async () => ({ message_id: 'new-1', message: [] })),
+      },
+    }
+    const { ctx, listeners, addEntry, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    addEntry.mock.calls[0][1]?.()
+    bot.status = 0
+    await emitAll(listeners['login-updated'])
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'new-1',
+        likes: [{ emoji_id: '76', count: 2 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.fetch_emoji_like).not.toHaveBeenCalled()
+    expect(bot.internal.get_msg).not.toHaveBeenCalled()
+    expect(broadcast.mock.calls.filter(([type]) => type === 'onebot-webqq/webqq/message')).toEqual([])
+  })
+
+  it('logs unexpected raw reaction failures instead of leaving a rejected Promise', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    const logger: TestLogger = { info: vi.fn() }
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_msg: vi.fn(async () => {
+          throw new Error('missing')
+        }),
+      },
+    }
+    const { ctx, addEntry, broadcast } = createFakeContext({ bots: [bot], logger })
+
+    plugin.apply(ctx)
+    addEntry.mock.calls[0][1]?.()
+    broadcast.mockImplementation(() => {
+      throw new Error('broadcast failed')
+    })
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'missing-id',
+        likes: [{ emoji_id: '76', count: 1 }],
+        is_add: true,
+      }),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(logger.info).toHaveBeenCalledWith(
+      'webqq raw reaction handling failed selfId=%s groupId=%s messageId=%s emojiId=%s error=%s',
+      '10000',
+      '20000',
+      'missing-id',
+      '76',
+      'broadcast failed',
+    )
+  })
+
+  it('drops a reaction result when its source Bot goes offline during an async lookup', async () => {
+    let socketListener: ((event: { data: unknown }) => void) | undefined
+    let resolveUsers: (value: { emojiLikesList: unknown[] }) => void = () => {}
+    const usersPromise = new Promise<{ emojiLikesList: unknown[] }>((resolve) => {
+      resolveUsers = resolve
+    })
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      adapter: {
+        socket: {
+          addEventListener: (_type: 'message', listener: (event: { data: unknown }) => void) => {
+            socketListener = listener
+          },
+        },
+      },
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_emoji_like: vi.fn(() => usersPromise),
+      },
+      toJSON: () => ({ user: { name: 'Capsule Bot' } }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await emitAll(listeners.message, createSession({
+      bot,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000001000,
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '30000', name: 'Alice' },
+        message: {
+          id: 'new-1',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+    broadcast.mockClear()
+    socketListener?.({
+      data: JSON.stringify({
+        post_type: 'notice',
+        notice_type: 'group_msg_emoji_like',
+        group_id: '20000',
+        user_id: '40000',
+        message_id: 'new-1',
+        likes: [{ emoji_id: '76', count: 2 }],
+        is_add: true,
+      }),
+    })
+    await Promise.resolve()
+    bot.status = 0
+    await emitAll(listeners['login-updated'])
+    resolveUsers({ emojiLikesList: [{ tinyId: '40000', nickName: 'Ning' }] })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(bot.internal.fetch_emoji_like).toHaveBeenCalled()
+    expect(broadcast.mock.calls.filter(([type]) => type === 'onebot-webqq/webqq/message')).toEqual([])
   })
 
   it('fills WebQQ reaction users from the emoji like list', async () => {

@@ -16,21 +16,99 @@
       <div v-if="message.event" class="onebot-webqq-webqq__message-event">
         {{ message.summary }}
       </div>
-      <div
-        v-else
-        :ref="(element) => setMessageElementRef(message, element)"
-        :class="['onebot-webqq-webqq__message', `is-${message.direction}`, getMessageClusterClass(index), { 'is-merged': isMergedMessage(index), 'is-thinking': isBotThinkingMessage(message), 'is-recalled': message.recalled, 'is-quote-target': isHighlightedMessage(message) }]"
-      >
-        <span class="onebot-webqq-webqq__message-avatar-wrap">
-          <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
-          <span v-if="message.senderAffinity != null && showWebQQAffinity" class="onebot-webqq-webqq__message-affinity">
-            <svg class="onebot-webqq-webqq__message-affinity-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
-            </svg>
-            <span v-if="message.senderAffinity < 0"><span class="onebot-webqq-webqq__message-affinity-sign">-</span>{{ -message.senderAffinity }}</span>
-            <span v-else>{{ message.senderAffinity }}</span>
-          </span>
-        </span>
+      <ContextMenu v-else>
+        <ContextMenuTrigger as-child :disabled="!!message.recalled || !!selectionMode">
+          <div
+            :ref="(element) => setMessageElementRef(message, element)"
+            :class="[
+              'onebot-webqq-webqq__message',
+              `is-${message.direction}`,
+              getMessageClusterClass(index),
+              {
+                'is-merged': isMergedMessage(index),
+                'is-thinking': isBotThinkingMessage(message),
+                'is-recalled': message.recalled,
+                'is-quote-target': isHighlightedMessage(message),
+                'is-selecting': selectionMode,
+                'is-selectable': selectionMode && isMessageSelectable(message),
+                'is-selected': selectionMode && isMessageSelected(message.id),
+              },
+            ]"
+            :aria-selected="selectionMode ? isMessageSelected(message.id) : undefined"
+            @click="handleMessageClick(message, $event)"
+            @contextmenu="rememberFloatingPanelAnchor($event)"
+          >
+            <span
+              v-if="selectionMode"
+              class="onebot-webqq-webqq__message-select-marker"
+              :class="{ 'is-checked': isMessageSelected(message.id) }"
+              aria-hidden="true"
+            >
+              <IconCheck :size="12" stroke-width="3" />
+            </span>
+            <div class="onebot-webqq-webqq__message-select-body">
+              <ContextMenu>
+                <ContextMenuTrigger as-child :disabled="selectionMode">
+                  <button
+                    type="button"
+                    class="onebot-webqq-webqq__message-avatar-trigger"
+                    :aria-label="`查看 ${message.senderName} 的资料`"
+                    @click="handleMessageAvatarClick(message, $event)"
+                    @contextmenu.stop
+                  >
+                    <span class="onebot-webqq-webqq__message-avatar-wrap">
+                      <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
+                      <span v-if="message.senderAffinity != null && showWebQQAffinity" class="onebot-webqq-webqq__message-affinity">
+                        <svg class="onebot-webqq-webqq__message-affinity-icon" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                        </svg>
+                        <span v-if="message.senderAffinity < 0"><span class="onebot-webqq-webqq__message-affinity-sign">-</span>{{ -message.senderAffinity }}</span>
+                        <span v-else>{{ message.senderAffinity }}</span>
+                      </span>
+                    </span>
+                  </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent style="z-index: 10140">
+                  <ContextMenuItem @select="emit('open-profile', message.senderId)">
+                    <IconId :size="16" aria-hidden="true" /> 查看资料
+                  </ContextMenuItem>
+                  <ContextMenuSub v-if="chatType === 'group' && getGroupMember(message.senderId)">
+                    <ContextMenuSubTrigger><IconUsers :size="16" aria-hidden="true" /> 群成员操作</ContextMenuSubTrigger>
+                    <WebQQGroupMemberMenu
+                      sub
+                      :actor="getGroupMember(currentOperatorId)"
+                      :member="getGroupMember(message.senderId)!"
+                      @open-profile="emit('open-profile', message.senderId)"
+                      @mention="emit('mention-group-member', message.senderId)"
+                      @poke="emit('poke-group-member', message.senderId)"
+                      @set-card="emit('set-group-card', message.senderId)"
+                      @set-title="emit('set-group-title', message.senderId)"
+                      @set-admin="emit('set-group-admin', message.senderId, $event)"
+                      @kick="emit('kick-group-member', message.senderId)"
+                    />
+                  </ContextMenuSub>
+                  <template v-if="message.senderId !== currentOperatorId">
+                    <ContextMenuSub v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('poke')">
+                      <ContextMenuSubTrigger><IconHandClick :size="16" aria-hidden="true" /> 好友互动</ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        <ContextMenuItem @select="emit('poke-friend', message.senderId)">
+                          <IconHandClick :size="16" aria-hidden="true" /> 戳一戳
+                        </ContextMenuItem>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    <ContextMenuItem v-if="getChatFriendActions(message.senderId).includes('remark')" @select="emit('set-remark', message.senderId)">
+                      <IconTag :size="16" aria-hidden="true" /> 设置好友备注
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      v-if="getChatFriendActions(message.senderId).includes('delete')"
+                      class="is-danger"
+                      @select="emit('delete-friend', message.senderId)"
+                    >
+                      <IconUserMinus :size="16" aria-hidden="true" /> 删除好友
+                    </ContextMenuItem>
+                  </template>
+                </ContextMenuContent>
+              </ContextMenu>
         <div class="onebot-webqq-webqq__message-content">
           <div v-if="!isMergedMessage(index)" class="onebot-webqq-webqq__sender-line">
             <template v-if="message.direction === 'outgoing'">
@@ -47,7 +125,7 @@
             </template>
           </div>
           <div class="onebot-webqq-webqq__message-body">
-            <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media-stack">
+            <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media-stack" @click.capture="handleMessageBubbleClick(message, $event)">
               <div class="onebot-webqq-webqq__message-media">
                 <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
                   <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
@@ -57,12 +135,16 @@
                 v-if="message.reactions?.length && chatStyle === 'tim'"
                 :reactions="message.reactions ?? []"
                 :chat-style="chatStyle"
+                :current-operator-id="currentOperatorId"
+                :readonly="isReactionReadonly(message)"
+                @toggle="toggleReaction(message, $event)"
               />
             </div>
             <div
               v-else
               :ref="(element) => setBubbleElementRef(message, element)"
               class="onebot-webqq-webqq__bubble"
+              @click.capture="handleMessageBubbleClick(message, $event)"
             >
               <span v-if="isBotThinkingMessage(message)" class="onebot-webqq-webqq__thinking-dots" aria-label="机器人正在思考">
                 <span v-for="dot in 3" :key="dot" class="onebot-webqq-webqq__thinking-dot"></span>
@@ -192,18 +274,45 @@
                 v-if="message.reactions?.length && chatStyle === 'tim'"
                 :reactions="message.reactions ?? []"
                 :chat-style="chatStyle"
+                :current-operator-id="currentOperatorId"
+                :readonly="isReactionReadonly(message)"
+                @toggle="toggleReaction(message, $event)"
               />
             </div>
             <WebQQMessageReactions
               v-if="message.reactions?.length && chatStyle !== 'tim'"
               :reactions="message.reactions ?? []"
               :chat-style="chatStyle"
+              :current-operator-id="currentOperatorId"
+              :readonly="isReactionReadonly(message)"
+              @toggle="toggleReaction(message, $event)"
             />
             <div v-if="message.recalled" class="onebot-webqq-webqq__message-recall-status">已撤回</div>
             <div class="onebot-webqq-webqq__message-time">{{ formatTime(message.time) }}</div>
           </div>
         </div>
-      </div>
+            </div>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent style="z-index: 10140">
+          <ContextMenuItem v-if="!message.recalled" @select="emit('reply', message.id)">
+            <IconMessageReply :size="16" aria-hidden="true" /> 回复
+          </ContextMenuItem>
+          <ContextMenuItem v-if="canReactToMessage(message)" @select="emit('open-reaction-picker', message.id)">
+            <IconMoodSmile :size="16" aria-hidden="true" /> 贴表情
+          </ContextMenuItem>
+          <ContextMenuItem v-if="!message.recalled && !message.event" @select="emit('enter-selection', message.id)">
+            <IconChecks :size="16" aria-hidden="true" /> 多选
+          </ContextMenuItem>
+          <ContextMenuItem
+            v-if="canRecallMessage(message)"
+            class="is-danger"
+            @select="emit('recall-message', message.id)"
+          >
+            <IconArrowBackUp :size="16" aria-hidden="true" /> 撤回
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
       <div
         v-if="!message.event && getThinkingMessage(index)"
         class="onebot-webqq-webqq__thinking-row"
@@ -297,10 +406,34 @@
 
 <script lang="ts" setup>
 import { withProxy } from '@koishijs/client'
+import {
+  IconArrowBackUp,
+  IconCheck,
+  IconChecks,
+  IconHandClick,
+  IconId,
+  IconMessageReply,
+  IconMoodSmile,
+  IconTag,
+  IconUserMinus,
+  IconUsers,
+} from '@tabler/icons-vue'
 import { nextTick, onBeforeUnmount, onBeforeUpdate, ref, type ComponentPublicInstance } from 'vue'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from '../../components/ui/context-menu'
+import WebQQGroupMemberMenu from './WebQQGroupMemberMenu.vue'
 import WebQQMessageReactions from './WebQQMessageReactions.vue'
 import type { WebQQChatStyle } from '../settings'
-import type { WebQQMessage } from '../types'
+import type { WebQQGroupMember, WebQQMessage } from '../types'
+import { getFriendMenuActions, type FriendMenuState } from '../utils/friend-menu'
+import { rememberFloatingPanelAnchor } from '../utils/floating-panel'
 import {
   formatSenderLevel,
   formatTime,
@@ -318,7 +451,7 @@ import {
 } from '../utils/webqq-message-view'
 import { fitWebQQBubbleToInlineLines } from '../utils/webqq-bubble-width'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   loading: boolean
   errorText: string
   hasCurrentChat: boolean
@@ -337,14 +470,112 @@ const props = defineProps<{
   getLastOutgoingClusterUsageMessage: (index: number) => WebQQUsageMessage | undefined
   isThinkingExpanded: (message: WebQQThinkingMessage) => boolean
   formatThinkingDuration: (durationMs: number) => string
-}>()
+  chatType?: 'friend' | 'group' | ''
+  currentOperatorId?: string
+  groupMembers?: WebQQGroupMember[]
+  friendMenuStates?: Record<string, FriendMenuState>
+  selectionMode?: boolean
+  selectedMessageIds?: string[]
+}>(), {
+  chatType: '',
+  currentOperatorId: '',
+  groupMembers: () => [],
+  friendMenuStates: () => ({}),
+  selectionMode: false,
+  selectedMessageIds: () => [],
+})
 
 const emit = defineEmits<{
   'open-image': [url: string]
   'image-load': []
   'open-forward': [element: WebQQMessageElement]
   'toggle-thinking': [message: WebQQThinkingMessage]
+  reply: [messageId: string]
+  'recall-message': [messageId: string]
+  'enter-selection': [messageId: string]
+  'toggle-selection': [messageId: string]
+  'open-reaction-picker': [messageId: string]
+  'set-message-reaction': [messageId: string, emojiId: string, enabled: boolean]
+  'open-profile': [userId: string, event?: MouseEvent]
+  'poke-friend': [userId: string]
+  'set-remark': [userId: string]
+  'delete-friend': [userId: string]
+  'mention-group-member': [userId: string]
+  'poke-group-member': [userId: string]
+  'set-group-card': [userId: string]
+  'set-group-title': [userId: string]
+  'set-group-admin': [userId: string, enabled: boolean]
+  'kick-group-member': [userId: string]
 }>()
+
+// 用函数读取最新 props，避免 withDefaults 解包后丢失响应性时仍读到旧值。
+function getSelectionMode() {
+  return !!props.selectionMode
+}
+function getSelectedMessageIds() {
+  return props.selectedMessageIds ?? []
+}
+function getGroupMember(userId: string | undefined) {
+  if (!userId) return undefined
+  return (props.groupMembers ?? []).find((member) => member.userId === userId)
+}
+function getFriendMenuState(userId: string): FriendMenuState {
+  return props.friendMenuStates?.[userId] ?? { isFriend: false, pendingOutgoing: false, pendingIncoming: false }
+}
+function getChatFriendActions(userId: string) {
+  return getFriendMenuActions(getFriendMenuState(userId), true)
+}
+function isMessageSelectable(message: WebQQMessage) {
+  return !message.event && !message.recalled && !!message.id
+}
+function isMessageSelected(messageId: string) {
+  return getSelectedMessageIds().includes(messageId)
+}
+function canRecallMessage(message: WebQQMessage) {
+  const operatorId = props.currentOperatorId
+  if (!operatorId || message.event || message.recalled || !message.id) return false
+  if (message.direction === 'outgoing' || message.senderId === operatorId) return true
+  if (props.chatType !== 'group') return false
+  const actor = getGroupMember(operatorId)
+  const target = getGroupMember(message.senderId)
+  if (!actor || !target) return false
+  const actorRole = actor.role === 'owner' || actor.role === '群主' ? 'owner' : actor.role === 'admin' || actor.role === '管理员' ? 'admin' : 'member'
+  const targetRole = target.role === 'owner' || target.role === '群主' ? 'owner' : target.role === 'admin' || target.role === '管理员' ? 'admin' : 'member'
+  if (actorRole === 'member') return false
+  return targetRole !== 'owner' && !(actorRole === 'admin' && targetRole === 'admin')
+}
+function canReactToMessage(message: WebQQMessage) {
+  return props.chatType === 'group' && !message.event && !message.recalled && !!message.id && !!props.currentOperatorId
+}
+function isReactionReadonly(message: WebQQMessage) {
+  return props.chatType !== 'group' || !!message.event || !!message.recalled || !props.currentOperatorId
+}
+function toggleReaction(message: WebQQMessage, emojiId: string) {
+  if (isReactionReadonly(message) || !message.id || !props.currentOperatorId) return
+  const reaction = message.reactions?.find((item) => item.emojiId === emojiId)
+  const mine = reaction?.users?.some((user) => user.userId === props.currentOperatorId)
+    || reaction?.userId === props.currentOperatorId
+  emit('set-message-reaction', message.id, emojiId, !mine)
+}
+function handleMessageAvatarClick(message: WebQQMessage, event: MouseEvent) {
+  // 多选时头像仍属于整条消息的可选区域；不能阻断冒泡，否则点击头像无法切换勾选。
+  if (getSelectionMode()) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('open-profile', message.senderId, event)
+}
+function handleMessageBubbleClick(message: WebQQMessage, event: MouseEvent) {
+  if (!getSelectionMode() || !isMessageSelectable(message)) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('toggle-selection', message.id)
+}
+function handleMessageClick(message: WebQQMessage, event: MouseEvent) {
+  if (!getSelectionMode() || !isMessageSelectable(message)) return
+  // 气泡由捕获处理器统一接管；这里只覆盖头像、发送者信息和行内空白区域。
+  if ((event.target as HTMLElement | null)?.closest('.onebot-webqq-webqq__bubble, .onebot-webqq-webqq__message-media-stack')) return
+  emit('toggle-selection', message.id)
+}
 
 const messageElementRefs = new Map<string, HTMLElement>()
 const bubbleElementRefs = new Map<string, HTMLElement>()

@@ -8,11 +8,10 @@ import { createWebQQEventMessage } from './live-message'
 import { getWebQQUserAvatar } from '../display'
 
 interface WebQQReactionService {
-  getSelectedSelfId(): string | undefined
-  isSelectedSelfId(selfId?: string): boolean
-  supportsReactionUsers(): boolean
-  loadReactionUsers(messageId: string, emojiId: string, count: number): Promise<WebQQMessageReactionUser[]>
-  resolveMessage(id: string): Promise<WebQQMessage>
+  isAvailableSelectedSelfId(selfId?: string): boolean
+  supportsReactionUsers(selfId?: string): boolean
+  loadReactionUsers(messageId: string, emojiId: string, count: number, selfId?: string): Promise<WebQQMessageReactionUser[]>
+  resolveMessage(id: string, selfId?: string): Promise<WebQQMessage>
 }
 
 // QQ 表情贴上报的 emoji_id 多为数字 ID，用 qface 转成可读名（如「赞」）；
@@ -92,7 +91,7 @@ export function createWebQQReactionRuntime(options: {
 
   const shouldResolveWebQQReactionUsers = (reaction: WebQQRawReaction, targetIds: string[]) => {
     if (reaction.count <= 0 || !reaction.messageId) return false
-    if (!options.webqq.supportsReactionUsers()) return false
+    if (!options.webqq.supportsReactionUsers(reaction.selfId)) return false
     const key = getWebQQLiveMessageKey({ type: 'group', peerId: reaction.groupId })
     const knownUserCount = getKnownReactionUserCount(options.liveMessages.get(key) ?? [], targetIds, reaction)
     return knownUserCount < reaction.count
@@ -102,7 +101,7 @@ export function createWebQQReactionRuntime(options: {
     try {
       // `group_msg_emoji_like` 只带本次操作者和总数；人数更多时要拉完整列表，
       // 否则 TIM 风格只能显示一个头像再跟 count，无法展示所有贴表情用户。
-      const users = await options.webqq.loadReactionUsers(reaction.messageId, reaction.emojiId, reaction.count)
+      const users = await options.webqq.loadReactionUsers(reaction.messageId, reaction.emojiId, reaction.count, reaction.selfId)
       const nextUsers = users.map((user) => {
         // 同一个操作者在事件里已有稳定的 OneBot user_id 头像，避免被补查列表里的临时 headUrl 覆盖。
         if (!entry.userId || user.userId !== entry.userId || !entry.userAvatar) return user
@@ -116,7 +115,7 @@ export function createWebQQReactionRuntime(options: {
   }
 
   const recordWebQQReaction = async (reaction: WebQQRawReaction) => {
-    if (!options.webqq.isSelectedSelfId(reaction.selfId)) return
+    if (!options.webqq.isAvailableSelectedSelfId(reaction.selfId)) return
     const peer = { type: 'group' as const, peerId: reaction.groupId }
     const label = readWebQQReactionLabel(reaction.emojiId)
     const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)
@@ -135,6 +134,8 @@ export function createWebQQReactionRuntime(options: {
     const entryWithUsers = shouldResolveWebQQReactionUsers(reaction, targetIds)
       ? await resolveWebQQReactionUsers(reaction, entry)
       : entry
+    // 补查期间可能切换 Bot 或断线，提交前再次验证来源，避免旧 Socket 污染当前会话。
+    if (!options.webqq.isAvailableSelectedSelfId(reaction.selfId)) return
     const key = getWebQQLiveMessageKey(peer)
     // loadReactionUsers 上面可能 await；写回前必须重新读取 live cache，避免用旧快照覆盖期间到达的消息。
     const applied = applyWebQQReaction(options.liveMessages.get(key) ?? [], targetIds, entryWithUsers, reaction.isAdd)
@@ -147,7 +148,8 @@ export function createWebQQReactionRuntime(options: {
     // OneBot reaction 只有短 message_id 时，拉一次 get_msg 得到同一条消息和 message_seq，
     // 再广播带 reaction 的原消息，让前端用正常消息合并逻辑更新气泡。
     try {
-      const targetMessage = await options.webqq.resolveMessage(reaction.messageId)
+      const targetMessage = await options.webqq.resolveMessage(reaction.messageId, reaction.selfId)
+      if (!options.webqq.isAvailableSelectedSelfId(reaction.selfId)) return
       const targetApplied = applyWebQQReaction(
         [targetMessage],
         [...targetIds, targetMessage.id, targetMessage.sequence],
@@ -161,6 +163,7 @@ export function createWebQQReactionRuntime(options: {
     } catch (error) {
       options.logger?.info('webqq reaction target resolve failed %s', error instanceof Error ? error.message : String(error))
     }
+    if (!options.webqq.isAvailableSelectedSelfId(reaction.selfId)) return
     if (!reaction.isAdd) return
     const senderName = reaction.userId || '有人'
     const summary = `${senderName} 给一条消息贴了 ${label}`

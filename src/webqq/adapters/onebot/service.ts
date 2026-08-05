@@ -56,18 +56,27 @@ import {
 import type {
   WebQQChatType,
   WebQQContacts,
+  WebQQForwardSendInput,
   WebQQFriend,
+  WebQQFriendAction,
   WebQQFriendCategory,
   WebQQGroup,
+  WebQQGroupAction,
   WebQQGroupInfo,
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageReactionInput,
+  WebQQMessageRecallInput,
   WebQQRecordTranscriptionQuery,
   WebQQMessageReactionUser,
   WebQQNotice,
   WebQQNoticeAction,
+  WebQQProfile,
+  WebQQProfileField,
+  WebQQProfileQuery,
   WebQQRecentContact,
+  WebQQSelfProfileUpdate,
   WebQQSendElement,
   WebQQSendPayload,
 } from '../../types'
@@ -188,6 +197,61 @@ function toOneBotSendSegment(element: WebQQSendElement) {
   if (element.type === 'file' && element.data) {
     return { type: 'file', data: { file: element.data, name: element.name || 'file' } }
   }
+  if (element.type === 'quote' && (element.targetMessageId || element.data)) {
+    return { type: 'reply', data: { id: element.targetMessageId || element.data || '' } }
+  }
+  if (element.type === 'at' && (element.userId || element.data)) {
+    return { type: 'at', data: { qq: element.userId || element.data || '' } }
+  }
+  if (element.type === 'face' && (element.faceId || element.data)) {
+    return { type: 'face', data: { id: element.faceId || element.data || '' } }
+  }
+}
+
+function pushProfileField(fields: WebQQProfileField[], group: string, label: string, value?: string) {
+  const next = value?.trim()
+  if (!next) return
+  fields.push({ group, label, value: next })
+}
+
+function normalizeSexValue(value: unknown) {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw === '1' || raw === 'male' || raw === '男') return 'male'
+  if (raw === '2' || raw === 'female' || raw === '女') return 'female'
+  if (raw === '0' || raw === 'unknown' || raw === '未知') return 'unknown'
+  return String(value)
+}
+
+function normalizeSexLabel(value: unknown) {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw === '1' || raw === 'male' || raw === '男') return '男'
+  if (raw === '2' || raw === 'female' || raw === '女') return '女'
+  if (raw === '0' || raw === 'unknown' || raw === '未知') return '未知'
+  return String(value)
+}
+
+async function callSupportedAction(
+  bot: OneBotBot,
+  actions: string[],
+  params: Record<string, unknown>,
+) {
+  let lastError: unknown
+  for (const action of actions) {
+    // 有 _request 时 supportsOneBotAction 对任意 action 都为 true，这里仍按顺序尝试，
+    // 直到真实实现接受其中一个别名，避免 NapCat/LLBot 命名差异导致直接失败。
+    if (!supportsOneBotAction(bot, action) && typeof bot.internal._request !== 'function') {
+      continue
+    }
+    try {
+      return await callAction(bot, action, params)
+    } catch (error) {
+      lastError = error
+    }
+  }
+  if (lastError instanceof Error) throw lastError
+  throw new Error(`当前 OneBot 实现不支持 ${actions.join(' / ')}`)
 }
 
 // 创建通过 OneBot action 读写 WebQQ 数据的服务。
@@ -197,13 +261,23 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     const sourceSelfId = selfId ? getMockBotSourceSelfId(selfId) : undefined
     return sourceSelfId || selfId
   }
-  const getBot = () => selectBot(ctx, { ...options, selfId: getRealSelfId() })
+  const getBot = (selfId = selectedSelfId) => selectBot(ctx, { ...options, selfId: getRealSelfId(selfId) })
   const listBots = () => {
     const bots = getAvailableOneBotBots(ctx, options.selfIds).map(toOneBotRobotProfile).filter((bot): bot is OneBotRobotProfile => !!bot)
     return [
       ...bots,
       ...createMockBotProfiles(bots, getMockBotCount(options.mockBotCount)),
     ]
+  }
+  const reconcileBotState = (): OneBotRobotState => {
+    const bots = listBots()
+    if (!selectedSelfId || !bots.some((bot) => bot.selfId === selectedSelfId)) {
+      selectedSelfId = bots[0]?.selfId
+    }
+    return {
+      bots,
+      ...(selectedSelfId ? { selectedSelfId } : {}),
+    }
   }
   const protocol = options.protocol ?? 'napcat'
   const { imageUrlResolver } = options
@@ -214,7 +288,17 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     isSelectedSelfId(selfId?: string) {
       if (!selectedSelfId) return true
-      return selfId === selectedSelfId || selfId === getRealSelfId()
+      return !!selfId && getRealSelfId(selfId) === getRealSelfId(selectedSelfId)
+    },
+
+    isAvailableSelectedSelfId(selfId?: string) {
+      const state = reconcileBotState()
+      if (!selfId || !state.selectedSelfId) return false
+      return getRealSelfId(selfId) === getRealSelfId(state.selectedSelfId)
+    },
+
+    reconcileBotState() {
+      return reconcileBotState()
     },
 
     selectSelfId(selfId: string) {
@@ -239,17 +323,21 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       return resolveOneBotForward(getBot(), id, imageUrlResolver)
     },
 
-    async resolveMessage(id: string) {
-      const bot = getBot()
+    async resolveMessage(id: string, selfId?: string) {
+      const bot = getBot(selfId)
       return normalizeMessage(getActionData(await callAction(bot, 'get_msg', { message_id: toOneBotId(id) })), bot, imageUrlResolver)
     },
 
-    supportsReactionUsers() {
-      return supportsOneBotAction(getBot(), 'fetch_emoji_like')
+    supportsReactionUsers(selfId?: string) {
+      try {
+        return supportsOneBotAction(getBot(selfId), 'fetch_emoji_like')
+      } catch {
+        return false
+      }
     },
 
-    async loadReactionUsers(messageId: string, emojiId: string, count: number): Promise<WebQQMessageReactionUser[]> {
-      const bot = getBot()
+    async loadReactionUsers(messageId: string, emojiId: string, count: number, selfId?: string): Promise<WebQQMessageReactionUser[]> {
+      const bot = getBot(selfId)
       const result = await callAction(bot, 'fetch_emoji_like', {
         message_id: toOneBotId(messageId),
         emoji_id: emojiId,
@@ -306,6 +394,10 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     async sendMessage(payload: WebQQSendPayload) {
       const message = payload.elements.map(toOneBotSendSegment).filter((segment): segment is NonNullable<ReturnType<typeof toOneBotSendSegment>> => !!segment)
+      // 回复段优先，保证 OneBot 实现按 message 数组首位 reply 解析引用目标。
+      if (payload.replyToMessageId) {
+        message.unshift({ type: 'reply', data: { id: payload.replyToMessageId } })
+      }
       if (!message.length) return
       const bot = getBot()
       if (payload.type === 'group') {
@@ -313,6 +405,263 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         return
       }
       await callAction(bot, 'send_private_msg', { user_id: toOneBotId(payload.peerId), message })
+    },
+
+    async recallMessage(input: WebQQMessageRecallInput) {
+      if (!input.messageId) throw new Error('messageId 不能为空')
+      await callAction(getBot(), 'delete_msg', { message_id: toOneBotId(input.messageId) })
+    },
+
+    async setMessageReaction(input: WebQQMessageReactionInput) {
+      if (input.type !== 'group') throw new Error('仅群聊消息支持贴表情')
+      if (!input.messageId) throw new Error('messageId 不能为空')
+      if (!input.emojiId) throw new Error('emojiId 不能为空')
+      const bot = getBot()
+      const params: Record<string, unknown> = {
+        message_id: toOneBotId(input.messageId),
+        emoji_id: input.emojiId,
+      }
+      // NapCat 需要 set 标记；LLBot 通常忽略未知字段，因此统一带上。
+      params.set = input.enabled
+      await callAction(bot, 'set_msg_emoji_like', params)
+    },
+
+    async loadProfile(query: WebQQProfileQuery): Promise<WebQQProfile> {
+      if (!query.userId) throw new Error('userId 不能为空')
+      const bot = getBot()
+      const fields: WebQQProfileField[] = []
+      let stranger: Record<string, unknown> = {}
+      try {
+        stranger = getActionData(await callAction(bot, 'get_stranger_info', {
+          user_id: toOneBotId(query.userId),
+        }))
+      } catch (error) {
+        // 资料卡允许部分字段缺失，但 stranger 是基础读路径；仅当实现不支持时给出明确错误。
+        if (!supportsOneBotAction(bot, 'get_stranger_info') && typeof bot.internal._request !== 'function') {
+          throw new Error('当前 OneBot 实现不支持 get_stranger_info')
+        }
+        throw error
+      }
+
+      const nickname = getStringField(stranger, ['nickname', 'nick', 'name']) || query.userId
+      const remark = getStringField(stranger, ['remark'])
+      const personalNote = getStringField(stranger, ['personal_note', 'personalNote', 'long_nick', 'longNick', 'signature'])
+      const rawSex = normalizeSexValue(getStringField(stranger, ['sex', 'gender']))
+      const sex = normalizeSexLabel(rawSex)
+      const ageValue = Number(stranger.age)
+      const age = Number.isFinite(ageValue) && ageValue > 0 ? ageValue : undefined
+      const qid = getStringField(stranger, ['qid', 'QID'])
+      const level = getStringField(stranger, ['level', 'qqLevel', 'qq_level'])
+      pushProfileField(fields, '基础', '昵称', nickname)
+      pushProfileField(fields, '基础', '备注', remark)
+      pushProfileField(fields, '基础', 'QQ', query.userId)
+      pushProfileField(fields, '基础', '性别', sex)
+      if (age != null) pushProfileField(fields, '基础', '年龄', String(age))
+      pushProfileField(fields, '基础', 'QID', qid)
+      pushProfileField(fields, '基础', '等级', level)
+      pushProfileField(fields, '基础', '签名', personalNote)
+
+      let groupCard = ''
+      let groupTitle = ''
+      let groupRole = ''
+      let rawRole: WebQQProfile['rawRole']
+      if (query.groupId) {
+        try {
+          const member = normalizeGroupMember(getActionData(await callAction(bot, 'get_group_member_info', {
+            group_id: toOneBotId(query.groupId),
+            user_id: toOneBotId(query.userId),
+          })))
+          groupCard = member.card
+          groupTitle = member.title || ''
+          groupRole = member.role || ''
+          rawRole = member.rawRole
+          pushProfileField(fields, '群资料', '群名片', member.card)
+          pushProfileField(fields, '群资料', '专属头衔', member.title)
+          pushProfileField(fields, '群资料', '身份', member.role)
+        } catch {
+          // 群成员信息是增强字段，失败时仍返回 stranger 基础资料。
+        }
+      }
+
+      // 未显式 select 时 getBot() 仍会落到唯一/默认 bot；资料卡“自己”判断要对齐真实 operator。
+      const operatorId = getRealSelfId() || bot.selfId
+      const isSelf = !!operatorId && String(query.userId) === String(operatorId)
+      const canEditAvatar = isSelf && (
+        supportsOneBotAction(bot, 'set_qq_avatar')
+        || typeof bot.internal._request === 'function'
+        || typeof bot.internal.set_qq_avatar === 'function'
+      )
+      const canEditSelf = isSelf && (
+        supportsOneBotAction(bot, 'set_qq_profile')
+        || typeof bot.internal._request === 'function'
+        || typeof bot.internal.set_qq_profile === 'function'
+      )
+
+      return {
+        kind: isSelf ? 'bot' : 'user',
+        id: query.userId,
+        name: nickname,
+        avatar: getWebQQUserAvatar(query.userId),
+        ...(nickname ? { nickname } : {}),
+        ...(remark ? { remark } : {}),
+        ...(personalNote ? { personalNote } : {}),
+        ...(rawSex ? { sex: rawSex } : {}),
+        ...(age != null ? { age } : {}),
+        ...(qid ? { qid } : {}),
+        ...(level ? { level } : {}),
+        ...(query.groupId ? { groupId: query.groupId } : {}),
+        ...(groupCard ? { groupCard } : {}),
+        ...(groupTitle ? { groupTitle } : {}),
+        ...(groupRole ? { groupRole } : {}),
+        ...(rawRole ? { rawRole } : {}),
+        fields,
+        ...(canEditSelf ? { canEditSelf: true } : {}),
+        ...(canEditAvatar ? { canEditAvatar: true } : {}),
+      }
+    },
+
+    async updateSelfProfile(input: WebQQSelfProfileUpdate) {
+      const bot = getBot()
+      const avatar = input.avatar?.trim()
+      if (avatar) {
+        if (!supportsOneBotAction(bot, 'set_qq_avatar') && typeof bot.internal.set_qq_avatar !== 'function' && typeof bot.internal._request !== 'function') {
+          throw new Error('当前 OneBot 实现不支持 set_qq_avatar')
+        }
+        await callAction(bot, 'set_qq_avatar', { file: avatar })
+      }
+      const nickname = input.nickname?.trim()
+      const personalNote = input.personalNote
+      const sex = input.sex
+      if (!nickname && personalNote == null && sex == null) {
+        if (avatar) return
+        throw new Error('至少提供 nickname、personalNote、sex 或 avatar 之一')
+      }
+      if (!supportsOneBotAction(bot, 'set_qq_profile') && typeof bot.internal.set_qq_profile !== 'function' && typeof bot.internal._request !== 'function') {
+        throw new Error('当前 OneBot 实现不支持 set_qq_profile')
+      }
+      // 其他用户全局资料只读；自身资料仅在协议支持时开放写回。
+      const params: Record<string, unknown> = {}
+      if (nickname) params.nickname = nickname
+      if (personalNote != null) params.personal_note = personalNote
+      if (sex != null) params.sex = sex
+      await callAction(bot, 'set_qq_profile', params)
+    },
+
+    async performFriendAction(input: WebQQFriendAction) {
+      if (!input.targetId) throw new Error('targetId 不能为空')
+      const bot = getBot()
+      if (input.action === 'delete') {
+        await callSupportedAction(bot, ['delete_friend'], {
+          user_id: toOneBotId(input.targetId),
+        })
+        return
+      }
+      if (input.action === 'set-remark') {
+        await callSupportedAction(bot, ['set_friend_remark'], {
+          user_id: toOneBotId(input.targetId),
+          remark: input.remark ?? '',
+        })
+        return
+      }
+      if (input.action === 'poke') {
+        await callSupportedAction(bot, ['send_poke', 'friend_poke'], {
+          user_id: toOneBotId(input.targetId),
+        })
+        return
+      }
+      throw new Error(`不支持的好友动作：${(input as WebQQFriendAction).action}`)
+    },
+
+    async performGroupAction(input: WebQQGroupAction) {
+      if (!input.groupId) throw new Error('groupId 不能为空')
+      const bot = getBot()
+      if (input.action === 'kick') {
+        if (!input.targetId) throw new Error('targetId 不能为空')
+        await callAction(bot, 'set_group_kick', {
+          group_id: toOneBotId(input.groupId),
+          user_id: toOneBotId(input.targetId),
+        })
+        return
+      }
+      if (input.action === 'set-admin') {
+        if (!input.targetId) throw new Error('targetId 不能为空')
+        await callAction(bot, 'set_group_admin', {
+          group_id: toOneBotId(input.groupId),
+          user_id: toOneBotId(input.targetId),
+          enable: input.enabled,
+        })
+        return
+      }
+      if (input.action === 'set-card') {
+        if (!input.targetId) throw new Error('targetId 不能为空')
+        await callAction(bot, 'set_group_card', {
+          group_id: toOneBotId(input.groupId),
+          user_id: toOneBotId(input.targetId),
+          card: input.card ?? '',
+        })
+        return
+      }
+      if (input.action === 'set-title') {
+        if (!input.targetId) throw new Error('targetId 不能为空')
+        await callAction(bot, 'set_group_special_title', {
+          group_id: toOneBotId(input.groupId),
+          user_id: toOneBotId(input.targetId),
+          special_title: input.title ?? '',
+        })
+        return
+      }
+      if (input.action === 'set-name') {
+        await callAction(bot, 'set_group_name', {
+          group_id: toOneBotId(input.groupId),
+          group_name: input.name ?? '',
+        })
+        return
+      }
+      if (input.action === 'leave') {
+        await callAction(bot, 'set_group_leave', {
+          group_id: toOneBotId(input.groupId),
+        })
+        return
+      }
+      if (input.action === 'poke') {
+        if (!input.targetId) throw new Error('targetId 不能为空')
+        await callSupportedAction(bot, ['send_poke', 'group_poke'], {
+          group_id: toOneBotId(input.groupId),
+          user_id: toOneBotId(input.targetId),
+        })
+        return
+      }
+      throw new Error(`不支持的群动作：${(input as WebQQGroupAction).action}`)
+    },
+
+    async sendForward(input: WebQQForwardSendInput) {
+      if (!input.peerId) throw new Error('peerId 不能为空')
+      if (!input.messageIds?.length) throw new Error('messageIds 不能为空')
+      const bot = getBot()
+      const messages = input.messageIds.map((messageId) => ({
+        type: 'node',
+        data: { id: messageId },
+      }))
+      if (input.type === 'group') {
+        // 优先实现专用转发接口，失败再回退通用 send_forward_msg。
+        await callSupportedAction(
+          bot,
+          ['send_group_forward_msg', 'send_forward_msg'],
+          {
+            group_id: toOneBotId(input.peerId),
+            messages,
+          },
+        )
+        return
+      }
+      await callSupportedAction(
+        bot,
+        ['send_private_forward_msg', 'send_forward_msg'],
+        {
+          user_id: toOneBotId(input.peerId),
+          messages,
+        },
+      )
     },
 
     async loadGroupInfo(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo> {

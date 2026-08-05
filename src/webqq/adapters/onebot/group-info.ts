@@ -10,18 +10,29 @@ import {
 } from '../../display'
 import { getTextValue } from './text'
 
+function normalizeRawGroupRole(role: string): WebQQGroupMember['rawRole'] | undefined {
+  if (role === 'owner') return 'owner'
+  if (role === 'admin' || role === 'administrator') return 'admin'
+  if (role === 'member') return 'member'
+}
+
 export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
   const item = isRecord(raw) ? raw : {}
   const userId = getStringField(item, ['user_id', 'userId', 'uin', 'uid'])
   const nickname = getStringField(item, ['nickname', 'nick', 'name']) || userId
   const card = getStringField(item, ['card', 'group_card', 'groupCard'])
-  const role = normalizeWebQQGroupRole(getStringField(item, ['role']))
+  const rawRoleValue = getStringField(item, ['role'])
+  const role = normalizeWebQQGroupRole(rawRoleValue)
+  const rawRole = normalizeRawGroupRole(rawRoleValue)
+  const title = getStringField(item, ['title', 'special_title', 'specialTitle'])
   return {
     userId,
     nickname,
     card,
     avatar: getWebQQUserAvatar(userId),
     ...(role ? { role } : {}),
+    ...(rawRole ? { rawRole } : {}),
+    ...(title ? { title } : {}),
   }
 }
 

@@ -409,6 +409,94 @@ describe('onebot webqq adapter', () => {
     expect(bot.internal.get_friend_list).toHaveBeenCalled()
   })
 
+  it('reconciles fallback Bot selection and clears stale selfId when no Bot remains', () => {
+    const firstBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const secondBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      hidden: false,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [firstBot, secondBot] })
+
+    expect(service.selectSelfId('10000')).toBe('10000')
+    firstBot.status = 0
+    expect(service.reconcileBotState()).toMatchObject({
+      bots: [expect.objectContaining({ selfId: '10001' })],
+      selectedSelfId: '10001',
+    })
+    expect(service.getSelectedSelfId()).toBe('10001')
+
+    secondBot.hidden = true
+    expect(service.reconcileBotState()).toEqual({ bots: [] })
+    expect(service.getSelectedSelfId()).toBeUndefined()
+    expect(service.isAvailableSelectedSelfId('10000')).toBe(false)
+    expect(service.isAvailableSelectedSelfId('10001')).toBe(false)
+  })
+
+  it('routes reaction queries to their source Bot and safely rejects unavailable sources', async () => {
+    const firstBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_emoji_like: vi.fn(async () => ({ emojiLikesList: [] })),
+        get_msg: vi.fn(async () => ({
+          message_id: 'first',
+          sender: { user_id: 30000, nickname: 'First' },
+          message: [{ type: 'text', data: { text: 'first' } }],
+        })),
+      },
+    }
+    const secondBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_emoji_like: vi.fn(async () => ({ emojiLikesList: [] })),
+        get_msg: vi.fn(async () => ({
+          message_id: 'second',
+          sender: { user_id: 30001, nickname: 'Second' },
+          message: [{ type: 'text', data: { text: 'second' } }],
+        })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [firstBot, secondBot] })
+
+    service.selectSelfId('10000')
+    expect(service.supportsReactionUsers('10001')).toBe(true)
+    await service.loadReactionUsers('123', '76', 2, '10001')
+    await service.resolveMessage('123', '10001')
+
+    expect(firstBot.internal.fetch_emoji_like).not.toHaveBeenCalled()
+    expect(firstBot.internal.get_msg).not.toHaveBeenCalled()
+    expect(secondBot.internal.fetch_emoji_like).toHaveBeenCalledWith({
+      message_id: 123,
+      emoji_id: '76',
+      count: 2,
+    })
+    expect(secondBot.internal.get_msg).toHaveBeenCalledWith({ message_id: 123 })
+
+    secondBot.status = 0
+    expect(service.supportsReactionUsers('10001')).toBe(false)
+  })
+
   it('uses the Satori bot user profile as the robot display profile', () => {
     const bot = {
       platform: 'onebot',
@@ -480,6 +568,7 @@ describe('onebot webqq adapter', () => {
         card: '群昵称',
         avatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
         role: '群主',
+        rawRole: 'owner',
       }, {
         userId: '40000',
         nickname: 'Bob',

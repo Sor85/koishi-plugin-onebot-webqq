@@ -60,6 +60,25 @@ describe('webqq client api', () => {
     await expect(requestWebQQRecordTranscription('message-1')).resolves.toBe('')
   })
 
+  it('keeps an empty reaction array as an authoritative cleared state', async () => {
+    sendState.response = [{
+      id: 'message-1',
+      sequence: 'message-1',
+      time: 1,
+      senderId: '10000',
+      senderName: 'Bot',
+      senderAvatar: '',
+      direction: 'incoming',
+      summary: 'hello',
+      elements: [{ type: 'text', text: 'hello' }],
+      reactions: [],
+    }]
+
+    await expect(requestWebQQMessages({ type: 'group', peerId: '20000' })).resolves.toEqual([
+      expect.objectContaining({ reactions: [] }),
+    ])
+  })
+
   it('requests backend onebot robot switching', async () => {
     await selectWebQQBot('10001')
 

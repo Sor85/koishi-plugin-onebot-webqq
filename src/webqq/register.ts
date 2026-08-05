@@ -46,6 +46,7 @@ export function registerWebQQ(options: {
     readBotState,
     broadcastBotState,
   } = options
+  const reactionErrorLogger = ctx.logger?.('onebot-webqq') ?? logger
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
 
@@ -77,7 +78,17 @@ export function registerWebQQ(options: {
   })
 
   registerWebQQReactionInterceptor(ctx, (reaction) => {
-    liveRuntime.recordWebQQReaction(reaction)
+    // 原始 WS listener 不会等待 Promise，这里必须兜住未预期异常，避免升级为 Koishi 全局 unhandled rejection。
+    void liveRuntime.recordWebQQReaction(reaction).catch((error) => {
+      reactionErrorLogger?.info(
+        'webqq raw reaction handling failed selfId=%s groupId=%s messageId=%s emojiId=%s error=%s',
+        reaction.selfId || '',
+        reaction.groupId,
+        reaction.messageId,
+        reaction.emojiId,
+        error instanceof Error ? error.message : String(error),
+      )
+    })
   })
 
   ctx.on('friend-request', (session) => {

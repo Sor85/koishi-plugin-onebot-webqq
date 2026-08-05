@@ -1,6 +1,6 @@
 import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
-import type { OneBotRobotProfile, OneBotRobotState } from '../onebot/types'
+import type { OneBotRobotState } from '../onebot/types'
 import { isVisibleBotSession } from '../onebot/session'
 import type {
   ChatCapsuleContext,
@@ -19,9 +19,7 @@ import {
 } from './state'
 
 export interface CapsuleBotRuntime {
-  listBots(): OneBotRobotProfile[]
-  getSelectedSelfId(): string | undefined
-  selectSelfId(selfId: string): void
+  reconcileBotState(): OneBotRobotState
 }
 
 export function registerCapsule(options: {
@@ -49,23 +47,10 @@ export function registerCapsule(options: {
     ctx.console?.broadcast('onebot-webqq/update', state.snapshot(), consoleAuthOptions)
   }
   const readBotState = (): OneBotRobotState => {
-    const bots = botRuntime.listBots()
-    const currentSelfId = botRuntime.getSelectedSelfId()
-    const selectedSelfId = currentSelfId && bots.some((bot) => bot.selfId === currentSelfId)
-      ? currentSelfId
-      : bots[0]?.selfId
-    if (selectedSelfId && selectedSelfId !== currentSelfId) {
-      try {
-        botRuntime.selectSelfId(selectedSelfId)
-      } catch (error) {
-        logger?.info('select default onebot failed %s', error instanceof Error ? error.message : String(error))
-      }
-    }
-    setAvailableBots(state, bots)
-    return {
-      bots,
-      ...(selectedSelfId ? { selectedSelfId } : {}),
-    }
+    // fallback 和闭包选择必须由 service 一次性收敛，避免对外状态已清空但 action 仍使用旧 selfId。
+    const botState = botRuntime.reconcileBotState()
+    setAvailableBots(state, botState.bots)
+    return botState
   }
   const broadcastBotState = (botState = readBotState()) => {
     ctx.console?.broadcast('onebot-webqq/bots/update', botState, consoleAuthOptions)

@@ -93,16 +93,98 @@ export interface WebQQMessage {
 }
 
 export interface WebQQSendElement {
-  type: 'text' | 'image' | 'file'
+  type: 'text' | 'image' | 'file' | 'quote' | 'at' | 'face'
   text?: string
   data?: string
   name?: string
+  userId?: string
+  targetMessageId?: string
+  faceId?: string
 }
 
 export interface WebQQSendPayload {
   type: WebQQChatType
   peerId: string
   elements: WebQQSendElement[]
+  /** 回复目标消息 ID；会在 OneBot message 前插入 reply 段。 */
+  replyToMessageId?: string
+}
+
+export interface WebQQMessageRecallInput {
+  type: WebQQChatType
+  peerId: string
+  messageId: string
+}
+
+export interface WebQQMessageReactionInput {
+  type: 'group'
+  peerId: string
+  messageId: string
+  emojiId: string
+  enabled: boolean
+}
+
+export type WebQQFriendAction =
+  | { action: 'poke'; targetId: string }
+  | { action: 'delete'; targetId: string }
+  | { action: 'set-remark'; targetId: string; remark: string }
+
+export type WebQQGroupAction =
+  | { action: 'kick'; groupId: string; targetId: string }
+  | { action: 'set-admin'; groupId: string; targetId: string; enabled: boolean }
+  | { action: 'set-card'; groupId: string; targetId: string; card: string }
+  | { action: 'set-title'; groupId: string; targetId: string; title: string }
+  | { action: 'set-name'; groupId: string; name: string }
+  | { action: 'poke'; groupId: string; targetId: string }
+  | { action: 'leave'; groupId: string }
+
+export interface WebQQForwardSendInput {
+  type: WebQQChatType
+  peerId: string
+  messageIds: string[]
+}
+
+export interface WebQQProfileQuery {
+  userId: string
+  groupId?: string
+}
+
+export interface WebQQProfileField {
+  group: string
+  label: string
+  value: string
+}
+
+/** 资料真实能力模式：只承载协议已返回字段，不伪造默认值。 */
+export interface WebQQProfile {
+  kind: 'user' | 'bot'
+  id: string
+  name: string
+  avatar: string
+  nickname?: string
+  remark?: string
+  personalNote?: string
+  sex?: string
+  age?: number
+  qid?: string
+  level?: string
+  groupId?: string
+  groupCard?: string
+  groupTitle?: string
+  groupRole?: string
+  rawRole?: 'owner' | 'admin' | 'member'
+  fields: WebQQProfileField[]
+  /** 仅当前 selected bot 自身，且协议支持 set_qq_profile 时为 true。 */
+  canEditSelf?: boolean
+  /** 仅当前 selected bot 自身，且协议支持 set_qq_avatar 时为 true。 */
+  canEditAvatar?: boolean
+}
+
+export interface WebQQSelfProfileUpdate {
+  nickname?: string
+  personalNote?: string
+  sex?: string
+  avatar?: string
 }
 
 export interface WebQQLiveMessage {
@@ -149,6 +231,9 @@ export interface WebQQGroupMember {
   card: string
   avatar: string
   role?: string
+  /** 菜单权限判断使用协议原始角色，避免依赖本地化展示文本。 */
+  rawRole?: 'owner' | 'admin' | 'member'
+  title?: string
 }
 
 export interface WebQQGroupInfo {

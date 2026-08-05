@@ -25,6 +25,10 @@
       @select-recent="selectRecent"
       @select-friend="selectFriend"
       @select-group="selectGroup"
+      @open-contact-profile="openContactProfile"
+      @set-remark="openRemarkDialog"
+      @delete-friend="confirmDeleteFriend"
+      @leave-group="confirmLeaveGroup"
       @open-notices="openNotices"
       @handle-notice="handleNotice"
     />
@@ -46,7 +50,19 @@
         <div class="onebot-webqq-webqq__chat-main">
         <header class="onebot-webqq-webqq__chat-header">
           <div class="onebot-webqq-webqq__chat-title">
-            <img v-if="currentAvatar" class="onebot-webqq-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
+            <ContextMenu v-if="currentChat">
+              <ContextMenuTrigger as-child>
+                <button type="button" class="onebot-webqq-webqq__chat-avatar-trigger" :aria-label="`查看 ${currentTitle} 的资料`" @click="openCurrentChatProfile($event)">
+                  <img v-if="currentAvatar" class="onebot-webqq-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
+                  <span v-else class="onebot-webqq-webqq__chat-avatar is-fallback" aria-hidden="true">{{ currentTitle.slice(0, 1) }}</span>
+                </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent style="z-index: 10140">
+                <ContextMenuItem @select="openCurrentChatProfile()">
+                  <IconId :size="16" aria-hidden="true" /> 查看资料
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
             <div>
               <strong>{{ currentTitle }}</strong>
               <span>{{ currentSubtitle }}</span>
@@ -61,7 +77,7 @@
           </button>
         </header>
         <div :class="['onebot-webqq-webqq__chat-body', { 'has-send-input': enableWebQQSend && currentChat }]">
-          <div ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages" @scroll="updateMessageTracking">
+          <div ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages" :class="{ 'is-selecting': selectionMode }" @scroll="updateMessageTracking">
             <WebQQMessageList
               :loading="loading"
               :error-text="errorText"
@@ -81,13 +97,35 @@
               :get-last-outgoing-cluster-usage-message="getLastOutgoingClusterUsageMessage"
               :is-thinking-expanded="isThinkingExpanded"
               :format-thinking-duration="formatThinkingDuration"
+              :chat-type="currentChat?.type || ''"
+              :current-operator-id="currentOperatorId"
+              :group-members="groupInfo.members"
+              :friend-menu-states="friendMenuStates"
+              :selection-mode="selectionMode"
+              :selected-message-ids="selectedMessageIds"
               @open-image="openImagePreview"
               @image-load="handleMessageImageLoad"
               @open-forward="openForwardDialog"
               @toggle-thinking="toggleThinking"
+              @reply="setReplyTarget"
+              @recall-message="handleRecallMessage"
+              @enter-selection="enterSelection"
+              @toggle-selection="toggleSelection"
+              @open-reaction-picker="openReactionPicker"
+              @set-message-reaction="handleSetMessageReaction"
+              @open-profile="openUserProfile"
+              @poke-friend="handlePokeFriend"
+              @set-remark="openRemarkDialog"
+              @delete-friend="handleDeleteFriend"
+              @mention-group-member="handleMentionGroupMember"
+              @poke-group-member="handlePokeGroupMember"
+              @set-group-card="openGroupCardDialog"
+              @set-group-title="openGroupTitleDialog"
+              @set-group-admin="handleSetGroupAdmin"
+              @kick-group-member="handleKickGroupMember"
             />
           </div>
-          <div v-if="sendFiles.length" ref="sendAttachments" class="onebot-webqq-webqq__send-attachments">
+          <div v-if="sendFiles.length" ref="sendAttachments" class="onebot-webqq-webqq__send-attachments" :class="{ 'has-reply': !!replyingToMessage }">
             <template v-for="file in sendFiles" :key="file.id">
               <span v-if="!file.previewUrl" class="onebot-webqq-webqq__send-file">
                 <svg class="onebot-webqq-webqq__send-file-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -117,10 +155,34 @@
               </span>
             </template>
           </div>
-          <form v-if="enableWebQQSend && currentChat" ref="sendForm" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
+          <div v-if="selectionMode" class="onebot-webqq-webqq__selection-bar" role="toolbar" aria-label="消息多选操作">
+            <strong class="onebot-webqq-webqq__selection-bar-count">已选 {{ selectedMessageIds.length }} 条</strong>
+            <div class="onebot-webqq-webqq__selection-bar-actions">
+              <Button variant="outline" class="webqq-selection-bar-button" @click="exitSelection">取消</Button>
+              <Button class="webqq-selection-bar-button" :disabled="!selectedMessageIds.length" @click="handleSelectionForward">
+                <IconShare3 :size="16" aria-hidden="true" />
+                合并转发
+              </Button>
+            </div>
+          </div>
+          <form v-if="enableWebQQSend && currentChat && !selectionMode" ref="sendForm" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
+            <div v-if="replyingToMessage" class="onebot-webqq-webqq__reply-draft">
+              <span><strong>回复 {{ replyingToMessage.senderName }}：</strong>{{ replyingToMessage.summary }}</span>
+              <button type="button" class="onebot-webqq-webqq__reply-draft-close" aria-label="取消回复" @click="clearReplyTarget">
+                <IconX :size="16" aria-hidden="true" />
+              </button>
+            </div>
             <img v-if="selectedBotAvatar" class="onebot-webqq-webqq__send-avatar" :src="withProxy(selectedBotAvatar)" alt="">
             <span v-else class="onebot-webqq-webqq__send-avatar" aria-hidden="true"></span>
             <div class="onebot-webqq-webqq__send-main">
+              <div v-if="pendingMentionUserIds.length" class="onebot-webqq-webqq__send-mentions" aria-label="待发送的提及">
+                <span v-for="userId in pendingMentionUserIds" :key="userId" class="onebot-webqq-webqq__send-mention">
+                  @{{ getPendingMentionName(userId) }}
+                  <button type="button" :aria-label="`移除对 ${getPendingMentionName(userId)} 的提及`" @click="removePendingMention(userId)">
+                    <IconX :size="12" aria-hidden="true" />
+                  </button>
+                </span>
+              </div>
               <textarea
                 ref="sendTextInput"
                 v-model="sendText"
@@ -172,6 +234,14 @@
         :with-proxy="withProxy"
         :format-notice-time="formatNoticeTime"
         :get-group-member-name="getGroupMemberName"
+        :current-operator-id="currentOperatorId"
+        @open-profile="openUserProfile"
+        @mention-group-member="handleMentionGroupMember"
+        @poke-group-member="handlePokeGroupMember"
+        @set-group-card="openGroupCardDialog"
+        @set-group-title="openGroupTitleDialog"
+        @set-group-admin="handleSetGroupAdmin"
+        @kick-group-member="handleKickGroupMember"
       />
     </section>
     <WebQQForwardModal
@@ -192,6 +262,25 @@
       :url="imagePreviewUrl"
       @close="closeImagePreview"
     />
+    <WebQQEmojiPicker v-model:open="reactionPickerOpen" @select="selectReaction" />
+    <WebQQForwardTargetDialog v-model:open="forwardTargetOpen" :model="forwardTargets" @confirm="confirmSelectionForward" />
+    <WebQQProfileCard v-model:open="profileCardOpen" :model="profileCardModel" @save-self-profile="handleSaveSelfProfile" />
+    <WebQQConfirmDialog
+      v-model:open="confirmDialogOpen"
+      :title="confirmDialogTitle"
+      :description="confirmDialogDescription"
+      :confirm-text="confirmDialogConfirmText"
+      @confirm="confirmDestructiveAction"
+    />
+    <WebQQActionDialog
+      v-model:open="actionDialogOpen"
+      :title="actionDialogTitle"
+      :description="actionDialogDescription"
+      :placeholder="actionDialogPlaceholder"
+      :value="actionDialogValue"
+      :confirm-text="actionDialogConfirmText"
+      @confirm="confirmActionDialog"
+    />
     <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-left" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('left', $event)"></span>
     <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-top" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('top', $event)"></span>
     <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-top-left" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('top-left', $event)"></span>
@@ -201,17 +290,45 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Binary, withProxy } from '@koishijs/client'
+import { IconId, IconShare3, IconX } from '@tabler/icons-vue'
+import { Button } from '../components/ui/button'
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../components/ui/context-menu'
+import WebQQActionDialog from './components/WebQQActionDialog.vue'
+import WebQQConfirmDialog from './components/WebQQConfirmDialog.vue'
+import WebQQEmojiPicker from './components/WebQQEmojiPicker.vue'
 import WebQQMessageList from './components/WebQQMessageList.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQNoticeMenu from './components/WebQQNoticeMenu.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
+import WebQQForwardTargetDialog, { type WebQQForwardTargetModel, type WebQQForwardTargetOption } from './components/WebQQForwardTargetDialog.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
-import { approveWebQQNotice, requestWebQQContacts, requestWebQQContactsWithRetry, requestWebQQGroupInfo, requestWebQQMessages, requestWebQQNotices, requestWebQQRecordTranscription, sendWebQQMessage } from './api/webqq'
+import WebQQProfileCard from './components/WebQQProfileCard.vue'
+import {
+  approveWebQQNotice,
+  performWebQQFriendAction,
+  performWebQQGroupAction,
+  recallWebQQMessage,
+  requestWebQQContacts,
+  requestWebQQContactsWithRetry,
+  requestWebQQGroupInfo,
+  requestWebQQMessages,
+  requestWebQQNotices,
+  requestWebQQProfile,
+  requestWebQQRecordTranscription,
+  sendWebQQForward,
+  sendWebQQMessage,
+  setWebQQMessageReaction,
+  updateWebQQSelfProfile,
+} from './api/webqq'
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
 import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
 import type { WebQQFriend, WebQQGroup, WebQQMessage, WebQQSendElement } from './types'
+import type { FriendMenuState } from './utils/friend-menu'
+import { rememberFloatingPanelAnchor } from './utils/floating-panel'
+import { applyLocalWebQQReaction, applyLocalWebQQRecall } from './utils/webqq-interaction-state'
+import { buildGroupProfileCardModel, buildProfileCardModelFromProfile, buildUserProfileCardModel, type ProfileCardModel } from './utils/profile-card'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
@@ -356,7 +473,8 @@ const selectedBotAvatar = computed(() => {
     (fallback?.selfId ? cachedSendBotAvatars.value[fallback.selfId] : '') ||
     ''
 })
-const canSendWebQQMessage = computed(() => !!sendText.value.trim() || !!sendFiles.value.length)
+const pendingMentionUserIds = ref<string[]>([])
+const canSendWebQQMessage = computed(() => !!sendText.value.trim() || !!sendFiles.value.length || !!pendingMentionUserIds.value.length)
 
 async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
   return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value, webQQStorageScope.value)
@@ -446,6 +564,7 @@ async function sendCurrentWebQQMessage() {
   errorText.value = ''
   try {
     const elements: WebQQSendElement[] = [
+      ...pendingMentionUserIds.value.map((userId) => ({ type: 'at' as const, userId })),
       ...(sendText.value.trim() ? [{ type: 'text' as const, text: sendText.value }] : []),
       ...await Promise.all(sendFiles.value.map(({ file }) => toSendElement(file))),
     ]
@@ -453,9 +572,12 @@ async function sendCurrentWebQQMessage() {
       type: chat.type,
       peerId: chat.peerId,
       elements,
+      ...(replyingToMessageId.value ? { replyToMessageId: replyingToMessageId.value } : {}),
     })
     sendText.value = ''
+    pendingMentionUserIds.value = []
     clearSendFiles()
+    clearReplyTarget()
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : '发送消息失败'
   } finally {
@@ -567,7 +689,7 @@ function loadStoredWebQQShellSize() {
 const webQQAccentStyle = computed(() => {
   const style = getWebQQAccentStyle(webQQAccentColor.value)
   const sendSpaceStyle = {
-    '--onebot-webqq-webqq-send-space': `${webQQSendSpace.value}px`,
+    '--onebot-webqq-webqq-send-space': `${selectionMode.value ? 64 : webQQSendSpace.value}px`,
     '--onebot-webqq-webqq-send-height': `${webQQSendHeight.value}px`,
   }
   if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle }
@@ -586,8 +708,9 @@ function updateWebQQSendSpace() {
   const form = sendForm.value
   const attachments = sendAttachments.value
   const attachmentHeight = attachments ? Math.ceil(attachments.getBoundingClientRect().height) : 0
+  const replyHeight = replyingToMessage.value ? 46 : 0
   webQQSendHeight.value = form ? Math.ceil(form.getBoundingClientRect().height) : 44
-  webQQSendSpace.value = webQQSendHeight.value + attachmentHeight + (attachmentHeight ? 36 : 28)
+  webQQSendSpace.value = webQQSendHeight.value + attachmentHeight + replyHeight + (attachmentHeight || replyHeight ? 36 : 28)
 }
 
 async function observeWebQQSendForm() {
@@ -660,6 +783,464 @@ const {
   applyMessageSenderMetadata,
   shouldScrollToBottom: () => trackingMessages.value,
   scrollMessagesToBottom,
+})
+
+const selectionMode = ref(false)
+const selectedMessageIds = ref<string[]>([])
+const forwardTargetOpen = ref(false)
+const replyingToMessageId = ref('')
+const reactionPickerMessageId = ref('')
+const profileCardOpen = ref(false)
+const profileCardModel = ref<ProfileCardModel>()
+const actionDialogOpen = ref(false)
+const actionDialogTitle = ref('')
+const actionDialogDescription = ref('')
+const actionDialogPlaceholder = ref('')
+const actionDialogValue = ref('')
+const actionDialogConfirmText = ref('保存')
+let actionDialogSubmit: ((value: string) => void) | undefined
+const confirmDialogOpen = ref(false)
+const confirmDialogTitle = ref('')
+const confirmDialogDescription = ref('')
+const confirmDialogConfirmText = ref('确认')
+let confirmDialogSubmit: (() => Promise<void>) | undefined
+
+const currentOperatorId = computed(() => selectedBotSelfId.value || availableBots.value[0]?.selfId || '')
+const friendMenuStates = computed<Record<string, FriendMenuState>>(() => {
+  const states: Record<string, FriendMenuState> = {}
+  for (const friend of contacts.value.friends) {
+    states[friend.userId] = { isFriend: true, pendingOutgoing: false, pendingIncoming: false }
+  }
+  return states
+})
+function toForwardTarget(type: 'friend' | 'group', peerId: string, title: string, subtitle?: string, avatar?: string): WebQQForwardTargetOption {
+  return { id: `${type}:${peerId}`, type, peerId, title, subtitle, avatar }
+}
+const forwardTargets = computed<WebQQForwardTargetModel>(() => ({
+  recent: recentItems.value.map((item) => toForwardTarget(item.type, item.peerId, item.name, item.subtitle, item.avatar)),
+  friends: contacts.value.friends.map((friend) => toForwardTarget('friend', friend.userId, friend.name, friend.nickname, friend.avatar)),
+  groups: contacts.value.groups.map((group) => toForwardTarget('group', group.groupId, group.name, getGroupSubtitle(group), group.avatar)),
+}))
+const reactionPickerOpen = computed({
+  get: () => !!reactionPickerMessageId.value,
+  set: (open: boolean) => {
+    if (!open) reactionPickerMessageId.value = ''
+  },
+})
+const replyingToMessage = computed(() => visibleMessages.value.find((message) => message.id === replyingToMessageId.value))
+
+async function runInteraction(action: () => Promise<unknown>, fallback: string) {
+  errorText.value = ''
+  try {
+    await action()
+    return true
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : fallback
+    return false
+  }
+}
+
+function isSelectableMessageId(messageId: string) {
+  const message = visibleMessages.value.find((item) => item.id === messageId)
+  return !!message && !message.event && !message.recalled
+}
+
+function enterSelection(messageId: string) {
+  if (!isSelectableMessageId(messageId)) return
+  selectionMode.value = true
+  selectedMessageIds.value = [messageId]
+  replyingToMessageId.value = ''
+  reactionPickerMessageId.value = ''
+}
+
+function toggleSelection(messageId: string) {
+  if (!selectionMode.value || !isSelectableMessageId(messageId)) return
+  if (selectedMessageIds.value.includes(messageId)) {
+    selectedMessageIds.value = selectedMessageIds.value.filter((id) => id !== messageId)
+    return
+  }
+  selectedMessageIds.value = [...selectedMessageIds.value, messageId]
+}
+
+function exitSelection() {
+  selectionMode.value = false
+  selectedMessageIds.value = []
+  forwardTargetOpen.value = false
+}
+
+function setReplyTarget(messageId: string) {
+  if (selectionMode.value) return
+  replyingToMessageId.value = messageId
+}
+
+function clearReplyTarget() {
+  replyingToMessageId.value = ''
+}
+
+function openReactionPicker(messageId: string) {
+  if (selectionMode.value) return
+  reactionPickerMessageId.value = messageId
+}
+
+function selectReaction(emojiId: string) {
+  const messageId = reactionPickerMessageId.value
+  if (!messageId) return
+  handleSetMessageReaction(messageId, emojiId, true)
+  reactionPickerMessageId.value = ''
+}
+
+function handleSetMessageReaction(messageId: string, emojiId: string, enabled: boolean) {
+  const chat = currentChat.value
+  if (!chat || chat.type !== 'group') return
+  void runInteraction(async () => {
+    await setWebQQMessageReaction({
+      type: 'group',
+      peerId: chat.peerId,
+      messageId,
+      emojiId,
+      enabled,
+    })
+    // 部分 OneBot 实现执行成功却不回推自身 reaction notice；先本地提交，后续事件仍可按消息键合并校正。
+    messages.value = applyLocalWebQQReaction(messages.value, messageId, emojiId, currentOperatorId.value, enabled)
+    await saveCachedWebQQMessages(chat.type, chat.peerId, messages.value)
+  }, enabled ? '贴表情失败' : '取消表情失败')
+}
+
+function handleRecallMessage(messageId: string) {
+  const chat = currentChat.value
+  if (!chat) return
+  void runInteraction(async () => {
+    await recallWebQQMessage({
+      type: chat.type,
+      peerId: chat.peerId,
+      messageId,
+    })
+    // delete_msg 成功也不保证实现回推自身撤回事件；立即标记，避免 UI 长时间保留可操作的旧消息。
+    messages.value = applyLocalWebQQRecall(messages.value, chat.type, chat.peerId, messageId)
+    await saveCachedWebQQMessages(chat.type, chat.peerId, messages.value)
+  }, '撤回消息失败')
+}
+
+function handleSelectionForward() {
+  if (!currentChat.value || !selectedMessageIds.value.length) return
+  forwardTargetOpen.value = true
+}
+
+function confirmSelectionForward(target: WebQQForwardTargetOption, resolve: () => void, reject: (error: unknown) => void) {
+  const messageIds = [...selectedMessageIds.value]
+  void sendWebQQForward({
+    type: target.type,
+    peerId: target.peerId,
+    messageIds,
+  }).then(() => {
+    exitSelection()
+    resolve()
+  }, reject)
+}
+
+async function openCurrentChatProfile(event?: MouseEvent) {
+  const chat = currentChat.value
+  if (!chat) return
+  if (event) rememberFloatingPanelAnchor(event)
+  if (chat.type === 'group') {
+    const group = contacts.value.groups.find((item) => item.groupId === chat.peerId)
+    if (!group) return
+    profileCardModel.value = buildGroupProfileCardModel(group, groupInfo.value.members.length || undefined)
+    profileCardOpen.value = true
+    return
+  }
+  await openUserProfile(chat.peerId, event)
+}
+
+async function openUserProfile(userId: string, event?: MouseEvent) {
+  if (event) rememberFloatingPanelAnchor(event)
+  const chat = currentChat.value
+  const friend = contacts.value.friends.find((item) => item.userId === userId)
+  const member = groupInfo.value.members.find((item) => item.userId === userId)
+  const group = chat?.type === 'group'
+    ? contacts.value.groups.find((item) => item.groupId === chat.peerId)
+    : undefined
+  const message = visibleMessages.value.find((item) => item.senderId === userId)
+  // 先展示本地可拼装资料，再覆盖真实 RPC 结果；失败时保留本地卡并显示真实错误。
+  profileCardModel.value = buildUserProfileCardModel({
+    userId,
+    name: member ? getGroupMemberName(member) : friend?.name || message?.senderName || userId,
+    avatar: member?.avatar || friend?.avatar || message?.senderAvatar,
+    isFriend: !!friend,
+    remark: friend && friend.name !== friend.nickname ? friend.name : undefined,
+    friend,
+    group,
+    member,
+  })
+  profileCardOpen.value = true
+  errorText.value = ''
+  try {
+    const profile = await requestWebQQProfile({
+      userId,
+      ...(chat?.type === 'group' ? { groupId: chat.peerId } : {}),
+    })
+    profileCardModel.value = buildProfileCardModelFromProfile(profile)
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '加载资料失败'
+  }
+}
+
+async function handleSaveSelfProfile(input: { nickname?: string; personalNote?: string; sex?: string; avatar?: string }, complete: () => void) {
+  try {
+    await runInteraction(async () => {
+      await updateWebQQSelfProfile(input)
+      if (!profileCardModel.value?.participantId) return
+      const profile = await requestWebQQProfile({ userId: profileCardModel.value.participantId })
+      profileCardModel.value = buildProfileCardModelFromProfile(profile)
+    }, '更新资料失败')
+  } finally {
+    complete()
+  }
+}
+
+function openActionDialog(input: {
+  title: string
+  description?: string
+  placeholder?: string
+  value?: string
+  confirmText?: string
+  onConfirm: (value: string) => void | Promise<void>
+}) {
+  actionDialogTitle.value = input.title
+  actionDialogDescription.value = input.description || ''
+  actionDialogPlaceholder.value = input.placeholder || ''
+  actionDialogValue.value = input.value || ''
+  actionDialogConfirmText.value = input.confirmText || '保存'
+  actionDialogSubmit = (value: string) => {
+    void Promise.resolve(input.onConfirm(value)).catch((error) => {
+      errorText.value = error instanceof Error ? error.message : '操作失败'
+    })
+  }
+  actionDialogOpen.value = true
+}
+
+function confirmActionDialog(value: string) {
+  const submit = actionDialogSubmit
+  actionDialogOpen.value = false
+  actionDialogSubmit = undefined
+  submit?.(value)
+}
+
+function openContactProfile(type: 'friend' | 'group', peerId: string) {
+  if (type === 'friend') {
+    void openUserProfile(peerId)
+    return
+  }
+  const group = contacts.value.groups.find((item) => item.groupId === peerId)
+  if (!group) return
+  profileCardModel.value = buildGroupProfileCardModel(group)
+  profileCardOpen.value = true
+}
+
+function handlePokeFriend(userId: string) {
+  void runInteraction(() => performWebQQFriendAction({ action: 'poke', targetId: userId }), '好友戳一戳失败')
+}
+
+function openRemarkDialog(userId: string) {
+  const friend = contacts.value.friends.find((item) => item.userId === userId)
+  openActionDialog({
+    title: '设置好友备注',
+    description: '备注只对当前 Bot 视角生效，不会修改对方资料昵称。',
+    placeholder: '留空可删除备注',
+    value: friend && friend.name !== friend.nickname ? friend.name : '',
+    onConfirm: async (remark) => {
+      await performWebQQFriendAction({ action: 'set-remark', targetId: userId, remark })
+      await loadContacts()
+    },
+  })
+}
+
+function openConfirmDialog(input: { title: string, description: string, confirmText: string, onConfirm: () => Promise<void> }) {
+  confirmDialogTitle.value = input.title
+  confirmDialogDescription.value = input.description
+  confirmDialogConfirmText.value = input.confirmText
+  confirmDialogSubmit = input.onConfirm
+  confirmDialogOpen.value = true
+}
+
+function confirmDestructiveAction(resolve: () => void, reject: (error: unknown) => void) {
+  const submit = confirmDialogSubmit
+  if (!submit) {
+    reject(new Error('操作已失效'))
+    return
+  }
+  void submit().then(() => {
+    confirmDialogSubmit = undefined
+    resolve()
+  }, (error) => {
+    errorText.value = error instanceof Error ? error.message : '操作失败'
+    reject(error)
+  })
+}
+
+function confirmDeleteFriend(userId: string) {
+  const friend = contacts.value.friends.find((item) => item.userId === userId)
+  openConfirmDialog({
+    title: '删除好友',
+    description: `确定删除好友「${friend?.name || userId}」？此操作将调用真实 OneBot 删除好友接口。`,
+    confirmText: '删除好友',
+    onConfirm: async () => {
+      await performWebQQFriendAction({ action: 'delete', targetId: userId })
+      await loadContacts()
+    },
+  })
+}
+
+function confirmLeaveGroup(groupId: string) {
+  const group = contacts.value.groups.find((item) => item.groupId === groupId)
+  openConfirmDialog({
+    title: '退出群组',
+    description: `确定退出群「${group?.name || groupId}」？`,
+    confirmText: '退出群组',
+    onConfirm: async () => {
+      await performWebQQGroupAction({ action: 'leave', groupId })
+      await loadContacts()
+    },
+  })
+}
+
+function handleDeleteFriend(userId: string) {
+  confirmDeleteFriend(userId)
+}
+
+function getPendingMentionName(userId: string) {
+  const member = groupInfo.value.members.find((item) => item.userId === userId)
+  return member ? getGroupMemberName(member) : userId
+}
+
+function removePendingMention(userId: string) {
+  pendingMentionUserIds.value = pendingMentionUserIds.value.filter((id) => id !== userId)
+}
+
+function handleMentionGroupMember(userId: string) {
+  if (!enableWebQQSend.value) {
+    errorText.value = '发送功能未开启'
+    return
+  }
+  if (currentChat.value?.type !== 'group') {
+    errorText.value = '当前不是群聊'
+    return
+  }
+  // 提及必须单独保存在结构化草稿中；若仅把“@昵称”拼进文本，OneBot 会发送普通文字而不触发真正的群提醒。
+  if (!pendingMentionUserIds.value.includes(userId)) {
+    pendingMentionUserIds.value = [...pendingMentionUserIds.value, userId]
+  }
+  nextTick(() => sendTextInput.value?.focus())
+}
+
+async function refreshCurrentGroupInfo() {
+  if (currentChat.value?.type === 'group') await loadGroupInfo()
+}
+
+function handlePokeGroupMember(userId: string) {
+  const chat = currentChat.value
+  if (!chat || chat.type !== 'group') {
+    errorText.value = '当前不是群聊'
+    return
+  }
+  void runInteraction(() => performWebQQGroupAction({ action: 'poke', groupId: chat.peerId, targetId: userId }), '群成员戳一戳失败')
+}
+
+function openGroupCardDialog(userId: string) {
+  const member = groupInfo.value.members.find((item) => item.userId === userId)
+  openActionDialog({
+    title: '修改群名片',
+    description: '留空可以清除当前群名片。',
+    placeholder: '输入群名片',
+    value: member?.card || '',
+    onConfirm: async (card) => {
+      const chat = currentChat.value
+      if (!chat || chat.type !== 'group') throw new Error('当前不是群聊')
+      await performWebQQGroupAction({ action: 'set-card', groupId: chat.peerId, targetId: userId, card })
+      await refreshCurrentGroupInfo()
+    },
+  })
+}
+
+function openGroupTitleDialog(userId: string) {
+  const member = groupInfo.value.members.find((item) => item.userId === userId)
+  openActionDialog({
+    title: '设置专属头衔',
+    description: '专属头衔只能由群主授予，留空可以清除当前头衔。',
+    placeholder: '输入专属头衔',
+    value: member?.title || '',
+    onConfirm: async (title) => {
+      const chat = currentChat.value
+      if (!chat || chat.type !== 'group') throw new Error('当前不是群聊')
+      await performWebQQGroupAction({ action: 'set-title', groupId: chat.peerId, targetId: userId, title })
+      await refreshCurrentGroupInfo()
+    },
+  })
+}
+
+function handleSetGroupAdmin(userId: string, enabled: boolean) {
+  const chat = currentChat.value
+  if (!chat || chat.type !== 'group') {
+    errorText.value = '当前不是群聊'
+    return
+  }
+  void runInteraction(async () => {
+    await performWebQQGroupAction({
+      action: 'set-admin',
+      groupId: chat.peerId,
+      targetId: userId,
+      enabled,
+    })
+    await refreshCurrentGroupInfo()
+  }, enabled ? '设为管理员失败' : '取消管理员失败')
+}
+
+function handleKickGroupMember(userId: string) {
+  const chat = currentChat.value
+  if (!chat || chat.type !== 'group') {
+    errorText.value = '当前不是群聊'
+    return
+  }
+  const member = groupInfo.value.members.find((item) => item.userId === userId)
+  openConfirmDialog({
+    title: '踢出群组',
+    description: `确定将「${member ? getGroupMemberName(member) : userId}」移出本群？`,
+    confirmText: '踢出群组',
+    onConfirm: async () => {
+      await performWebQQGroupAction({
+        action: 'kick',
+        groupId: chat.peerId,
+        targetId: userId,
+      })
+      await refreshCurrentGroupInfo()
+    },
+  })
+}
+
+function handleSelectionKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+  if (forwardTargetOpen.value) {
+    event.preventDefault()
+    forwardTargetOpen.value = false
+    return
+  }
+  if (selectionMode.value) {
+    event.preventDefault()
+    exitSelection()
+    return
+  }
+  if (replyingToMessageId.value) {
+    event.preventDefault()
+    clearReplyTarget()
+  }
+}
+
+watch(currentChat, () => {
+  exitSelection()
+  clearReplyTarget()
+  pendingMentionUserIds.value = []
+  reactionPickerMessageId.value = ''
+  profileCardOpen.value = false
 })
 
 messageHistory = useWebQQMessageHistory({
@@ -801,6 +1382,7 @@ const disposeWebQQLiveMessages = useWebQQLiveMessages({
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleSelectionKeydown)
   disposeWebQQLiveMessages()
   clearSendFiles()
   sendFormResizeObserver?.disconnect()
@@ -829,6 +1411,10 @@ watch(() => sendFiles.value.length, () => {
   observeWebQQSendForm()
 })
 
+watch(replyingToMessage, () => {
+  observeWebQQSendForm()
+})
+
 watch(totalUnreadCount, (count) => {
   webQQTotalUnread.value = count
 }, { immediate: true })
@@ -842,9 +1428,11 @@ watch(() => currentChat.value?.peerId, () => {
   groupInfoSearchQuery.value = ''
   if (currentChat.value?.type !== 'group') {
     groupInfoOpen.value = false
+    groupInfo.value = { announcements: [], members: [] }
     return
   }
-  if (groupInfoOpen.value) loadGroupInfo()
+  // 消息头像菜单和管理员撤回权限都依赖成员角色，不能要求用户先手动打开群资料侧栏。
+  void loadGroupInfo()
 })
 
 watch(selectedBotSelfId, (selfId, oldSelfId) => {
@@ -862,6 +1450,7 @@ watch(() => capsule.value?.bot, (bot) => {
 }, { immediate: true })
 
 onMounted(async () => {
+  window.addEventListener('keydown', handleSelectionKeydown)
   window.addEventListener('resize', clampCurrentWebQQShellSize)
   await loadRemoteWebQQStoredState()
   await loadContacts()

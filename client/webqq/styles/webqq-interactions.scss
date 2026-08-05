@@ -1,0 +1,775 @@
+/* 右键菜单 / 资料卡 / 贴表情 / 多选 / Dialog：与 sandbox 关键尺寸、z-index 对齐。
+   注意：Teleport 到 body 的面板拿不到 .onebot-webqq-webqq 作用域变量，这里镜像一份 token。 */
+
+.webqq-secondary-page,
+.webqq-dialog-content,
+.webqq-context-menu-content {
+  --webqq-accent: var(--onebot-webqq-webqq-accent, #2563eb);
+  --webqq-bg: #fff;
+  --webqq-surface: #f8fafc;
+  --webqq-surface-muted: #f5f7fb;
+  --webqq-border: #dfe5ee;
+  --webqq-text: #202938;
+  --webqq-muted: #7a8494;
+  --webqq-hover: #edf2f8;
+  --webqq-panel: #fff;
+}
+
+.webqq-context-menu-content {
+  // 菜单 Portal 到 body 后必须高于 WebQQ 根层（10001）；否则 DOM 已脱离窗口，视觉上仍会被整个 WebQQ 覆盖。
+  z-index: 10140;
+  min-width: 11rem;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid var(--webqq-border);
+  border-radius: 16px;
+  color: var(--webqq-text);
+  background: var(--webqq-panel);
+  box-shadow: 0 18px 42px rgb(15 23 42 / 18%);
+  outline: none;
+}
+
+.webqq-context-menu-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--webqq-text);
+  font-size: 14px;
+  line-height: 20px;
+  outline: none;
+  user-select: none;
+}
+
+.webqq-context-menu-item[data-highlighted],
+.webqq-context-menu-item:focus,
+.webqq-context-menu-sub-trigger[data-state='open'] {
+  background: var(--webqq-hover);
+}
+
+.webqq-context-menu-item[data-disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.webqq-context-menu-item.is-danger,
+.webqq-context-menu-item.is-danger[data-highlighted] {
+  color: #dc2626;
+}
+
+.webqq-context-menu-item.is-danger[data-highlighted] {
+  background: rgb(254 242 242 / 96%);
+}
+
+.webqq-context-menu-chevron {
+  margin-left: auto;
+}
+
+.webqq-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgb(15 23 42 / 35%);
+  backdrop-filter: blur(2px);
+}
+
+.webqq-dialog-content {
+  --webqq-secondary-title-gap: 4px;
+  --webqq-secondary-row-gap: 8px;
+  position: fixed;
+  inset-inline: 0;
+  top: 16px;
+  z-index: 151;
+  display: grid;
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  gap: var(--webqq-secondary-row-gap, 8px);
+  margin-inline: auto;
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid var(--webqq-border);
+  border-radius: 16px;
+  color: var(--webqq-text);
+  background: var(--webqq-bg);
+  box-shadow: 0 18px 42px rgb(15 23 42 / 18%);
+  outline: none;
+}
+
+.webqq-dialog-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--webqq-muted);
+  background: transparent;
+}
+
+.webqq-dialog-close:hover,
+.webqq-dialog-close:focus-visible {
+  color: var(--webqq-text);
+  background: var(--webqq-hover);
+  outline: none;
+}
+
+.webqq-dialog-header {
+  display: grid;
+  gap: var(--webqq-secondary-title-gap, 4px);
+  padding-right: 32px;
+}
+
+.webqq-dialog-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.webqq-dialog-description {
+  margin: 0;
+  color: var(--webqq-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.webqq-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--webqq-secondary-row-gap, 8px);
+  padding-top: var(--webqq-secondary-row-gap, 8px);
+}
+
+.webqq-ui-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #fff;
+  background: var(--webqq-accent, #2563eb);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.webqq-ui-button:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.webqq-ui-button[data-variant='outline'] {
+  color: var(--webqq-text);
+  border-color: var(--webqq-border);
+  background: transparent;
+}
+
+.webqq-ui-button[data-variant='outline']:hover {
+  background: var(--webqq-hover);
+}
+
+.webqq-ui-input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--webqq-border);
+  border-radius: 10px;
+  color: var(--webqq-text);
+  background: var(--webqq-surface-muted);
+  outline: none;
+}
+
+.webqq-ui-input:focus-visible {
+  border-color: color-mix(in srgb, var(--webqq-accent) 58%, var(--webqq-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--webqq-accent) 14%, transparent);
+}
+
+.webqq-secondary-page {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  // 二级页 Teleport 到 body 后不再受 WebQQ 根层保护，必须显式高于根窗口（10001），否则贴表情页会被聊天面板遮住。
+  z-index: 10130;
+  display: grid;
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  max-height: min(520px, calc(100vh - 24px));
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--webqq-border) 72%, #fff 28%);
+  border-radius: 12px;
+  color: var(--webqq-text);
+  background: color-mix(in srgb, var(--webqq-panel) 92%, transparent);
+  box-shadow: 0 18px 42px rgb(15 23 42 / 18%);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+.webqq-secondary-page-header {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--webqq-border);
+  touch-action: none;
+  user-select: none;
+}
+
+.webqq-secondary-page-header strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.webqq-profile-card-page {
+  width: max-content;
+  min-width: 260px;
+  max-width: min(320px, calc(100vw - 24px));
+}
+
+.webqq-profile-card {
+  display: grid;
+  min-height: 0;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.webqq-profile-card-hero {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.webqq-profile-card-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--webqq-surface-muted);
+}
+
+.webqq-profile-card-avatar.is-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--webqq-muted);
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.webqq-profile-card-hero h2 {
+  margin: 0;
+  color: var(--webqq-text);
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.webqq-profile-card-hero p {
+  margin: 4px 0 0;
+  color: var(--webqq-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.webqq-profile-card-note {
+  color: var(--webqq-text) !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.webqq-profile-card-section {
+  display: grid;
+  gap: 8px;
+}
+
+.webqq-profile-card-section h3 {
+  margin: 0;
+  color: var(--webqq-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+}
+
+.webqq-profile-card-fields {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.webqq-profile-card-fields > div {
+  display: grid;
+  min-height: 28px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.webqq-profile-card-fields dt {
+  color: var(--webqq-muted);
+}
+
+.webqq-profile-card-fields dd {
+  margin: 0;
+  color: var(--webqq-text);
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.webqq-emoji-picker {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.webqq-emoji-picker-search {
+  width: 100%;
+}
+
+.webqq-emoji-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.webqq-emoji-picker-section > header {
+  color: var(--webqq-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.webqq-emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.webqq-emoji-picker-item {
+  display: flex;
+  aspect-ratio: 1 / 1;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--webqq-text);
+  background: color-mix(in srgb, var(--webqq-panel) 88%, transparent);
+}
+
+.webqq-emoji-picker-item:hover {
+  background: color-mix(in srgb, var(--webqq-accent) 14%, transparent);
+}
+
+.webqq-emoji-picker-item img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.webqq-emoji-picker-empty {
+  grid-column: 1 / -1;
+  margin: 8px 0;
+  color: var(--webqq-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .webqq-emoji-picker-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* 消息多选 */
+.onebot-webqq-webqq__messages.is-selecting .onebot-webqq-webqq__message.is-selectable {
+  width: 100%;
+  max-width: 100%;
+}
+
+.onebot-webqq-webqq__message.is-selecting {
+  position: relative;
+  align-items: center;
+  flex-direction: row;
+  text-align: left;
+}
+
+.onebot-webqq-webqq__message-select-marker {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid color-mix(in srgb, #7a8494 55%, transparent);
+  border-radius: 50%;
+  color: transparent;
+  background: color-mix(in srgb, #fff 88%, transparent);
+  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.onebot-webqq-webqq__message.is-selecting .onebot-webqq-webqq__message-select-marker {
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+.onebot-webqq-webqq__message-select-body {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-select-body {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.onebot-webqq-webqq__message.is-selecting.is-outgoing .onebot-webqq-webqq__message-select-body {
+  margin-left: auto;
+}
+
+.onebot-webqq-webqq__message-select-marker.is-checked {
+  border-color: var(--onebot-webqq-webqq-accent, #2563eb);
+  color: #fff;
+  background: var(--onebot-webqq-webqq-accent, #2563eb);
+}
+
+.onebot-webqq-webqq__message.is-selecting:not(.is-selectable) {
+  opacity: 0.55;
+}
+
+.onebot-webqq-webqq__message-avatar-trigger {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.onebot-webqq-webqq__selection-bar {
+  position: absolute;
+  z-index: 20;
+  bottom: 16px;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 7px 8px 7px 16px;
+  border: 1px solid rgba(217, 225, 234, 0.9);
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 92%, transparent);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(12px);
+  transform: translateX(-50%);
+}
+
+.onebot-webqq-webqq__selection-bar-count {
+  flex: none;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.onebot-webqq-webqq__selection-bar-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__selection-bar {
+  background: color-mix(in srgb, #fff 78%, transparent);
+}
+
+.onebot-webqq-webqq__selection-bar .webqq-selection-bar-button {
+  min-height: 34px;
+  padding-right: 14px;
+  padding-left: 14px;
+  border-radius: 999px;
+}
+
+.onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline'] {
+  // Koishi 外层主题可能覆盖 outline 按钮的 token，并让边框回退为 currentColor；
+  // 多选栏必须显式声明完整表面和焦点状态，避免“取消”按钮出现黑色描边。
+  border: 1px solid rgba(217, 225, 234, 0.9);
+  color: #202938;
+  background: #fff;
+  outline: none;
+}
+
+.onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline']:hover {
+  background: #edf2f8;
+}
+
+.onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline']:focus-visible {
+  border-color: color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 58%, #dfe5ee);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 14%, transparent);
+}
+
+.onebot-webqq-webqq__reply-draft {
+  position: absolute;
+  right: 14px;
+  bottom: calc(100% + 8px);
+  display: flex;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100% - 28px);
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  color: var(--webqq-muted);
+  font-size: 12px;
+  background: var(--webqq-panel);
+  border: 1px solid var(--webqq-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgb(15 23 42 / 8%);
+}
+
+.onebot-webqq-webqq__reply-draft > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onebot-webqq-webqq__reply-draft-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.onebot-webqq-webqq__reply-draft-copy strong,
+.onebot-webqq-webqq__reply-draft-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onebot-webqq-webqq__reply-draft-copy span {
+  color: #7a8494;
+  font-size: 12px;
+}
+
+.onebot-webqq-webqq__reply-draft-close {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: #7a8494;
+  background: transparent;
+}
+
+.onebot-webqq-webqq__reply-draft-close:hover {
+  color: #1f2937;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.onebot-webqq-webqq__message-reaction.is-interactive {
+  border: 0;
+  background: inherit;
+}
+
+.onebot-webqq-webqq__message-reaction.is-interactive:hover {
+  background: color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 12%, transparent);
+}
+
+.onebot-webqq-webqq__message-reaction.is-mine {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 45%, transparent);
+}
+
+
+.webqq-profile-card-edit {
+  display: grid;
+  gap: 10px;
+}
+
+.webqq-profile-card-edit > label {
+  display: grid;
+  gap: 6px;
+  color: var(--webqq-muted);
+  font-size: 12px;
+}
+
+.webqq-profile-card-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.webqq-forward-target-dialog {
+  display: grid;
+  gap: 12px;
+}
+
+.webqq-forward-target-search {
+  display: grid;
+  min-height: 40px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  color: var(--webqq-muted);
+  background: var(--webqq-surface-muted);
+  border: 1px solid var(--webqq-border);
+  border-radius: 12px;
+}
+
+.webqq-forward-target-search:focus-within {
+  background: var(--webqq-panel);
+  border-color: color-mix(in srgb, var(--webqq-accent) 58%, var(--webqq-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--webqq-accent) 14%, transparent);
+}
+
+.webqq-forward-target-search input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0;
+  color: var(--webqq-text);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.webqq-forward-target-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.webqq-forward-target-tab {
+  min-height: 32px;
+  padding: 0 12px;
+  color: var(--webqq-muted);
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.webqq-forward-target-tab.is-active {
+  color: var(--webqq-accent);
+  background: color-mix(in srgb, var(--webqq-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--webqq-accent) 28%, transparent);
+}
+
+.webqq-forward-target-list {
+  display: flex;
+  max-height: min(360px, 50vh);
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.webqq-forward-target-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.webqq-forward-target-item:hover,
+.webqq-forward-target-item.is-active {
+  background: color-mix(in srgb, var(--webqq-accent) 12%, transparent);
+}
+
+.webqq-forward-target-item.is-active {
+  border-color: color-mix(in srgb, var(--webqq-accent) 30%, transparent);
+}
+
+.webqq-forward-target-item > img,
+.webqq-forward-target-avatar-fallback {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+  background: var(--webqq-surface-muted);
+  border-radius: 50%;
+}
+
+.webqq-forward-target-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.webqq-forward-target-copy strong,
+.webqq-forward-target-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.webqq-forward-target-copy small,
+.webqq-forward-target-empty {
+  color: var(--webqq-muted);
+  font-size: 12px;
+}
+
+.webqq-forward-target-empty {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+}
+
+.webqq-forward-target-radio {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1.5px solid color-mix(in srgb, var(--webqq-muted) 55%, transparent);
+  border-radius: 50%;
+}
+
+.webqq-forward-target-item.is-active .webqq-forward-target-radio {
+  background: radial-gradient(circle at center, var(--webqq-accent) 0 5px, transparent 6px);
+  border-color: var(--webqq-accent);
+}
+
+.webqq-forward-target-error {
+  margin: 0;
+  padding: 8px 12px;
+  color: #b42318;
+  font-size: 12px;
+  background: #fff1f0;
+  border-radius: 8px;
+}

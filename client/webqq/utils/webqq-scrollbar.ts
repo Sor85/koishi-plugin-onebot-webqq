@@ -28,6 +28,8 @@ const states = new WeakMap<HTMLElement, WebQQScrollbarState>()
 
 interface WebQQScrollbarOptions {
   hideOnNarrow?: boolean
+  tone?: 'accent'
+  zIndex?: number
 }
 
 function addListener(
@@ -157,6 +159,8 @@ function applyScrollbarOptions(
 ) {
   const { overlay } = state
   overlay.classList.toggle('is-hidden-on-narrow', Boolean(binding.value?.hideOnNarrow))
+  overlay.classList.toggle('is-accent', binding.value?.tone === 'accent')
+  overlay.style.zIndex = binding.value?.zIndex == null ? '' : String(binding.value.zIndex)
 }
 
 export const vWebqqScrollbar: Directive<HTMLElement, WebQQScrollbarOptions | undefined> = {
