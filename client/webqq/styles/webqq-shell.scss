@@ -356,14 +356,27 @@
   }
 
   .onebot-webqq-webqq__contact-avatar {
+    // span 默认 inline，width/height 不生效；再叠加非正方形头像源图时，border-radius:50% 会画成竖椭圆。
+    // 未读角标挂在容器上且会溢出，因此不能 overflow:hidden，圆形裁切交给内部 img。
     position: relative;
+    display: block;
     width: 38px;
     height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    flex-shrink: 0;
   }
 
   img {
+    // 绝对铺满正方形容器，避免全局 img { max-width/height:auto } 把圆形压扁。
+    position: absolute;
+    inset: 0;
+    display: block;
     width: 100%;
     height: 100%;
+    max-width: none;
+    max-height: none;
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     object-fit: cover;
   }

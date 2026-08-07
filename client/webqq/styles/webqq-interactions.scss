@@ -69,13 +69,21 @@
   margin-left: auto;
 }
 
-.webqq-dialog-overlay {
+.webqq-dialog-layer {
+  // Overlay 与 Content 必须共享一个 Portal 根堆叠上下文；若作为 body 直属兄弟节点，Koishi 的全局浮层可能插入两者之间，只留下模糊遮罩。
   position: fixed;
   inset: 0;
-  // 所有 Dialog 都 Portal 到 body；统一放到二级页和右键菜单之上，避免资料操作、群名片和合并转发弹窗被 WebQQ 根窗口遮挡。
   z-index: 10200;
+  pointer-events: none;
+}
+
+.webqq-dialog-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   background: rgb(15 23 42 / 35%);
   backdrop-filter: blur(2px);
+  pointer-events: auto;
 }
 
 .webqq-dialog-content {
@@ -84,7 +92,7 @@
   position: fixed;
   inset-inline: 0;
   top: 16px;
-  z-index: 10201;
+  z-index: 1;
   display: grid;
   width: min(520px, calc(100vw - 24px));
   max-height: calc(100vh - 32px);
@@ -98,6 +106,7 @@
   background: var(--webqq-bg);
   box-shadow: 0 18px 42px rgb(15 23 42 / 18%);
   outline: none;
+  pointer-events: auto;
 }
 
 .webqq-dialog-close {
@@ -196,11 +205,11 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--webqq-accent) 14%, transparent);
 }
 
-.webqq-secondary-page {
+.webqq-secondary-page.onebot-webqq-webqq__portal-page {
   position: fixed;
   top: 12px;
   left: 12px;
-  // 二级页 Teleport 到 body 后不再受 WebQQ 根层保护，必须显式高于根窗口（10001），否则贴表情页会被聊天面板遮住。
+  // 二级页 Teleport 到 body 后会与 sandbox 的同名全局类竞争；使用插件专属类提高优先级，避免后加载的低层级规则覆盖。
   z-index: 10130;
   display: grid;
   width: 380px;
@@ -232,7 +241,9 @@
   line-height: 20px;
 }
 
-.webqq-profile-card-page {
+.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-profile-card-page {
+  // 资料卡可拖入 WebQQ 窗口范围，必须作为独立 body 浮层始终覆盖聊天壳，不能只依赖通用二级页层级。
+  z-index: 10300;
   width: max-content;
   min-width: 260px;
   max-width: min(320px, calc(100vw - 24px));
@@ -454,6 +465,11 @@
 
 .onebot-webqq-webqq__message.is-selecting:not(.is-selectable) {
   opacity: 0.55;
+}
+
+.onebot-webqq-webqq__message-avatar-context {
+  // 仅用于捕获阶段记录锚点；不参与布局，避免额外包装层改变消息头像 flex 尺寸。
+  display: contents;
 }
 
 .onebot-webqq-webqq__message-avatar-trigger {

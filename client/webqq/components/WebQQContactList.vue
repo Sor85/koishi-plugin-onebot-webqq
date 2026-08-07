@@ -7,6 +7,8 @@
             :class="['onebot-webqq-webqq__contact', { 'is-active': currentPeerId === item.peerId }]"
             type="button"
             @click="emit('select-recent', item)"
+            @pointerdown="(event) => { if (event.button === 2) rememberFloatingPanelAnchor(event) }"
+            @contextmenu.capture="rememberFloatingPanelAnchor($event)"
           >
             <span class="onebot-webqq-webqq__contact-avatar">
               <img :src="withProxy(item.avatar)" :alt="item.name">
@@ -39,6 +41,8 @@
               :class="['onebot-webqq-webqq__contact', { 'is-active': currentPeerId === friend.userId }]"
               type="button"
               @click="emit('select-friend', friend)"
+              @pointerdown="(event) => { if (event.button === 2) rememberFloatingPanelAnchor(event) }"
+              @contextmenu.capture="rememberFloatingPanelAnchor($event)"
             >
               <span class="onebot-webqq-webqq__contact-avatar">
                 <img :src="withProxy(friend.avatar)" :alt="friend.name">
@@ -69,6 +73,8 @@
             :class="['onebot-webqq-webqq__contact', { 'is-active': currentPeerId === group.groupId }]"
             type="button"
             @click="emit('select-group', group)"
+            @pointerdown="(event) => { if (event.button === 2) rememberFloatingPanelAnchor(event) }"
+            @contextmenu.capture="rememberFloatingPanelAnchor($event)"
           >
             <span class="onebot-webqq-webqq__contact-avatar">
               <img :src="withProxy(group.avatar)" :alt="group.name">
@@ -98,6 +104,7 @@ import { IconId, IconLogout, IconTag, IconUserMinus } from '@tabler/icons-vue'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../../components/ui/context-menu'
 import type { WebQQFriend, WebQQGroup } from '../types'
 import type { WebQQFriendCategoryView, WebQQRecentItem } from '../utils/webqq-contact-view'
+import { rememberFloatingPanelAnchor } from '../utils/floating-panel'
 import { formatTime } from '../utils/webqq-message-view'
 import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 

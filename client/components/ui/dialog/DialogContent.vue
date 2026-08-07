@@ -17,18 +17,20 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
 <template>
   <DialogPortal>
-    <DialogOverlay data-slot="dialog-overlay" class="webqq-dialog-overlay" />
-    <DialogContent
-      v-webqq-scrollbar="{ zIndex: 10202 }"
-      data-slot="dialog-content"
-      class="webqq-dialog-content"
-      v-bind="{ ...$attrs, ...forwarded }"
-      :class="cn(props.class)"
-    >
-      <slot />
-      <DialogClose aria-label="关闭" class="webqq-dialog-close">
-        <IconX :size="18" aria-hidden="true" />
-      </DialogClose>
-    </DialogContent>
+    <div class="webqq-dialog-layer">
+      <DialogOverlay data-slot="dialog-overlay" class="webqq-dialog-overlay" />
+      <DialogContent
+        v-webqq-scrollbar="{ zIndex: 10202 }"
+        data-slot="dialog-content"
+        class="webqq-dialog-content"
+        v-bind="{ ...$attrs, ...forwarded }"
+        :class="cn(props.class)"
+      >
+        <slot />
+        <DialogClose aria-label="关闭" class="webqq-dialog-close">
+          <IconX :size="18" aria-hidden="true" />
+        </DialogClose>
+      </DialogContent>
+    </div>
   </DialogPortal>
 </template>

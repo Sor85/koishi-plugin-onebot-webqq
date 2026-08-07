@@ -25,7 +25,12 @@
         <div v-else v-webqq-scrollbar class="onebot-webqq-webqq__group-member-list">
           <ContextMenu v-for="member in visibleMembers" :key="member.userId">
             <ContextMenuTrigger as-child>
-              <article class="onebot-webqq-webqq__group-member" @click="emit('open-profile', member.userId)">
+              <article
+                class="onebot-webqq-webqq__group-member"
+                @click="emit('open-profile', member.userId, $event)"
+                @pointerdown="(event) => { if (event.button === 2) rememberFloatingPanelAnchor(event) }"
+                @contextmenu.capture="rememberFloatingPanelAnchor($event)"
+              >
                 <img :src="withProxy(member.avatar)" :alt="getGroupMemberName(member)">
                 <span>
                   <strong>{{ getGroupMemberName(member) }}</strong>
@@ -57,6 +62,7 @@ import { computed } from 'vue'
 import { ContextMenu, ContextMenuTrigger } from '../../components/ui/context-menu'
 import WebQQGroupMemberMenu from './WebQQGroupMemberMenu.vue'
 import type { WebQQGroupInfo, WebQQGroupMember } from '../types'
+import { rememberFloatingPanelAnchor } from '../utils/floating-panel'
 import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 const props = withDefaults(defineProps<{
@@ -78,7 +84,7 @@ const actor = computed(() => props.groupInfo.members.find((member) => member.use
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
-  'open-profile': [userId: string]
+  'open-profile': [userId: string, event?: MouseEvent]
   'mention-group-member': [userId: string]
   'poke-group-member': [userId: string]
   'set-group-card': [userId: string]

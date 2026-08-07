@@ -1,5 +1,6 @@
 import type { Config as PluginConfig } from '../config'
 import type { ChatCapsuleContext } from '../plugin-context'
+import { createMockWebQQService } from '../webqq/adapters/mock/service'
 import { createOneBotWebQQService } from '../webqq/adapters/onebot/service'
 import { createWebQQImageUrlResolver } from '../webqq/media/image-url-resolver'
 
@@ -26,13 +27,16 @@ export function createPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfi
     cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024,
     cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024,
   })
-  const webqq = createOneBotWebQQService(ctx, {
-    selfId: initialOneBotSelfId,
-    selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
-    mockBotCount: config.onebotMockBotCount,
-    protocol: config.onebotProtocol,
-    imageUrlResolver,
-  })
+  // 开发者模拟环境完全走内存预设，避免依赖真实 OneBot bot / 协议实现。
+  const webqq = config.webQQMockEnvironment
+    ? createMockWebQQService()
+    : createOneBotWebQQService(ctx, {
+      selfId: initialOneBotSelfId,
+      selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
+      mockBotCount: config.onebotMockBotCount,
+      protocol: config.onebotProtocol,
+      imageUrlResolver,
+    })
 
   return {
     historyLimit,

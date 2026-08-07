@@ -3,7 +3,7 @@ import { isVisibleBotSession } from '../../onebot/session'
 import type { Config as PluginConfig } from '../../config'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../thinking'
-import type { createOneBotWebQQService } from '../adapters/onebot/service'
+import type { WebQQService } from '../adapters/types'
 import type { WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload } from '../types'
 import type { ChatCapsuleContext, ChatLunaModelUsage, DebugLogger } from '../../plugin-context'
 import { attachWebQQAffinityBadges } from '../affinity'
@@ -33,7 +33,6 @@ import {
 import { createWebQQNoticeRuntime } from './live-notices'
 import { createWebQQReactionRuntime } from './live-reactions'
 
-type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
 type WebQQThinking = NonNullable<WebQQMessage['thinking']>
 type WebQQUsage = NonNullable<WebQQMessage['usage']>
 const WEBQQ_LIVE_CONVERSATION_LIMIT = 100
@@ -56,7 +55,7 @@ function shouldDisplayModelUsage(usage: ChatLunaModelUsage) {
 export function createWebQQLiveRuntime(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
-  webqq: OneBotWebQQService
+  webqq: WebQQService
   imageUrlResolver: WebQQImageUrlResolver
   consoleAuthOptions: { authority: number }
   logger?: DebugLogger

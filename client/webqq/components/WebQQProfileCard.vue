@@ -3,7 +3,7 @@
     <section
       v-if="open && model"
       ref="panelRef"
-      class="webqq-secondary-page webqq-profile-card-page"
+      class="webqq-secondary-page onebot-webqq-webqq__portal-page webqq-profile-card-page"
       :style="panelStyle"
       aria-label="查看资料"
     >
@@ -14,7 +14,7 @@
       >
         <strong>查看资料</strong>
       </header>
-      <div class="webqq-profile-card">
+      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10301 }" class="webqq-profile-card">
         <div class="webqq-profile-card-hero">
           <img
             v-if="model.avatar"
@@ -86,6 +86,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { groupProfileCardFields, type ProfileCardModel } from '../utils/profile-card'
 import { clampFloatingPanelPosition, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
+import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 import type { WebQQSelfProfileUpdate } from '../types'
 
 const props = defineProps<{

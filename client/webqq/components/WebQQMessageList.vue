@@ -47,6 +47,8 @@
               <IconCheck :size="12" stroke-width="3" />
             </span>
             <div class="onebot-webqq-webqq__message-select-body">
+              <!-- 必须用捕获阶段记录锚点：Reka as-child 会覆盖按钮自身的 onContextmenu，导致右键“查看资料”落到默认左上角。 -->
+              <span class="onebot-webqq-webqq__message-avatar-context" @contextmenu.capture="rememberFloatingPanelAnchor($event)">
               <ContextMenu>
                 <ContextMenuTrigger as-child :disabled="selectionMode">
                   <button
@@ -54,7 +56,8 @@
                     class="onebot-webqq-webqq__message-avatar-trigger"
                     :aria-label="`查看 ${message.senderName} 的资料`"
                     @click="handleMessageAvatarClick(message, $event)"
-                    @contextmenu.stop
+                    @contextmenu="handleMessageAvatarContextMenu($event)"
+                    @pointerdown="handleMessageAvatarPointerDown($event)"
                   >
                     <span class="onebot-webqq-webqq__message-avatar-wrap">
                       <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
@@ -109,6 +112,7 @@
                   </template>
                 </ContextMenuContent>
               </ContextMenu>
+              </span>
         <div class="onebot-webqq-webqq__message-content">
           <div v-if="!isMergedMessage(index)" class="onebot-webqq-webqq__sender-line">
             <template v-if="message.direction === 'outgoing'">
@@ -563,6 +567,15 @@ function handleMessageAvatarClick(message: WebQQMessage, event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
   emit('open-profile', message.senderId, event)
+}
+function handleMessageAvatarPointerDown(event: PointerEvent) {
+  // Reka as-child 可能吞掉 contextmenu 监听；右键 pointerdown 仍可稳定拿到坐标。
+  if (event.button === 2) rememberFloatingPanelAnchor(event)
+}
+function handleMessageAvatarContextMenu(event: MouseEvent) {
+  // 头像右键菜单不能冒泡到消息行，否则会打开消息菜单；捕获阶段已记锚点，这里再兜底一次。
+  rememberFloatingPanelAnchor(event)
+  event.stopPropagation()
 }
 function handleMessageBubbleClick(message: WebQQMessage, event: MouseEvent) {
   if (!getSelectionMode() || !isMessageSelectable(message)) return

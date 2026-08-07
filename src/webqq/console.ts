@@ -15,7 +15,7 @@ import type {
   WebQQSelfProfileUpdate,
   WebQQSendPayload,
 } from './types'
-import type { createOneBotWebQQService } from './adapters/onebot/service'
+import type { WebQQService } from './adapters/types'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
 import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './message-flow/live-cache'
@@ -34,14 +34,12 @@ import {
   type WebQQStoredState,
 } from './storage/state'
 
-type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
-
 export function registerWebQQConsoleListeners(
   console: ConsoleService,
   inner: ChatCapsuleContext,
   options: {
     config: PluginConfig
-    webqq: OneBotWebQQService
+    webqq: WebQQService
     historyLimit: number
     liveMessages: Map<string, WebQQMessage[]>
     friendRequestNotices: Map<string, WebQQNotice>

@@ -52,7 +52,14 @@
           <div class="onebot-webqq-webqq__chat-title">
             <ContextMenu v-if="currentChat">
               <ContextMenuTrigger as-child>
-                <button type="button" class="onebot-webqq-webqq__chat-avatar-trigger" :aria-label="`查看 ${currentTitle} 的资料`" @click="openCurrentChatProfile($event)">
+                <button
+                  type="button"
+                  class="onebot-webqq-webqq__chat-avatar-trigger"
+                  :aria-label="`查看 ${currentTitle} 的资料`"
+                  @click="openCurrentChatProfile($event)"
+                  @pointerdown="(event) => { if (event.button === 2) rememberFloatingPanelAnchor(event) }"
+                  @contextmenu="rememberFloatingPanelAnchor($event)"
+                >
                   <img v-if="currentAvatar" class="onebot-webqq-webqq__chat-avatar" :src="withProxy(currentAvatar)" :alt="currentTitle">
                   <span v-else class="onebot-webqq-webqq__chat-avatar is-fallback" aria-hidden="true">{{ currentTitle.slice(0, 1) }}</span>
                 </button>

@@ -15,6 +15,7 @@ const themeColorsStyle = await readFile(new URL('../client/webqq/styles/theme-co
 const webqqInteractionsStyle = await readFile(new URL('../client/webqq/styles/webqq-interactions.scss', import.meta.url), 'utf8')
 const dialogContentView = await readFile(new URL('../client/components/ui/dialog/DialogContent.vue', import.meta.url), 'utf8')
 const webqqEmojiPickerView = await readFile(new URL('../client/webqq/components/WebQQEmojiPicker.vue', import.meta.url), 'utf8')
+const webqqProfileCardView = await readFile(new URL('../client/webqq/components/WebQQProfileCard.vue', import.meta.url), 'utf8')
 const webqqForwardTargetDialogView = await readFile(new URL('../client/webqq/components/WebQQForwardTargetDialog.vue', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
@@ -97,7 +98,7 @@ describe('chat capsule styles', () => {
 
   it('keeps teleported secondary pages above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
-    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
 
     expect(shellZIndex).toBe(10001)
     expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
@@ -105,8 +106,9 @@ describe('chat capsule styles', () => {
 
   it('keeps every portalled dialog layer and floating scrollbar above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
-    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const dialogLayerZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-layer\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const overlayZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-overlay\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const contentZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const dialogScrollbarZIndex = Number(dialogContentView.match(/zIndex:\s*(\d+)/)?.[1])
@@ -116,11 +118,26 @@ describe('chat capsule styles', () => {
     expect(shellZIndex).toBe(10001)
     expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
     expect(menuZIndex).toBeGreaterThan(secondaryPageZIndex)
-    expect(overlayZIndex).toBeGreaterThan(menuZIndex)
+    expect(dialogLayerZIndex).toBeGreaterThan(menuZIndex)
+    expect(overlayZIndex).toBe(0)
     expect(contentZIndex).toBeGreaterThan(overlayZIndex)
-    expect(dialogScrollbarZIndex).toBeGreaterThan(contentZIndex)
+    expect(dialogScrollbarZIndex).toBeGreaterThan(dialogLayerZIndex)
     expect(emojiScrollbarZIndex).toBeGreaterThan(secondaryPageZIndex)
-    expect(forwardScrollbarZIndex).toBeGreaterThan(contentZIndex)
+    expect(forwardScrollbarZIndex).toBeGreaterThan(dialogLayerZIndex)
+    const dialogTemplate = dialogContentView.slice(dialogContentView.indexOf('<template>'))
+    expect(dialogTemplate).toContain('<div class="webqq-dialog-layer">')
+    expect(dialogTemplate.indexOf('<DialogOverlay')).toBeGreaterThan(dialogTemplate.indexOf('<div class="webqq-dialog-layer">'))
+    expect(dialogTemplate.indexOf('<DialogContent')).toBeGreaterThan(dialogTemplate.indexOf('<DialogOverlay'))
+  })
+
+  it('keeps the teleported profile card above the WebQQ shell while dragging', () => {
+    const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
+    const profileZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\.webqq-profile-card-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+
+    expect(shellZIndex).toBe(10001)
+    expect(profileZIndex).toBeGreaterThan(shellZIndex)
+    expect(webqqProfileCardView).toContain('webqq-secondary-page onebot-webqq-webqq__portal-page webqq-profile-card-page')
+    expect(webqqEmojiPickerView).toContain('webqq-secondary-page onebot-webqq-webqq__portal-page webqq-emoji-picker-page')
   })
 
   it('fully styles the selection cancel button without inherited theme tokens', () => {
@@ -566,6 +583,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__message-avatar')).toContain('width: var(--onebot-webqq-webqq-message-avatar-size)')
     expect(ruleBody('.onebot-webqq-webqq__message-avatar')).toContain('height: var(--onebot-webqq-webqq-message-avatar-size)')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message-avatar')).toContain('border-radius: 50%')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-avatar-context', webqqInteractionsStyle)).toContain('display: contents')
     expect(ruleBody('.onebot-webqq-webqq__message-affinity')).toContain('position: absolute')
     expect(ruleBody('.onebot-webqq-webqq__message-affinity')).toContain('top: -10px')
     expect(ruleBody('.onebot-webqq-webqq__message-affinity')).toContain('right: -12px')
@@ -814,13 +832,33 @@ describe('chat capsule styles', () => {
   })
 
   it('places WebQQ unread badges on the contact avatar corner', () => {
+    // contact-avatar 是 span：必须 block + 固定正方形，否则 width/height 不生效，头像会随源图比例变成椭圆。
     expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).toContain('position: relative')
+    expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).toContain('display: block')
     expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).toContain('width: 38px')
     expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).toContain('height: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).toContain('min-width: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).toContain('min-height: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__contact-avatar')).not.toContain('overflow: hidden')
     expect(ruleBody('.onebot-webqq-webqq__contact-unread')).toContain('position: absolute')
     expect(ruleBody('.onebot-webqq-webqq__contact-unread')).toContain('top: -6px')
     expect(ruleBody('.onebot-webqq-webqq__contact-unread')).toContain('right: -6px')
     expect(ruleBody('.onebot-webqq-webqq__contact-unread')).toContain('min-width: 18px')
+  })
+
+  it('keeps the WebQQ chat header avatar square against the 32px header button rule', () => {
+    // 顶栏通用 button { width: 32px } 会压扁头像触发器；触发器必须显式锁 38px 正方形。
+    expect(ruleBody('.onebot-webqq-webqq__chat-header')).toContain('button {')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header')).toContain('width: 32px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('width: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('height: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('flex: 0 0 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('overflow: hidden')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('display: block')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('width: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('height: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('max-width: none')
+    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('object-fit: cover')
   })
 
   it('centers the WebQQ notice menu under the bell button', () => {

@@ -3,7 +3,7 @@ import type { OneBotRobotState } from '../onebot/types'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
 import type { WebQQImageUrlResolver } from './media/image-url-resolver'
 import { registerWebQQReactionInterceptor } from './adapters/onebot/reactions'
-import type { createOneBotWebQQService } from './adapters/onebot/service'
+import type { WebQQService } from './adapters/types'
 import { registerWebQQConsoleListeners } from './console'
 import {
   createWebQQFriendRequestNotice,
@@ -18,12 +18,10 @@ import {
 } from './storage/schema'
 import type { WebQQNotice } from './types'
 
-type OneBotWebQQService = ReturnType<typeof createOneBotWebQQService>
-
 export function registerWebQQ(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
-  webqq: OneBotWebQQService
+  webqq: WebQQService
   imageUrlResolver: WebQQImageUrlResolver
   consoleAuthOptions: { authority: number }
   historyLimit: number

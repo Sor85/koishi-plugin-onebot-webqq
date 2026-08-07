@@ -93,28 +93,39 @@
 }
 
 .onebot-webqq-webqq__chat-avatar-trigger {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-}
-
-.onebot-webqq-webqq__chat-avatar {
+  // 顶栏通用 button 规则是 32px（给右侧菜单按钮用的）；头像必须显式盖过，否则 38px 图被塞进 32px 宽变成竖椭圆。
   display: inline-flex;
   width: 38px;
   height: 38px;
-  flex-shrink: 0;
+  min-width: 38px;
+  min-height: 38px;
+  flex: 0 0 38px;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  line-height: 0;
+}
+
+.onebot-webqq-webqq__chat-avatar {
+  display: block;
+  width: 38px;
+  height: 38px;
+  max-width: none;
+  max-height: none;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .onebot-webqq-webqq__chat-avatar.is-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--onebot-webqq-webqq-accent);
   background: var(--onebot-webqq-webqq-accent-soft);
 }

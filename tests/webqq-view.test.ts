@@ -43,6 +43,9 @@ const webqqForwardModal = await readFile(new URL('../client/webqq/components/Web
 const webqqGroupInfoPanel = await readFile(new URL('../client/webqq/components/WebQQGroupInfoPanel.vue', import.meta.url), 'utf8')
 const webqqImagePreviewView = await readFile(new URL('../client/webqq/components/WebQQImagePreview.vue', import.meta.url), 'utf8')
 const webqqNoticeMenu = await readFile(new URL('../client/webqq/components/WebQQNoticeMenu.vue', import.meta.url), 'utf8')
+const webqqProfileCardView = await readFile(new URL('../client/webqq/components/WebQQProfileCard.vue', import.meta.url), 'utf8')
+const webqqEmojiPickerView = await readFile(new URL('../client/webqq/components/WebQQEmojiPicker.vue', import.meta.url), 'utf8')
+const webqqForwardTargetDialogView = await readFile(new URL('../client/webqq/components/WebQQForwardTargetDialog.vue', import.meta.url), 'utf8')
 const webqqMessageCache = await readFile(new URL('../client/webqq/storage/browser-message-cache.ts', import.meta.url), 'utf8').catch(() => '')
 const webqqContactsStore = await readFile(new URL('../client/webqq/stores/webqq-contacts.ts', import.meta.url), 'utf8')
 const webqqConversationStateStore = await readFile(new URL('../client/webqq/stores/webqq-conversation-state.ts', import.meta.url), 'utf8')
@@ -794,6 +797,23 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).not.toContain('v-if="selectionMode"\n              class="onebot-webqq-webqq__message-select-marker"')
   })
 
+  it('anchors profile cards to every avatar and member trigger', () => {
+    expect(webqqView).toContain('@click="openCurrentChatProfile($event)"')
+    expect(webqqView).toContain('@contextmenu="rememberFloatingPanelAnchor($event)"')
+    expect(webqqView).toContain('if (event.button === 2) rememberFloatingPanelAnchor(event)')
+    expect(webqqMessageListView).toContain("emit('open-profile', message.senderId, event)")
+    expect(webqqMessageListView).toContain('@contextmenu.capture="rememberFloatingPanelAnchor($event)"')
+    expect(webqqMessageListView).toContain('@contextmenu="handleMessageAvatarContextMenu($event)"')
+    expect(webqqMessageListView).toContain('@pointerdown="handleMessageAvatarPointerDown($event)"')
+    expect(webqqMessageListView).toContain('function handleMessageAvatarContextMenu(event: MouseEvent)')
+    expect(webqqMessageListView).toContain('function handleMessageAvatarPointerDown(event: PointerEvent)')
+    expect(webqqMessageListView).toContain('rememberFloatingPanelAnchor(event)')
+    expect(webqqMessageListView).not.toContain('@contextmenu.stop')
+    expect(webqqGroupInfoPanel).toContain("@click=\"emit('open-profile', member.userId, $event)\"")
+    expect(webqqGroupInfoPanel).toContain('@contextmenu.capture="rememberFloatingPanelAnchor($event)"')
+    expect(webqqContactList.match(/@contextmenu\.capture="rememberFloatingPanelAnchor\(\$event\)"/g)).toHaveLength(3)
+  })
+
   it('attaches the WebQQ overlay scrollbar directive to every WebQQ scroll area', () => {
     expect(webqqScrollbarDirective).toContain('export const vWebqqScrollbar')
     expect(webqqScrollbarDirective).toContain('document.body.appendChild')
@@ -829,6 +849,10 @@ describe('webqq observer view', () => {
     expect(webqqGroupInfoPanel).toContain('<div v-else v-webqq-scrollbar class="onebot-webqq-webqq__group-member-list">')
     expect(webqqForwardModal).toContain('import { vWebqqScrollbar }')
     expect(webqqForwardModal).toContain('<div v-webqq-scrollbar class="onebot-webqq-webqq__forward-modal-body">')
+    expect(webqqProfileCardView).toContain('import { vWebqqScrollbar }')
+    expect(webqqProfileCardView).toContain('v-webqq-scrollbar="{ tone: \'accent\', zIndex: 10301 }"')
+    expect(webqqEmojiPickerView).toContain('v-webqq-scrollbar="{ tone: \'accent\', zIndex: 10131 }"')
+    expect(webqqForwardTargetDialogView).toContain('v-webqq-scrollbar="{ tone: \'accent\', zIndex: 10202 }"')
   })
 
   it('keeps WebQQ notification menu state inside a composable', async () => {
