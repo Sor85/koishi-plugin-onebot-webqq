@@ -13,6 +13,7 @@ import {
 } from '../client/webqq/utils/group-menu'
 import {
   buildGroupProfileCardModel,
+  buildProfileCardModelFromProfile,
   buildUserProfileCardModel,
   groupProfileCardFields,
 } from '../client/webqq/utils/profile-card'
@@ -47,7 +48,7 @@ describe('webqq interaction menus', () => {
 })
 
 describe('webqq profile card', () => {
-  it('only surfaces real available fields', () => {
+  it('keeps identity fields in their sections after moving the avatar to the top', () => {
     const card = buildUserProfileCardModel({
       userId: '10001',
       name: '测试用户',
@@ -62,6 +63,8 @@ describe('webqq profile card', () => {
 
     expect(card.personalNote).toBe('签名')
     expect(card.fields.map((field) => field.label)).toEqual([
+      '昵称',
+      'QQ',
       '性别',
       '好友关系',
       '好友备注',
@@ -79,7 +82,36 @@ describe('webqq profile card', () => {
 
     const groupCard = buildGroupProfileCardModel({ groupId: '200', name: '测试群', memberCount: 3, avatar: '' })
     expect(groupCard.identityLabel).toBe('群号')
-    expect(groupCard.fields[0]).toEqual({ group: 'group', label: '群成员', value: '3 人' })
+    expect(groupCard.fields).toEqual([
+      { group: 'group', label: '群名称', value: '测试群' },
+      { group: 'group', label: '群号', value: '200' },
+      { group: 'group', label: '群成员', value: '3 人' },
+    ])
+  })
+
+  it('marks only editable self account fields and preserves empty edit entries', () => {
+    const card = buildProfileCardModelFromProfile({
+      kind: 'bot',
+      id: '10000',
+      name: '机器人',
+      avatar: 'https://example.com/avatar.png',
+      nickname: '机器人',
+      fields: [
+        { group: '基础', label: '昵称', value: '机器人' },
+        { group: '基础', label: 'QQ', value: '10000' },
+        { group: '机器人运行', label: '状态', value: '在线' },
+      ],
+      canEditSelf: true,
+      canEditAvatar: true,
+    })
+
+    expect(card.fields.filter((field) => field.editKey).map((field) => [field.label, field.editKey, field.value])).toEqual([
+      ['昵称', 'nickname', '机器人'],
+      ['性别', 'sex', ''],
+      ['签名', 'personalNote', ''],
+    ])
+    expect(card.fields.find((field) => field.label === 'QQ')?.editKey).toBeUndefined()
+    expect(card.canEditAvatar).toBe(true)
   })
 })
 

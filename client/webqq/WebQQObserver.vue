@@ -992,16 +992,18 @@ async function openUserProfile(userId: string, event?: MouseEvent) {
   }
 }
 
-async function handleSaveSelfProfile(input: { nickname?: string; personalNote?: string; sex?: string; avatar?: string }, complete: () => void) {
+async function handleSaveSelfProfile(input: { nickname?: string; personalNote?: string; sex?: string; avatar?: string }, complete: (success: boolean) => void) {
   try {
-    await runInteraction(async () => {
+    const success = await runInteraction(async () => {
       await updateWebQQSelfProfile(input)
       if (!profileCardModel.value?.participantId) return
       const profile = await requestWebQQProfile({ userId: profileCardModel.value.participantId })
       profileCardModel.value = buildProfileCardModelFromProfile(profile)
     }, '更新资料失败')
-  } finally {
-    complete()
+    complete(success)
+  } catch {
+    // runInteraction 当前会收敛异常；这里兜底保证未来实现变更后资料卡也不会永久停留在保存状态。
+    complete(false)
   }
 }
 

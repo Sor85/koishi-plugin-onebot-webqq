@@ -814,6 +814,26 @@ describe('webqq observer view', () => {
     expect(webqqContactList.match(/@contextmenu\.capture="rememberFloatingPanelAnchor\(\$event\)"/g)).toHaveLength(3)
   })
 
+  it('renders profile editing inside account fields instead of a separate form', () => {
+    expect(webqqProfileCardView).toContain('class="webqq-profile-card-hero"')
+    expect(webqqProfileCardView).toContain('class="webqq-profile-card-avatar-button"')
+    expect(webqqProfileCardView).toContain('aria-label="点击更换头像"')
+    expect(webqqProfileCardView).toContain('type="file"')
+    expect(webqqProfileCardView).toContain('accept="image/*"')
+    expect(webqqProfileCardView).toContain('class="webqq-profile-card-field-action"')
+    expect(webqqProfileCardView).toContain('class="webqq-profile-card-select"')
+    expect(webqqProfileCardView).toContain('class="webqq-profile-card-select-trigger"')
+    expect(webqqProfileCardView).toContain('<IconChevronDown')
+    expect(webqqProfileCardView).toContain('<IconPencil')
+    expect(webqqProfileCardView).toContain('<IconCheck')
+    expect(webqqProfileCardView).toContain('<IconX')
+    expect(webqqProfileCardView).toContain("{ avatar: `base64://${dataUrl.slice(separator + 1)}` }")
+    expect(webqqProfileCardView).not.toContain('<select')
+    expect(webqqProfileCardView).not.toContain('<h2>{{ model.name }}</h2>')
+    expect(webqqProfileCardView).not.toContain('编辑自己的资料')
+    expect(webqqProfileCardView).not.toContain('webqq-profile-card-edit-actions')
+  })
+
   it('attaches the WebQQ overlay scrollbar directive to every WebQQ scroll area', () => {
     expect(webqqScrollbarDirective).toContain('export const vWebqqScrollbar')
     expect(webqqScrollbarDirective).toContain('document.body.appendChild')

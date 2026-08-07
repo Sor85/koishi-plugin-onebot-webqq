@@ -2,10 +2,13 @@ import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQProfile, WebQQProf
 
 export type ProfileCardFieldGroup = 'account' | 'friendship' | 'group-member' | 'bot-runtime' | 'group'
 
+export type ProfileCardEditableField = 'nickname' | 'personalNote' | 'sex'
+
 export interface ProfileCardField {
   group: ProfileCardFieldGroup
   label: string
   value: string
+  editKey?: ProfileCardEditableField
 }
 
 export interface ProfileCardModel {
@@ -40,6 +43,24 @@ function pushField(fields: ProfileCardField[], group: ProfileCardFieldGroup, lab
   fields.push({ group, label, value: String(value) })
 }
 
+function pushMissingField(fields: ProfileCardField[], group: ProfileCardFieldGroup, label: string, value: string | number | boolean | undefined) {
+  if (fields.some((field) => field.group === group && field.label === label)) return
+  pushField(fields, group, label, value)
+}
+
+function getEditableFieldKey(label: string): ProfileCardEditableField | undefined {
+  if (label === '昵称') return 'nickname'
+  if (label === '签名' || label === '个性签名') return 'personalNote'
+  if (label === '性别') return 'sex'
+}
+
+function getSexLabel(value?: string): string {
+  if (value === 'male') return '男'
+  if (value === 'female') return '女'
+  if (value === 'unknown') return '未知'
+  return value || ''
+}
+
 function getGroupRole(member: WebQQGroupMember): string {
   if (member.role === 'owner' || member.role === '群主') return '群主'
   if (member.role === 'admin' || member.role === '管理员') return '管理员'
@@ -61,8 +82,10 @@ export function buildUserProfileCardModel(input: {
   accountFields?: Array<{ label: string, value: string | number | boolean | undefined }>
 }): ProfileCardModel {
   const fields: ProfileCardField[] = []
+  pushField(fields, 'account', '昵称', input.name)
+  pushField(fields, 'account', 'QQ', input.userId)
   for (const field of input.accountFields ?? []) {
-    pushField(fields, 'account', field.label, field.value)
+    pushMissingField(fields, 'account', field.label, field.value)
   }
   if (input.isFriend) pushField(fields, 'friendship', '好友关系', '已是好友')
   pushField(fields, 'friendship', '好友备注', input.remark)
@@ -95,6 +118,8 @@ export function buildGroupProfileCardModel(group: WebQQGroup, memberCount?: numb
     avatarKind: 'group',
     identityLabel: '群号',
     fields: [
+      { group: 'group', label: '群名称', value: group.name },
+      { group: 'group', label: '群号', value: group.groupId },
       { group: 'group', label: '群成员', value: `${memberCount ?? group.memberCount} 人` },
     ],
   }
@@ -108,11 +133,30 @@ function normalizeProfileFieldGroup(group: string): ProfileCardFieldGroup {
 }
 
 export function buildProfileCardModelFromProfile(profile: WebQQProfile): ProfileCardModel {
-  const fields: ProfileCardField[] = profile.fields.map((field: WebQQProfileField) => ({
-    group: normalizeProfileFieldGroup(field.group),
-    label: field.label,
-    value: field.value,
-  }))
+  const canEditSelf = !!profile.canEditSelf
+  const fields: ProfileCardField[] = profile.fields.map((field: WebQQProfileField) => {
+    const group = normalizeProfileFieldGroup(field.group)
+    const editKey = canEditSelf && group === 'account' ? getEditableFieldKey(field.label) : undefined
+    return {
+      group,
+      label: field.label,
+      value: editKey === 'sex' ? getSexLabel(profile.sex || field.value) : field.value,
+      ...(editKey ? { editKey } : {}),
+    }
+  })
+  if (canEditSelf) {
+    const editableFields: Array<{ label: string, value: string, editKey: ProfileCardEditableField }> = [
+      { label: '昵称', value: profile.nickname || profile.name, editKey: 'nickname' },
+      { label: '性别', value: getSexLabel(profile.sex), editKey: 'sex' },
+      { label: '签名', value: profile.personalNote || '', editKey: 'personalNote' },
+    ]
+    for (const editableField of editableFields) {
+      const existing = fields.find((field) => field.group === 'account' && field.editKey === editableField.editKey)
+      if (existing) continue
+      // 可编辑字段即使尚未设置也必须出现在账号资料中，否则用户没有进入编辑状态的入口。
+      fields.push({ group: 'account', ...editableField })
+    }
+  }
   return {
     participantId: profile.id,
     name: profile.name,
@@ -122,7 +166,7 @@ export function buildProfileCardModelFromProfile(profile: WebQQProfile): Profile
     ...(profile.personalNote ? { personalNote: profile.personalNote } : {}),
     ...(profile.nickname ? { nickname: profile.nickname } : {}),
     ...(profile.sex ? { sex: profile.sex } : {}),
-    canEditSelf: !!profile.canEditSelf,
+    canEditSelf,
     canEditAvatar: !!profile.canEditAvatar,
     fields,
   }

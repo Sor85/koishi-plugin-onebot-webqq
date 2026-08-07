@@ -140,6 +140,35 @@ describe('chat capsule styles', () => {
     expect(webqqEmojiPickerView).toContain('webqq-secondary-page onebot-webqq-webqq__portal-page webqq-emoji-picker-page')
   })
 
+  it('centers the profile avatar above field sections and styles inline edit actions', () => {
+    const heroBody = ruleBodyIncluding('.webqq-profile-card-hero', webqqInteractionsStyle)
+    const avatarFrameBody = ruleBodyIncluding('.webqq-profile-card-avatar-frame', webqqInteractionsStyle)
+    const fieldRowBody = ruleBodyIncluding('.webqq-profile-card-fields > div', webqqInteractionsStyle)
+    const fieldActionBody = ruleBodyIncluding('.webqq-profile-card-field-action', webqqInteractionsStyle)
+    const headerBody = ruleBodyIncluding('.webqq-secondary-page-header', webqqInteractionsStyle)
+    const selectTriggerBody = ruleBodyIncluding('.webqq-profile-card-select-trigger', webqqInteractionsStyle)
+
+    expect(heroBody).toContain('flex-direction: column')
+    expect(heroBody).toContain('align-items: center')
+    expect(avatarFrameBody).toContain('width: 96px')
+    expect(avatarFrameBody).toContain('height: 96px')
+    expect(avatarFrameBody).toContain('border-radius: 50%')
+    expect(fieldRowBody).toContain('grid-template-columns: max-content minmax(0, 1fr) auto')
+    expect(fieldActionBody).toContain('width: 28px')
+    expect(fieldActionBody).toContain('height: 28px')
+    // 二级页顶栏对齐聊天顶栏：悬浮 + 半透明 + 高斯模糊。
+    expect(headerBody).toContain('position: absolute')
+    expect(headerBody).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(headerBody).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
+    expect(headerBody).toContain('background: rgba(248, 250, 252, 0.92)')
+    expect(selectTriggerBody).toContain('min-height: 32px')
+    expect(webqqInteractionsStyle).toContain('.webqq-profile-card-select-menu')
+    // 资料卡内容相对 48px 顶栏再下沉，避免头像贴边。
+    expect(webqqInteractionsStyle).toContain('.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-profile-card-page > .webqq-profile-card')
+    expect(webqqInteractionsStyle).toContain('padding-top: 72px')
+    expect(webqqInteractionsStyle).not.toContain('.webqq-profile-card-edit-actions')
+  })
+
   it('fully styles the selection cancel button without inherited theme tokens', () => {
     const selector = ".onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline']"
     const buttonBody = ruleBodyIncluding(selector, webqqInteractionsStyle)

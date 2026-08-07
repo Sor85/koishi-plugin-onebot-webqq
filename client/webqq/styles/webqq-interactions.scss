@@ -211,11 +211,11 @@
   left: 12px;
   // 二级页 Teleport 到 body 后会与 sandbox 的同名全局类竞争；使用插件专属类提高优先级，避免后加载的低层级规则覆盖。
   z-index: 10130;
-  display: grid;
+  display: flex;
   width: 380px;
   max-width: calc(100vw - 24px);
   max-height: min(520px, calc(100vh - 24px));
-  grid-template-rows: auto minmax(0, 1fr);
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--webqq-border) 72%, #fff 28%);
   border-radius: 12px;
@@ -226,12 +226,20 @@
 }
 
 .webqq-secondary-page-header {
+  // 与聊天页顶栏一致：悬浮在内容上方，半透明底 + 高斯模糊，滚动时能透出下层内容。
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
   display: flex;
   min-height: 48px;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--webqq-border);
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.58);
+  color: var(--webqq-text);
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   touch-action: none;
   user-select: none;
 }
@@ -241,33 +249,77 @@
   line-height: 20px;
 }
 
+.webqq-secondary-page.onebot-webqq-webqq__portal-page > :not(.webqq-secondary-page-header) {
+  // 顶栏改为绝对定位后，内容区需要预留高度，否则首屏会被盖住。
+  flex: 1;
+  min-height: 0;
+  padding-top: 48px;
+}
+
 .webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-profile-card-page {
   // 资料卡可拖入 WebQQ 窗口范围，必须作为独立 body 浮层始终覆盖聊天壳，不能只依赖通用二级页层级。
   z-index: 10300;
-  width: max-content;
-  min-width: 260px;
-  max-width: min(320px, calc(100vw - 24px));
+  width: 320px;
+  min-width: 0;
+  max-width: calc(100vw - 24px);
 }
 
 .webqq-profile-card {
   display: grid;
   min-height: 0;
-  gap: 16px;
+  gap: 20px;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px 16px 16px;
+}
+
+.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-profile-card-page > .webqq-profile-card {
+  // 通用二级页只预留 48px 顶栏高度；资料卡头像需要再下沉一截，避免贴顶栏底边。
+  // 选择器优先级必须高于 `> :not(.webqq-secondary-page-header) { padding-top: 48px }`。
+  padding-top: 72px;
 }
 
 .webqq-profile-card-hero {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+}
+
+.webqq-profile-card-avatar-button {
+  display: inline-grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0;
+  color: var(--webqq-muted);
+  background: transparent;
+  border: 0;
+}
+
+.webqq-profile-card-avatar-button:disabled {
+  opacity: 0.62;
+}
+
+.webqq-profile-card-avatar-frame {
+  position: relative;
+  display: block;
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  overflow: hidden;
+  border: 5px solid color-mix(in srgb, var(--webqq-accent) 18%, transparent);
+  border-radius: 50%;
+  background: var(--webqq-surface-muted);
+  box-shadow: 0 8px 22px rgb(15 23 42 / 12%);
 }
 
 .webqq-profile-card-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: inherit;
   object-fit: cover;
   background: var(--webqq-surface-muted);
 }
@@ -276,28 +328,33 @@
   display: grid;
   place-items: center;
   color: var(--webqq-muted);
-  font-size: 21px;
+  font-size: 28px;
   font-weight: 600;
 }
 
-.webqq-profile-card-hero h2 {
-  margin: 0;
-  color: var(--webqq-text);
-  font-size: 18px;
-  line-height: 26px;
+.webqq-profile-card-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgb(15 23 42 / 36%);
+  opacity: 0;
+  transition: opacity 0.16s ease;
 }
 
-.webqq-profile-card-hero p {
-  margin: 4px 0 0;
-  color: var(--webqq-muted);
+.webqq-profile-card-avatar-button:hover .webqq-profile-card-avatar-overlay,
+.webqq-profile-card-avatar-button:focus-visible .webqq-profile-card-avatar-overlay {
+  opacity: 1;
+}
+
+.webqq-profile-card-avatar-hint {
   font-size: 13px;
   line-height: 20px;
 }
 
-.webqq-profile-card-note {
-  color: var(--webqq-text) !important;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.webqq-profile-card-avatar-input {
+  display: none;
 }
 
 .webqq-profile-card-section {
@@ -316,16 +373,17 @@
 
 .webqq-profile-card-fields {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
 }
 
 .webqq-profile-card-fields > div {
   display: grid;
-  min-height: 28px;
-  grid-template-columns: max-content minmax(0, 1fr);
+  min-height: 34px;
+  grid-template-columns: max-content minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  padding: 3px 0;
   font-size: 13px;
   line-height: 20px;
 }
@@ -335,10 +393,136 @@
 }
 
 .webqq-profile-card-fields dd {
+  min-width: 0;
   margin: 0;
   color: var(--webqq-text);
   overflow-wrap: anywhere;
   text-align: left;
+}
+
+.webqq-profile-card-fields dd.is-empty {
+  color: var(--webqq-muted);
+}
+
+.webqq-profile-card-field-editor {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.webqq-profile-card-field-editor .webqq-ui-input {
+  min-height: 32px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.webqq-profile-card-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.webqq-profile-card-select-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 9px;
+  border: 1px solid var(--webqq-border);
+  border-radius: 8px;
+  color: var(--webqq-text);
+  background: var(--webqq-surface-muted);
+  font-size: 13px;
+  line-height: 20px;
+  outline: none;
+}
+
+.webqq-profile-card-select-trigger:focus-visible,
+.webqq-profile-card-select.is-open .webqq-profile-card-select-trigger {
+  border-color: color-mix(in srgb, var(--webqq-accent) 58%, var(--webqq-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--webqq-accent) 14%, transparent);
+}
+
+.webqq-profile-card-select-trigger:disabled {
+  opacity: 0.48;
+}
+
+.webqq-profile-card-select-menu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--webqq-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--webqq-panel) 96%, #fff 4%);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 14%);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+}
+
+.webqq-profile-card-select-option {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--webqq-text);
+  background: transparent;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.webqq-profile-card-select-option:hover,
+.webqq-profile-card-select-option:focus-visible {
+  background: color-mix(in srgb, var(--webqq-accent) 12%, transparent);
+}
+
+.webqq-profile-card-select-option.is-active {
+  color: var(--webqq-accent);
+  background: color-mix(in srgb, var(--webqq-accent) 14%, transparent);
+}
+
+.webqq-profile-card-field-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.webqq-profile-card-field-action {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--webqq-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+
+.webqq-profile-card-field-action:hover,
+.webqq-profile-card-field-action:focus-visible {
+  color: var(--webqq-accent);
+  background: color-mix(in srgb, var(--webqq-accent) 12%, transparent);
+}
+
+.webqq-profile-card-field-action.is-confirm {
+  color: var(--webqq-accent);
+}
+
+.webqq-profile-card-field-action:disabled {
+  opacity: 0.48;
 }
 
 .webqq-emoji-picker {
@@ -622,24 +806,6 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 45%, transparent);
 }
 
-
-.webqq-profile-card-edit {
-  display: grid;
-  gap: 10px;
-}
-
-.webqq-profile-card-edit > label {
-  display: grid;
-  gap: 6px;
-  color: var(--webqq-muted);
-  font-size: 12px;
-}
-
-.webqq-profile-card-edit-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 
 .webqq-forward-target-dialog {
   display: grid;
