@@ -91,7 +91,7 @@ export const Config: Schema<Config> = Schema.intersect([
 
   Schema.object({
     onebotMockBotCount: Schema.natural().max(20).default(0).description('额外模拟的 OneBot 机器人数量，勿动'),
-    webQQMockEnvironment: Schema.boolean().default(false).description('启用 WebQQ 开发者模拟环境，使用内存预设场景代替真实 OneBot'),
+    webQQMockEnvironment: Schema.boolean().default(false).description('启用 WebQQ 开发者模拟环境'),
     debug: Schema.boolean().default(false).description('显示调试信息'),
   }).description('开发者选项'),
 ])

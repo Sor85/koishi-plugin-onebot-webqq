@@ -14,10 +14,10 @@ const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts',
 describe('webqq mock environment', () => {
   it('exposes webQQMockEnvironment in developer options with default false', () => {
     expect(configSource).toContain('webQQMockEnvironment?: boolean')
-    expect(configSource).toContain("webQQMockEnvironment: Schema.boolean().default(false).description('启用 WebQQ 开发者模拟环境，使用内存预设场景代替真实 OneBot')")
+    expect(configSource).toContain("webQQMockEnvironment: Schema.boolean().default(false).description('启用 WebQQ 开发者模拟环境')")
     expect(configSource).toContain(".description('开发者选项')")
-    expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境，使用内存预设场景代替真实 OneBot。')")
-    expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境，使用内存预设场景代替真实 OneBot.')")
+    expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境。')")
+    expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境.')")
   })
 
   it('createPluginRuntime selects mock service when webQQMockEnvironment is enabled', () => {

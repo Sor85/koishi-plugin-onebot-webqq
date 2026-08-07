@@ -6,7 +6,7 @@ import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
 import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
-import './style.scss'
+import './style.scss?onebot-webqq=profile-card-v2'
 
 interface ClientData {
   capsule?: CapsuleData
@@ -63,6 +63,7 @@ function applyClientData(value?: ClientData) {
 }
 
 export default function (ctx: Context, data?: Ref<ClientData>) {
+  // 首次加载与 HMR 重进 effect 时都从 entry data 同步配置，避免 dispose 竞态后发送开关停留在默认 false。
   applyClientData(data?.value)
 
   if (debug.value) {
@@ -70,13 +71,14 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
   }
 
   ctx.effect(() => {
+    applyClientData(data?.value)
     const stopDataWatch = data
       ? watch(data, (value) => {
         applyClientData(value)
         if (debug.value) {
           console.debug('[onebot-webqq] entry data update', value)
         }
-      })
+      }, { deep: true })
       : undefined
     const disposeUpdateReceive = receive('onebot-webqq/update', (value) => {
       capsule.value = value as CapsuleData | undefined

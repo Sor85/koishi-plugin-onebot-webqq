@@ -264,7 +264,7 @@
   max-width: calc(100vw - 24px);
 }
 
-.webqq-profile-card {
+.onebot-webqq-webqq__portal-page .webqq-profile-card {
   display: grid;
   min-height: 0;
   gap: 20px;
@@ -278,7 +278,7 @@
   padding-top: 72px;
 }
 
-.webqq-profile-card-hero {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-hero {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -286,7 +286,7 @@
   justify-content: center;
 }
 
-.webqq-profile-card-avatar-button {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-button {
   display: inline-grid;
   justify-items: center;
   gap: 8px;
@@ -296,11 +296,11 @@
   border: 0;
 }
 
-.webqq-profile-card-avatar-button:disabled {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-button:disabled {
   opacity: 0.62;
 }
 
-.webqq-profile-card-avatar-frame {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-frame {
   position: relative;
   display: block;
   width: 96px;
@@ -313,7 +313,7 @@
   box-shadow: 0 8px 22px rgb(15 23 42 / 12%);
 }
 
-.webqq-profile-card-avatar {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar {
   display: block;
   width: 100%;
   height: 100%;
@@ -324,7 +324,7 @@
   background: var(--webqq-surface-muted);
 }
 
-.webqq-profile-card-avatar.is-fallback {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar.is-fallback {
   display: grid;
   place-items: center;
   color: var(--webqq-muted);
@@ -332,7 +332,7 @@
   font-weight: 600;
 }
 
-.webqq-profile-card-avatar-overlay {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-overlay {
   position: absolute;
   inset: 0;
   display: grid;
@@ -343,26 +343,26 @@
   transition: opacity 0.16s ease;
 }
 
-.webqq-profile-card-avatar-button:hover .webqq-profile-card-avatar-overlay,
-.webqq-profile-card-avatar-button:focus-visible .webqq-profile-card-avatar-overlay {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-button:hover .webqq-profile-card-avatar-overlay,
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-button:focus-visible .webqq-profile-card-avatar-overlay {
   opacity: 1;
 }
 
-.webqq-profile-card-avatar-hint {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-hint {
   font-size: 13px;
   line-height: 20px;
 }
 
-.webqq-profile-card-avatar-input {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-input {
   display: none;
 }
 
-.webqq-profile-card-section {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-section {
   display: grid;
   gap: 8px;
 }
 
-.webqq-profile-card-section h3 {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-section h3 {
   margin: 0;
   color: var(--webqq-muted);
   font-size: 12px;
@@ -371,13 +371,13 @@
   letter-spacing: 0.02em;
 }
 
-.webqq-profile-card-fields {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-fields {
   display: grid;
   gap: 4px;
   margin: 0;
 }
 
-.webqq-profile-card-fields > div {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-fields > div {
   display: grid;
   min-height: 34px;
   grid-template-columns: max-content minmax(0, 1fr) auto;
@@ -388,11 +388,11 @@
   line-height: 20px;
 }
 
-.webqq-profile-card-fields dt {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-fields dt {
   color: var(--webqq-muted);
 }
 
-.webqq-profile-card-fields dd {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-fields dd {
   min-width: 0;
   margin: 0;
   color: var(--webqq-text);
@@ -400,30 +400,30 @@
   text-align: left;
 }
 
-.webqq-profile-card-fields dd.is-empty {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-fields dd.is-empty {
   color: var(--webqq-muted);
 }
 
-.webqq-profile-card-field-editor {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-editor {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.webqq-profile-card-field-editor .webqq-ui-input {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-editor .webqq-ui-input {
   min-height: 32px;
   padding: 0 9px;
   border-radius: 8px;
   font-size: 13px;
 }
 
-.webqq-profile-card-select {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select {
   position: relative;
   width: 100%;
   min-width: 0;
 }
 
-.webqq-profile-card-select-trigger {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-trigger {
   display: flex;
   width: 100%;
   min-height: 32px;
@@ -440,17 +440,17 @@
   outline: none;
 }
 
-.webqq-profile-card-select-trigger:focus-visible,
-.webqq-profile-card-select.is-open .webqq-profile-card-select-trigger {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-trigger:focus-visible,
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select.is-open .webqq-profile-card-select-trigger {
   border-color: color-mix(in srgb, var(--webqq-accent) 58%, var(--webqq-border));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--webqq-accent) 14%, transparent);
 }
 
-.webqq-profile-card-select-trigger:disabled {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-trigger:disabled {
   opacity: 0.48;
 }
 
-.webqq-profile-card-select-menu {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-menu {
   position: absolute;
   z-index: 5;
   top: calc(100% + 4px);
@@ -467,7 +467,7 @@
   -webkit-backdrop-filter: saturate(180%) blur(16px);
 }
 
-.webqq-profile-card-select-option {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-option {
   display: flex;
   min-height: 30px;
   align-items: center;
@@ -481,23 +481,23 @@
   text-align: left;
 }
 
-.webqq-profile-card-select-option:hover,
-.webqq-profile-card-select-option:focus-visible {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-option:hover,
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-option:focus-visible {
   background: color-mix(in srgb, var(--webqq-accent) 12%, transparent);
 }
 
-.webqq-profile-card-select-option.is-active {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-select-option.is-active {
   color: var(--webqq-accent);
   background: color-mix(in srgb, var(--webqq-accent) 14%, transparent);
 }
 
-.webqq-profile-card-field-actions {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-actions {
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
-.webqq-profile-card-field-action {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action {
   display: inline-flex;
   width: 28px;
   height: 28px;
@@ -511,17 +511,17 @@
   border-radius: 8px;
 }
 
-.webqq-profile-card-field-action:hover,
-.webqq-profile-card-field-action:focus-visible {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action:hover,
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action:focus-visible {
   color: var(--webqq-accent);
   background: color-mix(in srgb, var(--webqq-accent) 12%, transparent);
 }
 
-.webqq-profile-card-field-action.is-confirm {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action.is-confirm {
   color: var(--webqq-accent);
 }
 
-.webqq-profile-card-field-action:disabled {
+.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action:disabled {
   opacity: 0.48;
 }
 

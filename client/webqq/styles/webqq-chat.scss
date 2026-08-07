@@ -92,7 +92,7 @@
   gap: 12px;
 }
 
-.onebot-webqq-webqq__chat-avatar-trigger {
+.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar-trigger {
   // 顶栏通用 button 规则是 32px（给右侧菜单按钮用的）；头像必须显式盖过，否则 38px 图被塞进 32px 宽变成竖椭圆。
   display: inline-flex;
   width: 38px;
@@ -110,7 +110,7 @@
   line-height: 0;
 }
 
-.onebot-webqq-webqq__chat-avatar {
+.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar {
   display: block;
   width: 38px;
   height: 38px;
@@ -122,7 +122,7 @@
   object-fit: cover;
 }
 
-.onebot-webqq-webqq__chat-avatar.is-fallback {
+.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar.is-fallback {
   display: inline-flex;
   align-items: center;
   justify-content: center;

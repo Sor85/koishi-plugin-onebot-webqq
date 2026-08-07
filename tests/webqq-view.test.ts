@@ -153,7 +153,7 @@ describe('webqq observer view', () => {
   it('uses the configured WebQQ frosted glass option without rendering an in-panel theme selector', () => {
     expect(webqqView).toContain("from './settings'")
     expect(webqqContactView).toContain('sortWebQQGroupMembers')
-    expect(webqqSettings).toContain('export const enableWebQQFrostedGlass = ref(true)')
+    expect(webqqSettings).toContain('export const enableWebQQFrostedGlass = settingsState.enableWebQQFrostedGlass')
     expect(clientIndex).toContain('enableWebQQFrostedGlass')
     expect(clientIndex).toMatch(/enableWebQQFrostedGlass\?:\s*boolean/)
     expect(clientIndex).toContain('enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true')
@@ -183,7 +183,7 @@ describe('webqq observer view', () => {
 
   it('uses the configured WebQQ color mode without rendering an in-panel switcher', () => {
     expect(webqqSettings).toContain("export type WebQQColorMode = 'auto' | 'light' | 'dark'")
-    expect(webqqSettings).toContain("export const webQQColorMode = ref<WebQQColorMode>('auto')")
+    expect(webqqSettings).toContain('export const webQQColorMode = settingsState.webQQColorMode')
     expect(clientIndex).toContain('webQQColorMode')
     expect(clientIndex).toContain('type WebQQColorMode')
     expect(clientIndex).toMatch(/webQQColorMode\?:\s*WebQQColorMode/)
@@ -196,12 +196,12 @@ describe('webqq observer view', () => {
   })
 
   it('keeps compact capsule shadow enabled by default from console entry data', () => {
-    expect(webqqSettings).toContain('export const enableCapsuleFrostedGlass = ref(true)')
+    expect(webqqSettings).toContain('export const enableCapsuleFrostedGlass = settingsState.enableCapsuleFrostedGlass')
     expect(clientIndex).toContain('enableCapsuleFrostedGlass')
     expect(clientIndex).toMatch(/enableCapsuleFrostedGlass\?:\s*boolean/)
     expect(clientIndex).toContain('enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true')
     expect(capsuleView).toContain("enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain'")
-    expect(webqqSettings).toContain('export const useCompactCapsuleShadow = ref(true)')
+    expect(webqqSettings).toContain('export const useCompactCapsuleShadow = settingsState.useCompactCapsuleShadow')
     expect(clientIndex).toContain('useCompactCapsuleShadow')
     expect(clientIndex).toMatch(/useCompactCapsuleShadow\?:\s*boolean/)
     expect(clientIndex).toContain('useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true')
@@ -218,7 +218,7 @@ describe('webqq observer view', () => {
   })
 
   it('allows optional browser-local WebQQ shell resizing from invisible top and left edges', () => {
-    expect(webqqSettings).toContain('export const allowWebQQResize = ref(false)')
+    expect(webqqSettings).toContain('export const allowWebQQResize = settingsState.allowWebQQResize')
     expect(clientIndex).toContain('allowWebQQResize')
     expect(clientIndex).toMatch(/allowWebQQResize\?:\s*boolean/)
     expect(clientIndex).toContain('allowWebQQResize.value = value?.allowWebQQResize ?? false')
@@ -279,7 +279,9 @@ describe('webqq observer view', () => {
     expect(webqqSidebar).not.toContain('is-user')
     expect(webqqSidebar).not.toContain('is-group')
     expect(webqqMessageListView).toMatch(/v-for="\(message, index\) in (messages|visibleMessages)"/)
-    expect(webqqSettings).toContain('export const enableWebQQSend = ref(false)')
+    expect(webqqSettings).toContain('export const enableWebQQSend = settingsState.enableWebQQSend')
+    expect(webqqSettings).toContain("const SETTINGS_STATE_KEY = '__onebot_webqq_client_settings__'")
+    expect(webqqSettings).toContain('globalThis')
     expect(webqqView).toContain('v-if="enableWebQQSend && currentChat && !selectionMode"')
     expect(webqqView).toContain('@keydown.enter.exact.prevent="sendCurrentWebQQMessage"')
     expect(webqqView).toContain('const pendingMentionUserIds = ref<string[]>([])')
@@ -318,7 +320,12 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('stopWebQQResize()')
     expect(webqqView).toContain("window.removeEventListener('resize', clampCurrentWebQQShellSize)")
     expect(entryState).toContain('export function resetWebQQClientState()')
+    // dispose 只清会话态，避免 HMR 竞态把 enableWebQQSend 等配置镜像打回默认 false。
+    expect(entryState).not.toContain('enableWebQQSend.value = false')
     expect(clientIndex).toContain('resetWebQQClientState()')
+    expect(clientIndex).toContain('applyClientData(data?.value)')
+    expect(clientIndex).toContain('watch(data, (value) => {')
+    expect(clientIndex).toContain('{ deep: true }')
     expect(clientIndex).toContain("receive('onebot-webqq/update', () => {})")
   })
 

@@ -141,12 +141,12 @@ describe('chat capsule styles', () => {
   })
 
   it('centers the profile avatar above field sections and styles inline edit actions', () => {
-    const heroBody = ruleBodyIncluding('.webqq-profile-card-hero', webqqInteractionsStyle)
-    const avatarFrameBody = ruleBodyIncluding('.webqq-profile-card-avatar-frame', webqqInteractionsStyle)
-    const fieldRowBody = ruleBodyIncluding('.webqq-profile-card-fields > div', webqqInteractionsStyle)
-    const fieldActionBody = ruleBodyIncluding('.webqq-profile-card-field-action', webqqInteractionsStyle)
+    const heroBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-hero', webqqInteractionsStyle)
+    const avatarFrameBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-frame', webqqInteractionsStyle)
+    const fieldRowBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-fields > div', webqqInteractionsStyle)
+    const fieldActionBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action', webqqInteractionsStyle)
     const headerBody = ruleBodyIncluding('.webqq-secondary-page-header', webqqInteractionsStyle)
-    const selectTriggerBody = ruleBodyIncluding('.webqq-profile-card-select-trigger', webqqInteractionsStyle)
+    const selectTriggerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-select-trigger', webqqInteractionsStyle)
 
     expect(heroBody).toContain('flex-direction: column')
     expect(heroBody).toContain('align-items: center')
@@ -879,15 +879,15 @@ describe('chat capsule styles', () => {
     // 顶栏通用 button { width: 32px } 会压扁头像触发器；触发器必须显式锁 38px 正方形。
     expect(ruleBody('.onebot-webqq-webqq__chat-header')).toContain('button {')
     expect(ruleBody('.onebot-webqq-webqq__chat-header')).toContain('width: 32px')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('width: 38px')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('height: 38px')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('flex: 0 0 38px')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar-trigger')).toContain('overflow: hidden')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('display: block')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('width: 38px')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('height: 38px')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('max-width: none')
-    expect(ruleBody('.onebot-webqq-webqq__chat-avatar')).toContain('object-fit: cover')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar-trigger')).toContain('width: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar-trigger')).toContain('height: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar-trigger')).toContain('flex: 0 0 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar-trigger')).toContain('overflow: hidden')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar')).toContain('display: block')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar')).toContain('width: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar')).toContain('height: 38px')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar')).toContain('max-width: none')
+    expect(ruleBody('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-avatar')).toContain('object-fit: cover')
   })
 
   it('centers the WebQQ notice menu under the bell button', () => {

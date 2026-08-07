@@ -36,27 +36,12 @@ export {
 export type WebQQCapsuleData = CapsuleData
 
 export function resetWebQQClientState() {
+  // 只清会话态，不清配置镜像。
+  // HMR/插件重载时 dispose 可能在新实例 applyClientData 之后执行；
+  // 若把 enableWebQQSend 等配置重置为默认 false，发送栏会“配置已开却不显示”。
   capsule.value = undefined
   availableBots.value = []
-  debug.value = false
-  allowWebQQResize.value = false
-  enableCapsuleFrostedGlass.value = true
-  enableWebQQFrostedGlass.value = true
-  enableWebQQSend.value = false
-  hideWebQQGroupLevel.value = true
-  showWebQQAffinity.value = false
-  showWebQQCapsuleUnread.value = true
-  showWebQQRelationship.value = false
-  showWebQQThinkingTokens.value = true
-  showWebQQThinkingTiming.value = true
-  useCompactCapsuleShadow.value = true
   webQQOpen.value = false
   webQQTotalUnread.value = 0
-  webQQAccentColor.value = '#2563eb'
-  webQQChatStyle.value = 'tim'
-  webQQColorMode.value = 'auto'
-  webQQMessageCacheLimit.value = 100
-  webQQStorageBackend.value = 'koishi'
-  webQQTimBubbleTail.value = true
   selectedBotSelfId.value = ''
 }
