@@ -825,6 +825,18 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).not.toContain('v-if="selectionMode"\n              class="onebot-webqq-webqq__message-select-marker"')
   })
 
+  it('limits the message context menu trigger to the visible bubble', () => {
+    expect(webqqMessageListView).not.toContain(
+      '<ContextMenuTrigger as-child :disabled="!!message.recalled || !!selectionMode">\n          <div\n            :ref="(element) => setMessageElementRef(message, element)"',
+    )
+    expect(webqqMessageListView).toContain(
+      '<ContextMenuTrigger as-child :disabled="!!message.recalled || !!selectionMode">\n                <div class="onebot-webqq-webqq__message-media" @contextmenu="rememberFloatingPanelAnchor($event)"',
+    )
+    expect(webqqMessageListView).toContain(
+      '<ContextMenuTrigger v-else as-child :disabled="!!message.recalled || !!selectionMode">\n              <div\n                :ref="(element) => setBubbleElementRef(message, element)"',
+    )
+  })
+
   it('uses a concise friend deletion confirmation description', () => {
     expect(webqqView).toContain('description: `确定删除好友「${friend?.name || userId}」？`,')
     expect(webqqView).not.toContain('此操作将调用真实 OneBot 删除好友接口。')

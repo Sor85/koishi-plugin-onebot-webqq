@@ -17,7 +17,6 @@
         {{ message.summary }}
       </div>
       <ContextMenu v-else>
-        <ContextMenuTrigger as-child :disabled="!!message.recalled || !!selectionMode">
           <div
             :ref="(element) => setMessageElementRef(message, element)"
             :class="[
@@ -36,7 +35,6 @@
             ]"
             :aria-selected="selectionMode ? isMessageSelected(message.id) : undefined"
             @click="handleMessageClick(message, $event)"
-            @contextmenu="rememberFloatingPanelAnchor($event)"
           >
             <span
               v-if="selectionMode && isMessageSelectable(message)"
@@ -130,11 +128,13 @@
           </div>
           <div class="onebot-webqq-webqq__message-body">
             <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media-stack" @click.capture="handleMessageBubbleClick(message, $event)">
-              <div class="onebot-webqq-webqq__message-media">
-                <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
-                  <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
-                </button>
-              </div>
+              <ContextMenuTrigger as-child :disabled="!!message.recalled || !!selectionMode">
+                <div class="onebot-webqq-webqq__message-media" @contextmenu="rememberFloatingPanelAnchor($event)">
+                  <button class="onebot-webqq-webqq__message-image" type="button" aria-label="查看大图" @click="openImage(getImageOnlyUrl(message))">
+                    <img :src="withProxy(getImageOnlyUrl(message))" alt="图片" @load="emit('image-load')">
+                  </button>
+                </div>
+              </ContextMenuTrigger>
               <WebQQMessageReactions
                 v-if="message.reactions?.length && chatStyle === 'tim'"
                 :reactions="message.reactions ?? []"
@@ -144,12 +144,13 @@
                 @toggle="toggleReaction(message, $event)"
               />
             </div>
-            <div
-              v-else
-              :ref="(element) => setBubbleElementRef(message, element)"
-              class="onebot-webqq-webqq__bubble"
-              @click.capture="handleMessageBubbleClick(message, $event)"
-            >
+            <ContextMenuTrigger v-else as-child :disabled="!!message.recalled || !!selectionMode">
+              <div
+                :ref="(element) => setBubbleElementRef(message, element)"
+                class="onebot-webqq-webqq__bubble"
+                @click.capture="handleMessageBubbleClick(message, $event)"
+                @contextmenu="rememberFloatingPanelAnchor($event)"
+              >
               <span v-if="isBotThinkingMessage(message)" class="onebot-webqq-webqq__thinking-dots" aria-label="机器人正在思考">
                 <span v-for="dot in 3" :key="dot" class="onebot-webqq-webqq__thinking-dot"></span>
               </span>
@@ -282,7 +283,8 @@
                 :readonly="isReactionReadonly(message)"
                 @toggle="toggleReaction(message, $event)"
               />
-            </div>
+              </div>
+            </ContextMenuTrigger>
             <WebQQMessageReactions
               v-if="message.reactions?.length && chatStyle !== 'tim'"
               :reactions="message.reactions ?? []"
@@ -297,7 +299,6 @@
         </div>
             </div>
           </div>
-        </ContextMenuTrigger>
         <ContextMenuContent style="z-index: 10140">
           <ContextMenuItem v-if="!message.recalled" @select="emit('reply', message.id)">
             <IconMessageReply :size="16" aria-hidden="true" /> 回复
