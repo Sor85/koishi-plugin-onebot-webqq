@@ -6,6 +6,19 @@ function isTargetMessage(message: WebQQMessage, messageId: string) {
   return message.id === messageId || message.sequence === messageId
 }
 
+function getWebQQReactionUserAvatar(userId: string) {
+  return userId ? `https://q1.qlogo.cn/g?b=qq&nk=${encodeURIComponent(userId)}&s=640` : ''
+}
+
+function getReactionUsers(reaction: NonNullable<WebQQMessage['reactions']>[number]) {
+  if (reaction.users?.length) return reaction.users.slice()
+  if (!reaction.userId) return []
+  return [{
+    userId: reaction.userId,
+    userAvatar: reaction.userAvatar || getWebQQReactionUserAvatar(reaction.userId),
+  }]
+}
+
 export function applyLocalWebQQReaction(
   messages: WebQQMessage[],
   messageId: string,
@@ -21,19 +34,24 @@ export function applyLocalWebQQReaction(
     })) ?? []
     const index = reactions.findIndex((reaction) => reaction.emojiId === emojiId)
     const current = index >= 0 ? reactions[index] : undefined
-    const users = current?.users?.filter((user) => user.userId !== operatorId) ?? []
+    const currentUsers = current ? getReactionUsers(current) : []
+    const users = currentUsers.filter((user) => user.userId !== operatorId)
 
     if (enabled) {
-      if (current?.users?.some((user) => user.userId === operatorId) || current?.userId === operatorId) return message
+      if (currentUsers.some((user) => user.userId === operatorId) || current?.userId === operatorId) return message
       const face = getWebQQEmojiFace(emojiId)
+      const operatorAvatar = getWebQQReactionUserAvatar(operatorId)
+      const nextUsers = operatorId
+        ? [...users, { userId: operatorId, userAvatar: operatorAvatar }]
+        : users
       const next = {
         emojiId,
         label: current?.label || face?.label || '[表情]',
         ...(current?.emojiUrl || face?.url ? { emojiUrl: current?.emojiUrl || face?.url } : {}),
         count: (current?.count ?? 0) + 1,
         userId: operatorId,
-        userAvatar: '',
-        users,
+        userAvatar: operatorAvatar,
+        users: nextUsers,
       }
       if (index >= 0) reactions[index] = next
       else reactions.push(next)
