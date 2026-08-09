@@ -530,6 +530,11 @@
   padding: 12px;
 }
 
+.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-emoji-picker-page > .webqq-emoji-picker {
+  // 通用二级页只预留顶栏高度；额外留出 16px，避免搜索框紧贴悬浮顶栏底边。
+  padding-top: 64px;
+}
+
 .webqq-emoji-picker-search {
   width: 100%;
 }

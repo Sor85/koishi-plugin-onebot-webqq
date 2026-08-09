@@ -172,6 +172,15 @@ describe('chat capsule styles', () => {
     expect(webqqInteractionsStyle).not.toContain('.webqq-profile-card-edit-actions')
   })
 
+  it('keeps the emoji search field separated from the floating header', () => {
+    const pickerBody = ruleBodyIncluding(
+      '.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-emoji-picker-page > .webqq-emoji-picker',
+      webqqInteractionsStyle,
+    )
+
+    expect(pickerBody).toContain('padding-top: 64px')
+  })
+
   it('fully styles the selection cancel button without inherited theme tokens', () => {
     const selector = ".onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline']"
     const buttonBody = ruleBodyIncluding(selector, webqqInteractionsStyle)
