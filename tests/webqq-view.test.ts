@@ -815,6 +815,11 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).not.toContain('v-if="selectionMode"\n              class="onebot-webqq-webqq__message-select-marker"')
   })
 
+  it('uses a concise friend deletion confirmation description', () => {
+    expect(webqqView).toContain('description: `确定删除好友「${friend?.name || userId}」？`,')
+    expect(webqqView).not.toContain('此操作将调用真实 OneBot 删除好友接口。')
+  })
+
   it('anchors profile cards to every avatar and member trigger', () => {
     expect(webqqView).toContain('@click="openCurrentChatProfile($event)"')
     expect(webqqView).toContain('@contextmenu="rememberFloatingPanelAnchor($event)"')

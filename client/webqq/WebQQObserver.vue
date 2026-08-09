@@ -1405,7 +1405,7 @@ function confirmDeleteFriend(userId: string) {
   const friend = contacts.value.friends.find((item) => item.userId === userId)
   openConfirmDialog({
     title: '删除好友',
-    description: `确定删除好友「${friend?.name || userId}」？此操作将调用真实 OneBot 删除好友接口。`,
+    description: `确定删除好友「${friend?.name || userId}」？`,
     confirmText: '删除好友',
     onConfirm: async () => {
       await performWebQQFriendAction({ action: 'delete', targetId: userId })
