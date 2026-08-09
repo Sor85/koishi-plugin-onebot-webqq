@@ -62,6 +62,11 @@ describe('webqq mock environment', () => {
       limit: 20,
     })
     expect(groupMessages[0]?.reactions?.[0]?.users?.length).toBeGreaterThan(0)
+    const imageMessage = groupMessages.find((message) => message.id === 'group-msg-3')
+    expect(imageMessage?.elements[0]).toMatchObject({
+      type: 'image',
+      url: expect.stringMatching(/^data:image\/svg\+xml/),
+    })
     expect(groupMessages.find((message) => message.senderId === MOCK_SELF_ID)).not.toHaveProperty('senderAffinity')
     expect(groupMessages.find((message) => message.senderId === MOCK_SELF_ID)).not.toHaveProperty('senderRelationship')
     expect(groupMessages.filter((message) => message.senderId !== MOCK_SELF_ID)).toEqual(expect.arrayContaining([
@@ -92,9 +97,9 @@ describe('webqq mock environment', () => {
     const message = await service.resolveMessage('friend-msg-1')
     expect(message.id).toBe('friend-msg-1')
     await expect(service.resolveImage('friend-image.png')).resolves.toMatchObject({
-      url: 'https://example.com/friend-image.png',
+      url: expect.stringMatching(/^data:image\/svg\+xml/),
       debug: {
-        url: 'https://example.com/friend-image.png',
+        url: expect.stringMatching(/^data:image\/svg\+xml/),
         file: 'friend-image.png',
       },
     })

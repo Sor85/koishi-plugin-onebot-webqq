@@ -26,6 +26,15 @@ export const MOCK_GROUP_ID = '30001'
 export const MOCK_GROUP_MEMBER_ID = '20003'
 
 const now = 1_700_000_000_000
+const mockImageDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420">
+    <rect width="720" height="420" rx="32" fill="#dbeafe"/>
+    <rect x="32" y="32" width="656" height="356" rx="24" fill="#eff6ff" stroke="#60a5fa" stroke-width="4"/>
+    <circle cx="360" cy="172" r="72" fill="#2563eb"/>
+    <path d="M326 172h68M360 138v68" stroke="#fff" stroke-width="16" stroke-linecap="round"/>
+    <text x="360" y="300" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="700" fill="#1e3a8a">WebQQ 模拟图片</text>
+  </svg>
+`)}`
 
 function clone<T>(value: T): T {
   return structuredClone(value)
@@ -250,7 +259,7 @@ export function createMockWebQQScene(): MockWebQQScene {
         title: 'Bob',
         senderId: MOCK_FRIEND_BOB_ID,
         senderAvatar: getWebQQUserAvatar(MOCK_FRIEND_BOB_ID),
-        elements: [{ type: 'image', imageUrl: 'https://example.com/forward-image.png', url: 'https://example.com/forward-image.png' }],
+        elements: [{ type: 'image', imageUrl: mockImageDataUrl, url: mockImageDataUrl }],
       },
       {
         title: '模拟机器人',
@@ -282,8 +291,8 @@ export function createMockWebQQScene(): MockWebQQScene {
       summary: '[图片]',
       elements: [{
         type: 'image',
-        imageUrl: 'https://example.com/friend-image.png',
-        url: 'https://example.com/friend-image.png',
+        imageUrl: mockImageDataUrl,
+        url: mockImageDataUrl,
       }],
     }),
     createMessage({
@@ -462,8 +471,8 @@ export function createMockWebQQScene(): MockWebQQScene {
       summary: '[图片]',
       elements: [{
         type: 'image',
-        imageUrl: 'https://example.com/group-image.png',
-        url: 'https://example.com/group-image.png',
+        imageUrl: mockImageDataUrl,
+        url: mockImageDataUrl,
       }],
     }),
     createMessage({
@@ -597,8 +606,8 @@ export function createMockWebQQScene(): MockWebQQScene {
       },
     },
     images: {
-      'friend-image.png': 'https://example.com/friend-image.png',
-      'group-image.png': 'https://example.com/group-image.png',
+      'friend-image.png': mockImageDataUrl,
+      'group-image.png': mockImageDataUrl,
     },
     nextMessageSeq: 1000,
   }
