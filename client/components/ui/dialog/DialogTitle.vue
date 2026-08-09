@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import type { DialogTitleProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { reactiveOmit } from '@vueuse/core'
-import { DialogTitle } from 'reka-ui'
 import { cn } from '../../../lib/utils'
 
-const props = defineProps<DialogTitleProps & { class?: HTMLAttributes['class'] }>()
-const delegatedProps = reactiveOmit(props, 'class')
+defineOptions({ inheritAttrs: false })
+
+const props = defineProps<{ class?: HTMLAttributes['class'] }>()
 </script>
 
 <template>
-  <DialogTitle data-slot="dialog-title" class="webqq-dialog-title" v-bind="delegatedProps" :class="cn(props.class)">
+  <h2 v-bind="$attrs" data-slot="dialog-title" class="webqq-dialog-title" :class="cn(props.class)">
     <slot />
-  </DialogTitle>
+  </h2>
 </template>

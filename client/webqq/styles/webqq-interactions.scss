@@ -70,20 +70,16 @@
 }
 
 .webqq-dialog-layer {
-  // Overlay 与 Content 必须共享一个 Portal 根堆叠上下文；若作为 body 直属兄弟节点，Koishi 的全局浮层可能插入两者之间，只留下模糊遮罩。
+  // Overlay 直接承载 Content，既共享堆叠上下文，也保持 Reka Presence 支持的 Dialog 组合结构。
   position: fixed;
   inset: 0;
   z-index: 10200;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .webqq-dialog-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   background: rgb(15 23 42 / 35%);
   backdrop-filter: blur(2px);
-  pointer-events: auto;
 }
 
 .webqq-dialog-content {
