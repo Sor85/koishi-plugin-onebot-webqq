@@ -1290,11 +1290,13 @@ describe('chat capsule styles', () => {
     expect.soft(entryBody).not.toMatch(/(?:^|\n)\s*padding-top:\s*[1-9]\d*(?:\.\d+)?px\s*;/)
   })
 
-  it('left-aligns the WebQQ forward entry label while leaving the arrow on the right', () => {
+  it('left-aligns and recolors the WebQQ forward entry with its containing bubble', () => {
     const entryBody = ruleBody('.onebot-webqq-webqq__forward-entry')
 
     expect(entryBody).toContain('text-align: left')
     expect(entryBody).toContain('justify-content: space-between')
+    expect(entryBody).toContain('color: inherit')
+    expect(entryBody).not.toContain('var(--k-text-light')
     expect(ruleBody('.onebot-webqq-webqq__forward-entry::after')).toContain('content:')
   })
 

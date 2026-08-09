@@ -965,7 +965,8 @@
   margin: 4px -8px -6px;
   padding: 0 8px;
   border-top: 1px solid rgba(148, 163, 184, 0.18);
-  color: var(--k-text-light, var(--fg3, rgba(80, 90, 110, 0.62)));
+  // 入口跟随转发卡片前景色：收到消息保持深色，发出消息继承气泡的白色反色。
+  color: inherit;
   text-align: left;
 }
 
