@@ -20,6 +20,7 @@ import {
 
 export interface CapsuleBotRuntime {
   reconcileBotState(): OneBotRobotState
+  getBotStatusDiagnostics(): Record<string, unknown>
 }
 
 export function registerCapsule(options: {
@@ -60,10 +61,21 @@ export function registerCapsule(options: {
     const botState = readBotState()
     return botState.bots.length > 1 ? botState.selectedSelfId : undefined
   }
+  const handleBotLifecycle = (source: 'login-added' | 'login-removed' | 'login-updated') => {
+    const botState = readBotState()
+    logger?.info('[bot-status-debug] %s %s', source, JSON.stringify({
+      result: {
+        selectedSelfId: botState.selectedSelfId,
+        bots: botState.bots.map((bot) => ({ selfId: bot.selfId, status: bot.status })),
+      },
+      service: botRuntime.getBotStatusDiagnostics(),
+    }))
+    broadcastBotState(botState)
+  }
   // Bot 在页面加载后上线时不会产生消息事件，必须由生命周期事件同步列表和 selectedSelfId，否则胶囊会永久使用初始离线状态。
-  ctx.on('login-added', () => broadcastBotState())
-  ctx.on('login-removed', () => broadcastBotState())
-  ctx.on('login-updated', () => broadcastBotState())
+  ctx.on('login-added', () => handleBotLifecycle('login-added'))
+  ctx.on('login-removed', () => handleBotLifecycle('login-removed'))
+  ctx.on('login-updated', () => handleBotLifecycle('login-updated'))
   const chatLunaActivity = registerCapsuleChatLunaActivity({
     ctx,
     state,

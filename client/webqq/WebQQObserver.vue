@@ -459,6 +459,12 @@ const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSe
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const loading = ref(false)
 const errorText = ref('')
+const contactsLoadFailed = ref(false)
+const contactsRecoverySignal = computed(() => JSON.stringify({
+  selectedSelfId: selectedBotSelfId.value,
+  bots: availableBots.value.map((bot) => [bot.selfId, bot.status]),
+  conversationTimestamp: capsule.value?.conversation?.timestamp,
+}))
 const imagePreviewUrl = ref('')
 const composerDraft = ref<WebQQComposerDraft>(createEmptyWebQQComposerDraft())
 const sendFiles = ref<WebQQSendFile[]>([])
@@ -473,6 +479,7 @@ const composerIsComposing = ref(false)
 const mentionMenu = ref<{ tokenIndex: number, start: number, query: string }>()
 const mentionMenuIndex = ref(0)
 let suppressComposerInput = false
+let contactsLoadVersion = 0
 const selectedBotAvatar = computed(() => {
   const selected = availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value)
   const selectedSelfId = selected?.selfId || selectedBotSelfId.value
@@ -1573,14 +1580,27 @@ function openForwardDialog(element: WebQQMessageElement) {
 }
 
 async function loadContacts() {
+  const loadVersion = ++contactsLoadVersion
+  const recoverySignal = contactsRecoverySignal.value
   loading.value = true
   errorText.value = ''
   try {
-    contacts.value = await requestWebQQContactsWithRetry(requestWebQQContacts)
+    const nextContacts = await requestWebQQContactsWithRetry(requestWebQQContacts)
+    if (loadVersion !== contactsLoadVersion) return
+    contacts.value = nextContacts
+    contactsLoadFailed.value = false
   } catch (error) {
+    if (loadVersion !== contactsLoadVersion) return
+    contactsLoadFailed.value = true
     errorText.value = error instanceof Error ? error.message : '加载联系人失败'
+
+    // 首次 RPC 重试期间 Bot 可能已经恢复或收到消息；该变化早于 catch 时，普通 watch 会错过。
+    // 这里补一次版本后的重载，避免固定重试窗口结束后联系人页永久停在失败状态。
+    if (recoverySignal !== contactsRecoverySignal.value) {
+      void nextTick(() => loadContacts())
+    }
   } finally {
-    loading.value = false
+    if (loadVersion === contactsLoadVersion) loading.value = false
   }
 }
 
@@ -1748,6 +1768,11 @@ watch(() => currentChat.value?.peerId, () => {
 watch(selectedBotSelfId, (selfId, oldSelfId) => {
   if (!selfId || selfId === oldSelfId) return
   void reloadWebQQForSelectedBot()
+})
+
+watch(contactsRecoverySignal, () => {
+  if (!contactsLoadFailed.value || loading.value) return
+  void loadContacts()
 })
 
 watch(availableBots, (bots) => {

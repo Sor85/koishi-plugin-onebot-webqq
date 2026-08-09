@@ -261,6 +261,16 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
   }
 
   return {
+    getBotStatusDiagnostics() {
+      return {
+        selectedSelfId: scene.selectedSelfId,
+        mockEnvironment: true,
+        availableBots: scene.bots.map((bot) => ({ selfId: bot.selfId, status: bot.status })),
+      }
+    },
+
+    noteBotActivity(_selfId?: string) {},
+
     getSelectedSelfId() {
       return scene.selectedSelfId || undefined
     },

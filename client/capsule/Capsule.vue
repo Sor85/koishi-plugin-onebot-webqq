@@ -148,7 +148,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
 import { createLayout, type AutoLayout } from 'animejs'
-import { enableCapsuleFrostedGlass, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
+import { debug, enableCapsuleFrostedGlass, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQColorMode, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
 import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
 import { capsule, hiddenCapsuleActivityIds } from './state'
@@ -566,6 +566,23 @@ watch(displayBotProfile, (bot) => {
   if (!bot) return
   cacheBotProfile(bot.name, bot.avatar)
 }, { immediate: true })
+
+watch([displayBotProfile, availableBots, statusClass, selectedBotSelfId], () => {
+  if (!debug.value) return
+  console.debug('[onebot-webqq][bot-status-debug] capsule-display', {
+    selectedBotSelfId: selectedBotSelfId.value,
+    displayBot: displayBotProfile.value
+      ? { selfId: displayBotProfile.value.selfId, status: displayBotProfile.value.status }
+      : undefined,
+    statusClass: statusClass.value,
+    availableBots: availableBots.value.map((bot) => ({ selfId: bot.selfId, status: bot.status })),
+    capsuleBot: capsule.value?.bot
+      ? { selfId: capsule.value.bot.selfId, status: capsule.value.bot.status }
+      : undefined,
+    capsuleBots: capsule.value?.bots?.map((bot) => ({ selfId: bot.selfId, status: bot.status })),
+    runtimeBots: runtimeBots.value.map((bot) => ({ selfId: bot.selfId, status: bot.status })),
+  })
+}, { immediate: true, deep: true })
 
 watch([displayBotName, displayActivityText, conversationUserName, botStackExpanded], () => {
   void nextTick(refreshCapsuleTextOverflow)

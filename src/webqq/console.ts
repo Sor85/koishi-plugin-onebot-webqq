@@ -61,7 +61,20 @@ export function registerWebQQConsoleListeners(
     logger,
   } = options
 
-  console.addListener('onebot-webqq/webqq/contacts', () => webqq.loadContacts(), consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/contacts', async () => {
+    try {
+      return await webqq.loadContacts()
+    } catch (error) {
+      const botState = webqq.reconcileBotState()
+      logger?.info('contacts-load-failed %s', JSON.stringify({
+        selectedSelfId: botState.selectedSelfId,
+        bots: botState.bots.map((bot) => ({ selfId: bot.selfId, status: bot.status })),
+        service: webqq.getBotStatusDiagnostics(),
+        error: error instanceof Error ? error.message : String(error),
+      }))
+      throw error
+    }
+  }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/messages', async (query: WebQQMessageQuery) => {
     const nextQuery = {
       ...query,

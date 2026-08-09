@@ -24,21 +24,23 @@ export function getOneBotProfileStatus(bot: OneBotBot) {
   return isOneBotReady(bot) ? oneBotOnlineStatus : undefined
 }
 
-export function getAvailableOneBotBots(ctx: OneBotContext, selfIds?: string[]) {
+export function getAvailableOneBotBots(ctx: OneBotContext, selfIds?: string[], activeSelfIds?: ReadonlySet<string>) {
   const allowList = new Set((selfIds ?? []).map((selfId) => selfId.trim()).filter(Boolean))
   if (selfIds && !allowList.size) return []
   return getOneBotBots(ctx).filter((bot) => {
-    if (!isOneBotReady(bot)) return false
+    // 某些适配器已能收到该 Bot 的消息时仍短暂上报 OFFLINE；实际活动是比滞后状态更强的可用信号。
+    const recentlyActive = !!bot.selfId && !!activeSelfIds?.has(bot.selfId) && supportsOneBotAction(bot)
+    if (!isOneBotReady(bot) && !recentlyActive) return false
     if (!allowList.size) return true
     return !!bot.selfId && allowList.has(bot.selfId)
   })
 }
 
-export function selectBot(ctx: OneBotContext, options: { selfId?: string; selfIds?: string[] }) {
-  const bots = getAvailableOneBotBots(ctx, options.selfIds)
+export function selectBot(ctx: OneBotContext, options: { selfId?: string; selfIds?: string[]; activeSelfIds?: ReadonlySet<string> }) {
+  const bots = getAvailableOneBotBots(ctx, options.selfIds, options.activeSelfIds)
   const selected = options.selfId
-    ? bots.find((bot) => bot.selfId === options.selfId && isOneBotReady(bot))
-    : bots.find(isOneBotReady)
+    ? bots.find((bot) => bot.selfId === options.selfId)
+    : bots[0]
   if (!selected) {
     if (options.selfId) throw new Error(`未找到 selfId 为 ${options.selfId} 的 OneBot 机器人`)
     throw new Error(options.selfIds ? '未找到配置 selfId 集合中的可用 OneBot 机器人' : '未找到可用的 OneBot 机器人')

@@ -36,6 +36,9 @@ export function createPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfi
       mockBotCount: config.onebotMockBotCount,
       protocol: config.onebotProtocol,
       imageUrlResolver,
+      logBotStatus: logger
+        ? (source, data) => logger.info('[bot-status-debug] %s %s', source, JSON.stringify(data))
+        : undefined,
     })
 
   return {

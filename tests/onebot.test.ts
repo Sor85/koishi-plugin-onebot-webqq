@@ -298,6 +298,55 @@ describe('onebot webqq adapter', () => {
     })
   })
 
+  it('falls back to an action-capable bot when its reported status is stale', async () => {
+    const staleStatusBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 0,
+      internal: {
+        get_friend_list: vi.fn(async () => [{
+          user_id: 30000,
+          nickname: 'Recovered Friend',
+        }]),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const logBotStatus = vi.fn()
+    const service = createOneBotWebQQService({ bots: [staleStatusBot] }, { logBotStatus })
+
+    expect(service.getBotStatusDiagnostics()).toMatchObject({
+      rawBots: [expect.objectContaining({
+        selfId: '10000',
+        status: 0,
+        statusName: 'OFFLINE',
+        supportsAnyAction: true,
+      })],
+      availableBots: [],
+    })
+    service.noteBotActivity('10000')
+    expect(service.getBotStatusDiagnostics()).toMatchObject({
+      recentActiveSelfIds: ['10000'],
+      availableBots: [expect.objectContaining({
+        selfId: '10000',
+        status: 0,
+        recentlyActive: true,
+      })],
+    })
+    expect(logBotStatus).toHaveBeenCalledWith('message-activity', expect.objectContaining({
+      action: 'set-recent-activity-override',
+      diagnostics: expect.objectContaining({
+        recentActiveSelfIds: ['10000'],
+      }),
+    }))
+    await expect(service.loadContacts()).resolves.toMatchObject({
+      friends: [{
+        userId: '30000',
+        name: 'Recovered Friend',
+      }],
+    })
+    expect(staleStatusBot.internal.get_friend_list).toHaveBeenCalled()
+  })
+
   it('skips explicitly non-online OneBot bots when loading contacts', async () => {
     const connectingBot = {
       platform: 'onebot',

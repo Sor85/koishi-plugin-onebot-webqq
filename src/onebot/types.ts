@@ -23,4 +23,5 @@ export interface OneBotWebQQOptions {
   mockBotCount?: number
   protocol?: WebQQProtocol
   imageUrlResolver?: OneBotImageUrlResolver
+  logBotStatus?: (source: string, data: Record<string, unknown>) => void
 }

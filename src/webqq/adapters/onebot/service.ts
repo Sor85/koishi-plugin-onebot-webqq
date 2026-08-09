@@ -13,6 +13,7 @@ import {
 } from '../../../onebot/actions'
 import {
   getAvailableOneBotBots,
+  getOneBotBots,
   getOneBotProfileStatus,
   selectBot,
   type OneBotContext,
@@ -85,6 +86,17 @@ function toStringId(value: unknown) {
   return value == null ? '' : String(value)
 }
 
+function getOneBotStatusName(status: unknown) {
+  switch (status) {
+    case 0: return 'OFFLINE'
+    case 1: return 'ONLINE'
+    case 2: return 'CONNECT'
+    case 3: return 'DISCONNECT'
+    case 4: return 'RECONNECT'
+    default: return typeof status === 'number' ? `UNKNOWN_${status}` : 'UNSET'
+  }
+}
+
 function getBotDisplayName(bot: OneBotBot) {
   const name = (bot.name || bot.username || bot.user?.name || bot.user?.nick || bot.user?.username || bot.user?.nickname || '').trim()
   if (name && name !== bot.selfId) return name
@@ -155,6 +167,18 @@ async function loadGroupAnnouncements(bot: OneBotBot, groupId: string) {
     } catch {}
   }
   return []
+}
+
+function getContactLoadErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+async function loadRequiredContactData<T>(stage: string, loader: () => Promise<T>) {
+  try {
+    return await loader()
+  } catch (error) {
+    throw new Error(`${stage}失败：${getContactLoadErrorMessage(error)}`)
+  }
 }
 
 async function loadFriendCategories(bot: OneBotBot) {
@@ -257,13 +281,67 @@ async function callSupportedAction(
 // 创建通过 OneBot action 读写 WebQQ 数据的服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   let selectedSelfId = options.selfId
+  const recentBotActivity = new Map<string, number>()
+  const getRecentlyActiveSelfIds = () => {
+    const now = Date.now()
+    for (const [selfId, timestamp] of recentBotActivity) {
+      if (now - timestamp > 5 * 60 * 1000) recentBotActivity.delete(selfId)
+    }
+    return new Set(recentBotActivity.keys())
+  }
+  const getBotStatusDiagnostics = () => {
+    const activeSelfIds = getRecentlyActiveSelfIds()
+    const rawBots = (ctx.bots ?? []).map((value, index) => {
+      if (!isRecord(value)) return { index, valueType: typeof value }
+      const internal = isRecord(value.internal) ? value.internal : undefined
+      const bot = internal ? value as unknown as OneBotBot : undefined
+      return {
+        index,
+        platform: getStringField(value, ['platform']),
+        selfId: getStringField(value, ['selfId', 'self_id']),
+        status: typeof value.status === 'number' ? value.status : undefined,
+        statusName: getOneBotStatusName(value.status),
+        hidden: value.hidden === true,
+        hasInternal: !!internal,
+        hasRequest: typeof internal?._request === 'function',
+        supportsAnyAction: bot ? supportsOneBotAction(bot) : false,
+      }
+    })
+    const availableBots = getAvailableOneBotBots(ctx, options.selfIds, activeSelfIds).map((bot) => ({
+      selfId: bot.selfId,
+      status: bot.status,
+      statusName: getOneBotStatusName(bot.status),
+      recentlyActive: !!bot.selfId && activeSelfIds.has(bot.selfId),
+    }))
+    return {
+      selectedSelfId,
+      configuredSelfId: options.selfId,
+      configuredSelfIds: options.selfIds,
+      recentActiveSelfIds: [...activeSelfIds],
+      rawBots,
+      availableBots,
+    }
+  }
+  const logBotStatus = (source: string, data: Record<string, unknown> = {}) => {
+    options.logBotStatus?.(source, {
+      ...data,
+      diagnostics: getBotStatusDiagnostics(),
+    })
+  }
+  let lastReconcileSignature = ''
   const getRealSelfId = (selfId = selectedSelfId) => {
     const sourceSelfId = selfId ? getMockBotSourceSelfId(selfId) : undefined
     return sourceSelfId || selfId
   }
-  const getBot = (selfId = selectedSelfId) => selectBot(ctx, { ...options, selfId: getRealSelfId(selfId) })
+  const getBot = (selfId = selectedSelfId) => selectBot(ctx, {
+    ...options,
+    selfId: getRealSelfId(selfId),
+    activeSelfIds: getRecentlyActiveSelfIds(),
+  })
   const listBots = () => {
-    const bots = getAvailableOneBotBots(ctx, options.selfIds).map(toOneBotRobotProfile).filter((bot): bot is OneBotRobotProfile => !!bot)
+    const bots = getAvailableOneBotBots(ctx, options.selfIds, getRecentlyActiveSelfIds())
+      .map(toOneBotRobotProfile)
+      .filter((bot): bot is OneBotRobotProfile => !!bot)
     return [
       ...bots,
       ...createMockBotProfiles(bots, getMockBotCount(options.mockBotCount)),
@@ -274,14 +352,63 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     if (!selectedSelfId || !bots.some((bot) => bot.selfId === selectedSelfId)) {
       selectedSelfId = bots[0]?.selfId
     }
-    return {
+    const state = {
       bots,
       ...(selectedSelfId ? { selectedSelfId } : {}),
     }
+    const signature = JSON.stringify({
+      selectedSelfId,
+      bots: bots.map((bot) => [bot.selfId, bot.status]),
+      diagnostics: getBotStatusDiagnostics(),
+    })
+    if (signature !== lastReconcileSignature) {
+      lastReconcileSignature = signature
+      logBotStatus('reconcile-change', {
+        result: {
+          selectedSelfId: state.selectedSelfId,
+          bots: state.bots.map((bot) => ({
+            selfId: bot.selfId,
+            status: bot.status,
+            statusName: getOneBotStatusName(bot.status),
+          })),
+        },
+      })
+    }
+    return state
   }
   const protocol = options.protocol ?? 'napcat'
   const { imageUrlResolver } = options
   return {
+    getBotStatusDiagnostics() {
+      return getBotStatusDiagnostics()
+    },
+
+    noteBotActivity(selfId?: string) {
+      const realSelfId = getRealSelfId(selfId)
+      if (!realSelfId) {
+        logBotStatus('message-activity', { selfId, action: 'skip-missing-self-id' })
+        return
+      }
+      const bot = getOneBotBots(ctx).find((candidate) => candidate.selfId === realSelfId)
+      if (bot?.status === 1) {
+        recentBotActivity.delete(realSelfId)
+        logBotStatus('message-activity', {
+          selfId: realSelfId,
+          rawStatus: bot.status,
+          rawStatusName: getOneBotStatusName(bot.status),
+          action: 'clear-online-override',
+        })
+        return
+      }
+      recentBotActivity.set(realSelfId, Date.now())
+      logBotStatus('message-activity', {
+        selfId: realSelfId,
+        rawStatus: bot?.status,
+        rawStatusName: getOneBotStatusName(bot?.status),
+        action: 'set-recent-activity-override',
+      })
+    },
+
     getSelectedSelfId() {
       return selectedSelfId
     },
@@ -362,11 +489,12 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       const bot = getBot()
       const [friendCategories, groupsResult] = await Promise.all([
         loadFriendCategories(bot),
-        callAction(bot, 'get_group_list'),
+        loadRequiredContactData('加载群列表', () => callAction(bot, 'get_group_list')),
       ])
       const friends = friendCategories.length
         ? friendCategories.flatMap((category) => category.friends)
-        : toArrayResult(await callAction(bot, 'get_friend_list'), 'friends').map((friend) => normalizeFriend(friend))
+        : toArrayResult(await loadRequiredContactData('加载好友列表', () => callAction(bot, 'get_friend_list')), 'friends')
+            .map((friend) => normalizeFriend(friend))
       const groups = toArrayResult(groupsResult, 'groups').map(normalizeGroup)
       const recent = await loadRecentContacts(bot, friends, groups, imageUrlResolver)
       return {

@@ -28,6 +28,14 @@ function runGetCapsuleUnreadText(count: number) {
 const multiBotTemplate = sourceBetween(capsuleView, 'v-if="hasMultipleBots"', '<button\n            v-else')
 
 describe('chat capsule view', () => {
+  it('logs the exact Bot profile chosen for the online badge in debug mode', () => {
+    expect(capsuleView).toContain("console.debug('[onebot-webqq][bot-status-debug] capsule-display'")
+    expect(capsuleView).toContain('selectedBotSelfId: selectedBotSelfId.value')
+    expect(capsuleView).toContain('statusClass: statusClass.value')
+    expect(capsuleView).toContain('capsuleBots: capsule.value?.bots?.map')
+    expect(capsuleView).toContain('runtimeBots: runtimeBots.value.map')
+  })
+
   it('hides the capsule on configured activity pages', () => {
     expect(capsuleView).toContain("import { Universal, activities, router, store, withProxy } from '@koishijs/client'")
     expect(capsuleView).toContain("import { capsule, hiddenCapsuleActivityIds } from './state'")

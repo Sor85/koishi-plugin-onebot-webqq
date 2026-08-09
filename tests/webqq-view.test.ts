@@ -621,6 +621,11 @@ describe('webqq observer view', () => {
     expect(webqqApi).toContain('if (attempt >= webQQContactsRetryLimit) throw error')
     expect(webqqApi).toContain('await waitWebQQContactsRetry()')
     expect(webqqApi).toContain('export async function requestWebQQContactsWithRetry')
+    expect(webqqView).toContain('const contactsLoadFailed = ref(false)')
+    expect(webqqView).toContain('const contactsRecoverySignal = computed(')
+    expect(webqqView).toContain('if (recoverySignal !== contactsRecoverySignal.value)')
+    expect(webqqView).toContain('watch(contactsRecoverySignal, () => {')
+    expect(webqqView).toContain('if (!contactsLoadFailed.value || loading.value) return')
   })
 
   it('persists WebQQ recent message summaries and unread counts in browser storage by default', () => {
