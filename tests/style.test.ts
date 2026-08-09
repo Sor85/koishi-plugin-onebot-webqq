@@ -1318,14 +1318,14 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__forward-entry::after')).toContain('content:')
   })
 
-  it('styles WebQQ chat history search as a responsive modal', () => {
-    expect(ruleBody('.onebot-webqq-webqq__chat-header-actions')).toContain('display: flex')
-    expect(ruleBody('.onebot-webqq-webqq__message-search-backdrop')).toContain('position: fixed')
-    expect(ruleBody('.onebot-webqq-webqq__message-search')).toContain('width: min(520px, calc(100vw - 32px))')
-    expect(ruleBody('.onebot-webqq-webqq__message-search-results')).toContain('overflow-y: auto')
-    expect(ruleBody('.onebot-webqq-webqq__message-search-input-wrap')).toContain('border: 1px solid #d9e1ea')
-    expect(ruleBody('.onebot-webqq-webqq__message-search-result')).toContain('text-align: left')
-    expect(style).toContain('@media (max-width: 640px)')
+  it('styles WebQQ chat history search as a draggable secondary page', () => {
+    expect(ruleBodyIncluding('.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-message-search-page', webqqInteractionsStyle)).toContain('width: 460px')
+    expect(ruleBodyIncluding('.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-message-search-page', webqqInteractionsStyle)).toContain('z-index: 10300')
+    expect(ruleBodyIncluding('.webqq-message-search-page-content', webqqInteractionsStyle)).toContain('flex-direction: column')
+    expect(ruleBodyIncluding('.webqq-message-search-page .onebot-webqq-webqq__message-search-results', webqqInteractionsStyle)).toContain('overflow-y: auto')
+    expect(ruleBodyIncluding('.webqq-message-search-page .onebot-webqq-webqq__message-search-input-wrap', webqqInteractionsStyle)).toContain('border: 1px solid var(--webqq-border)')
+    expect(ruleBodyIncluding('.webqq-message-search-page .onebot-webqq-webqq__message-search-result', webqqInteractionsStyle)).toContain('text-align: left')
+    expect(`${style}\n${webqqInteractionsStyle}`).not.toContain('.onebot-webqq-webqq__message-search-backdrop')
   })
 
   it('styles WebQQ forward message details as an LLBot-style centered modal', () => {

@@ -76,7 +76,7 @@
             </div>
           </div>
           <div class="onebot-webqq-webqq__chat-header-actions">
-            <button ref="messageSearchTrigger" v-if="currentChat" type="button" aria-label="查找聊天记录" @click="openMessageSearch">
+            <button ref="messageSearchTrigger" v-if="currentChat" type="button" aria-label="查找聊天记录" @click="openMessageSearch($event)">
               <IconSearch class="onebot-webqq-webqq__header-icon" :size="20" aria-hidden="true" />
             </button>
             <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" :aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'" @click="toggleGroupInfo">
@@ -252,7 +252,7 @@
         @kick-group-member="handleKickGroupMember"
       />
     </section>
-    <WebQQMessageSearchModal
+    <WebQQMessageSearchPage
       v-if="messageSearchOpen"
       v-model:query="messageSearchQuery"
       :results="messageSearchResults"
@@ -324,7 +324,7 @@ import WebQQMentionMenu from './components/WebQQMentionMenu.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQNoticeMenu from './components/WebQQNoticeMenu.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
-import WebQQMessageSearchModal from './components/WebQQMessageSearchModal.vue'
+import WebQQMessageSearchPage from './components/WebQQMessageSearchPage.vue'
 import WebQQForwardTargetDialog, { type WebQQForwardTargetModel, type WebQQForwardTargetOption } from './components/WebQQForwardTargetDialog.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
@@ -1330,8 +1330,9 @@ function resetMessageSearchResults() {
   messageSearchNextBeforeSequence.value = ''
 }
 
-function openMessageSearch() {
+function openMessageSearch(event?: MouseEvent) {
   if (!currentChat.value) return
+  if (event) rememberFloatingPanelAnchor(event)
   messageSearchOpen.value = true
   resetMessageSearchResults()
 }
