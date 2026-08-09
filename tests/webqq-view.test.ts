@@ -1778,6 +1778,66 @@ describe('webqq observer view', () => {
     expect(groupInfo.visibleGroupMembers.value.map((member) => member.userId)).toEqual(['1'])
   })
 
+  it('keeps successful group member patches visible until the backend confirms them', async () => {
+    const currentChat = ref<WebQQChatSelection>(createGroupChatSelection({ peerId: '20000' }))
+    const createInfo = (card: string, role: string, rawRole: 'admin' | 'member', title: string): WebQQGroupInfo => ({
+      announcements: [],
+      members: [{ userId: '30000', nickname: 'Alice', card, avatar: '', role, rawRole, title }],
+    })
+    const responses = [
+      createInfo('旧名片', '成员', 'member', '旧头衔'),
+      createInfo('旧名片', '成员', 'member', '旧头衔'),
+      createInfo('新名片', '管理员', 'admin', '新头衔'),
+      createInfo('外部名片', '成员', 'member', '外部头衔'),
+    ]
+    const groupInfo = useWebQQGroupInfo(currentChat, {
+      requestGroupInfo: async () => responses.shift() ?? createInfo('', '成员', 'member', ''),
+    })
+
+    await groupInfo.loadGroupInfo()
+    groupInfo.patchGroupMember('20000', '30000', {
+      card: '新名片',
+      role: '管理员',
+      rawRole: 'admin',
+      title: '新头衔',
+    })
+    expect(groupInfo.groupInfo.value.members[0]).toMatchObject({
+      card: '新名片',
+      role: '管理员',
+      rawRole: 'admin',
+      title: '新头衔',
+    })
+
+    await groupInfo.loadGroupInfo()
+    expect(groupInfo.groupInfo.value.members[0]).toMatchObject({
+      card: '新名片',
+      role: '管理员',
+      rawRole: 'admin',
+      title: '新头衔',
+    })
+
+    await groupInfo.loadGroupInfo()
+    await groupInfo.loadGroupInfo()
+    expect(groupInfo.groupInfo.value.members[0]).toMatchObject({
+      card: '外部名片',
+      role: '成员',
+      rawRole: 'member',
+      title: '外部头衔',
+    })
+  })
+
+  it('uses latest group member data for message names, titles, and administrator badges', () => {
+    expect(webqqView).toContain('function applyCurrentGroupMemberMetadata(message: WebQQMessage)')
+    expect(webqqView).toContain('applyMessageSenderMetadata(message)')
+    expect(webqqView).toContain('senderName: getGroupMemberName(member)')
+    expect(webqqView).toContain('senderRole: member.role')
+    expect(webqqView).toContain('senderTitle: member.title || undefined')
+    expect(webqqView).toContain('applyMessageSenderMetadata: applyCurrentGroupMemberMetadata')
+    expect(webqqView).toContain("await refreshCurrentGroupMember(chat.peerId, userId, { card })")
+    expect(webqqView).toContain("await refreshCurrentGroupMember(chat.peerId, userId, { title })")
+    expect(webqqView).toContain("rawRole: enabled ? 'admin' : 'member'")
+  })
+
   it('uses cached group info immediately while refreshing the current group', async () => {
     const currentChat = ref<WebQQChatSelection>(createGroupChatSelection({ peerId: '20000' }))
     const cachedInfo: WebQQGroupInfo = {

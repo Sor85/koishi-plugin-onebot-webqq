@@ -629,6 +629,11 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
       }
       if (input.action === 'set-title') {
         if (!input.targetId) throw new Error('targetId 不能为空')
+        scene.groupMembers[input.groupId] = members.map((member) => (
+          member.userId === input.targetId
+            ? { ...member, title: input.title ?? '' }
+            : member
+        ))
         const profile = scene.profiles[input.targetId]
         if (profile) {
           profile.groupTitle = input.title ?? ''

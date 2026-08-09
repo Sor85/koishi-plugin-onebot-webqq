@@ -327,7 +327,7 @@ import {
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
 import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
-import type { WebQQFriend, WebQQGroup, WebQQMessage, WebQQSendElement } from './types'
+import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
 import {
@@ -935,8 +935,22 @@ const {
   groupInfo,
   visibleGroupMembers,
   loadGroupInfo,
+  patchGroupMember,
   toggleGroupInfo,
 } = useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })
+
+function applyCurrentGroupMemberMetadata(message: WebQQMessage) {
+  const hydratedMessage = applyMessageSenderMetadata(message)
+  if (currentChat.value?.type !== 'group') return hydratedMessage
+  const member = groupInfo.value.members.find((item) => item.userId === message.senderId)
+  if (!member) return hydratedMessage
+  return {
+    ...hydratedMessage,
+    senderName: getGroupMemberName(member),
+    senderRole: member.role,
+    senderTitle: member.title || undefined,
+  }
+}
 
 const mentionCandidates = computed<WebQQMentionCandidate[]>(() => {
   if (currentChat.value?.type !== 'group') return []
@@ -1126,7 +1140,7 @@ const {
   currentChat,
   chatStyle: webQQChatStyle,
   messageCacheLimit: webQQMessageCacheLimit,
-  applyMessageSenderMetadata,
+  applyMessageSenderMetadata: applyCurrentGroupMemberMetadata,
   shouldScrollToBottom: () => trackingMessages.value,
   scrollMessagesToBottom,
 })
@@ -1470,8 +1484,18 @@ function handleMentionGroupMember(userId: string) {
   insertExternalMention({ id: userId, name: member ? getGroupMemberName(member) : userId })
 }
 
-async function refreshCurrentGroupInfo() {
-  if (currentChat.value?.type === 'group') await loadGroupInfo()
+async function refreshCurrentGroupInfo(groupId: string) {
+  if (currentChat.value?.type === 'group' && currentChat.value.peerId === groupId) await loadGroupInfo()
+}
+
+async function refreshCurrentGroupMember(
+  groupId: string,
+  userId: string,
+  patch: Partial<Pick<WebQQGroupMember, 'card' | 'role' | 'rawRole' | 'title'>>,
+) {
+  patchGroupMember(groupId, userId, patch)
+  if (currentChat.value?.type !== 'group' || currentChat.value.peerId !== groupId) return
+  await refreshCurrentGroupInfo(groupId)
 }
 
 function handlePokeGroupMember(userId: string) {
@@ -1494,7 +1518,7 @@ function openGroupCardDialog(userId: string) {
       const chat = currentChat.value
       if (!chat || chat.type !== 'group') throw new Error('当前不是群聊')
       await performWebQQGroupAction({ action: 'set-card', groupId: chat.peerId, targetId: userId, card })
-      await refreshCurrentGroupInfo()
+      await refreshCurrentGroupMember(chat.peerId, userId, { card })
     },
   })
 }
@@ -1510,7 +1534,7 @@ function openGroupTitleDialog(userId: string) {
       const chat = currentChat.value
       if (!chat || chat.type !== 'group') throw new Error('当前不是群聊')
       await performWebQQGroupAction({ action: 'set-title', groupId: chat.peerId, targetId: userId, title })
-      await refreshCurrentGroupInfo()
+      await refreshCurrentGroupMember(chat.peerId, userId, { title })
     },
   })
 }
@@ -1528,7 +1552,10 @@ function handleSetGroupAdmin(userId: string, enabled: boolean) {
       targetId: userId,
       enabled,
     })
-    await refreshCurrentGroupInfo()
+    await refreshCurrentGroupMember(chat.peerId, userId, {
+      role: enabled ? '管理员' : '成员',
+      rawRole: enabled ? 'admin' : 'member',
+    })
   }, enabled ? '设为管理员失败' : '取消管理员失败')
 }
 
@@ -1549,7 +1576,7 @@ function handleKickGroupMember(userId: string) {
         groupId: chat.peerId,
         targetId: userId,
       })
-      await refreshCurrentGroupInfo()
+      await refreshCurrentGroupInfo(chat.peerId)
     },
   })
 }

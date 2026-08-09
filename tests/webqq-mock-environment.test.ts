@@ -285,19 +285,38 @@ describe('webqq mock environment', () => {
       card: '新名片',
     })
     await service.performGroupAction({
+      action: 'set-title',
+      groupId: MOCK_GROUP_ID,
+      targetId: MOCK_FRIEND_ALICE_ID,
+      title: '新头衔',
+    })
+    await service.performGroupAction({
       action: 'set-admin',
       groupId: MOCK_GROUP_ID,
       targetId: '20003',
       enabled: true,
     })
+    let groupInfo = await service.loadGroupInfo({ groupId: MOCK_GROUP_ID })
+    expect(groupInfo.members.find((member) => member.userId === '20003')?.role).toBe('管理员')
+    await service.performGroupAction({
+      action: 'set-admin',
+      groupId: MOCK_GROUP_ID,
+      targetId: '20003',
+      enabled: false,
+    })
+    groupInfo = await service.loadGroupInfo({ groupId: MOCK_GROUP_ID })
+    expect(groupInfo.members.find((member) => member.userId === '20003')?.role).toBe('成员')
     await service.performGroupAction({
       action: 'kick',
       groupId: MOCK_GROUP_ID,
       targetId: '20003',
     })
-    const groupInfo = await service.loadGroupInfo({ groupId: MOCK_GROUP_ID })
+    groupInfo = await service.loadGroupInfo({ groupId: MOCK_GROUP_ID })
     expect((await service.loadContacts()).groups.find((group) => group.groupId === MOCK_GROUP_ID)?.name).toBe('改名后的群')
-    expect(groupInfo.members.find((member) => member.userId === MOCK_FRIEND_ALICE_ID)?.card).toBe('新名片')
+    expect(groupInfo.members.find((member) => member.userId === MOCK_FRIEND_ALICE_ID)).toMatchObject({
+      card: '新名片',
+      title: '新头衔',
+    })
     expect(groupInfo.members.some((member) => member.userId === '20003')).toBe(false)
 
     await service.sendForward({
