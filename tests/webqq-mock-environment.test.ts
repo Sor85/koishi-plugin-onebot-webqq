@@ -150,8 +150,35 @@ describe('webqq mock environment', () => {
     })
     const sent = afterSend[afterSend.length - 1]
     expect(sent?.direction).toBe('outgoing')
-    expect(sent?.elements.some((element) => element.type === 'quote')).toBe(true)
+    expect(sent?.elements[0]).toMatchObject({
+      type: 'quote',
+      targetMessageId: 'friend-msg-1',
+      title: 'Alice',
+      text: '你好，这是一条文本消息',
+    })
     expect(sent?.summary).toContain('mock reply')
+
+    await service.sendMessage({
+      type: 'group',
+      peerId: MOCK_GROUP_ID,
+      replyToMessageId: 'group-msg-1',
+      elements: [
+        { type: 'text', text: '前文 ' },
+        { type: 'at', userId: MOCK_FRIEND_ALICE_ID },
+        { type: 'text', text: ' 后文' },
+      ],
+    })
+    const groupReply = (await service.loadMessages({
+      type: 'group',
+      peerId: MOCK_GROUP_ID,
+      limit: 20,
+    })).at(-1)
+    expect(groupReply?.elements).toEqual([
+      expect.objectContaining({ type: 'quote', targetMessageId: 'group-msg-1', title: 'Alice' }),
+      { type: 'text', text: '前文 ' },
+      { type: 'text', text: '@Alice' },
+      { type: 'text', text: ' 后文' },
+    ])
 
     await service.recallMessage({
       type: 'friend',

@@ -53,13 +53,22 @@ function summarizeElements(elements: WebQQMessageElement[]) {
   return parts.join(' ') || '[空消息]'
 }
 
-function toMessageElements(elements: WebQQSendElement[], replyToMessageId?: string): WebQQMessageElement[] {
+function toMessageElements(
+  elements: WebQQSendElement[],
+  options: {
+    replyToMessageId?: string
+    resolveMessage?: (messageId: string) => WebQQMessage | undefined
+    resolveMentionName?: (userId: string) => string | undefined
+  } = {},
+): WebQQMessageElement[] {
   const next: WebQQMessageElement[] = []
-  if (replyToMessageId) {
+  if (options.replyToMessageId) {
+    const target = options.resolveMessage?.(options.replyToMessageId)
     next.push({
       type: 'quote',
-      targetMessageId: replyToMessageId,
-      text: `回复 ${replyToMessageId}`,
+      targetMessageId: options.replyToMessageId,
+      ...(target?.senderName ? { title: target.senderName } : {}),
+      text: target?.summary || '[引用消息]',
     })
   }
   for (const element of elements) {
@@ -94,7 +103,7 @@ function toMessageElements(elements: WebQQSendElement[], replyToMessageId?: stri
     if (element.type === 'at' && element.userId) {
       next.push({
         type: 'text',
-        text: `@${element.userId}`,
+        text: `@${options.resolveMentionName?.(element.userId) || element.userId}`,
       })
       continue
     }
@@ -371,7 +380,16 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
     },
 
     async sendMessage(payload: WebQQSendPayload) {
-      const elements = toMessageElements(payload.elements, payload.replyToMessageId)
+      const elements = toMessageElements(payload.elements, {
+        replyToMessageId: payload.replyToMessageId,
+        resolveMessage: (messageId) => findMessage(scene, messageId),
+        resolveMentionName: (userId) => {
+          const member = payload.type === 'group'
+            ? scene.groupMembers[payload.peerId]?.find((item) => item.userId === userId)
+            : undefined
+          return member?.card || member?.nickname || scene.profiles[userId]?.name || userId
+        },
+      })
       if (!elements.length) return
       appendOutgoingMessage(payload, elements)
     },

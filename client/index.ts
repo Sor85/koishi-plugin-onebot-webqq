@@ -6,7 +6,7 @@ import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
 import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
-import './style.scss?onebot-webqq=profile-card-v2'
+import './style.scss?onebot-webqq=composer-mention-v3'
 
 interface ClientData {
   capsule?: CapsuleData
