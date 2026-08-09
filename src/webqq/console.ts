@@ -6,6 +6,7 @@ import type {
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageSearchQuery,
   WebQQMessageReactionInput,
   WebQQMessageRecallInput,
   WebQQNotice,
@@ -18,6 +19,7 @@ import type {
 import type { WebQQService } from './adapters/types'
 import type { ChatCapsuleContext, ConsoleService, DebugLogger } from '../plugin-context'
 import { attachWebQQAffinityBadges } from './affinity'
+import { searchWebQQMessageHistory } from './message-search'
 import { getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './message-flow/live-cache'
 import {
   loadKoishiWebQQMessageCache,
@@ -89,6 +91,13 @@ export function registerWebQQConsoleListeners(
     // 模拟服务已经提供确定性的角色、好感度和关系数据；不能再混入真实 ChatLuna 数据库，否则模拟 Bot 会带上真实关系徽标。
     if (config.webQQMockEnvironment) return mergedMessages
     return attachWebQQAffinityBadges(inner, config, mergedMessages, logger)
+  }, consoleAuthOptions)
+  console.addListener('onebot-webqq/webqq/messages/search', async (query: WebQQMessageSearchQuery) => {
+    return searchWebQQMessageHistory(query, {
+      pageSize: Math.min(historyLimit, 100),
+      maxPages: 10,
+      loadMessages: (messageQuery) => webqq.loadMessages(messageQuery),
+    })
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/group-info', (query: WebQQGroupInfoQuery) => {
     return webqq.loadGroupInfo(query)

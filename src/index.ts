@@ -12,6 +12,8 @@ import {
   WebQQLiveMessage,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageSearchQuery,
+  WebQQMessageSearchResult,
   WebQQMessageReactionInput,
   WebQQMessageRecallInput,
   WebQQNotice,
@@ -58,6 +60,7 @@ declare module '@koishijs/console' {
     'onebot-webqq/webqq/contacts'(): Promise<WebQQContacts>
     'onebot-webqq/webqq/group-info'(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo>
     'onebot-webqq/webqq/messages'(query: WebQQMessageQuery): Promise<WebQQMessage[]>
+    'onebot-webqq/webqq/messages/search'(query: WebQQMessageSearchQuery): Promise<WebQQMessageSearchResult>
     'onebot-webqq/webqq/record/transcribe'(query: WebQQRecordTranscriptionQuery): Promise<string>
     'onebot-webqq/webqq/notices'(): Promise<WebQQNotice[]>
     'onebot-webqq/webqq/notice-action'(action: WebQQNoticeAction): Promise<void>

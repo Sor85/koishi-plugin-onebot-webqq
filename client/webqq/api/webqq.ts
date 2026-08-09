@@ -14,6 +14,8 @@ import type {
   WebQQGroupMember,
   WebQQMessage,
   WebQQMessageElement,
+  WebQQMessageSearchQuery,
+  WebQQMessageSearchResult,
   WebQQMessageReaction,
   WebQQMessageReactionInput,
   WebQQMessageReactionUser,
@@ -427,6 +429,17 @@ export async function requestWebQQContactsWithRetry(requestContacts: () => Promi
 
 export async function requestWebQQMessages(query: WebQQMessageQuery) {
   return normalizeArray(await send('onebot-webqq/webqq/messages', query), normalizeWebQQMessage)
+}
+
+export async function searchWebQQMessages(query: WebQQMessageSearchQuery): Promise<WebQQMessageSearchResult> {
+  const value = await send('onebot-webqq/webqq/messages/search', query)
+  if (!isRecord(value)) return { messages: [], scannedCount: 0, exhausted: true }
+  return {
+    messages: normalizeArray(value.messages, normalizeWebQQMessage),
+    scannedCount: readNumber(value.scannedCount) ?? 0,
+    exhausted: readBoolean(value.exhausted) ?? true,
+    ...(readStringField(value, 'nextBeforeSequence') ? { nextBeforeSequence: readStringField(value, 'nextBeforeSequence') } : {}),
+  }
 }
 
 export async function requestWebQQRecordTranscription(messageId: string) {

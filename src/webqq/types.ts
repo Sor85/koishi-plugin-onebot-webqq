@@ -197,6 +197,20 @@ export interface WebQQMessageQuery {
   beforeSequence?: string
 }
 
+export interface WebQQMessageSearchQuery {
+  type: WebQQChatType
+  peerId: string
+  keyword: string
+  beforeSequence?: string
+}
+
+export interface WebQQMessageSearchResult {
+  messages: WebQQMessage[]
+  scannedCount: number
+  exhausted: boolean
+  nextBeforeSequence?: string
+}
+
 export interface WebQQRecordTranscriptionQuery {
   messageId: string
 }

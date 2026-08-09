@@ -1318,6 +1318,16 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__forward-entry::after')).toContain('content:')
   })
 
+  it('styles WebQQ chat history search as a responsive modal', () => {
+    expect(ruleBody('.onebot-webqq-webqq__chat-header-actions')).toContain('display: flex')
+    expect(ruleBody('.onebot-webqq-webqq__message-search-backdrop')).toContain('position: fixed')
+    expect(ruleBody('.onebot-webqq-webqq__message-search')).toContain('width: min(520px, calc(100vw - 32px))')
+    expect(ruleBody('.onebot-webqq-webqq__message-search-results')).toContain('overflow-y: auto')
+    expect(ruleBody('.onebot-webqq-webqq__message-search-input-wrap')).toContain('border: 1px solid #d9e1ea')
+    expect(ruleBody('.onebot-webqq-webqq__message-search-result')).toContain('text-align: left')
+    expect(style).toContain('@media (max-width: 640px)')
+  })
+
   it('styles WebQQ forward message details as an LLBot-style centered modal', () => {
     expect(ruleBody('.onebot-webqq-webqq__forward-modal-backdrop')).toContain('position: fixed')
     expect(ruleBody('.onebot-webqq-webqq__forward-modal-backdrop')).toContain('inset: 0')

@@ -75,17 +75,23 @@
               <span>{{ currentSubtitle }}</span>
             </div>
           </div>
-          <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" :aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'" @click="toggleGroupInfo">
-            <svg class="onebot-webqq-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="19" cy="12" r="1"></circle>
-              <circle cx="5" cy="12" r="1"></circle>
-            </svg>
-          </button>
+          <div class="onebot-webqq-webqq__chat-header-actions">
+            <button ref="messageSearchTrigger" v-if="currentChat" type="button" aria-label="查找聊天记录" @click="openMessageSearch">
+              <IconSearch class="onebot-webqq-webqq__header-icon" :size="20" aria-hidden="true" />
+            </button>
+            <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" :aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'" @click="toggleGroupInfo">
+              <svg class="onebot-webqq-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+              </svg>
+            </button>
+          </div>
         </header>
         <div :class="['onebot-webqq-webqq__chat-body', { 'has-send-input': enableWebQQSend && currentChat }]">
           <div ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages" :class="{ 'is-selecting': selectionMode }" @scroll="updateMessageTracking">
             <WebQQMessageList
+              ref="messageList"
               :loading="loading"
               :error-text="errorText"
               :has-current-chat="!!currentChat"
@@ -246,6 +252,21 @@
         @kick-group-member="handleKickGroupMember"
       />
     </section>
+    <WebQQMessageSearchModal
+      v-if="messageSearchOpen"
+      v-model:query="messageSearchQuery"
+      :results="messageSearchResults"
+      :loading="messageSearchLoading"
+      :error-text="messageSearchErrorText"
+      :searched="messageSearchSearched"
+      :scanned-count="messageSearchScannedCount"
+      :exhausted="messageSearchExhausted"
+      :style="webQQAccentStyle"
+      @close="closeMessageSearch"
+      @search="searchMessages"
+      @more="searchMoreMessages"
+      @select="selectSearchResult"
+    />
     <WebQQForwardModal
       v-if="forwardDialog"
       :dialog="forwardDialog"
@@ -292,7 +313,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Binary, withProxy } from '@koishijs/client'
-import { IconId, IconShare3, IconX } from '@tabler/icons-vue'
+import { IconId, IconSearch, IconShare3, IconX } from '@tabler/icons-vue'
 import { Button } from '../components/ui/button'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../components/ui/context-menu'
 import WebQQActionDialog from './components/WebQQActionDialog.vue'
@@ -303,6 +324,7 @@ import WebQQMentionMenu from './components/WebQQMentionMenu.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQNoticeMenu from './components/WebQQNoticeMenu.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
+import WebQQMessageSearchModal from './components/WebQQMessageSearchModal.vue'
 import WebQQForwardTargetDialog, { type WebQQForwardTargetModel, type WebQQForwardTargetOption } from './components/WebQQForwardTargetDialog.vue'
 import WebQQGroupInfoPanel from './components/WebQQGroupInfoPanel.vue'
 import WebQQImagePreview from './components/WebQQImagePreview.vue'
@@ -319,6 +341,7 @@ import {
   requestWebQQNotices,
   requestWebQQProfile,
   requestWebQQRecordTranscription,
+  searchWebQQMessages,
   sendWebQQForward,
   sendWebQQMessage,
   setWebQQMessageReaction,
@@ -327,7 +350,7 @@ import {
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
 import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
-import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQSendElement } from './types'
+import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMessageSearchResult, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
 import {
@@ -362,6 +385,7 @@ import {
   formatThinkingDuration,
   getGroupMemberName,
   getUnreadText,
+  mergeMessages,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
@@ -399,6 +423,8 @@ const webQQVideoFileExtensions = new Set(['mp4', 'webm', 'mov', 'm4v', '3gp'])
 
 const props = defineProps<{ visible: boolean }>()
 const webQQRoot = ref<HTMLElement>()
+const messageSearchTrigger = ref<HTMLButtonElement>()
+const messageList = ref<{ scrollToMessage: (messageId: string) => boolean }>()
 const webQQShellSize = ref<WebQQShellSize>()
 const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
@@ -1147,6 +1173,15 @@ const {
 
 const selectionMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
+const messageSearchOpen = ref(false)
+const messageSearchQuery = ref('')
+const messageSearchResults = ref<WebQQMessage[]>([])
+const messageSearchLoading = ref(false)
+const messageSearchErrorText = ref('')
+const messageSearchSearched = ref(false)
+const messageSearchScannedCount = ref(0)
+const messageSearchExhausted = ref(true)
+const messageSearchNextBeforeSequence = ref('')
 const forwardTargetOpen = ref(false)
 const replyingToMessageId = ref('')
 const reactionPickerMessageId = ref('')
@@ -1284,6 +1319,78 @@ function handleRecallMessage(messageId: string) {
 function handleSelectionForward() {
   if (!currentChat.value || !selectedMessageIds.value.length) return
   forwardTargetOpen.value = true
+}
+
+function resetMessageSearchResults() {
+  messageSearchResults.value = []
+  messageSearchErrorText.value = ''
+  messageSearchSearched.value = false
+  messageSearchScannedCount.value = 0
+  messageSearchExhausted.value = true
+  messageSearchNextBeforeSequence.value = ''
+}
+
+function openMessageSearch() {
+  if (!currentChat.value) return
+  messageSearchOpen.value = true
+  resetMessageSearchResults()
+}
+
+function closeMessageSearch() {
+  if (!messageSearchOpen.value) return
+  messageSearchOpen.value = false
+  messageSearchLoading.value = false
+  // 搜索弹窗由显式 v-if 卸载；必须等 DOM 移除后再恢复触发按钮焦点，避免 Chrome 与 Firefox 把焦点落到 body。
+  void nextTick(() => messageSearchTrigger.value?.focus())
+}
+
+async function requestMessageSearch(more: boolean) {
+  const chat = currentChat.value
+  const keyword = messageSearchQuery.value.trim()
+  if (!chat || !keyword || messageSearchLoading.value) return
+  const expectedChatKey = `${chat.type}:${chat.peerId}`
+  messageSearchLoading.value = true
+  messageSearchErrorText.value = ''
+  if (!more) resetMessageSearchResults()
+  try {
+    const result: WebQQMessageSearchResult = await searchWebQQMessages({
+      type: chat.type,
+      peerId: chat.peerId,
+      keyword,
+      ...(more && messageSearchNextBeforeSequence.value ? { beforeSequence: messageSearchNextBeforeSequence.value } : {}),
+    })
+    if (`${currentChat.value?.type}:${currentChat.value?.peerId}` !== expectedChatKey) return
+    messageSearchResults.value = more
+      ? mergeMessages(result.messages, messageSearchResults.value)
+      : result.messages
+    messageSearchScannedCount.value += result.scannedCount
+    messageSearchExhausted.value = result.exhausted
+    messageSearchNextBeforeSequence.value = result.nextBeforeSequence || ''
+    messageSearchSearched.value = true
+  } catch (error) {
+    messageSearchErrorText.value = error instanceof Error ? error.message : '查找聊天记录失败'
+    messageSearchSearched.value = true
+  } finally {
+    messageSearchLoading.value = false
+  }
+}
+
+function searchMessages() {
+  void requestMessageSearch(false)
+}
+
+function searchMoreMessages() {
+  void requestMessageSearch(true)
+}
+
+async function selectSearchResult(message: WebQQMessage) {
+  const chat = currentChat.value
+  if (!chat) return
+  messages.value = mergeMessages(messages.value, [message])
+  rememberMessageSenderMetadata(chat.type, chat.peerId, [message])
+  closeMessageSearch()
+  await nextTick()
+  messageList.value?.scrollToMessage(message.id || message.sequence)
 }
 
 function confirmSelectionForward(target: WebQQForwardTargetOption, resolve: () => void, reject: (error: unknown) => void) {
@@ -1583,6 +1690,11 @@ function handleKickGroupMember(userId: string) {
 
 function handleSelectionKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
+  if (messageSearchOpen.value) {
+    event.preventDefault()
+    closeMessageSearch()
+    return
+  }
   if (forwardTargetOpen.value) {
     event.preventDefault()
     forwardTargetOpen.value = false
@@ -1601,6 +1713,9 @@ function handleSelectionKeydown(event: KeyboardEvent) {
 
 watch(currentChat, () => {
   exitSelection()
+  closeMessageSearch()
+  resetMessageSearchResults()
+  messageSearchQuery.value = ''
   clearReplyTarget()
   resetComposerDraft({ focus: false })
   closeMentionMenu()

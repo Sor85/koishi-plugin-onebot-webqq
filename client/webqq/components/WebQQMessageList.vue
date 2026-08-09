@@ -707,17 +707,22 @@ function isHighlightedMessage(message: WebQQMessage) {
 
 function scrollToQuotedMessage(targetMessageId: string) {
   const target = props.visibleMessages.find((message) => message.id === targetMessageId || message.sequence === targetMessageId)
-  if (!target) return
+  if (!target) return false
   const targetKey = getMessageDomKey(target)
   const element = messageElementRefs.get(targetKey)
-  if (!element) return
+  if (!element) return false
   if (highlightTimer) clearTimeout(highlightTimer)
   highlightedMessageKey.value = getMessageDomKey(target)
   element.scrollIntoView({ block: 'center', behavior: 'smooth' })
   highlightTimer = setTimeout(() => {
     if (highlightedMessageKey.value === targetKey) highlightedMessageKey.value = ''
   }, 1400)
+  return true
 }
+
+defineExpose({
+  scrollToMessage: scrollToQuotedMessage,
+})
 
 function getThinkingMessage(index: number) {
   return props.getLastOutgoingClusterThinkingMessage(index)

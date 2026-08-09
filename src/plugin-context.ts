@@ -11,6 +11,8 @@ import type {
   WebQQGroupInfoQuery,
   WebQQMessage,
   WebQQMessageQuery,
+  WebQQMessageSearchQuery,
+  WebQQMessageSearchResult,
   WebQQMessageReactionInput,
   WebQQMessageRecallInput,
   WebQQNotice,
@@ -34,6 +36,7 @@ import type {
 export interface ConsoleEvents {
   'onebot-webqq/webqq/contacts': () => Promise<WebQQContacts>
   'onebot-webqq/webqq/messages': (query: WebQQMessageQuery) => Promise<WebQQMessage[]>
+  'onebot-webqq/webqq/messages/search': (query: WebQQMessageSearchQuery) => Promise<WebQQMessageSearchResult>
   'onebot-webqq/webqq/group-info': (query: WebQQGroupInfoQuery) => Promise<WebQQGroupInfo>
   'onebot-webqq/webqq/record/transcribe': (query: WebQQRecordTranscriptionQuery) => Promise<string>
   'onebot-webqq/webqq/notices': () => Promise<WebQQNotice[]>
