@@ -60,6 +60,38 @@ describe('webqq client api', () => {
     await expect(requestWebQQRecordTranscription('message-1')).resolves.toBe('')
   })
 
+  it('preserves raw group roles for message recall permission checks', async () => {
+    sendState.response = {
+      announcements: [],
+      members: [{
+        userId: '10000',
+        nickname: 'Bot',
+        card: '',
+        avatar: '',
+        role: '管理员',
+        rawRole: 'admin',
+      }],
+    }
+
+    await expect(requestWebQQGroupInfo('20000')).resolves.toEqual({
+      announcements: [],
+      members: [expect.objectContaining({
+        userId: '10000',
+        rawRole: 'admin',
+      })],
+    })
+  })
+
+  it('preserves the mock environment marker from contacts', async () => {
+    sendState.response = { friends: [], groups: [], mockEnvironment: true }
+
+    await expect(requestWebQQContacts()).resolves.toEqual({
+      friends: [],
+      groups: [],
+      mockEnvironment: true,
+    })
+  })
+
   it('keeps an empty reaction array as an authoritative cleared state', async () => {
     sendState.response = [{
       id: 'message-1',

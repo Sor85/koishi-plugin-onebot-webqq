@@ -136,7 +136,7 @@ export function createMockWebQQScene(): MockWebQQScene {
     {
       groupId: MOCK_GROUP_ID,
       name: '模拟开发群',
-      memberCount: 4,
+      memberCount: 5,
       avatar: getWebQQGroupAvatar(MOCK_GROUP_ID),
     },
   ]
@@ -150,6 +150,14 @@ export function createMockWebQQScene(): MockWebQQScene {
         avatar: getWebQQUserAvatar(MOCK_SELF_ID),
         role: '群主',
         rawRole: 'owner',
+      },
+      {
+        userId: MOCK_SECOND_SELF_ID,
+        nickname: '备用机器人',
+        card: '管理员机器人',
+        avatar: getWebQQUserAvatar(MOCK_SECOND_SELF_ID),
+        role: '管理员',
+        rawRole: 'admin',
       },
       {
         userId: MOCK_FRIEND_ALICE_ID,
@@ -406,7 +414,7 @@ export function createMockWebQQScene(): MockWebQQScene {
       time: now - 200_000,
       senderId: MOCK_FRIEND_ALICE_ID,
       senderName: 'Alice',
-      senderRole: '群主',
+      senderRole: '管理员',
       senderLevel: '88',
       senderTitle: '开发者',
       direction: 'incoming',
@@ -439,7 +447,7 @@ export function createMockWebQQScene(): MockWebQQScene {
       time: now - 180_000,
       senderId: MOCK_SELF_ID,
       senderName: '模拟机器人',
-      senderRole: '管理员',
+      senderRole: '群主',
       direction: 'outgoing',
       summary: '已收到，准备开始测试',
       elements: [{ type: 'text', text: '已收到，准备开始测试' }],
@@ -457,6 +465,17 @@ export function createMockWebQQScene(): MockWebQQScene {
         imageUrl: 'https://example.com/group-image.png',
         url: 'https://example.com/group-image.png',
       }],
+    }),
+    createMessage({
+      id: 'group-msg-4',
+      sequence: '104',
+      time: now - 140_000,
+      senderId: MOCK_SECOND_SELF_ID,
+      senderName: '备用机器人',
+      senderRole: '管理员',
+      direction: 'incoming',
+      summary: '管理员权限测试消息',
+      elements: [{ type: 'text', text: '管理员权限测试消息' }],
     }),
   ]
 

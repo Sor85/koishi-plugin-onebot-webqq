@@ -413,10 +413,10 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     },
 
     async setMessageReaction(input: WebQQMessageReactionInput) {
-      if (input.type !== 'group') throw new Error('仅群聊消息支持贴表情')
       if (!input.messageId) throw new Error('messageId 不能为空')
       if (!input.emojiId) throw new Error('emojiId 不能为空')
       const bot = getBot()
+      // set_msg_emoji_like 按全局 message_id 定位消息，不区分私聊或群聊；不要在 WebQQ 层额外拦截私聊。
       const params: Record<string, unknown> = {
         message_id: toOneBotId(input.messageId),
         emoji_id: input.emojiId,

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MOCK_FRIEND_ALICE_ID,
   MOCK_GROUP_ID,
+  MOCK_SECOND_SELF_ID,
   MOCK_SELF_ID,
   createMockWebQQScene,
 } from '../src/webqq/adapters/mock/scene'
@@ -10,6 +11,9 @@ import { createMockWebQQService } from '../src/webqq/adapters/mock/service'
 
 const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
+const consoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
+const observerSource = await readFile(new URL('../client/webqq/WebQQObserver.vue', import.meta.url), 'utf8')
+const messageListSource = await readFile(new URL('../client/webqq/components/WebQQMessageList.vue', import.meta.url), 'utf8')
 
 describe('webqq mock environment', () => {
   it('exposes webQQMockEnvironment in developer options with default false', () => {
@@ -20,16 +24,24 @@ describe('webqq mock environment', () => {
     expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境.')")
   })
 
-  it('createPluginRuntime selects mock service when webQQMockEnvironment is enabled', () => {
+  it('isolates mock messages from real affinity data and persisted browser caches', () => {
     expect(runtimeSource).toContain("import { createMockWebQQService } from '../webqq/adapters/mock/service'")
     expect(runtimeSource).toContain('config.webQQMockEnvironment')
     expect(runtimeSource).toContain('createMockWebQQService()')
     expect(runtimeSource).toContain('createOneBotWebQQService(ctx, {')
+    expect(consoleSource).toContain('config.webQQMockEnvironment')
+    expect(consoleSource).toContain('attachWebQQAffinityBadges')
+    expect(observerSource).toContain('contacts.value.mockEnvironment')
+    expect(observerSource).toContain('if (isWebQQMockEnvironment.value) return []')
+    expect(observerSource).toContain('if (isWebQQMockEnvironment.value) return')
+    expect(messageListSource).toContain('message.senderId !== currentOperatorId && message.senderAffinity != null')
+    expect(messageListSource).toContain('message.senderId !== currentOperatorId && message.senderRelationship')
   })
 
   it('loads preset contacts, message element types, reactions and recalled messages', async () => {
     const service = createMockWebQQService(createMockWebQQScene())
     const contacts = await service.loadContacts()
+    expect(contacts.mockEnvironment).toBe(true)
     expect(contacts.friendCategories?.[0]?.friends.length).toBeGreaterThan(0)
     expect(contacts.groups[0]?.name).toBe('模拟开发群')
 
@@ -50,6 +62,11 @@ describe('webqq mock environment', () => {
       limit: 20,
     })
     expect(groupMessages[0]?.reactions?.[0]?.users?.length).toBeGreaterThan(0)
+    expect(groupMessages.find((message) => message.senderId === MOCK_SELF_ID)).not.toHaveProperty('senderAffinity')
+    expect(groupMessages.find((message) => message.senderId === MOCK_SELF_ID)).not.toHaveProperty('senderRelationship')
+    expect(groupMessages.filter((message) => message.senderId !== MOCK_SELF_ID)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ senderAffinity: expect.any(Number), senderRelationship: expect.any(String) }),
+    ]))
 
     const users = await service.loadReactionUsers(groupMessages[0]!.id, groupMessages[0]!.reactions![0]!.emojiId, 10)
     expect(users.length).toBeGreaterThan(0)
@@ -57,6 +74,11 @@ describe('webqq mock environment', () => {
 
     const groupInfo = await service.loadGroupInfo({ groupId: MOCK_GROUP_ID })
     expect(groupInfo.members.length).toBeGreaterThan(0)
+    expect(groupInfo.members.find((member) => member.userId === MOCK_SECOND_SELF_ID)?.rawRole).toBe('admin')
+    for (const message of groupMessages) {
+      const member = groupInfo.members.find((item) => item.userId === message.senderId)
+      if (member) expect(message.senderRole).toBe(member.role)
+    }
     expect(groupInfo.announcements.length).toBeGreaterThan(0)
 
     const notices = await service.loadNotices()
@@ -93,8 +115,18 @@ describe('webqq mock environment', () => {
     expect(service.getSelectedSelfId()).toBe(MOCK_SELF_ID)
     expect(service.reconcileBotState().selectedSelfId).toBe(MOCK_SELF_ID)
     expect(service.isAvailableSelectedSelfId(MOCK_SELF_ID)).toBe(true)
-    expect(service.selectSelfId('10002')).toBe('10002')
-    expect(service.isSelectedSelfId('10002')).toBe(true)
+    expect(service.selectSelfId(MOCK_SECOND_SELF_ID)).toBe(MOCK_SECOND_SELF_ID)
+    expect(service.isSelectedSelfId(MOCK_SECOND_SELF_ID)).toBe(true)
+    const secondBotMessages = await service.loadMessages({
+      type: 'group',
+      peerId: MOCK_GROUP_ID,
+      limit: 20,
+    })
+    expect(secondBotMessages.find((message) => message.senderId === MOCK_SELF_ID)?.direction).toBe('incoming')
+    const secondBotOwnMessage = secondBotMessages.find((message) => message.senderId === MOCK_SECOND_SELF_ID)
+    expect(secondBotOwnMessage).toMatchObject({ direction: 'outgoing', senderRole: '管理员' })
+    expect(secondBotOwnMessage).not.toHaveProperty('senderAffinity')
+    expect(secondBotOwnMessage).not.toHaveProperty('senderRelationship')
     service.selectSelfId(MOCK_SELF_ID)
 
     await service.sendMessage({
@@ -140,7 +172,20 @@ describe('webqq mock environment', () => {
       reaction.emojiId === '76' && reaction.users?.some((user) => user.userId === MOCK_SELF_ID)
     ))).toBe(true)
 
+    await service.setMessageReaction({
+      type: 'friend',
+      peerId: MOCK_FRIEND_ALICE_ID,
+      messageId: 'friend-msg-1',
+      emojiId: '66',
+      enabled: true,
+    })
+    const privateReacted = await service.resolveMessage('friend-msg-1')
+    expect(privateReacted.reactions?.some((reaction) => (
+      reaction.emojiId === '66' && reaction.users?.some((user) => user.userId === MOCK_SELF_ID)
+    ))).toBe(true)
+
     const selfProfile = await service.loadProfile({ userId: MOCK_SELF_ID, groupId: MOCK_GROUP_ID })
+    expect(selfProfile).toMatchObject({ groupRole: '群主', rawRole: 'owner' })
     expect(selfProfile.canEditSelf).toBe(true)
     expect(selfProfile.canEditAvatar).toBe(true)
     await service.updateSelfProfile({

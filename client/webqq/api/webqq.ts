@@ -332,6 +332,7 @@ function normalizeWebQQContacts(value: unknown): WebQQContacts {
   return {
     friends: normalizeArray(value.friends, normalizeWebQQFriend),
     groups: normalizeArray(value.groups, normalizeWebQQGroup),
+    ...(value.mockEnvironment === true ? { mockEnvironment: true } : {}),
     ...(friendCategories.length ? { friendCategories } : {}),
     ...(recent.length ? { recent } : {}),
   }
@@ -359,12 +360,17 @@ function normalizeWebQQGroupMember(value: unknown): WebQQGroupMember | undefined
   const card = readStringField(value, 'card')
   const avatar = readStringField(value, 'avatar')
   if (userId == null || nickname == null || card == null || avatar == null) return
+  // 撤回他人消息依赖协议原始角色；若只保留本地化 role，角色文案变化会让管理员权限判断失效。
+  const rawRole = value.rawRole === 'owner' || value.rawRole === 'admin' || value.rawRole === 'member'
+    ? value.rawRole
+    : undefined
   return {
     userId,
     nickname,
     card,
     avatar,
     ...(readStringField(value, 'role') != null ? { role: readStringField(value, 'role') } : {}),
+    ...(rawRole ? { rawRole } : {}),
   }
 }
 

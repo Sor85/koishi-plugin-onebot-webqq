@@ -117,7 +117,7 @@ export interface WebQQMessageRecallInput {
 }
 
 export interface WebQQMessageReactionInput {
-  type: 'group'
+  type: WebQQChatType
   peerId: string
   messageId: string
   emojiId: string
@@ -268,6 +268,7 @@ export type WebQQStoredState = {
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]
+  mockEnvironment?: boolean
   friendCategories?: WebQQFriendCategory[]
   recent?: WebQQRecentContact[]
 }

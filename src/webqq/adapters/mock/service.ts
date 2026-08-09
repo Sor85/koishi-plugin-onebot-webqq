@@ -29,6 +29,9 @@ import type {
   WebQQSendPayload,
 } from '../../types'
 import {
+  MOCK_FRIEND_ALICE_ID,
+  MOCK_FRIEND_BOB_ID,
+  MOCK_GROUP_MEMBER_ID,
   cloneMockWebQQScene,
   getMockConversationKey,
   type MockWebQQScene,
@@ -173,8 +176,42 @@ function findMessage(scene: MockWebQQScene, messageId: string) {
   }
 }
 
+function findMessageChatType(scene: MockWebQQScene, messageId: string): WebQQMessageQuery['type'] | undefined {
+  for (const [key, messages] of Object.entries(scene.messages)) {
+    if (!messages.some((item) => item.id === messageId)) continue
+    return key.startsWith('group:') ? 'group' : 'friend'
+  }
+}
+
 function getSelectedBot(scene: MockWebQQScene) {
   return scene.bots.find((bot) => bot.selfId === scene.selectedSelfId) || scene.bots[0]
+}
+
+const mockAffinityBadges: Record<string, Pick<WebQQMessage, 'senderAffinity' | 'senderRelationship'>> = {
+  [MOCK_FRIEND_ALICE_ID]: { senderAffinity: 168, senderRelationship: '友好' },
+  [MOCK_FRIEND_BOB_ID]: { senderAffinity: 72, senderRelationship: '熟悉' },
+  [MOCK_GROUP_MEMBER_ID]: { senderAffinity: 24, senderRelationship: '陌生' },
+}
+
+function cloneMessageForSelectedBot(scene: MockWebQQScene, message: WebQQMessage, type?: WebQQMessageQuery['type']) {
+  const cloned = structuredClone(message)
+  const selectedBot = getSelectedBot(scene)
+  // 模拟环境切换 Bot 后必须重新计算消息方向，否则上一台 Bot 的消息仍被当作“自己发送”，会绕过群角色撤回限制。
+  cloned.direction = selectedBot?.selfId === cloned.senderId ? 'outgoing' : 'incoming'
+
+  delete cloned.senderAffinity
+  delete cloned.senderRelationship
+  // 好感度描述的是 Bot 与外部用户的关系；任何模拟 Bot 自身都不应显示自己的好感度或关系徽标。
+  if (!scene.bots.some((bot) => bot.selfId === cloned.senderId)) {
+    Object.assign(cloned, mockAffinityBadges[cloned.senderId])
+  }
+
+  if (type === 'group') {
+    const member = Object.values(scene.groupMembers).flat().find((item) => item.userId === cloned.senderId)
+    if (member?.role) cloned.senderRole = member.role
+    else delete cloned.senderRole
+  }
+  return cloned
 }
 
 // 创建内存同构 WebQQ service，供开发者模拟环境与无真实 OneBot 时的 UI 验证使用。
@@ -264,7 +301,7 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
     async resolveMessage(id: string, _selfId?: string) {
       const message = findMessage(scene, id)
       if (!message) throw new Error(`未找到消息 ${id}`)
-      return structuredClone(message)
+      return cloneMessageForSelectedBot(scene, message, findMessageChatType(scene, id))
     },
 
     supportsReactionUsers(_selfId?: string) {
@@ -314,6 +351,7 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
       return {
         friends: structuredClone(scene.friends),
         groups: structuredClone(scene.groups),
+        mockEnvironment: true,
         friendCategories: structuredClone(scene.friendCategories),
         recent: structuredClone(scene.recent),
       }
@@ -327,7 +365,9 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
         const index = messages.findIndex((item) => item.sequence === query.beforeSequence)
         filtered = index >= 0 ? messages.slice(0, index) : messages
       }
-      return structuredClone(filtered.slice(Math.max(0, filtered.length - limit)))
+      return filtered
+        .slice(Math.max(0, filtered.length - limit))
+        .map((message) => cloneMessageForSelectedBot(scene, message, query.type))
     },
 
     async sendMessage(payload: WebQQSendPayload) {
@@ -345,10 +385,9 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
     },
 
     async setMessageReaction(input: WebQQMessageReactionInput) {
-      if (input.type !== 'group') throw new Error('仅群聊消息支持贴表情')
       if (!input.messageId) throw new Error('messageId 不能为空')
       if (!input.emojiId) throw new Error('emojiId 不能为空')
-      const messages = ensureConversation(scene, 'group', input.peerId)
+      const messages = ensureConversation(scene, input.type, input.peerId)
       const message = messages.find((item) => item.id === input.messageId)
       if (!message) throw new Error(`未找到消息 ${input.messageId}`)
       const bot = getSelectedBot(scene)
@@ -427,7 +466,7 @@ export function createMockWebQQService(initialScene?: MockWebQQScene) {
         ...(member?.card || base?.groupCard ? { groupCard: member?.card || base?.groupCard } : {}),
         ...(base?.groupTitle || member?.role === '群主' ? { groupTitle: base?.groupTitle || (member?.role === '群主' ? '群主' : undefined) } : {}),
         ...(member?.role || base?.groupRole ? { groupRole: member?.role || base?.groupRole } : {}),
-        ...(base?.rawRole ? { rawRole: base.rawRole } : {}),
+        ...(member?.rawRole || base?.rawRole ? { rawRole: member?.rawRole || base?.rawRole } : {}),
         fields: [],
         ...(isSelf ? { canEditSelf: true, canEditAvatar: true } : {}),
       }

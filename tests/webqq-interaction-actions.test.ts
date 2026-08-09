@@ -50,7 +50,7 @@ describe('webqq interaction actions', () => {
     expect(bot.internal.delete_msg).toHaveBeenCalledWith({ message_id: 12345 })
   })
 
-  it('sets message reactions with NapCat set flag', async () => {
+  it('sets group and private message reactions with NapCat set flag', async () => {
     const bot = createBot({
       set_msg_emoji_like: vi.fn(async () => ({})),
     })
@@ -63,11 +63,23 @@ describe('webqq interaction actions', () => {
       emojiId: '76',
       enabled: false,
     })
+    await service.setMessageReaction({
+      type: 'friend',
+      peerId: '30000',
+      messageId: '89',
+      emojiId: '66',
+      enabled: true,
+    })
 
-    expect(bot.internal.set_msg_emoji_like).toHaveBeenCalledWith({
+    expect(bot.internal.set_msg_emoji_like).toHaveBeenNthCalledWith(1, {
       message_id: 88,
       emoji_id: '76',
       set: false,
+    })
+    expect(bot.internal.set_msg_emoji_like).toHaveBeenNthCalledWith(2, {
+      message_id: 89,
+      emoji_id: '66',
+      set: true,
     })
   })
 

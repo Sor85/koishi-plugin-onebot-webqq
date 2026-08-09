@@ -61,7 +61,7 @@
                   >
                     <span class="onebot-webqq-webqq__message-avatar-wrap">
                       <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(message.senderAvatar)" :alt="message.senderName">
-                      <span v-if="message.senderAffinity != null && showWebQQAffinity" class="onebot-webqq-webqq__message-affinity">
+                      <span v-if="message.senderId !== currentOperatorId && message.senderAffinity != null && showWebQQAffinity" class="onebot-webqq-webqq__message-affinity">
                         <svg class="onebot-webqq-webqq__message-affinity-icon" viewBox="0 0 24 24" aria-hidden="true">
                           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
                         </svg>
@@ -119,11 +119,11 @@
               <span v-if="getSenderAuthorityText(message)" :class="['onebot-webqq-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
               <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="onebot-webqq-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
               <span class="onebot-webqq-webqq__message-name">{{ message.senderName }}</span>
-              <span v-if="message.senderRelationship && showWebQQRelationship" class="onebot-webqq-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
+              <span v-if="message.senderId !== currentOperatorId && message.senderRelationship && showWebQQRelationship" class="onebot-webqq-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
             </template>
             <template v-if="message.direction === 'incoming'">
               <span class="onebot-webqq-webqq__message-name">{{ message.senderName }}</span>
-              <span v-if="message.senderRelationship && showWebQQRelationship" class="onebot-webqq-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
+              <span v-if="message.senderId !== currentOperatorId && message.senderRelationship && showWebQQRelationship" class="onebot-webqq-webqq__sender-badge is-relationship">{{ message.senderRelationship }}</span>
               <span v-if="message.senderLevel && !hideWebQQGroupLevel" class="onebot-webqq-webqq__sender-badge is-level">{{ formatSenderLevel(message.senderLevel) }}</span>
               <span v-if="getSenderAuthorityText(message)" :class="['onebot-webqq-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
             </template>
@@ -454,6 +454,10 @@ import {
   type WebQQUsageMessage,
 } from '../utils/webqq-message-view'
 import { fitWebQQBubbleToInlineLines } from '../utils/webqq-bubble-width'
+import {
+  canReactToWebQQMessage,
+  canRecallWebQQMessage,
+} from '../utils/webqq-message-permissions'
 
 const props = withDefaults(defineProps<{
   loading: boolean
@@ -536,23 +540,18 @@ function isMessageSelected(messageId: string) {
   return getSelectedMessageIds().includes(messageId)
 }
 function canRecallMessage(message: WebQQMessage) {
-  const operatorId = props.currentOperatorId
-  if (!operatorId || message.event || message.recalled || !message.id) return false
-  if (message.direction === 'outgoing' || message.senderId === operatorId) return true
-  if (props.chatType !== 'group') return false
-  const actor = getGroupMember(operatorId)
-  const target = getGroupMember(message.senderId)
-  if (!actor || !target) return false
-  const actorRole = actor.role === 'owner' || actor.role === '群主' ? 'owner' : actor.role === 'admin' || actor.role === '管理员' ? 'admin' : 'member'
-  const targetRole = target.role === 'owner' || target.role === '群主' ? 'owner' : target.role === 'admin' || target.role === '管理员' ? 'admin' : 'member'
-  if (actorRole === 'member') return false
-  return targetRole !== 'owner' && !(actorRole === 'admin' && targetRole === 'admin')
+  return canRecallWebQQMessage(
+    message,
+    props.chatType,
+    props.currentOperatorId,
+    props.groupMembers ?? [],
+  )
 }
 function canReactToMessage(message: WebQQMessage) {
-  return props.chatType === 'group' && !message.event && !message.recalled && !!message.id && !!props.currentOperatorId
+  return canReactToWebQQMessage(message, props.chatType, props.currentOperatorId)
 }
 function isReactionReadonly(message: WebQQMessage) {
-  return props.chatType !== 'group' || !!message.event || !!message.recalled || !props.currentOperatorId
+  return !canReactToMessage(message)
 }
 function toggleReaction(message: WebQQMessage, emojiId: string) {
   if (isReactionReadonly(message) || !message.id || !props.currentOperatorId) return
