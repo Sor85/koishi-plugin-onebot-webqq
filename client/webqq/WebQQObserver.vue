@@ -151,7 +151,7 @@
                 </button>
               </div>
               <template v-for="file in sendFiles" :key="file.id">
-                <span v-if="!file.previewUrl" class="onebot-webqq-webqq__send-file">
+                <span v-if="file.kind === 'file' || !file.previewUrl" class="onebot-webqq-webqq__send-file">
                   <svg class="onebot-webqq-webqq__send-file-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"></path>
                     <path d="M14 2v5h5"></path>
@@ -160,6 +160,14 @@
                     <span class="onebot-webqq-webqq__send-file-base">{{ file.baseName }}</span><span>{{ file.extension }}</span>
                   </span>
                   <button type="button" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
+                    <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                  </button>
+                </span>
+                <span v-else-if="file.kind === 'video'" class="onebot-webqq-webqq__send-image">
+                  <span class="onebot-webqq-webqq__send-image-preview" role="img" :aria-label="`视频 ${file.file.name}`">
+                    <video :src="file.previewUrl" muted playsinline preload="metadata" aria-hidden="true"></video>
+                  </span>
+                  <button type="button" class="onebot-webqq-webqq__send-image-remove" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
                     <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                   </button>
                 </span>
@@ -376,13 +384,18 @@ interface WebQQResizeState {
   startHeight: number
 }
 
+type WebQQSendFileKind = 'image' | 'video' | 'file'
+
 interface WebQQSendFile {
   id: string
   file: File
+  kind: WebQQSendFileKind
   previewUrl?: string
   baseName: string
   extension: string
 }
+
+const webQQVideoFileExtensions = new Set(['mp4', 'webm', 'mov', 'm4v', '3gp'])
 
 const props = defineProps<{ visible: boolean }>()
 const webQQRoot = ref<HTMLElement>()
@@ -528,12 +541,24 @@ function getSendFileNameParts(name: string) {
   }
 }
 
+function getSendFileKind(file: File): WebQQSendFileKind {
+  const mime = file.type.toLowerCase()
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('video/')) return 'video'
+  const extension = file.name.split('.').pop()?.toLowerCase() || ''
+  // Firefox 与部分系统文件选择器可能不提供 MIME；仅对 QQ 常见可播放格式回退，
+  // 避免把不受支持的视频容器误发为原生视频消息。
+  return webQQVideoFileExtensions.has(extension) ? 'video' : 'file'
+}
+
 function addSendFiles(files: Iterable<File>) {
   for (const file of files) {
+    const kind = getSendFileKind(file)
     sendFiles.value.push({
       id: `${file.name}:${file.size}:${file.lastModified}:${sendFiles.value.length}`,
       file,
-      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      kind,
+      previewUrl: kind === 'image' || kind === 'video' ? URL.createObjectURL(file) : undefined,
       ...getSendFileNameParts(file.name),
     })
   }
@@ -844,7 +869,7 @@ function handleComposerKeydown(event: KeyboardEvent) {
 
 async function toSendElement(file: File): Promise<WebQQSendElement> {
   return {
-    type: file.type.startsWith('image/') ? 'image' : 'file',
+    type: getSendFileKind(file),
     data: `data:${file.type || 'application/octet-stream'};base64,${Binary.toBase64(await file.arrayBuffer())}`,
     name: file.name,
   }

@@ -93,7 +93,7 @@ export interface WebQQMessage {
 }
 
 export interface WebQQSendElement {
-  type: 'text' | 'image' | 'file' | 'quote' | 'at' | 'face'
+  type: 'text' | 'image' | 'video' | 'file' | 'quote' | 'at' | 'face'
   text?: string
   data?: string
   name?: string

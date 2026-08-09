@@ -89,6 +89,15 @@ describe('chat capsule styles', () => {
     expect(`${style}\n${webqqInteractionsStyle}`).not.toMatch(/cursor\s*:/)
   })
 
+  it('renders pending video thumbnails inside the attachment preview frame', () => {
+    const mediaBody = ruleBodyIncluding('.onebot-webqq-webqq__send-image-preview video')
+
+    expect(mediaBody).toContain('width: 100%')
+    expect(mediaBody).toContain('height: 100%')
+    expect(mediaBody).toContain('object-fit: cover')
+    expect(webqqChatStyle).toMatch(/\.onebot-webqq-webqq__send-image-preview video\s*\{[\s\S]*?pointer-events:\s*none/)
+  })
+
   it('keeps portalled context menus above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
     const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])

@@ -84,6 +84,15 @@ function toMessageElements(
       })
       continue
     }
+    if (element.type === 'video' && element.data) {
+      next.push({
+        type: 'video',
+        title: element.name || 'video',
+        text: '[视频]',
+        url: element.data,
+      })
+      continue
+    }
     if (element.type === 'file' && element.data) {
       next.push({
         type: 'file',

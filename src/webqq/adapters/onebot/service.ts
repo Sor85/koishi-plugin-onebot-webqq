@@ -211,12 +211,28 @@ function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefi
   }
 }
 
+function toOneBotVideoFile(data: string) {
+  const dataUrl = /^data:[^;,]+;base64,(.*)$/.exec(data)
+  // 浏览器侧保留 MIME 完整的 data URL 供本地预览；NapCat 与 LLBot 的视频段
+  // 使用 base64://，因此只在 OneBot 边界剥离头部，避免被误判为本地文件路径。
+  return dataUrl ? `base64://${dataUrl[1]}` : data
+}
+
 function toOneBotSendSegment(element: WebQQSendElement) {
   if (element.type === 'text' && element.text) {
     return { type: 'text', data: { text: element.text } }
   }
   if (element.type === 'image' && element.data) {
     return { type: 'image', data: { file: element.data } }
+  }
+  if (element.type === 'video' && element.data) {
+    return {
+      type: 'video',
+      data: {
+        file: toOneBotVideoFile(element.data),
+        name: element.name || 'video.mp4',
+      },
+    }
   }
   if (element.type === 'file' && element.data) {
     return { type: 'file', data: { file: element.data, name: element.name || 'file' } }

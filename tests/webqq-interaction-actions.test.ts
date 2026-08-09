@@ -50,6 +50,40 @@ describe('webqq interaction actions', () => {
     expect(bot.internal.delete_msg).toHaveBeenCalledWith({ message_id: 12345 })
   })
 
+  it('sends browser videos as native OneBot video segments in group and private chats', async () => {
+    const bot = createBot({
+      send_group_msg: vi.fn(async () => ({ message_id: 1 })),
+      send_private_msg: vi.fn(async () => ({ message_id: 2 })),
+    })
+    const service = createOneBotWebQQService({ bots: [bot] })
+    const video = {
+      type: 'video' as const,
+      data: 'data:video/mp4;base64,AAAA',
+      name: 'clip.mp4',
+    }
+
+    await service.sendMessage({
+      type: 'group',
+      peerId: '20000',
+      elements: [video],
+    })
+    await service.sendMessage({
+      type: 'friend',
+      peerId: '30000',
+      elements: [video],
+    })
+
+    const message = [{
+      type: 'video',
+      data: {
+        file: 'base64://AAAA',
+        name: 'clip.mp4',
+      },
+    }]
+    expect(bot.internal.send_group_msg).toHaveBeenCalledWith({ group_id: 20000, message })
+    expect(bot.internal.send_private_msg).toHaveBeenCalledWith({ user_id: 30000, message })
+  })
+
   it('sets group and private message reactions with NapCat set flag', async () => {
     const bot = createBot({
       set_msg_emoji_like: vi.fn(async () => ({})),

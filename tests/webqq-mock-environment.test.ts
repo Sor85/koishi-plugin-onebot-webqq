@@ -114,6 +114,33 @@ describe('webqq mock environment', () => {
     await expect(service.transcribeRecord('friend-msg-8')).resolves.toBe('这是一段模拟语音')
   })
 
+  it('stores sent videos as video messages in the mock environment', async () => {
+    const service = createMockWebQQService(createMockWebQQScene())
+
+    await service.sendMessage({
+      type: 'friend',
+      peerId: MOCK_FRIEND_ALICE_ID,
+      elements: [{
+        type: 'video',
+        data: 'data:video/mp4;base64,AAAA',
+        name: 'clip.mp4',
+      }],
+    })
+
+    const sent = (await service.loadMessages({
+      type: 'friend',
+      peerId: MOCK_FRIEND_ALICE_ID,
+      limit: 50,
+    })).at(-1)
+    expect(sent?.summary).toBe('[视频]')
+    expect(sent?.elements).toEqual([{
+      type: 'video',
+      text: '[视频]',
+      title: 'clip.mp4',
+      url: 'data:video/mp4;base64,AAAA',
+    }])
+  })
+
   it('mutates in-memory state for key actions', async () => {
     const service = createMockWebQQService(createMockWebQQScene())
 
