@@ -1143,9 +1143,9 @@ describe('chat capsule styles', () => {
       forcedSidebarBody.includes('background: #111827') ? '' : '暗色侧栏没有使用接近主区的中性深色背景',
       forcedTabsRowBody.includes('background: #111827') ? '' : '暗色侧栏顶栏没有与侧栏共享中性深色背景',
       ...darkSelectors.map((selector) => style.includes(selector) ? '' : `缺少暗色关键选择器 ${selector}`),
-      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
+      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 78%, #020617 22%)')
         ? ''
-        : '暗色普通气泡没有覆盖 TIM 贴表情背景变量',
+        : '暗色普通气泡没有使用更深的 TIM 贴表情背景变量',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface)')
         && forcedOutgoingBubbleBody.includes('background: var(--onebot-webqq-webqq-accent-surface)')
         && forcedOutgoingBubbleBody.includes('box-shadow: none')
