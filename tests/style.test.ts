@@ -1117,8 +1117,9 @@ describe('chat capsule styles', () => {
         : '暗色普通气泡没有覆盖 TIM 贴表情背景变量',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface)')
         && forcedOutgoingBubbleBody.includes('background: var(--onebot-webqq-webqq-accent-surface)')
+        && forcedOutgoingBubbleBody.includes('box-shadow: none')
         ? ''
-        : '暗色发出气泡没有使用柔和主题色表面变量',
+        : '暗色发出气泡没有使用柔和主题色表面或仍保留发光阴影',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
         : '暗色发出气泡没有覆盖 TIM 贴表情背景变量',

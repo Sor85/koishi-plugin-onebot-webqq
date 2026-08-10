@@ -273,7 +273,7 @@
   --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%);
   color: #ffffff;
   background: var(--onebot-webqq-webqq-accent-surface);
-  box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
+  box-shadow: none;
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions {
