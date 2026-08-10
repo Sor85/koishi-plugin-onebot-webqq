@@ -363,7 +363,7 @@ describe('webqq observer view', () => {
     expect(style).not.toContain('onebot-webqq-webqq__thinking-bubble')
     const messageBodySource = sourceBetween(
       webqqMessageListView,
-      'class="onebot-webqq-webqq__message-body"',
+      ":class=\"['onebot-webqq-webqq__message-body', { 'is-image-only': isImageOnlyMessage(message) }]\"",
       'class="onebot-webqq-webqq__message-time"',
     )
     expect(messageBodySource.indexOf('class="onebot-webqq-webqq__thinking-dots"')).toBeGreaterThan(messageBodySource.indexOf('class="onebot-webqq-webqq__bubble"'))
@@ -1044,13 +1044,14 @@ describe('webqq observer view', () => {
 
   it('wraps WebQQ message bubbles with their time for TIM hover layout', () => {
     expect(webqqView).toContain(':chat-style="webQQChatStyle"')
-    expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-body"')
+    expect(webqqMessageListView).toContain(":class=\"['onebot-webqq-webqq__message-body', { 'is-image-only': isImageOnlyMessage(message) }]\"")
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__bubble')
     expect(webqqMessageListView).toContain('<div class="onebot-webqq-webqq__message-time">{{ formatTime(message.time) }}</div>')
   })
 
   it('renders image-only WebQQ messages without a text bubble', () => {
     expect(webqqMessageListView).toContain('v-if="isImageOnlyMessage(message)"')
+    expect(webqqMessageListView).toContain("'is-image-only': isImageOnlyMessage(message)")
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-media-stack"')
     expect(webqqMessageListView).toContain('class="onebot-webqq-webqq__message-media"')
     expect(webqqMessageListView).toContain(':src="withProxy(getImageOnlyUrl(message))"')

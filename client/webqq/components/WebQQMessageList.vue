@@ -126,7 +126,7 @@
               <span v-if="getSenderAuthorityText(message)" :class="['onebot-webqq-webqq__sender-badge', getSenderAuthorityClass(message)]">{{ getSenderAuthorityText(message) }}</span>
             </template>
           </div>
-          <div class="onebot-webqq-webqq__message-body">
+          <div :class="['onebot-webqq-webqq__message-body', { 'is-image-only': isImageOnlyMessage(message) }]">
             <div v-if="isImageOnlyMessage(message)" class="onebot-webqq-webqq__message-media-stack" @click.capture="handleMessageBubbleClick(message, $event)">
               <ContextMenuTrigger as-child :disabled="!!message.recalled || !!selectionMode">
                 <div class="onebot-webqq-webqq__message-media" @contextmenu="rememberFloatingPanelAnchor($event)">

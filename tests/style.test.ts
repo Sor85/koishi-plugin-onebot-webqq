@@ -684,6 +684,9 @@ describe('chat capsule styles', () => {
   })
 
   it('renders WebQQ image-only messages without bubble background', () => {
+    expect(ruleBody('.onebot-webqq-webqq__message-body.is-image-only')).toContain('width: fit-content')
+    expect(ruleBody('.onebot-webqq-webqq__message-media-stack')).toContain('width: fit-content')
+    expect(ruleBody('.onebot-webqq-webqq__message-media-stack')).toContain('max-width: min(220px, 100%)')
     expect(ruleBody('.onebot-webqq-webqq__message-media')).toContain('display: flex')
     expect(ruleBody('.onebot-webqq-webqq__message-media img')).toContain('max-width: min(220px, 100%)')
     expect(ruleBody('.onebot-webqq-webqq__message-media img')).toContain('border-radius: 8px')
