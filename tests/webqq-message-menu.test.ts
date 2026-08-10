@@ -1,6 +1,10 @@
+import { ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@koishijs/client', () => ({ send: vi.fn() }))
+vi.mock('@koishijs/client', () => ({
+  send: vi.fn(),
+  useColorMode: () => ref<'light' | 'dark'>('light'),
+}))
 
 import { resetWebQQClientState } from '../client/entry-state'
 import { availableBots, selectedBotSelfId } from '../client/onebot/bots'

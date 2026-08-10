@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@koishijs/client', () => ({
+  useColorMode: () => ref<'light' | 'dark'>('light'),
+}))
+
 import { sortWebQQGroupMembers, type WebQQGroupMember } from '../client/webqq/types'
 import { enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
 

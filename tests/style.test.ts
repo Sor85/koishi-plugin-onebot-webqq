@@ -447,10 +447,8 @@ describe('chat capsule styles', () => {
     const plainCapsuleSurface = ruleBody('.onebot-webqq.is-plain::before')
     const avatarCapsule = ruleBody('.onebot-webqq__avatar-capsule')
     const body = ruleBody('.onebot-webqq__body')
-    const autoDarkSurface = ruleBody('.onebot-webqq.is-color-auto::before')
     const darkSurface = ruleBody('.onebot-webqq.is-color-dark::before')
     const wideCapsuleSurface = ruleBody('.onebot-webqq.is-capsule-shadow-wide::before')
-    const autoWideDarkSurface = ruleBody('.onebot-webqq.is-color-auto.is-capsule-shadow-wide::before')
     const darkWideSurface = ruleBody('.onebot-webqq.is-color-dark.is-capsule-shadow-wide::before')
     const missingRequirements = [
       capsule.includes('isolation: isolate')
@@ -498,15 +496,6 @@ describe('chat capsule styles', () => {
         && !body.includes('box-shadow:')
         ? ''
         : '左右结构不能各自画成两个胶囊表面或阴影',
-      autoDarkSurface.includes('background: rgba(15, 23, 42, 0.72)')
-        ? ''
-        : '主胶囊自动暗色背景不是半透明毛玻璃',
-      autoDarkSurface.includes('box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24)')
-        ? ''
-        : '主胶囊自动暗色阴影没有收窄到统一表面层',
-      autoWideDarkSurface.includes('box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28)')
-        ? ''
-        : '关闭紧凑阴影后没有恢复旧版自动暗色宽阴影',
       darkSurface.includes('background: rgba(15, 23, 42, 0.72)')
         ? ''
         : '主胶囊暗色背景不是半透明毛玻璃',
@@ -571,7 +560,6 @@ describe('chat capsule styles', () => {
   it('uses glass bubble colors for the WebQQ return-to-bottom button in light and dark modes', () => {
     const scrollBottomBody = ruleBody('.onebot-webqq-webqq__scroll-bottom')
     const darkScrollBottomBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__scroll-bottom')
-    const autoDarkScrollBottomBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__scroll-bottom')
     const missingRequirements = [
       scrollBottomBody.includes('background: rgba(255, 255, 255, 0.9)')
         ? ''
@@ -588,9 +576,6 @@ describe('chat capsule styles', () => {
       darkScrollBottomBody.includes('backdrop-filter: saturate(180%) blur(20px)')
         ? ''
         : '返回底部按钮强制暗色模式缺少毛玻璃效果',
-      autoDarkScrollBottomBody.includes('background: rgba(30, 41, 59, 0.96)')
-        ? ''
-        : '返回底部按钮自动暗色模式没有使用黑色气泡背景',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -1050,7 +1035,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-plain')).toContain('border: 1px solid #d9e1ea')
     expect(ruleBody('.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__chat')).toContain('background: #f1f5f9')
     expect(ruleBody('.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__bubble')).toContain('background: #ffffff')
-    expect(ruleBody('.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent)')
+    expect(ruleBody('.onebot-webqq-webqq.is-plain .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent-surface)')
   })
 
   it('makes the default WebQQ surface frosted glass', () => {
@@ -1071,7 +1056,7 @@ describe('chat capsule styles', () => {
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-announcement {
   background: rgba(255, 255, 255, 0.72)`)
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__bubble')).toContain('background: rgba(255, 255, 255, 0.9)')
-    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent-surface)')
   })
 
   it('renders an opaque plain WebQQ chat header without backdrop blur', () => {
@@ -1088,23 +1073,25 @@ describe('chat capsule styles', () => {
 
   it('uses WebQQ accent variables for theme-colored controls', () => {
     expect(ruleBody('.onebot-webqq-webqq')).toContain('--onebot-webqq-webqq-accent: #2563eb')
+    expect(ruleBody('.onebot-webqq-webqq')).toContain('--onebot-webqq-webqq-accent-surface: var(--onebot-webqq-webqq-accent)')
     expect(style).toContain('color: var(--onebot-webqq-webqq-accent)')
     expect(style).toContain('background: var(--onebot-webqq-webqq-accent-soft)')
-    expect(ruleBody('.onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent)')
+    expect(ruleBody('.onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent-surface)')
   })
 
-  it('adds dark WebQQ color mode overrides for forced dark and automatic dark panels', () => {
+  it('uses the resolved dark class as the single source of WebQQ dark styles', () => {
     const forcedRootBody = ruleBody('.onebot-webqq-webqq.is-color-dark')
-    const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
     const forcedBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__bubble')
     const forcedOutgoingBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')
     const forcedMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
     const forcedOutgoingMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions')
-    const autoBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__bubble', autoDarkBody)
-    const autoOutgoingBubbleBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble', autoDarkBody)
-    const autoMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions', autoDarkBody)
-    const autoOutgoingMediaReactionsBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions', autoDarkBody)
-    const forcedSelectors = [
+    const forcedCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-dark')
+    const forcedCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-dark::before')
+    const forcedSidebarBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__sidebar')
+    const forcedTabsRowBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__tabs-row')
+    const forcedHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header')
+    const forcedPlainHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-plain.is-color-dark .onebot-webqq-webqq__chat-header')
+    const darkSelectors = [
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat',
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__search input',
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notify',
@@ -1114,98 +1101,49 @@ describe('chat capsule styles', () => {
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions',
       '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions',
     ]
-    const autoSelectors = forcedSelectors.map((selector) => selector.replace('is-color-dark', 'is-color-auto'))
     const missingRequirements = [
-      forcedRootBody ? '' : '缺少强制暗色根选择器 .onebot-webqq-webqq.is-color-dark',
-      forcedRootBody.includes('background:')
+      forcedRootBody ? '' : '缺少解析后暗色根选择器 .onebot-webqq-webqq.is-color-dark',
+      forcedRootBody.includes('background: #0f172a') ? '' : '暗色根选择器没有使用纯色面板背景',
+      forcedRootBody.includes('radial-gradient') || forcedRootBody.includes('linear-gradient') ? '暗色根选择器仍包含渐变背景' : '',
+      forcedRootBody.includes('--onebot-webqq-webqq-accent-surface: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 72%, #0f172a 28%)')
         ? ''
-        : '强制暗色根选择器没有覆盖面板背景',
-      forcedRootBody.includes('color:')
-        ? ''
-        : '强制暗色根选择器没有覆盖面板文本',
-      ...forcedSelectors.map((selector) => style.includes(selector) ? '' : `缺少强制暗色关键选择器 ${selector}`),
-      autoDarkBody ? '' : '缺少 prefers-color-scheme: dark 自动暗色媒体查询',
-      autoDarkBody.includes('.onebot-webqq-webqq.is-color-auto')
-        ? ''
-        : '自动暗色媒体查询没有限制到 .onebot-webqq-webqq.is-color-auto',
-      ...autoSelectors.map((selector) => autoDarkBody.includes(selector) ? '' : `缺少自动暗色关键选择器 ${selector}`),
+        : '暗色根选择器没有派生柔和的主题色表面变量',
+      forcedRootBody.includes('color:') ? '' : '暗色根选择器没有覆盖面板文本',
+      forcedSidebarBody.includes('background: #111827') ? '' : '暗色侧栏没有使用接近主区的中性深色背景',
+      forcedTabsRowBody.includes('background: #111827') ? '' : '暗色侧栏顶栏没有与侧栏共享中性深色背景',
+      ...darkSelectors.map((selector) => style.includes(selector) ? '' : `缺少暗色关键选择器 ${selector}`),
       forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
-        : '强制暗色普通气泡没有覆盖 TIM 贴表情背景变量',
+        : '暗色普通气泡没有覆盖 TIM 贴表情背景变量',
+      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface)')
+        && forcedOutgoingBubbleBody.includes('background: var(--onebot-webqq-webqq-accent-surface)')
+        ? ''
+        : '暗色发出气泡没有使用柔和主题色表面变量',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
-        : '强制暗色发出气泡没有覆盖 TIM 贴表情背景变量',
-      autoBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
-        ? ''
-        : '自动暗色普通气泡没有覆盖 TIM 贴表情背景变量',
-      autoOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
-        ? ''
-        : '自动暗色发出气泡没有覆盖 TIM 贴表情背景变量',
+        : '暗色发出气泡没有覆盖 TIM 贴表情背景变量',
       forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
-        : '强制暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
+        : '暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
       forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
         ? ''
-        : '强制暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
-      autoMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
+        : '暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
+      forcedCapsuleBody ? '' : '缺少暗色主胶囊选择器 .onebot-webqq.is-color-dark',
+      forcedCapsuleSurfaceBody.includes('background:') ? '' : '暗色主胶囊没有覆盖背景',
+      forcedCapsuleSurfaceBody.includes('border') ? '' : '暗色主胶囊没有覆盖边框',
+      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-switch .onebot-webqq__avatar').includes('box-shadow: 0 0 0 2px #0f172a')
         ? ''
-        : '自动暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
-      autoOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
+        : '暗色多机器人头像仍使用浅色分隔边框',
+      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow').includes('box-shadow: 0 0 0 2px #0f172a')
         ? ''
-        : '自动暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
-    ].filter(Boolean)
-
-    expect(missingRequirements).toEqual([])
-  })
-
-  it('adds dark color mode overrides for the main capsule and WebQQ chat header', () => {
-    const autoDarkBody = ruleBody('@media (prefers-color-scheme: dark)')
-    const forcedCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-dark')
-    const forcedCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-dark::before')
-    const autoCapsuleBody = ruleBodyIncluding('.onebot-webqq.is-color-auto', autoDarkBody)
-    const autoCapsuleSurfaceBody = ruleBodyIncluding('.onebot-webqq.is-color-auto::before', autoDarkBody)
-    const forcedHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header')
-    const autoHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__chat-header', autoDarkBody)
-    const forcedPlainHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-plain.is-color-dark .onebot-webqq-webqq__chat-header')
-    const autoPlainHeaderBody = ruleBodyIncluding('.onebot-webqq-webqq.is-plain.is-color-auto .onebot-webqq-webqq__chat-header', autoDarkBody)
-    const missingRequirements = [
-      forcedCapsuleBody ? '' : '缺少强制暗色主胶囊选择器 .onebot-webqq.is-color-dark',
-      forcedCapsuleSurfaceBody ? '' : '缺少强制暗色主胶囊表面选择器 .onebot-webqq.is-color-dark::before',
-      forcedCapsuleSurfaceBody.includes('background:')
+        : '暗色机器人余量头像仍使用浅色分隔边框',
+      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__avatar-unread').includes('border-color: #0f172a')
         ? ''
-        : '强制暗色主胶囊没有覆盖背景',
-      forcedCapsuleBody.includes('color:')
-        ? ''
-        : '强制暗色主胶囊没有覆盖文本',
-      forcedCapsuleSurfaceBody.includes('border')
-        ? ''
-        : '强制暗色主胶囊没有覆盖边框',
-      autoDarkBody ? '' : '缺少 prefers-color-scheme: dark 自动暗色媒体查询',
-      autoCapsuleBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq.is-color-auto 覆盖',
-      autoCapsuleSurfaceBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq.is-color-auto::before 表面覆盖',
-      autoCapsuleSurfaceBody.includes('background:')
-        ? ''
-        : '自动暗色主胶囊没有覆盖背景',
-      autoCapsuleBody.includes('color:')
-        ? ''
-        : '自动暗色主胶囊没有覆盖文本',
-      autoCapsuleSurfaceBody.includes('border')
-        ? ''
-        : '自动暗色主胶囊没有覆盖边框',
-      forcedHeaderBody ? '' : '缺少强制暗色聊天顶栏选择器 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header',
-      forcedHeaderBody.includes('background:')
-        ? ''
-        : '强制暗色聊天顶栏没有覆盖背景，会被 fresh 主题浅色背景保留',
-      autoHeaderBody ? '' : '自动暗色媒体查询缺少 .onebot-webqq-webqq.is-color-auto .onebot-webqq-webqq__chat-header 覆盖',
-      autoHeaderBody.includes('background:')
-        ? ''
-        : '自动暗色聊天顶栏没有覆盖背景，会被 fresh 主题浅色背景保留',
-      forcedPlainHeaderBody.includes('background: #0f172a')
-        ? ''
-        : '关闭毛玻璃时强制暗色聊天顶栏不是不透明背景',
-      autoPlainHeaderBody.includes('background: #0f172a')
-        ? ''
-        : '关闭毛玻璃时自动暗色聊天顶栏不是不透明背景',
+        : '暗色头像未读角标仍使用浅色边框',
+      forcedHeaderBody.includes('background:') ? '' : '暗色聊天顶栏没有覆盖背景',
+      forcedPlainHeaderBody.includes('background: #0f172a') ? '' : '关闭毛玻璃时暗色聊天顶栏不是不透明背景',
+      themeColorsStyle.includes('is-color-auto') ? '主题样式仍保留 is-color-auto 分支，可能绕过 Koishi 最终主题' : '',
+      themeColorsStyle.includes('@media (prefers-color-scheme: dark)') ? '主题样式仍直接读取系统颜色偏好' : '',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -1214,7 +1152,7 @@ describe('chat capsule styles', () => {
   it('keeps quoted text readable inside dark outgoing WebQQ bubbles', () => {
     expect(style).toContain(`.onebot-webqq-webqq__bubble {
       color: #ffffff;
-      background: var(--onebot-webqq-webqq-accent);
+      background: var(--onebot-webqq-webqq-accent-surface);
       box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
 
       .onebot-webqq-webqq__quote {

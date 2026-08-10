@@ -31,6 +31,7 @@ declare module '@koishijs/client' {
   }
 
   export function useContext(): Context
+  export function useColorMode(): import('vue').ComputedRef<'light' | 'dark'>
   export function withProxy(url: string): string
   export function receive<T = unknown>(event: string, listener: (value: T) => unknown): (() => void) | void
   export function send<T = unknown>(event: string, payload?: unknown): Promise<T>

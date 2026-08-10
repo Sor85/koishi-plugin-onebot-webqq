@@ -12,6 +12,7 @@ import {
   showWebQQRelationship,
   showWebQQThinkingTiming,
   showWebQQThinkingTokens,
+  resolvedWebQQColorMode,
   useCompactCapsuleShadow,
   webQQAccentColor,
   webQQChatStyle,
@@ -27,6 +28,7 @@ export const webQQOpen = ref(false)
 export const webQQCapsule = capsule
 export {
   enableCapsuleFrostedGlass,
+  resolvedWebQQColorMode,
   showWebQQCapsuleUnread,
   useCompactCapsuleShadow,
   webQQAccentColor,

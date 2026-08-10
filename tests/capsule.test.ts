@@ -273,7 +273,7 @@ describe('chat capsule view', () => {
       capsuleView.includes(':class="[\'onebot-webqq__avatar-capsule\', { \'has-bot-stack\': hasMultipleBots, \'is-expanded\': botStackVisualExpanded }]"')
         && capsuleView.includes(':class="[\'onebot-webqq__bot-stack\', {')
         && capsuleView.includes("'is-bot-stack-expanded': botStackVisualExpanded")
-        && capsuleView.indexOf('class="onebot-webqq-layout-root"') < capsuleView.indexOf(':class="[\'onebot-webqq__body\', `is-color-${webQQColorMode}`]"')
+        && capsuleView.indexOf('class="onebot-webqq-layout-root"') < capsuleView.indexOf(':class="[\'onebot-webqq__body\', `is-color-${resolvedWebQQColorMode}`]"')
         && capsuleStyle.includes('.onebot-webqq.is-bot-stack-expanded')
         && capsuleStyle.includes('width: var(--onebot-webqq-shell-width')
         && capsuleStyle.includes('.onebot-webqq__avatar-capsule.is-expanded')
@@ -377,12 +377,12 @@ describe('chat capsule view', () => {
 
   it('applies the configured WebQQ color mode to the main capsule', () => {
     const missingRequirements = [
-      /import \{[^}]*\bwebQQColorMode\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
+      /import \{[^}]*\bresolvedWebQQColorMode\b[^}]*\} from '\.\.\/entry-state'/.test(capsuleView)
         ? ''
-        : '主胶囊没有从 entry-state 读取 webQQColorMode',
-      capsuleView.includes("['onebot-webqq'") && capsuleView.includes('`is-color-${webQQColorMode}`')
+        : '主胶囊没有从 entry-state 读取 resolvedWebQQColorMode',
+      capsuleView.includes("['onebot-webqq'") && capsuleView.includes('`is-color-${resolvedWebQQColorMode}`')
         ? ''
-        : '主胶囊根节点没有输出 is-color-${webQQColorMode} 类名',
+        : '主胶囊根节点没有输出解析后的颜色模式类名',
       capsuleView.includes('class="onebot-webqq"')
         ? '主胶囊仍是静态 class，无法随颜色模式切换'
         : '',

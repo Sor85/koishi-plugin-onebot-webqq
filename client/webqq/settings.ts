@@ -1,4 +1,6 @@
-import { ref, type Ref } from 'vue'
+import { useColorMode } from '@koishijs/client'
+import { computed, ref, type Ref } from 'vue'
+import { resolveWebQQColorMode } from './utils/webqq-color-mode'
 
 export type WebQQChatStyle = 'qq' | 'tim'
 export type WebQQColorMode = 'auto' | 'light' | 'dark'
@@ -75,6 +77,14 @@ export const webQQTotalUnread = settingsState.webQQTotalUnread
 export const webQQAccentColor = settingsState.webQQAccentColor
 export const webQQChatStyle = settingsState.webQQChatStyle
 export const webQQColorMode = settingsState.webQQColorMode
+
+const koishiColorMode = useColorMode()
+
+// Koishi 已经把控制台的“自动”与系统偏好解析成最终明暗模式；这里直接继承该结果，
+// 避免 WebQQ 再读 prefers-color-scheme，导致控制台强制主题与插件主题互相矛盾。
+export const resolvedWebQQColorMode = computed(() => (
+  resolveWebQQColorMode(webQQColorMode.value, koishiColorMode.value)
+))
 export const webQQMessageCacheLimit = settingsState.webQQMessageCacheLimit
 export const webQQStorageBackend = settingsState.webQQStorageBackend
 export const webQQTimBubbleTail = settingsState.webQQTimBubbleTail

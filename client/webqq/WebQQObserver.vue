@@ -1,5 +1,5 @@
 <template>
-  <div ref="webQQRoot" :class="['onebot-webqq-webqq', enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain', `is-chat-style-${webQQChatStyle}`, { 'has-tim-bubble-tail': webQQTimBubbleTail, 'is-resizable': allowWebQQResize }, `is-color-${webQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div ref="webQQRoot" :class="['onebot-webqq-webqq', enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain', `is-chat-style-${webQQChatStyle}`, { 'has-tim-bubble-tail': webQQTimBubbleTail, 'is-resizable': allowWebQQResize }, `is-color-${resolvedWebQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <WebQQSidebar
       v-model:search-query="searchQuery"
       v-model:notice-menu-tab="noticeMenuTab"
@@ -349,7 +349,7 @@ import {
 } from './api/webqq'
 import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
-import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
+import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, resolvedWebQQColorMode, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from './settings'
 import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMessageSearchResult, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
