@@ -89,6 +89,21 @@ describe('chat capsule styles', () => {
     expect(`${style}\n${webqqInteractionsStyle}`).not.toMatch(/cursor\s*:/)
   })
 
+  it('uses the standard dark border color below notification tabs', () => {
+    const noticeTabsBody = ruleBodyIncluding(
+      '.onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-tabs',
+      themeColorsStyle,
+    )
+
+    expect(noticeTabsBody).toContain('border-color: rgba(148, 163, 184, 0.24)')
+  })
+
+  it('matches the notification selection shape to the contact tabs', () => {
+    expect(
+      ruleBody('.onebot-webqq-webqq__notify'),
+    ).toContain('border-radius: 8px 8px 0 0')
+  })
+
   it('renders pending video thumbnails inside the attachment preview frame', () => {
     const mediaBody = ruleBodyIncluding('.onebot-webqq-webqq__send-image-preview video')
 

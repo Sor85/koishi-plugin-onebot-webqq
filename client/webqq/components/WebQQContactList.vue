@@ -34,7 +34,7 @@
     </template>
     <template v-else-if="activeTab === 'friends'">
       <section v-for="category in visibleFriendCategories" :key="category.id" class="onebot-webqq-webqq__friend-category">
-        <h4 class="onebot-webqq-webqq__friend-category-title">{{ category.name }}</h4>
+        <h4 v-if="category.name !== '好友'" class="onebot-webqq-webqq__friend-category-title">{{ category.name }}</h4>
         <ContextMenu v-for="friend in category.friends" :key="friend.userId">
           <ContextMenuTrigger as-child>
             <button

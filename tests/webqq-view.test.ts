@@ -759,6 +759,7 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain(':visible-friend-categories="visibleFriendCategories"')
     expect(webqqContactList).toContain('v-for="category in visibleFriendCategories"')
     expect(webqqContactList).toContain('class="onebot-webqq-webqq__friend-category"')
+    expect(webqqContactList).toContain('v-if="category.name !== \'好友\'"')
     expect(webqqContactList).toContain('class="onebot-webqq-webqq__friend-category-title"')
     expect(webqqContactList).toContain('v-for="friend in category.friends"')
   })
