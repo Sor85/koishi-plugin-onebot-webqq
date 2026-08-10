@@ -176,7 +176,6 @@
 
   .onebot-webqq__avatar {
     margin-right: 0;
-    box-shadow: 0 0 0 2px #ffffff;
   }
 
   &.is-collapsed-extra {
@@ -200,6 +199,20 @@
   pointer-events: auto;
 }
 
+// 后方头像直接挖掉与前方头像重叠的区域，让真实胶囊表面充当分隔；
+// 这样既能完全遮住下层头像，也不需要猜测毛玻璃背景应该使用哪种描边颜色。
+.onebot-webqq__bot-switch.is-overlapped .onebot-webqq__avatar {
+  --onebot-webqq-avatar-overlap-center: 45px;
+  --onebot-webqq-avatar-overlap-cutout: radial-gradient(circle 23px at var(--onebot-webqq-avatar-overlap-center) 21px, transparent 98%, #000 100%);
+  box-shadow: none;
+  -webkit-mask-image: var(--onebot-webqq-avatar-overlap-cutout);
+  mask-image: var(--onebot-webqq-avatar-overlap-cutout);
+}
+
+.onebot-webqq__bot-stack.is-expanded .onebot-webqq__bot-switch.is-overlapped .onebot-webqq__avatar {
+  --onebot-webqq-avatar-overlap-center: 52px;
+}
+
 .onebot-webqq__bot-overflow {
   position: absolute;
   right: var(--onebot-webqq-bot-overflow-right, 0);
@@ -214,7 +227,6 @@
   border-radius: 50%;
   color: var(--k-text-dark, var(--fg1, #1f2328));
   background: color-mix(in srgb, var(--k-color-primary, #409eff) 16%, #ffffff 84%);
-  box-shadow: 0 0 0 2px #ffffff;
   overflow: hidden;
   font-size: 10px;
   font-weight: 700;
@@ -224,6 +236,11 @@
   z-index: var(--onebot-webqq-bot-overflow-z-index, 0);
   transition: opacity 0.12s ease;
   will-change: opacity;
+  --onebot-webqq-avatar-overlap-center: 45px;
+  --onebot-webqq-avatar-overlap-cutout: radial-gradient(circle 23px at var(--onebot-webqq-avatar-overlap-center) 21px, transparent 98%, #000 100%);
+  box-shadow: none;
+  -webkit-mask-image: var(--onebot-webqq-avatar-overlap-cutout);
+  mask-image: var(--onebot-webqq-avatar-overlap-cutout);
 }
 
 .onebot-webqq__bot-overflow-avatar,

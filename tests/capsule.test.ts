@@ -251,7 +251,8 @@ describe('chat capsule view', () => {
         && capsuleView.includes('class="onebot-webqq__bot-overflow-count">{{ collapsedBotOverflowCount }}</span>')
         ? ''
         : '折叠态多余机器人数量应在可擦除的 label 层显示加号',
-      capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
+      capsuleView.includes("'is-overlapped': index > 0")
+        && capsuleView.includes("'is-collapsed-extra': isBotCollapsedExtra(index)")
         && capsuleView.includes('? collapsedBotVisibleCount.value * 24')
         && !capsuleView.includes('? Math.max(0, collapsedBotVisibleCount.value - 1) * 24')
         ? ''

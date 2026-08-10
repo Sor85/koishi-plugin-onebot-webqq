@@ -31,6 +31,7 @@
               :key="bot.selfId"
               :class="['onebot-webqq__bot-switch', {
                 'is-active': bot.selfId === activeBotSelfId,
+                'is-overlapped': index > 0,
                 'is-collapsed-extra': isBotCollapsedExtra(index),
               }]"
               type="button"

@@ -450,6 +450,8 @@ describe('chat capsule styles', () => {
     const darkSurface = ruleBody('.onebot-webqq.is-color-dark::before')
     const wideCapsuleSurface = ruleBody('.onebot-webqq.is-capsule-shadow-wide::before')
     const darkWideSurface = ruleBody('.onebot-webqq.is-color-dark.is-capsule-shadow-wide::before')
+    const overlappedAvatar = ruleBody('.onebot-webqq__bot-switch.is-overlapped .onebot-webqq__avatar')
+    const overflowAvatar = topLevelRuleBody('.onebot-webqq__bot-overflow')
     const missingRequirements = [
       capsule.includes('isolation: isolate')
         ? ''
@@ -488,6 +490,17 @@ describe('chat capsule styles', () => {
         && plainCapsuleSurface.includes('-webkit-backdrop-filter: none')
         ? ''
         : '关闭小胶囊毛玻璃时没有取消背景模糊',
+      overlappedAvatar.includes('radial-gradient(circle 23px at var(--onebot-webqq-avatar-overlap-center) 21px, transparent 98%, #000 100%)')
+        && overlappedAvatar.includes('box-shadow: none')
+        && overlappedAvatar.includes('-webkit-mask-image: var(--onebot-webqq-avatar-overlap-cutout)')
+        && overlappedAvatar.includes('mask-image: var(--onebot-webqq-avatar-overlap-cutout)')
+        ? ''
+        : '头像堆叠没有通过兼容遮罩裁掉被前方头像覆盖的区域',
+      overflowAvatar.includes('box-shadow: none')
+        && overflowAvatar.includes('-webkit-mask-image: var(--onebot-webqq-avatar-overlap-cutout)')
+        && overflowAvatar.includes('mask-image: var(--onebot-webqq-avatar-overlap-cutout)')
+        ? ''
+        : '机器人余量徽标没有复用头像堆叠裁切',
       !avatarCapsule.includes('background:')
         && !avatarCapsule.includes('border:')
         && !avatarCapsule.includes('box-shadow:')
@@ -1135,12 +1148,12 @@ describe('chat capsule styles', () => {
       forcedCapsuleBody ? '' : '缺少暗色主胶囊选择器 .onebot-webqq.is-color-dark',
       forcedCapsuleSurfaceBody.includes('background:') ? '' : '暗色主胶囊没有覆盖背景',
       forcedCapsuleSurfaceBody.includes('border') ? '' : '暗色主胶囊没有覆盖边框',
-      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-switch .onebot-webqq__avatar').includes('box-shadow: 0 0 0 2px #0f172a')
-        ? ''
-        : '暗色多机器人头像仍使用浅色分隔边框',
-      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow').includes('box-shadow: 0 0 0 2px #0f172a')
-        ? ''
-        : '暗色机器人余量头像仍使用浅色分隔边框',
+      themeColorsStyle.includes('.onebot-webqq.is-color-dark .onebot-webqq__bot-switch .onebot-webqq__avatar')
+        ? '暗色主题仍用实色阴影描边分隔多机器人头像'
+        : '',
+      themeColorsStyle.includes('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow')
+        ? '暗色主题仍用实色阴影描边分隔机器人余量徽标'
+        : '',
       ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__avatar-unread').includes('border-color: #0f172a')
         ? ''
         : '暗色头像未读角标仍使用浅色边框',
