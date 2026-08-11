@@ -97,11 +97,11 @@
                         </ContextMenuItem>
                       </ContextMenuSubContent>
                     </ContextMenuSub>
-                    <ContextMenuItem v-if="getChatFriendActions(message.senderId).includes('remark')" @select="emit('set-remark', message.senderId)">
+                    <ContextMenuItem v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('remark')" @select="emit('set-remark', message.senderId)">
                       <IconTag :size="16" aria-hidden="true" /> 设置好友备注
                     </ContextMenuItem>
                     <ContextMenuItem
-                      v-if="getChatFriendActions(message.senderId).includes('delete')"
+                      v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('delete')"
                       class="is-danger"
                       @select="emit('delete-friend', message.senderId)"
                     >

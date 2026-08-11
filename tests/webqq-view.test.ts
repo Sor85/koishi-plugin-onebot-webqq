@@ -844,6 +844,27 @@ describe('webqq observer view', () => {
     )
   })
 
+  it('hides friend management actions from group message avatar menus', () => {
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('remark')"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('delete')"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType === 'group' && getGroupMember(message.senderId)"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `@select="emit('open-profile', message.senderId)"`,
+    )
+    expect(webqqContactList).toContain(
+      `@select="emit('set-remark', friend.userId)"`,
+    )
+    expect(webqqContactList).toContain(
+      `@select="emit('delete-friend', friend.userId)"`,
+    )
+  })
+
   it('uses a concise friend deletion confirmation description', () => {
     expect(webqqView).toContain('description: `确定删除好友「${friend?.name || userId}」？`,')
     expect(webqqView).not.toContain('此操作将调用真实 OneBot 删除好友接口。')
