@@ -29,7 +29,7 @@ export function createPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfi
   })
   // 开发者模拟环境完全走内存预设，避免依赖真实 OneBot bot / 协议实现。
   const webqq = config.webQQMockEnvironment
-    ? createMockWebQQService()
+    ? createMockWebQQService(undefined, { mockBotCount: config.onebotMockBotCount })
     : createOneBotWebQQService(ctx, {
       selfId: initialOneBotSelfId,
       selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,

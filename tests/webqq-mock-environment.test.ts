@@ -27,7 +27,7 @@ describe('webqq mock environment', () => {
   it('isolates mock messages from real affinity data and persisted browser caches', () => {
     expect(runtimeSource).toContain("import { createMockWebQQService } from '../webqq/adapters/mock/service'")
     expect(runtimeSource).toContain('config.webQQMockEnvironment')
-    expect(runtimeSource).toContain('createMockWebQQService()')
+    expect(runtimeSource).toContain('createMockWebQQService(undefined, { mockBotCount: config.onebotMockBotCount })')
     expect(runtimeSource).toContain('createOneBotWebQQService(ctx, {')
     expect(consoleSource).toContain('config.webQQMockEnvironment')
     expect(consoleSource).toContain('attachWebQQAffinityBadges')
@@ -139,6 +139,25 @@ describe('webqq mock environment', () => {
       title: 'clip.mp4',
       url: 'data:video/mp4;base64,AAAA',
     }])
+  })
+
+  it('adds configured mock OneBot robots while the mock environment is enabled', () => {
+    const service = createMockWebQQService(undefined, { mockBotCount: 2 })
+
+    expect(service.listBots().map((bot) => bot.selfId)).toEqual([
+      MOCK_SELF_ID,
+      MOCK_SECOND_SELF_ID,
+      `${MOCK_SELF_ID}:mock:1`,
+      `${MOCK_SELF_ID}:mock:2`,
+    ])
+    expect(service.listBots().map((bot) => bot.name)).toEqual([
+      '模拟机器人',
+      '备用机器人',
+      '模拟机器人 模拟 1',
+      '模拟机器人 模拟 2',
+    ])
+    expect(service.selectSelfId(`${MOCK_SELF_ID}:mock:2`)).toBe(`${MOCK_SELF_ID}:mock:2`)
+    expect(service.reconcileBotState().selectedSelfId).toBe(`${MOCK_SELF_ID}:mock:2`)
   })
 
   it('mutates in-memory state for key actions', async () => {

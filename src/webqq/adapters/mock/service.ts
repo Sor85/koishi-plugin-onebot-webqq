@@ -233,8 +233,24 @@ function cloneMessageForSelectedBot(scene: MockWebQQScene, message: WebQQMessage
 }
 
 // 创建内存同构 WebQQ service，供开发者模拟环境与无真实 OneBot 时的 UI 验证使用。
-export function createMockWebQQService(initialScene?: MockWebQQScene) {
+function getMockBotCount(value: number | undefined) {
+  return Math.max(0, Math.min(20, Math.floor(value ?? 0)))
+}
+
+function appendMockBotProfiles(scene: MockWebQQScene, count: number | undefined) {
+  const source = scene.bots[0]
+  const mockBotCount = getMockBotCount(count)
+  if (!source || !mockBotCount) return
+  scene.bots.push(...Array.from({ length: mockBotCount }, (_, index) => ({
+    ...source,
+    selfId: `${source.selfId}:mock:${index + 1}`,
+    name: `${source.name} 模拟 ${index + 1}`,
+  })))
+}
+
+export function createMockWebQQService(initialScene?: MockWebQQScene, options: { mockBotCount?: number } = {}) {
   const scene = cloneMockWebQQScene(initialScene)
+  appendMockBotProfiles(scene, options.mockBotCount)
 
   const listBots = () => scene.bots.map((bot) => ({ ...bot }))
 
