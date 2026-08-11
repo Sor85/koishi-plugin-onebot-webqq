@@ -148,11 +148,15 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Universal, activities, router, store, withProxy } from '@koishijs/client'
-import { createLayout, type AutoLayout } from 'animejs'
+import { animate, createLayout, type AutoLayout } from 'animejs'
 import { debug, enableCapsuleFrostedGlass, resolvedWebQQColorMode, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
 import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
 import { capsule, hiddenCapsuleActivityIds } from './state'
+
+const BOT_STACK_ANIMATION_DURATION = 260
+const BOT_AVATAR_OVERLAP_COLLAPSED_CENTER = 45
+const BOT_AVATAR_OVERLAP_EXPANDED_CENTER = 52
 
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
 const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
@@ -327,15 +331,40 @@ function recordBotStackLayout() {
   return layout
 }
 
-async function animateBotStackLayout(layout?: AutoLayout) {
+async function animateBotStackLayout(layout: AutoLayout | undefined, fromExpanded?: boolean, toExpanded?: boolean) {
   if (!layout) return
   await nextTick()
-  layout.animate({ duration: 260, ease: 'out(3)' })
+  const shouldAnimateOverlap = fromExpanded !== undefined && toExpanded !== undefined && fromExpanded !== toExpanded
+  const avatars = shouldAnimateOverlap
+    ? Array.from(capsuleLayoutRef.value?.querySelectorAll<HTMLElement>(
+        '.onebot-webqq__bot-switch.is-overlapped .onebot-webqq__avatar',
+      ) ?? [])
+    : []
+  const fromCenter = fromExpanded
+    ? BOT_AVATAR_OVERLAP_EXPANDED_CENTER
+    : BOT_AVATAR_OVERLAP_COLLAPSED_CENTER
+  const toCenter = toExpanded
+    ? BOT_AVATAR_OVERLAP_EXPANDED_CENTER
+    : BOT_AVATAR_OVERLAP_COLLAPSED_CENTER
+  // WebQQ 的 bot-switch 本身没有 right 过渡，位置完全由 Anime.js FLIP 驱动；
+  // 裁切若走独立 CSS transition 会和 260ms out(3) 位移错相，必须放进同一条时间轴。
+  const overlapAnimation = shouldAnimateOverlap
+    ? animate(avatars, {
+        '--onebot-webqq-avatar-overlap-center': [`${fromCenter}px`, `${toCenter}px`],
+        duration: BOT_STACK_ANIMATION_DURATION,
+        ease: 'out(3)',
+      })
+    : undefined
+  await Promise.all([
+    layout.animate({ duration: 260, ease: 'out(3)' }),
+    overlapAnimation?.then(),
+  ])
 }
 
 function setBotStackExpanded(expanded: boolean) {
   if (!hasMultipleBots.value || !hasBotStackOverflow.value) return
   if (botStackExpanded.value === expanded) return
+  const fromExpanded = botStackExpanded.value
   const layout = recordBotStackLayout()
   botStackOverflowMotion.value = expanded ? 'expanding' : 'collapsing'
   if (botStackOverflowMotionTimer) clearTimeout(botStackOverflowMotionTimer)
@@ -344,7 +373,7 @@ function setBotStackExpanded(expanded: boolean) {
     botStackOverflowMotionTimer = undefined
   }, 280)
   botStackExpanded.value = expanded
-  void animateBotStackLayout(layout)
+  void animateBotStackLayout(layout, fromExpanded, expanded)
 }
 
 // 展开态由「指针悬停」或「焦点驻留」任一为真推导，而不是直接听 pointerleave/focusout。

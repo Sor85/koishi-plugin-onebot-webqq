@@ -507,6 +507,7 @@ describe('chat capsule styles', () => {
         : '关闭小胶囊毛玻璃时没有取消背景模糊',
       overlappedAvatar.includes('radial-gradient(circle 23px at var(--onebot-webqq-avatar-overlap-center) 21px, transparent 98%, #000 100%)')
         && overlappedAvatar.includes('box-shadow: none')
+        && !overlappedAvatar.includes('transition: --onebot-webqq-avatar-overlap-center')
         && overlappedAvatar.includes('-webkit-mask-image: var(--onebot-webqq-avatar-overlap-cutout)')
         && overlappedAvatar.includes('mask-image: var(--onebot-webqq-avatar-overlap-cutout)')
         ? ''

@@ -286,12 +286,16 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('width: 157px')
         ? ''
         : '头像展开时胶囊和头像组没有同步向左扩张，或正文没有固定右锚点',
-      capsuleView.includes("import { createLayout, type AutoLayout } from 'animejs'")
+      capsuleView.includes("import { animate, createLayout, type AutoLayout } from 'animejs'")
         && capsuleView.includes('ref="capsuleLayoutRef"')
         && capsuleView.includes('const capsuleLayoutRef = ref<HTMLElement>()')
         && capsuleView.includes('createLayout(capsuleLayoutRef.value')
         && capsuleView.includes('layout?.record()')
+        && capsuleView.includes('animateBotStackLayout(layout, fromExpanded, expanded)')
         && capsuleView.includes("layout.animate({ duration: 260, ease: 'out(3)' })")
+        && capsuleView.includes("'--onebot-webqq-avatar-overlap-center': [`${fromCenter}px`, `${toCenter}px`]")
+        && capsuleView.includes('duration: 260')
+        && capsuleView.includes("ease: 'out(3)'")
         && capsuleView.includes("children: ['.onebot-webqq', '.onebot-webqq__avatar-capsule', '.onebot-webqq__bot-stack', '.onebot-webqq__bot-switch', '.onebot-webqq__bot-overflow']")
         && !capsuleView.includes("'.onebot-webqq__body'")
         && !capsuleView.includes("'.onebot-webqq__avatar-guide'")

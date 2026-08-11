@@ -1,3 +1,9 @@
+@property --onebot-webqq-avatar-overlap-center {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 45px;
+}
+
 .onebot-webqq-host {
   position: fixed;
   right: 24px;
@@ -200,7 +206,7 @@
 }
 
 // 后方头像直接挖掉与前方头像重叠的区域，让真实胶囊表面充当分隔；
-// 这样既能完全遮住下层头像，也不需要猜测毛玻璃背景应该使用哪种描边颜色。
+// bot-switch 的位移完全由 Anime.js FLIP 驱动，裁切圆心也由组件使用相同时间轴补间。
 .onebot-webqq__bot-switch.is-overlapped .onebot-webqq__avatar {
   --onebot-webqq-avatar-overlap-center: 45px;
   --onebot-webqq-avatar-overlap-cutout: radial-gradient(circle 23px at var(--onebot-webqq-avatar-overlap-center) 21px, transparent 98%, #000 100%);
