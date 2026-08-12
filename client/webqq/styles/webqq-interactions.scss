@@ -494,10 +494,13 @@
   height: 96px;
   flex: 0 0 96px;
   overflow: hidden;
-  border: 5px solid color-mix(in srgb, var(--webqq-accent) 18%, transparent);
+  border: 0;
   border-radius: 50%;
   background: var(--webqq-surface-muted);
   box-shadow: 0 8px 22px rgb(15 23 42 / 12%);
+  // 资料头像需要铺满圆形区域；重叠挖空遮罩只能由小胶囊作用域启用。
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .onebot-webqq-webqq__portal-page .webqq-profile-card-avatar {
@@ -509,6 +512,8 @@
   border-radius: inherit;
   object-fit: cover;
   background: var(--webqq-surface-muted);
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .onebot-webqq-webqq__portal-page .webqq-profile-card-avatar.is-fallback {
