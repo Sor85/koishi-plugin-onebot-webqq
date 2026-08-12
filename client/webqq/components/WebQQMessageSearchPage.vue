@@ -2,7 +2,7 @@
   <Teleport to="body">
     <section
       ref="panelRef"
-      class="webqq-secondary-page onebot-webqq-webqq__portal-page webqq-message-search-page"
+      :class="['webqq-secondary-page onebot-webqq-webqq__portal-page webqq-message-search-page', `is-color-${resolvedWebQQColorMode}`]"
       :style="panelStyle"
       aria-label="查找聊天记录"
     >
@@ -35,7 +35,7 @@
           <span v-else-if="searched">找到 {{ results.length }} 条，已扫描 {{ scannedCount }} 条消息</span>
           <span v-else>搜索当前会话的历史聊天记录</span>
         </div>
-        <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10131 }" class="onebot-webqq-webqq__message-search-results">
+        <div class="onebot-webqq-webqq__message-search-results">
           <button
             v-for="message in results"
             :key="message.id || message.sequence"
@@ -62,9 +62,9 @@
 <script lang="ts" setup>
 import { IconSearch } from '@tabler/icons-vue'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { resolvedWebQQColorMode } from '../settings'
 import type { WebQQMessage } from '../types'
 import { clampFloatingPanelPosition, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
-import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 const props = defineProps<{
   query: string

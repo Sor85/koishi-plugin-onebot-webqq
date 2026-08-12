@@ -17,6 +17,8 @@ const dialogContentView = await readFile(new URL('../client/components/ui/dialog
 const webqqEmojiPickerView = await readFile(new URL('../client/webqq/components/WebQQEmojiPicker.vue', import.meta.url), 'utf8')
 const webqqProfileCardView = await readFile(new URL('../client/webqq/components/WebQQProfileCard.vue', import.meta.url), 'utf8')
 const webqqForwardTargetDialogView = await readFile(new URL('../client/webqq/components/WebQQForwardTargetDialog.vue', import.meta.url), 'utf8')
+const contextMenuContentView = await readFile(new URL('../client/components/ui/context-menu/ContextMenuContent.vue', import.meta.url), 'utf8')
+const contextMenuSubContentView = await readFile(new URL('../client/components/ui/context-menu/ContextMenuSubContent.vue', import.meta.url), 'utf8')
 const style = `${capsuleStyle}\n${webqqShellStyle}\n${webqqChatStyle}\n${webqqGroupInfoStyle}\n${webqqNoticesStyle}\n${webqqMessagesStyle}\n${webqqMessageCardsStyle}\n${webqqMessageOverlaysStyle}\n${webqqMessageEffectsStyle}\n${themeColorsStyle}\n${styleEntry}`
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -95,7 +97,7 @@ describe('chat capsule styles', () => {
       themeColorsStyle,
     )
 
-    expect(noticeTabsBody).toContain('border-color: rgba(148, 163, 184, 0.24)')
+    expect(noticeTabsBody).toContain('border-color: var(--webqq-border)')
   })
 
   it('matches the notification selection shape to the contact tabs', () => {
@@ -128,14 +130,50 @@ describe('chat capsule styles', () => {
     expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
   })
 
-  it('keeps every portalled dialog layer and floating scrollbar above the WebQQ shell', () => {
+  it('carries the resolved dark theme into every portalled interaction surface', () => {
+    const darkPortalTokens = ruleBodyIncluding(
+      '.webqq-secondary-page.is-color-dark',
+      webqqInteractionsStyle,
+    )
+    const headerBody = ruleBodyIncluding('.webqq-secondary-page-header', webqqInteractionsStyle)
+
+    expect(darkPortalTokens).toContain('--webqq-bg: #2c2c30')
+    expect(darkPortalTokens).toContain('--webqq-panel: #333338')
+    expect(darkPortalTokens).toContain('--webqq-border: #45454c')
+    expect(headerBody).toContain('background: color-mix(in srgb, var(--webqq-surface) 92%, transparent)')
+    expect(headerBody).toContain('border-bottom: 1px solid color-mix(in srgb, var(--webqq-border) 72%, transparent)')
+    expect(webqqProfileCardView).toContain('`is-color-${resolvedWebQQColorMode}`')
+    expect(webqqEmojiPickerView).toContain('`is-color-${resolvedWebQQColorMode}`')
+    expect(contextMenuContentView).toContain('`is-color-${resolvedWebQQColorMode}`')
+    expect(contextMenuSubContentView).toContain('`is-color-${resolvedWebQQColorMode}`')
+    expect(dialogContentView).toContain('`is-color-${resolvedWebQQColorMode}`')
+  })
+
+  it('gives secondary pages one subtle outline and shadow while hiding every scrollbar', () => {
+    const pageBody = ruleBodyIncluding(
+      '.webqq-secondary-page.onebot-webqq-webqq__portal-page',
+      webqqInteractionsStyle,
+    )
+    const scrollbarBody = ruleBodyIncluding(
+      '.webqq-secondary-page.onebot-webqq-webqq__portal-page *',
+      webqqInteractionsStyle,
+    )
+
+    expect(pageBody).toContain('border: 1px solid color-mix(in srgb, var(--webqq-border) 42%, transparent)')
+    expect(pageBody).toContain('box-shadow: 0 16px 38px rgb(0 0 0 / 16%)')
+    expect(scrollbarBody).toContain('scrollbar-width: none')
+    expect(webqqInteractionsStyle).toMatch(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page \*::\-webkit-scrollbar\s*\{[\s\S]*?display:\s*none/)
+    expect(webqqProfileCardView).not.toContain('v-webqq-scrollbar')
+    expect(webqqEmojiPickerView).not.toContain('v-webqq-scrollbar')
+  })
+
+  it('keeps every portalled dialog layer and dialog scrollbar above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
     const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const dialogLayerZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-layer\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const contentZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const dialogScrollbarZIndex = Number(dialogContentView.match(/zIndex:\s*(\d+)/)?.[1])
-    const emojiScrollbarZIndex = Number(webqqEmojiPickerView.match(/zIndex:\s*(\d+)/)?.[1])
     const forwardScrollbarZIndex = Number(webqqForwardTargetDialogView.match(/zIndex:\s*(\d+)/)?.[1])
 
     expect(shellZIndex).toBe(10001)
@@ -144,7 +182,6 @@ describe('chat capsule styles', () => {
     expect(dialogLayerZIndex).toBeGreaterThan(menuZIndex)
     expect(contentZIndex).toBeGreaterThan(0)
     expect(dialogScrollbarZIndex).toBeGreaterThan(dialogLayerZIndex)
-    expect(emojiScrollbarZIndex).toBeGreaterThan(secondaryPageZIndex)
     expect(forwardScrollbarZIndex).toBeGreaterThan(dialogLayerZIndex)
     const dialogTemplate = dialogContentView.slice(dialogContentView.indexOf('<template>'))
     expect(dialogContentView).not.toContain("from 'reka-ui'")
@@ -187,7 +224,7 @@ describe('chat capsule styles', () => {
     expect(headerBody).toContain('position: absolute')
     expect(headerBody).toContain('backdrop-filter: saturate(180%) blur(20px)')
     expect(headerBody).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
-    expect(headerBody).toContain('background: rgba(248, 250, 252, 0.92)')
+    expect(headerBody).toContain('background: color-mix(in srgb, var(--webqq-surface) 92%, transparent)')
     expect(selectTriggerBody).toContain('min-height: 32px')
     expect(webqqInteractionsStyle).toContain('.webqq-profile-card-select-menu')
     // 资料卡内容相对 48px 顶栏再下沉，避免头像贴边。
@@ -525,9 +562,9 @@ describe('chat capsule styles', () => {
         && !body.includes('box-shadow:')
         ? ''
         : '左右结构不能各自画成两个胶囊表面或阴影',
-      darkSurface.includes('background: rgba(15, 23, 42, 0.72)')
+      darkSurface.includes('background: rgba(44, 44, 48, 0.82)')
         ? ''
-        : '主胶囊暗色背景不是半透明毛玻璃',
+        : '主胶囊暗色背景没有使用 Sandbox 中性表面色',
       darkSurface.includes('box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24)')
         ? ''
         : '主胶囊暗色阴影没有收窄到统一表面层',
@@ -599,9 +636,9 @@ describe('chat capsule styles', () => {
       scrollBottomBody.includes('-webkit-backdrop-filter: saturate(180%) blur(20px)')
         ? ''
         : '返回底部按钮亮色模式缺少 Safari 毛玻璃效果',
-      darkScrollBottomBody.includes('background: rgba(30, 41, 59, 0.96)')
+      darkScrollBottomBody.includes('background: var(--webqq-panel)')
         ? ''
-        : '返回底部按钮强制暗色模式没有使用黑色气泡背景',
+        : '返回底部按钮强制暗色模式没有使用 Sandbox 面板色',
       darkScrollBottomBody.includes('backdrop-filter: saturate(180%) blur(20px)')
         ? ''
         : '返回底部按钮强制暗色模式缺少毛玻璃效果',
@@ -1135,46 +1172,61 @@ describe('chat capsule styles', () => {
     ]
     const missingRequirements = [
       forcedRootBody ? '' : '缺少解析后暗色根选择器 .onebot-webqq-webqq.is-color-dark',
-      forcedRootBody.includes('background: #0f172a') ? '' : '暗色根选择器没有使用纯色面板背景',
+      forcedRootBody.includes('--webqq-bg: #2c2c30')
+        && forcedRootBody.includes('--webqq-rail: #252529')
+        && forcedRootBody.includes('--webqq-surface-muted: #323238')
+        && forcedRootBody.includes('--webqq-border: #45454c')
+        && forcedRootBody.includes('--webqq-text: #edf2f7')
+        && forcedRootBody.includes('--webqq-muted: #a1a1aa')
+        && forcedRootBody.includes('--webqq-hover: #39393f')
+        && forcedRootBody.includes('--webqq-panel: #333338')
+        && forcedRootBody.includes('--webqq-reaction: rgb(47 47 52)')
+        ? ''
+        : '暗色根选择器没有复用 Sandbox 的完整中性主题令牌与贴表情层级色',
+      forcedRootBody.includes('background: var(--webqq-bg)') ? '' : '暗色根选择器没有使用 Sandbox 背景令牌',
       forcedRootBody.includes('radial-gradient') || forcedRootBody.includes('linear-gradient') ? '暗色根选择器仍包含渐变背景' : '',
-      forcedRootBody.includes('--onebot-webqq-webqq-accent-surface: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 72%, #0f172a 28%)')
+      forcedRootBody.includes('--onebot-webqq-webqq-accent-surface: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 72%, var(--webqq-bg) 28%)')
         ? ''
-        : '暗色根选择器没有派生柔和的主题色表面变量',
-      forcedRootBody.includes('color:') ? '' : '暗色根选择器没有覆盖面板文本',
-      forcedSidebarBody.includes('background: #111827') ? '' : '暗色侧栏没有使用接近主区的中性深色背景',
-      forcedTabsRowBody.includes('background: #111827') ? '' : '暗色侧栏顶栏没有与侧栏共享中性深色背景',
+        : '暗色根选择器没有基于 Sandbox 背景派生柔和主题色表面',
+      forcedRootBody.includes('color: var(--webqq-text)') ? '' : '暗色根选择器没有使用 Sandbox 正文令牌',
+      forcedSidebarBody.includes('background: var(--webqq-rail)') ? '' : '暗色侧栏没有使用 Sandbox 侧栏令牌',
+      forcedTabsRowBody.includes('background: var(--webqq-rail)') ? '' : '暗色侧栏顶栏没有使用 Sandbox 侧栏令牌',
       ...darkSelectors.map((selector) => style.includes(selector) ? '' : `缺少暗色关键选择器 ${selector}`),
-      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 78%, #020617 22%)')
+      forcedBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: var(--webqq-reaction)')
         ? ''
-        : '暗色普通气泡没有使用更深的 TIM 贴表情背景变量',
+        : '暗色普通气泡没有使用 47,47,52 的贴表情背景层级',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface)')
         && forcedOutgoingBubbleBody.includes('background: var(--onebot-webqq-webqq-accent-surface)')
         && forcedOutgoingBubbleBody.includes('box-shadow: none')
         ? ''
         : '暗色发出气泡没有使用柔和主题色表面或仍保留发光阴影',
-      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
+      forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, var(--webqq-bg) 12%)')
         ? ''
-        : '暗色发出气泡没有覆盖 TIM 贴表情背景变量',
-      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
+        : '暗色发出气泡没有基于 Sandbox 背景覆盖 TIM 贴表情变量',
+      forcedMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: var(--webqq-reaction)')
         ? ''
-        : '暗色图片贴表情没有覆盖 TIM 贴表情背景变量',
-      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%)')
+        : '暗色其他用户图片贴表情没有使用 47,47,52 的背景层级',
+      forcedOutgoingMediaReactionsBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, var(--webqq-bg) 12%)')
         ? ''
-        : '暗色发出图片贴表情没有覆盖 TIM 贴表情背景变量',
+        : '暗色发出图片贴表情没有基于 Sandbox 背景覆盖 TIM 贴表情变量',
       forcedCapsuleBody ? '' : '缺少暗色主胶囊选择器 .onebot-webqq.is-color-dark',
       forcedCapsuleSurfaceBody.includes('background:') ? '' : '暗色主胶囊没有覆盖背景',
       forcedCapsuleSurfaceBody.includes('border') ? '' : '暗色主胶囊没有覆盖边框',
       themeColorsStyle.includes('.onebot-webqq.is-color-dark .onebot-webqq__bot-switch .onebot-webqq__avatar')
         ? '暗色主题仍用实色阴影描边分隔多机器人头像'
         : '',
-      themeColorsStyle.includes('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow')
+      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow').includes('box-shadow')
         ? '暗色主题仍用实色阴影描边分隔机器人余量徽标'
         : '',
-      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__avatar-unread').includes('border-color: #0f172a')
+      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow').includes('color: #edf2f7')
+        && ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow').includes('background: #39393f')
         ? ''
-        : '暗色头像未读角标仍使用浅色边框',
+        : '暗色机器人余量胶囊没有使用 Sandbox 正文色与悬停表面色',
+      ruleBodyIncluding('.onebot-webqq.is-color-dark .onebot-webqq__avatar-unread').includes('border-color: #2c2c30')
+        ? ''
+        : '暗色头像未读角标没有使用 Sandbox 背景色边框',
       forcedHeaderBody.includes('background:') ? '' : '暗色聊天顶栏没有覆盖背景',
-      forcedPlainHeaderBody.includes('background: #0f172a') ? '' : '关闭毛玻璃时暗色聊天顶栏不是不透明背景',
+      forcedPlainHeaderBody.includes('background: var(--webqq-bg)') ? '' : '关闭毛玻璃时暗色聊天顶栏没有使用 Sandbox 不透明背景',
       themeColorsStyle.includes('is-color-auto') ? '主题样式仍保留 is-color-auto 分支，可能绕过 Koishi 最终主题' : '',
       themeColorsStyle.includes('@media (prefers-color-scheme: dark)') ? '主题样式仍直接读取系统颜色偏好' : '',
     ].filter(Boolean)

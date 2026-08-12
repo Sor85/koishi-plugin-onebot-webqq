@@ -4,6 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { ContextMenuContent, ContextMenuPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '../../../lib/utils'
+import { resolvedWebQQColorMode } from '../../../webqq/settings'
 
 defineOptions({ inheritAttrs: false })
 
@@ -18,7 +19,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     <ContextMenuContent
       data-slot="context-menu-content"
       v-bind="{ ...$attrs, ...forwarded }"
-      :class="cn('webqq-context-menu-content', props.class)"
+      :class="cn('webqq-context-menu-content', `is-color-${resolvedWebQQColorMode}`, props.class)"
     >
       <slot />
     </ContextMenuContent>

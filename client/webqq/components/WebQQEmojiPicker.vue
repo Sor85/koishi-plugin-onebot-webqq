@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <section ref="panelRef" v-if="open" class="webqq-secondary-page onebot-webqq-webqq__portal-page webqq-emoji-picker-page" :style="panelStyle" aria-label="贴表情">
+    <section ref="panelRef" v-if="open" :class="['webqq-secondary-page onebot-webqq-webqq__portal-page webqq-emoji-picker-page', `is-color-${resolvedWebQQColorMode}`]" :style="panelStyle" aria-label="贴表情">
       <header
         class="webqq-secondary-page-header"
         :class="{ 'is-dragging': dragging }"
@@ -8,7 +8,7 @@
       >
         <strong>贴表情</strong>
       </header>
-      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10131 }" class="webqq-emoji-picker">
+      <div class="webqq-emoji-picker">
         <Input
           v-model="query"
           class="webqq-emoji-picker-search"
@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Input } from '../../components/ui/input'
+import { resolvedWebQQColorMode } from '../settings'
 import {
   getCommonWebQQEmojiFaces,
   getWebQQEmojiFace,
@@ -82,7 +83,6 @@ import {
   type WebQQEmojiFace,
 } from '../utils/emoji-catalog'
 import { getFloatingPanelStyle, clampFloatingPanelPosition, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
-import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 const props = defineProps<{
   open: boolean

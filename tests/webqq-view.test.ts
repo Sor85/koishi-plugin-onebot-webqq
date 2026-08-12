@@ -924,12 +924,13 @@ describe('webqq observer view', () => {
     expect(webqqMessageSearchPage).toContain('@pointerdown="startDrag"')
     expect(webqqMessageSearchPage).toContain('placeholder="输入关键词"')
     expect(webqqMessageSearchPage).toContain('继续搜索更早记录')
-    expect(webqqMessageSearchPage).toContain("v-webqq-scrollbar=\"{ tone: 'accent', zIndex: 10131 }\"")
+    expect(webqqMessageSearchPage).toContain('class="onebot-webqq-webqq__message-search-results"')
+    expect(webqqMessageSearchPage).not.toContain('v-webqq-scrollbar')
     expect(webqqMessageSearchPage).not.toContain('message-search-backdrop')
     expect(webqqApi).toContain("send('onebot-webqq/webqq/messages/search', query)")
   })
 
-  it('attaches the WebQQ overlay scrollbar directive to every WebQQ scroll area', () => {
+  it('attaches the WebQQ overlay scrollbar directive to primary and modal scroll areas', () => {
     expect(webqqScrollbarDirective).toContain('export const vWebqqScrollbar')
     expect(webqqScrollbarDirective).toContain('document.body.appendChild')
     expect(webqqScrollbarDirective).toContain('ResizeObserver')
@@ -964,11 +965,12 @@ describe('webqq observer view', () => {
     expect(webqqGroupInfoPanel).toContain('<div v-else v-webqq-scrollbar class="onebot-webqq-webqq__group-member-list">')
     expect(webqqForwardModal).toContain('import { vWebqqScrollbar }')
     expect(webqqForwardModal).toContain('<div v-webqq-scrollbar class="onebot-webqq-webqq__forward-modal-body">')
-    expect(webqqMessageSearchPage).toContain("import { vWebqqScrollbar } from '../utils/webqq-scrollbar'")
-    expect(webqqMessageSearchPage).toContain("v-webqq-scrollbar=\"{ tone: 'accent', zIndex: 10131 }\"")
-    expect(webqqProfileCardView).toContain('import { vWebqqScrollbar }')
-    expect(webqqProfileCardView).toContain('v-webqq-scrollbar="{ tone: \'accent\', zIndex: 10301 }"')
-    expect(webqqEmojiPickerView).toContain('v-webqq-scrollbar="{ tone: \'accent\', zIndex: 10131 }"')
+    expect(webqqMessageSearchPage).not.toContain('vWebqqScrollbar')
+    expect(webqqMessageSearchPage).not.toContain('v-webqq-scrollbar')
+    expect(webqqProfileCardView).not.toContain('vWebqqScrollbar')
+    expect(webqqProfileCardView).not.toContain('v-webqq-scrollbar')
+    expect(webqqEmojiPickerView).not.toContain('vWebqqScrollbar')
+    expect(webqqEmojiPickerView).not.toContain('v-webqq-scrollbar')
     expect(webqqForwardTargetDialogView).toContain('v-webqq-scrollbar="{ tone: \'accent\', zIndex: 10202 }"')
   })
 

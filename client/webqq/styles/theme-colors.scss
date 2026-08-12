@@ -152,24 +152,35 @@
 }
 
 .onebot-webqq-webqq.is-color-dark {
-  --onebot-webqq-webqq-accent-surface: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 72%, #0f172a 28%);
-  color: #e5edf7;
-  background: #0f172a;
-  border-color: rgba(148, 163, 184, 0.28);
+  // 与 Sandbox 的 webqq-tokens.css 共用同一组暗色中性色；OneBot accent 仍保持可配置。
+  --webqq-bg: #2c2c30;
+  --webqq-rail: #252529;
+  --webqq-surface: #2c2c30;
+  --webqq-surface-muted: #323238;
+  --webqq-border: #45454c;
+  --webqq-text: #edf2f7;
+  --webqq-muted: #a1a1aa;
+  --webqq-hover: #39393f;
+  --webqq-panel: #333338;
+  --webqq-reaction: rgb(47 47 52);
+  --onebot-webqq-webqq-accent-surface: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 72%, var(--webqq-bg) 28%);
+  color: var(--webqq-text);
+  background: var(--webqq-bg);
+  border-color: var(--webqq-border);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__sidebar,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__tabs-row {
-  background: #111827;
-  border-color: rgba(148, 163, 184, 0.22);
+  background: var(--webqq-rail);
+  border-color: var(--webqq-border);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__tabs button,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notify,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header button,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-tabs button {
-  color: #94a3b8;
+  color: var(--webqq-muted);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__tabs button.is-active,
@@ -179,39 +190,39 @@
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__contact:hover,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__contact.is-active,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-actions button {
-  color: #dbeafe;
-  background: rgba(37, 99, 235, 0.26);
+  color: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 28%, var(--webqq-text));
+  background: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 18%, var(--webqq-hover));
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__search input,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-members input {
-  color: #e5edf7;
-  background: rgba(15, 23, 42, 0.62);
-  border-color: rgba(148, 163, 184, 0.28);
+  color: var(--webqq-text);
+  background: var(--webqq-surface-muted);
+  border-color: var(--webqq-border);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__search input::placeholder,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-members input::placeholder {
-  color: #64748b;
+  color: color-mix(in srgb, var(--webqq-muted) 84%, transparent);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat {
-  background: rgba(15, 23, 42, 0.74);
+  background: var(--webqq-bg);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-info-header,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-announcements {
-  background: rgba(15, 23, 42, 0.88);
-  border-color: rgba(148, 163, 184, 0.22);
+  background: color-mix(in srgb, var(--webqq-bg) 88%, transparent);
+  border-color: var(--webqq-border);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header {
-  background: rgba(15, 23, 42, 0.88);
+  background: color-mix(in srgb, var(--webqq-bg) 88%, transparent);
 }
 
 .onebot-webqq-webqq.is-plain.is-color-dark .onebot-webqq-webqq__chat-header {
-  background: #0f172a;
+  background: var(--webqq-bg);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header span,
@@ -223,58 +234,56 @@
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-announcement time,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-name,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-time {
-  color: #94a3b8;
+  color: var(--webqq-muted);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-info {
-  background:
-    radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.12), transparent 34%),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.92));
-  border-color: rgba(148, 163, 184, 0.22);
+  background: var(--webqq-surface);
+  border-color: var(--webqq-border);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-info-header strong,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-announcements h3,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-members h3 {
-  color: #e5edf7;
+  color: var(--webqq-text);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-menu,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-card,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__group-announcement {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.24);
+  background: var(--webqq-panel);
+  border-color: var(--webqq-border);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__notice-tabs {
-  border-color: rgba(148, 163, 184, 0.24);
+  border-color: var(--webqq-border);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__bubble {
-  --onebot-webqq-webqq-bubble-bg: rgb(30 41 59 / 90%);
-  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 78%, #020617 22%);
-  color: #e5edf7;
-  background: rgba(30, 41, 59, 0.96);
+  --onebot-webqq-webqq-bubble-bg: var(--webqq-panel);
+  --onebot-webqq-webqq-reaction-bg: var(--webqq-reaction);
+  color: var(--webqq-text);
+  background: var(--webqq-panel);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions {
-  --onebot-webqq-webqq-bubble-bg: rgb(30 41 59 / 90%);
-  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%);
+  --onebot-webqq-webqq-bubble-bg: var(--webqq-panel);
+  --onebot-webqq-webqq-reaction-bg: var(--webqq-reaction);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__quote {
-  border-left-color: rgba(147, 197, 253, 0.56);
-  background: rgba(15, 23, 42, 0.42);
-  color: #cbd5e1;
+  border-left-color: color-mix(in srgb, var(--onebot-webqq-webqq-accent) 44%, var(--webqq-border));
+  background: color-mix(in srgb, var(--webqq-bg) 72%, transparent);
+  color: var(--webqq-muted);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__quote-title {
-  color: #dbeafe;
+  color: var(--webqq-text);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble {
   --onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface);
-  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%);
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, var(--webqq-bg) 12%);
   color: #ffffff;
   background: var(--onebot-webqq-webqq-accent-surface);
   box-shadow: none;
@@ -282,13 +291,13 @@
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__message-media-stack .onebot-webqq-webqq__message-reactions {
   --onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface);
-  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, #0f172a 12%);
+  --onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, var(--webqq-bg) 12%);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__scroll-bottom {
-  color: #dbeafe;
-  background: rgba(30, 41, 59, 0.96);
-  border-color: rgba(148, 163, 184, 0.24);
+  color: var(--webqq-text);
+  background: var(--webqq-panel);
+  border-color: var(--webqq-border);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -297,19 +306,19 @@
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__send,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__send-file,
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__send-image {
-  color: #e5edf7;
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(148, 163, 184, 0.24);
+  color: var(--webqq-text);
+  background: var(--webqq-panel);
+  border-color: var(--webqq-border);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
 .onebot-webqq.is-color-dark {
-  color: #e5edf7;
+  color: #edf2f7;
 }
 
 .onebot-webqq.is-color-dark::before {
-  background: rgba(15, 23, 42, 0.72);
-  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(44, 44, 48, 0.82);
+  border-color: #45454c;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
 }
 
@@ -318,22 +327,28 @@
 }
 
 .onebot-webqq__body.is-color-dark {
-  color: #e5edf7;
+  color: #edf2f7;
 }
 
 .onebot-webqq.is-color-dark .onebot-webqq__meta,
 .onebot-webqq.is-color-dark .onebot-webqq__title-status,
 .onebot-webqq__body.is-color-dark .onebot-webqq__meta,
 .onebot-webqq__body.is-color-dark .onebot-webqq__title-status {
-  color: #94a3b8;
+  color: #a1a1aa;
+}
+
+.onebot-webqq.is-color-dark .onebot-webqq__bot-overflow {
+  // 余量胶囊属于暗色主题表面，文字与背景都跟随 Sandbox 的中性令牌。
+  color: #edf2f7;
+  background: #39393f;
 }
 
 .onebot-webqq.is-color-dark .onebot-webqq__avatar-unread {
-  border-color: #0f172a;
+  border-color: #2c2c30;
 }
 
 .onebot-webqq.is-color-dark .onebot-webqq__status {
-  border-color: rgba(15, 23, 42, 0.96);
+  border-color: rgba(44, 44, 48, 0.96);
 }
 
 .onebot-webqq-webqq.is-plain .onebot-webqq-webqq__scroll-bottom {

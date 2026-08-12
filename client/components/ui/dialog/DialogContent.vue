@@ -3,6 +3,7 @@ import type { HTMLAttributes } from 'vue'
 import { IconX } from '@tabler/icons-vue'
 import { inject, nextTick, ref, watch } from 'vue'
 import { cn } from '../../../lib/utils'
+import { resolvedWebQQColorMode } from '../../../webqq/settings'
 import { vWebqqScrollbar } from '../../../webqq/utils/webqq-scrollbar'
 import { webQQDialogContextKey } from './dialog-context'
 
@@ -46,8 +47,7 @@ watch(isOpen, async (open) => {
         role="dialog"
         aria-modal="true"
         tabindex="-1"
-        class="webqq-dialog-content"
-        :class="cn(props.class)"
+        :class="cn('webqq-dialog-content', `is-color-${resolvedWebQQColorMode}`, props.class)"
         @click.stop
         @keydown.esc.stop.prevent="dialog.setOpen(false)"
       >

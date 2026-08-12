@@ -3,7 +3,7 @@
     <section
       v-if="open && model"
       ref="panelRef"
-      class="webqq-secondary-page onebot-webqq-webqq__portal-page webqq-profile-card-page"
+      :class="['webqq-secondary-page onebot-webqq-webqq__portal-page webqq-profile-card-page', `is-color-${resolvedWebQQColorMode}`]"
       :style="panelStyle"
       aria-label="查看资料"
     >
@@ -14,7 +14,7 @@
       >
         <strong>查看资料</strong>
       </header>
-      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10301 }" class="webqq-profile-card">
+      <div class="webqq-profile-card">
         <div class="webqq-profile-card-hero">
           <button
             v-if="model.canEditAvatar"
@@ -166,9 +166,9 @@ import { withProxy } from '@koishijs/client'
 import { IconCamera, IconCheck, IconChevronDown, IconPencil, IconX } from '@tabler/icons-vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Input } from '../../components/ui/input'
+import { resolvedWebQQColorMode } from '../settings'
 import { groupProfileCardFields, type ProfileCardEditableField, type ProfileCardModel } from '../utils/profile-card'
 import { clampFloatingPanelPosition, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
-import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 import type { WebQQSelfProfileUpdate } from '../types'
 
 type SavingField = ProfileCardEditableField | 'avatar'
