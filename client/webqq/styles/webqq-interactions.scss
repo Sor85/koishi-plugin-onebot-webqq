@@ -394,7 +394,7 @@
   top: calc(100% + 10px);
   right: 0;
   z-index: 24;
-  width: 248px;
+  width: 250px;
   max-width: calc(100vw - 24px);
   box-sizing: border-box;
   padding: 12px;
@@ -411,7 +411,7 @@
   align-items: center;
   justify-content: center;
   min-height: 32px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .onebot-webqq-webqq__chat-header .webqq-message-search-calendar-header > button,
@@ -427,7 +427,8 @@
   background: var(--webqq-panel, #fff);
   border: 1px solid var(--webqq-border, #d9e1ea);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
 }
@@ -439,7 +440,9 @@
 .onebot-webqq-webqq__chat-header .webqq-message-search-calendar-header > button {
   position: absolute;
   top: 0;
-  width: 32px;
+  width: 28px;
+  min-height: 28px;
+  height: 28px;
   padding: 0;
   color: var(--webqq-muted, #7c8799);
 }
@@ -453,9 +456,10 @@
 }
 
 .webqq-message-search-calendar-selectors {
-  display: grid;
-  grid-template-columns: 64px 88px;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .webqq-message-search-calendar-menu {
@@ -503,31 +507,35 @@
 .webqq-message-search-calendar-weekdays,
 .webqq-message-search-calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-}
-
-.webqq-message-search-calendar-weekdays {
-  margin-bottom: 6px;
+  grid-template-columns: repeat(7, 32px);
+  column-gap: 0;
 }
 
 .webqq-message-search-calendar-weekdays span {
+  width: 32px;
+  height: 19.2px;
   color: var(--webqq-muted, #7c8799);
-  font-size: 12px;
-  line-height: 28px;
+  font-size: 12.8px;
+  line-height: 19.2px;
   text-align: center;
 }
 
+.webqq-message-search-calendar-grid {
+  row-gap: 8px;
+  margin-top: 8px;
+}
+
 .onebot-webqq-webqq__chat-header .webqq-message-search-calendar-grid > button {
-  width: 30px;
-  height: 30px;
-  min-height: 30px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
   padding: 0;
   color: var(--webqq-text, #111827);
   background: transparent;
   border: 0;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .onebot-webqq-webqq__chat-header .webqq-message-search-calendar-grid > button:hover,

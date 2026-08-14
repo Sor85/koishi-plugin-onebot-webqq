@@ -50,7 +50,7 @@
     >
       <div class="webqq-message-search-calendar-header">
         <button type="button" aria-label="上个月" @click="shiftMonth(-1)">
-          <IconChevronLeft :size="18" aria-hidden="true" />
+          <IconChevronLeft :size="16" aria-hidden="true" />
         </button>
         <div class="webqq-message-search-calendar-selectors">
           <button type="button" :aria-expanded="monthMenuOpen" @click="toggleMonthMenu">
@@ -63,7 +63,7 @@
           </button>
         </div>
         <button type="button" aria-label="下个月" @click="shiftMonth(1)">
-          <IconChevronRight :size="18" aria-hidden="true" />
+          <IconChevronRight :size="16" aria-hidden="true" />
         </button>
       </div>
 
