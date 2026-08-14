@@ -1538,7 +1538,9 @@ function openContactProfile(type: 'friend' | 'group', peerId: string) {
 }
 
 function handlePokeFriend(userId: string) {
-  void runInteraction(() => performWebQQFriendAction({ action: 'poke', targetId: userId }), '好友戳一戳失败')
+  const targetId = currentChat.value?.type === 'friend' ? currentChat.value.peerId : userId
+  if (!targetId || targetId === currentOperatorId.value) return
+  void runInteraction(() => performWebQQFriendAction({ action: 'poke', targetId }), '好友戳一戳失败')
 }
 
 function openRemarkDialog(userId: string) {

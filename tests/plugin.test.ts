@@ -1705,6 +1705,58 @@ describe('chat capsule plugin wiring', () => {
     }, { authority: 1 })
   })
 
+  it('broadcasts a private poke notice into the friend chat instead of a self chat', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+      toJSON: () => ({
+        user: {
+          name: 'Capsule Bot',
+          avatar: 'https://example.com/avatar.png',
+        },
+      }),
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    await listeners['internal/session'][0](createSession({
+      bot,
+      userId: '10000',
+      channelId: undefined,
+      timestamp: 1710000002000,
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000002000,
+        user: { id: '10000', name: 'Capsule Bot' },
+        _data: {
+          notice_type: 'notify',
+          sub_type: 'poke',
+          user_id: '10000',
+          target_id: '30000',
+        },
+      },
+    }))
+
+    const webqqMessages = broadcast.mock.calls
+      .filter(([event]) => event === 'onebot-webqq/webqq/message')
+      .map(([, payload]) => payload)
+    expect(webqqMessages).toEqual([
+      expect.objectContaining({
+        type: 'friend',
+        peerId: '30000',
+        message: expect.objectContaining({
+          summary: '你 戳了戳 对方',
+          event: { type: 'poke' },
+        }),
+      }),
+    ])
+  })
+
   it('broadcasts a WebQQ reaction event when the target message cannot be resolved', async () => {
     let socketListener: ((event: { data: unknown }) => void) | undefined
     const bot = {

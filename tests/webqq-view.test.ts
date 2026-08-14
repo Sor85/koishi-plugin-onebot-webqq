@@ -894,6 +894,8 @@ describe('webqq observer view', () => {
     expect(webqqMessageListView).toContain(
       `@select="emit('poke-friend', message.senderId)"`,
     )
+    expect(webqqView).toContain('const targetId = currentChat.value?.type === \'friend\' ? currentChat.value.peerId : userId')
+    expect(webqqView).toContain('if (!targetId || targetId === currentOperatorId.value) return')
     expect(webqqMessageListView).not.toContain('好友互动')
     expect(webqqMessageListView).not.toContain('ContextMenuSubContent')
   })

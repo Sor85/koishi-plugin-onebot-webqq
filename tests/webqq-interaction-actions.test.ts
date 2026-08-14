@@ -199,6 +199,8 @@ describe('webqq interaction actions', () => {
       remark: '备注',
     })
     expect(bot.internal.friend_poke).toHaveBeenCalledWith({ user_id: 30000 })
+    await expect(service.performFriendAction({ action: 'poke', targetId: '10000' })).rejects.toThrow('不能戳自己')
+    expect(bot.internal.friend_poke).toHaveBeenCalledTimes(1)
 
     const unsupported = createOneBotWebQQService({
       bots: [createBot()],

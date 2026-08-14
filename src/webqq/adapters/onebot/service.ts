@@ -708,6 +708,8 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         return
       }
       if (input.action === 'poke') {
+        // 私聊戳自己会被 OneBot 回成 user_id=selfId 的 notify，WebQQ 再按普通私聊解析就会开出自己和自己的会话。
+        if (input.targetId === bot.selfId) throw new Error('不能戳自己')
         await callSupportedAction(bot, ['send_poke', 'friend_poke'], {
           user_id: toOneBotId(input.targetId),
         })
