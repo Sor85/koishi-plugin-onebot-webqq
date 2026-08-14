@@ -2,6 +2,7 @@
    注意：Teleport 到 body 的面板拿不到 .onebot-webqq-webqq 作用域变量，这里镜像一份 token。 */
 
 .onebot-webqq-webqq__portal-page,
+.onebot-webqq-webqq__notice-menu--desktop,
 .webqq-dialog-content,
 .webqq-context-menu-content {
   --webqq-accent: var(--onebot-webqq-webqq-accent, #2563eb);
@@ -16,6 +17,7 @@
 }
 
 .onebot-webqq-webqq__portal-page.is-color-dark,
+.onebot-webqq-webqq__notice-menu--desktop.is-color-dark,
 .webqq-dialog-content.is-color-dark,
 .webqq-context-menu-content.is-color-dark {
   --webqq-bg: #2c2c30;

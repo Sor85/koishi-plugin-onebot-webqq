@@ -238,6 +238,13 @@
   transform: translateX(-50%);
 }
 
+// 桌面通知菜单必须 Teleport 到 body。侧栏、顶栏和观察窗都建了 backdrop-filter
+// 根，菜单留在树内时毛玻璃采不到会话列表/聊天区，只会剩下半透明白底。
+.onebot-webqq-webqq__notice-menu--desktop {
+  position: fixed;
+  z-index: 10120;
+}
+
 .onebot-webqq-webqq__notice-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

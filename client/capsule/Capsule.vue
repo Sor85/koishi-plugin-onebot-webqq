@@ -527,6 +527,7 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
   if (target instanceof Element && target.closest([
     '.webqq-context-menu-content',
     '.onebot-webqq-webqq__portal-page',
+    '.onebot-webqq-webqq__notice-menu',
     '.webqq-dialog-overlay',
     '.webqq-dialog-content',
     '.onebot-webqq-webqq__scrollbar-overlay',

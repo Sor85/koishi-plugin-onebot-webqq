@@ -27,23 +27,28 @@
         </button>
       </div>
       <span class="onebot-webqq-webqq__notify-wrap" @click.stop>
-        <button :class="['onebot-webqq-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="emit('open-notices')">
+        <button ref="notifyButton" :class="['onebot-webqq-webqq__notify', { 'is-active': noticeOpen }]" type="button" aria-label="通知" @click="emit('open-notices')">
           <svg class="onebot-webqq-webqq__notify-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 18a3 3 0 0 1-6 0"></path>
             <path d="M19 16H5c1.4-1.4 2-3.2 2-5.5a5 5 0 0 1 10 0c0 2.3.6 4.1 2 5.5Z"></path>
           </svg>
         </button>
-        <WebQQNoticeMenu
-          v-if="noticeOpen"
-          v-model:tab="noticeMenuTabModel"
-          :loading="noticeLoading"
-          :error-text="noticeErrorText"
-          :notices="filteredNotices"
-          :handling-notice-id="handlingNoticeId"
-          :with-proxy="withProxy"
-          :format-notice-time="formatNoticeTime"
-          @handle="(notice, approve) => emit('handle-notice', notice, approve)"
-        />
+        <Teleport to="body">
+          <WebQQNoticeMenu
+            v-if="noticeOpen"
+            :class="desktopNoticeMenuClass"
+            :style="desktopNoticeMenuStyle"
+            v-model:tab="noticeMenuTabModel"
+            :loading="noticeLoading"
+            :error-text="noticeErrorText"
+            :notices="filteredNotices"
+            :handling-notice-id="handlingNoticeId"
+            :with-proxy="withProxy"
+            :format-notice-time="formatNoticeTime"
+            @click.stop
+            @handle="(notice, approve) => emit('handle-notice', notice, approve)"
+          />
+        </Teleport>
       </span>
     </div>
     <div v-if="activeTab !== 'recent'" class="onebot-webqq-webqq__search">
@@ -82,11 +87,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import WebQQContactList from './WebQQContactList.vue'
 import WebQQNoticeMenu from './WebQQNoticeMenu.vue'
+import { enableWebQQFrostedGlass, resolvedWebQQColorMode, webQQAccentColor } from '../settings'
 import type { WebQQFriend, WebQQGroup, WebQQNotice } from '../types'
 import type { WebQQFriendCategoryView, WebQQRecentItem } from '../utils/webqq-contact-view'
+import { getDesktopNoticeMenuPosition } from '../utils/notice-menu-position'
+import { getWebQQAccentStyle } from '../utils/webqq-theme-view'
 
 type WebQQContactType = 'friend' | 'group'
 type WebQQTab = 'recent' | 'friends' | 'groups'
@@ -138,5 +146,50 @@ const searchQueryModel = computed({
 const noticeMenuTabModel = computed({
   get: () => props.noticeMenuTab,
   set: (value) => emit('update:noticeMenuTab', value),
+})
+
+const notifyButton = ref<HTMLButtonElement>()
+const noticeMenuPosition = ref({ top: 0, left: 0 })
+let noticeMenuResizeObserver: ResizeObserver | undefined
+
+const desktopNoticeMenuClass = computed(() => [
+  'onebot-webqq-webqq__notice-menu--desktop',
+  enableWebQQFrostedGlass.value ? 'is-frosted' : 'is-plain',
+  `is-color-${resolvedWebQQColorMode.value}`,
+])
+
+const desktopNoticeMenuStyle = computed(() => ({
+  ...getWebQQAccentStyle(webQQAccentColor.value),
+  top: `${noticeMenuPosition.value.top}px`,
+  left: `${noticeMenuPosition.value.left}px`,
+}))
+
+function updateDesktopNoticeMenuPosition() {
+  const button = notifyButton.value
+  if (!button) return
+  noticeMenuPosition.value = getDesktopNoticeMenuPosition(button.getBoundingClientRect())
+}
+
+function stopDesktopNoticeMenuPosition() {
+  noticeMenuResizeObserver?.disconnect()
+  noticeMenuResizeObserver = undefined
+  window.removeEventListener('resize', updateDesktopNoticeMenuPosition)
+}
+
+watch(() => props.noticeOpen, async (open) => {
+  stopDesktopNoticeMenuPosition()
+  if (!open) return
+  await nextTick()
+  updateDesktopNoticeMenuPosition()
+  window.addEventListener('resize', updateDesktopNoticeMenuPosition)
+  const root = notifyButton.value?.closest('.onebot-webqq-webqq')
+  if (root && typeof ResizeObserver !== 'undefined') {
+    noticeMenuResizeObserver = new ResizeObserver(updateDesktopNoticeMenuPosition)
+    noticeMenuResizeObserver.observe(root)
+  }
+})
+
+onBeforeUnmount(() => {
+  stopDesktopNoticeMenuPosition()
 })
 </script>

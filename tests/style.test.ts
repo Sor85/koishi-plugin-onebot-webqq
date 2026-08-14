@@ -144,6 +144,8 @@ describe('chat capsule styles', () => {
     expect(darkPortalTokens).toContain('--webqq-border: #45454c')
     expect(headerBody).toContain('background: color-mix(in srgb, var(--webqq-surface) 92%, transparent)')
     expect(headerBody).toContain('border-bottom: 1px solid color-mix(in srgb, var(--webqq-border) 72%, transparent)')
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__notice-menu--desktop')
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__notice-menu--desktop.is-color-dark')
     expect(webqqProfileCardView).toContain('`is-color-${resolvedWebQQColorMode}`')
     expect(webqqEmojiPickerView).toContain('`is-color-${resolvedWebQQColorMode}`')
     expect(contextMenuContentView).toContain('`is-color-${resolvedWebQQColorMode}`')
@@ -985,6 +987,8 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__notice-menu')).toContain('left: 50%')
     expect(ruleBody('.onebot-webqq-webqq__notice-menu')).toContain('z-index: 5')
     expect(ruleBody('.onebot-webqq-webqq__notice-menu')).toContain('transform: translateX(-50%)')
+    expect(ruleBody('.onebot-webqq-webqq__notice-menu--desktop')).toContain('position: fixed')
+    expect(ruleBody('.onebot-webqq-webqq__notice-menu--desktop')).toContain('z-index: 10120')
   })
 
   it('uses iOS-like material blur on WebQQ glass surfaces', () => {
@@ -1088,6 +1092,7 @@ describe('chat capsule styles', () => {
     expect(narrowBody).toContain('display: flex')
     expect(narrowBody).toContain('.onebot-webqq-webqq__mobile-notice-content')
     expect(narrowBody).toContain('.onebot-webqq-webqq__sidebar .onebot-webqq-webqq__notice-menu')
+    expect(narrowBody).toContain('.onebot-webqq-webqq__notice-menu--desktop')
     expect(narrowBody).toContain('display: none')
     expect(narrowBody).toContain('.onebot-webqq-webqq__chat-content')
     expect(narrowBody).toContain('min-width: 0')
@@ -1134,9 +1139,11 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat')).toContain('backdrop-filter: none')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.92)')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-info')).toContain('background: rgba(248, 250, 252, 0.34)')
-    expect(style).toContain(`.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-menu,
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card,
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-announcement {
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-menu')).toContain('background: rgba(255, 255, 255, 0.92)')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__notice-menu.is-frosted')).toContain('background: rgba(255, 255, 255, 0.92)')
+    expect(style).toContain(`.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card,
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-announcement,
+.onebot-webqq-webqq__notice-menu.is-frosted .onebot-webqq-webqq__notice-card {
   background: rgba(255, 255, 255, 0.72)`)
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__bubble')).toContain('background: rgba(255, 255, 255, 0.9)')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent-surface)')
