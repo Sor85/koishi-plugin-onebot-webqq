@@ -24,6 +24,7 @@
         <ContextMenuContent style="z-index: 10140">
           <ContextMenuItem @select="emit('open-contact-profile', item.type, item.peerId)"><IconId :size="16" aria-hidden="true" /> 查看资料</ContextMenuItem>
           <ContextMenuItem v-if="item.type === 'friend'" @select="emit('set-remark', item.peerId)"><IconTag :size="16" aria-hidden="true" /> 设置好友备注</ContextMenuItem>
+          <ContextMenuItem @select="emit('delete-recent', item)"><IconTrash :size="16" aria-hidden="true" /> 删除会话</ContextMenuItem>
           <ContextMenuItem v-if="item.type === 'friend'" class="is-danger" @select="emit('delete-friend', item.peerId)"><IconUserMinus :size="16" aria-hidden="true" /> 删除好友</ContextMenuItem>
           <ContextMenuItem v-else class="is-danger" @select="emit('leave-group', item.peerId)"><IconLogout :size="16" aria-hidden="true" /> 退出群组</ContextMenuItem>
         </ContextMenuContent>
@@ -100,7 +101,7 @@
 </template>
 
 <script lang="ts" setup>
-import { IconId, IconLogout, IconTag, IconUserMinus } from '@tabler/icons-vue'
+import { IconId, IconLogout, IconTag, IconTrash, IconUserMinus } from '@tabler/icons-vue'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../../components/ui/context-menu'
 import type { WebQQFriend, WebQQGroup } from '../types'
 import type { WebQQFriendCategoryView, WebQQRecentItem } from '../utils/webqq-contact-view'
@@ -132,6 +133,7 @@ const emit = defineEmits<{
   'select-group': [group: WebQQGroup]
   'open-contact-profile': [type: WebQQContactType, peerId: string]
   'set-remark': [userId: string]
+  'delete-recent': [item: WebQQRecentItem]
   'delete-friend': [userId: string]
   'leave-group': [groupId: string]
 }>()

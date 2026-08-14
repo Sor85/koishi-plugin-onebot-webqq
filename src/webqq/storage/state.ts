@@ -11,12 +11,14 @@ export interface WebQQConversationSummary {
 export interface WebQQStoredState {
   conversationSummaries: Record<string, WebQQConversationSummary>
   conversationUnreadCounts: Record<string, number>
+  hiddenRecentKeys: string[]
 }
 
 function createEmptyWebQQStoredState(): WebQQStoredState {
   return {
     conversationSummaries: {},
     conversationUnreadCounts: {},
+    hiddenRecentKeys: [],
   }
 }
 
@@ -42,12 +44,18 @@ function readWebQQStoredUnreadCounts(value: unknown) {
   return counts
 }
 
+function readWebQQStoredHiddenRecentKeys(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((item): item is string => typeof item === 'string' && item.includes(':')))]
+}
+
 function readWebQQStoredState(value: unknown): WebQQStoredState {
   const empty = createEmptyWebQQStoredState()
   if (!isRecord(value)) return empty
   return {
     conversationSummaries: readWebQQStoredConversationSummaries(value.conversationSummaries),
     conversationUnreadCounts: readWebQQStoredUnreadCounts(value.conversationUnreadCounts),
+    hiddenRecentKeys: readWebQQStoredHiddenRecentKeys(value.hiddenRecentKeys),
   }
 }
 

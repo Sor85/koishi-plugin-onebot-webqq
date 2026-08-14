@@ -2396,6 +2396,7 @@ describe('chat capsule plugin wiring', () => {
       conversationUnreadCounts: {
         'friend:10001': 2,
       },
+      hiddenRecentKeys: [] as string[],
     }
     const cachedMessages: WebQQMessage[] = [{
       id: 'msg-1',
@@ -2440,7 +2441,10 @@ describe('chat capsule plugin wiring', () => {
     const saveStorage = findConsoleListener(addListener, 'onebot-webqq/webqq/storage/save')
     const loadMessageCache = findConsoleListener(addListener, 'onebot-webqq/webqq/messages/cache/load')
     const saveMessageCache = findConsoleListener(addListener, 'onebot-webqq/webqq/messages/cache/save')
-    await expect(loadStorage?.()).resolves.toEqual(storedState)
+    await expect(loadStorage?.()).resolves.toEqual({
+      ...storedState,
+      hiddenRecentKeys: [],
+    })
     await saveStorage?.(storedState)
     await expect(loadMessageCache?.({ type: 'friend', peerId: '10001' })).resolves.toEqual(cachedMessages)
     await saveMessageCache?.({ type: 'friend', peerId: '10001', messages: cachedMessages })
@@ -2449,7 +2453,10 @@ describe('chat capsule plugin wiring', () => {
     expect(database.get).toHaveBeenCalledWith('onebot_webqq_storage', { id: 'messages:friend:10001' })
     expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [{
       id: 'state:webqq',
-      payload: storedState,
+      payload: {
+        ...storedState,
+        hiddenRecentKeys: [],
+      },
       updatedAt: expect.any(Date),
     }])
     expect(database.upsert).toHaveBeenCalledWith('onebot_webqq_storage', [{

@@ -3,6 +3,7 @@ import type { WebQQMessage } from '../types'
 export interface WebQQStoragePayload {
   conversationSummaries?: Record<string, { summary: string; time: number }>
   conversationUnreadCounts?: Record<string, number>
+  hiddenRecentKeys?: string[]
   messages?: WebQQMessage[]
 }
 

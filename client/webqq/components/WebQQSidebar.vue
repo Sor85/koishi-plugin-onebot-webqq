@@ -80,6 +80,7 @@
       @select-group="emit('select-group', $event)"
       @open-contact-profile="(type, peerId) => emit('open-contact-profile', type, peerId)"
       @set-remark="emit('set-remark', $event)"
+      @delete-recent="emit('delete-recent', $event)"
       @delete-friend="emit('delete-friend', $event)"
       @leave-group="emit('leave-group', $event)"
     />
@@ -132,6 +133,7 @@ const emit = defineEmits<{
   'select-group': [group: WebQQGroup]
   'open-contact-profile': [type: WebQQContactType, peerId: string]
   'set-remark': [userId: string]
+  'delete-recent': [item: WebQQRecentItem]
   'delete-friend': [userId: string]
   'leave-group': [groupId: string]
   'open-notices': []

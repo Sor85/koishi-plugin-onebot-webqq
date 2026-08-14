@@ -529,8 +529,8 @@ describe('webqq observer view', () => {
   })
 
   it('uses backend recent contacts instead of the first contacts in each list', () => {
-    expect(webqqView).toContain('useWebQQContacts(conversationSummaries)')
-    expect(webqqContactsStore).toContain('getRecentItems(contacts.value, conversationSummaries.value)')
+    expect(webqqView).toContain('useWebQQContacts(conversationSummaries, hiddenRecentKeys)')
+    expect(webqqContactsStore).toContain('getRecentItems(contacts.value, conversationSummaries.value, hiddenRecentKeys.value)')
     expect(webqqContactView).toContain('contacts.recent')
     expect(webqqContactsStore).toContain('conversationSummaries.value')
     expect(webqqView).not.toContain('contacts.value.friends.slice(0, 4)')
@@ -613,7 +613,8 @@ describe('webqq observer view', () => {
     const conversationSummaries = ref<Record<string, ConversationSummary>>({
       'friend:10000': { summary: '最近消息', time: 2 },
     })
-    const store = useWebQQContacts(conversationSummaries)
+    const hiddenRecentKeys = ref<string[]>([])
+    const store = useWebQQContacts(conversationSummaries, hiddenRecentKeys)
 
     store.contacts.value = {
       friends: [{ userId: '10000', name: 'Alice', nickname: 'alice', avatar: 'friend.png' }],
@@ -762,6 +763,18 @@ describe('webqq observer view', () => {
         }],
       }),
     ])
+  })
+
+  it('lets the recent list hide a conversation from the context menu', () => {
+    expect(webqqContactList).toContain("emit('delete-recent', item)")
+    expect(webqqContactList).toContain('删除会话')
+    expect(webqqContactList).toContain('IconTrash')
+    expect(webqqSidebar).toContain("@delete-recent=\"emit('delete-recent', $event)\"")
+    expect(webqqView).toContain('@delete-recent="handleDeleteRecent"')
+    expect(webqqView).toContain('function handleDeleteRecent(item: RecentItem)')
+    expect(webqqView).toContain('hideRecentConversation(item.type, item.peerId)')
+    expect(webqqConversationStateStore).toContain('hiddenRecentKeys')
+    expect(webqqContactView).toContain('function hideRecentConversation')
   })
 
   it('renders WebQQ friends under backend categories', () => {

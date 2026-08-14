@@ -6,6 +6,8 @@ import {
   getContactTime as getContactTimeFromView,
   getChatKey,
   getUnreadCount as getUnreadCountFromView,
+  hideRecentConversation as hideRecentConversationFromView,
+  revealRecentConversation as revealRecentConversationFromView,
 } from '../utils/webqq-contact-view'
 import {
   loadBrowserWebQQStoredState,
@@ -44,18 +46,21 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
   const stored = loadBrowserWebQQStoredState(storageBackend.value, storageScope.value)
   const conversationSummaries = ref(stored.conversationSummaries)
   const conversationUnreadCounts = ref(stored.conversationUnreadCounts)
+  const hiddenRecentKeys = ref(stored.hiddenRecentKeys)
   const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))
 
   function createWebQQStoredState(): WebQQStoredState {
     return {
       conversationSummaries: conversationSummaries.value,
       conversationUnreadCounts: conversationUnreadCounts.value,
+      hiddenRecentKeys: hiddenRecentKeys.value,
     }
   }
 
   function applyWebQQStoredState(stored: WebQQStoredState) {
     conversationSummaries.value = stored.conversationSummaries
     conversationUnreadCounts.value = stored.conversationUnreadCounts
+    hiddenRecentKeys.value = stored.hiddenRecentKeys
   }
 
   function persistWebQQState() {
@@ -71,10 +76,25 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
     if (stored) applyWebQQStoredState(stored)
   }
 
+  function revealRecentConversation(type: 'friend' | 'group', peerId: string) {
+    const next = revealRecentConversationFromView(hiddenRecentKeys.value, type, peerId)
+    if (next === hiddenRecentKeys.value) return
+    hiddenRecentKeys.value = next
+    persistWebQQState()
+  }
+
+  function hideRecentConversation(type: 'friend' | 'group', peerId: string) {
+    const next = hideRecentConversationFromView(hiddenRecentKeys.value, type, peerId)
+    if (next === hiddenRecentKeys.value) return
+    hiddenRecentKeys.value = next
+    persistWebQQState()
+  }
+
   function updateConversationSummary(type: 'friend' | 'group', peerId: string, message?: WebQQMessage) {
     const next = setConversationSummary(conversationSummaries.value, type, peerId, message)
     if (next === conversationSummaries.value) return
     conversationSummaries.value = next
+    hiddenRecentKeys.value = revealRecentConversationFromView(hiddenRecentKeys.value, type, peerId)
     persistWebQQState()
   }
 
@@ -92,6 +112,7 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
 
   function increaseUnreadCount(type: 'friend' | 'group', peerId: string) {
     conversationUnreadCounts.value = increaseConversationUnreadCount(conversationUnreadCounts.value, type, peerId)
+    hiddenRecentKeys.value = revealRecentConversationFromView(hiddenRecentKeys.value, type, peerId)
     persistWebQQState()
   }
 
@@ -105,12 +126,16 @@ export function useWebQQConversationState(storageBackend: Ref<WebQQStorageBacken
   function resetConversationState() {
     conversationSummaries.value = {}
     conversationUnreadCounts.value = {}
+    hiddenRecentKeys.value = []
   }
 
   return {
     conversationSummaries,
     conversationUnreadCounts,
+    hiddenRecentKeys,
     totalUnreadCount,
+    hideRecentConversation,
+    revealRecentConversation,
     createWebQQStoredState,
     applyWebQQStoredState,
     persistWebQQState,

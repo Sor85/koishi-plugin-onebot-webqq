@@ -27,6 +27,7 @@
       @select-group="selectGroup"
       @open-contact-profile="openContactProfile"
       @set-remark="openRemarkDialog"
+      @delete-recent="handleDeleteRecent"
       @delete-friend="confirmDeleteFriend"
       @leave-group="confirmLeaveGroup"
       @open-notices="openNotices"
@@ -467,6 +468,7 @@ function rememberSendBotAvatar(selfId?: string, avatar?: string) {
 
 const {
   conversationSummaries,
+  hiddenRecentKeys,
   totalUnreadCount,
   loadRemoteWebQQStoredState,
   updateConversationSummary,
@@ -475,6 +477,8 @@ const {
   getUnreadCount,
   increaseUnreadCount,
   clearUnreadCount,
+  hideRecentConversation,
+  revealRecentConversation,
   resetConversationState,
 } = useWebQQConversationState(webQQStorageBackend, webQQStorageScope)
 const {
@@ -495,7 +499,7 @@ const {
   selectGroup: selectWebQQGroup,
   selectRecent: selectWebQQRecent,
   resetContacts,
-} = useWebQQContacts(conversationSummaries)
+} = useWebQQContacts(conversationSummaries, hiddenRecentKeys)
 const isWebQQMockEnvironment = computed(() => !!contacts.value.mockEnvironment)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
@@ -1874,6 +1878,7 @@ function clampCurrentWebQQShellSize() {
 function selectFriend(friend: WebQQFriend) {
   noticeOpen.value = false
   groupInfoOpen.value = false
+  revealRecentConversation('friend', friend.userId)
   selectWebQQFriend(friend)
   clearCurrentUnreadCount()
   loadMessages()
@@ -1881,6 +1886,7 @@ function selectFriend(friend: WebQQFriend) {
 
 function selectGroup(group: WebQQGroup) {
   noticeOpen.value = false
+  revealRecentConversation('group', group.groupId)
   selectWebQQGroup(group)
   clearCurrentUnreadCount()
   loadMessages()
@@ -1892,6 +1898,15 @@ function selectRecent(item: RecentItem) {
   selectWebQQRecent(item)
   clearCurrentUnreadCount()
   loadMessages()
+}
+
+function handleDeleteRecent(item: RecentItem) {
+  hideRecentConversation(item.type, item.peerId)
+  clearUnreadCount(item.type, item.peerId)
+  if (currentChat.value?.type !== item.type || currentChat.value.peerId !== item.peerId) return
+  currentChat.value = undefined
+  messages.value = []
+  groupInfoOpen.value = false
 }
 
 const disposeWebQQLiveMessages = useWebQQLiveMessages({

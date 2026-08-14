@@ -106,8 +106,23 @@ export function findContactByKey(contacts: WebQQContacts, key: string): WebQQRec
   }
 }
 
-export function getRecentItems(contacts: WebQQContacts, conversationSummaries: Record<string, ConversationSummary>) {
+export function hideRecentConversation(hiddenKeys: string[], type: WebQQChatSelection['type'], peerId: string) {
+  const key = getChatKey(type, peerId)
+  return hiddenKeys.includes(key) ? hiddenKeys : [...hiddenKeys, key]
+}
+
+export function revealRecentConversation(hiddenKeys: string[], type: WebQQChatSelection['type'], peerId: string) {
+  const key = getChatKey(type, peerId)
+  return hiddenKeys.includes(key) ? hiddenKeys.filter((item) => item !== key) : hiddenKeys
+}
+
+export function getRecentItems(
+  contacts: WebQQContacts,
+  conversationSummaries: Record<string, ConversationSummary>,
+  hiddenKeys: string[] = [],
+) {
   const items = new Map<string, WebQQRecentItem>()
+  const hidden = new Set(hiddenKeys)
   for (const item of contacts.recent ?? []) {
     items.set(getChatKey(item.type, item.peerId), item)
   }
@@ -120,7 +135,9 @@ export function getRecentItems(contacts: WebQQContacts, conversationSummaries: R
       time: summary.time,
     })
   }
-  return [...items.values()].sort((left, right) => (right.time || 0) - (left.time || 0))
+  return [...items.values()]
+    .filter((item) => !hidden.has(getChatKey(item.type, item.peerId)))
+    .sort((left, right) => (right.time || 0) - (left.time || 0))
 }
 
 export function getContactSummary(conversationSummaries: Record<string, ConversationSummary>, type: WebQQChatSelection['type'], peerId: string) {

@@ -14,7 +14,10 @@ import {
   type WebQQChatSelection,
 } from '../utils/webqq-contact-view'
 
-export function useWebQQContacts(conversationSummaries: Ref<Record<string, ConversationSummary>>) {
+export function useWebQQContacts(
+  conversationSummaries: Ref<Record<string, ConversationSummary>>,
+  hiddenRecentKeys: Ref<string[]>,
+) {
   const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')
   const searchQuery = ref('')
   const contacts = ref<WebQQContacts>({ friends: [], groups: [] })
@@ -23,7 +26,7 @@ export function useWebQQContacts(conversationSummaries: Ref<Record<string, Conve
   const visibleFriends = computed(() => getVisibleFriends(contacts.value, searchQuery.value))
   const visibleGroups = computed(() => getVisibleGroups(contacts.value, searchQuery.value))
   const visibleFriendCategories = computed(() => getVisibleFriendCategories(contacts.value, searchQuery.value))
-  const recentItems = computed(() => getRecentItems(contacts.value, conversationSummaries.value))
+  const recentItems = computed(() => getRecentItems(contacts.value, conversationSummaries.value, hiddenRecentKeys.value))
   const currentPeerId = computed(() => currentChat.value?.peerId)
   const currentTitle = computed(() => getCurrentChatTitle(currentChat.value))
   const currentSubtitle = computed(() => getCurrentChatSubtitle(currentChat.value, contacts.value))

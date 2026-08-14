@@ -30,10 +30,16 @@ function readStoredUnreadCounts(value: unknown) {
   return counts
 }
 
+function readStoredHiddenRecentKeys(value: unknown) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((item): item is string => typeof item === 'string' && item.includes(':')))]
+}
+
 function createEmptyWebQQStoredState(): WebQQStoredState {
   return {
     conversationSummaries: {},
     conversationUnreadCounts: {},
+    hiddenRecentKeys: [],
   }
 }
 
@@ -42,6 +48,7 @@ function normalizeWebQQStoredState(value: unknown): WebQQStoredState {
   return {
     conversationSummaries: readStoredConversationSummaries(Reflect.get(value, 'conversationSummaries')),
     conversationUnreadCounts: readStoredUnreadCounts(Reflect.get(value, 'conversationUnreadCounts')),
+    hiddenRecentKeys: readStoredHiddenRecentKeys(Reflect.get(value, 'hiddenRecentKeys')),
   }
 }
 

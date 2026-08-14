@@ -279,6 +279,7 @@ export type WebQQChatType = 'friend' | 'group'
 export type WebQQStoredState = {
   conversationSummaries: Record<string, ConversationSummary>
   conversationUnreadCounts: Record<string, number>
+  hiddenRecentKeys: string[]
 }
 
 export interface WebQQContacts {
