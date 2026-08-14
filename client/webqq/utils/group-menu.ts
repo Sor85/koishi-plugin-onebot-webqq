@@ -15,6 +15,9 @@ export type GroupMemberMenuAction =
   | 'set-admin'
   | 'unset-admin'
 
+export type GroupMemberInteractionAction = Extract<GroupMemberMenuAction, 'mention' | 'poke'>
+export type GroupMemberManagementAction = Exclude<GroupMemberMenuAction, GroupMemberInteractionAction>
+
 function normalizeRole(role?: string): GroupMemberRole {
   if (role === 'owner' || role === '群主') return 'owner'
   if (role === 'admin' || role === '管理员') return 'admin'
@@ -44,6 +47,24 @@ export function getGroupMemberMenuActions(
   return actions
 }
 
+export function getGroupMemberInteractionActions(
+  actor: GroupMemberMenuTarget | undefined,
+  target: GroupMemberMenuTarget,
+): GroupMemberInteractionAction[] {
+  return getGroupMemberMenuActions(actor, target).filter(
+    (action): action is GroupMemberInteractionAction => action === 'mention' || action === 'poke',
+  )
+}
+
+export function getGroupMemberManagementActions(
+  actor: GroupMemberMenuTarget | undefined,
+  target: GroupMemberMenuTarget,
+): GroupMemberManagementAction[] {
+  return getGroupMemberMenuActions(actor, target).filter(
+    (action): action is GroupMemberManagementAction => action !== 'mention' && action !== 'poke',
+  )
+}
+
 export function getGroupMemberKickDisabledReason(
   actor: GroupMemberMenuTarget | undefined,
   target: GroupMemberMenuTarget,
@@ -54,4 +75,13 @@ export function getGroupMemberKickDisabledReason(
   if (actorRole === 'member') return '需要管理员权限才能踢人'
   if (actorRole === 'admin' && targetRole !== 'member') return '管理员不能管理群主或管理员'
   return ''
+}
+
+export function hasGroupMemberManagementMenu(
+  actor: GroupMemberMenuTarget | undefined,
+  target: GroupMemberMenuTarget,
+): boolean {
+  // 禁用原因也是有效的权限反馈，不能因互动项上提而让管理入口无声消失。
+  return getGroupMemberManagementActions(actor, target).length > 0
+    || !!getGroupMemberKickDisabledReason(actor, target)
 }

@@ -8,8 +8,11 @@ import {
 } from '../client/webqq/utils/emoji-catalog'
 import { getFriendMenuActions } from '../client/webqq/utils/friend-menu'
 import {
+  getGroupMemberInteractionActions,
   getGroupMemberKickDisabledReason,
+  getGroupMemberManagementActions,
   getGroupMemberMenuActions,
+  hasGroupMemberManagementMenu,
 } from '../client/webqq/utils/group-menu'
 import {
   buildGroupProfileCardModel,
@@ -44,6 +47,35 @@ describe('webqq interaction menus', () => {
     expect(getGroupMemberMenuActions(member, admin)).toEqual(['mention', 'poke'])
     expect(getGroupMemberKickDisabledReason(member, admin)).toBe('需要管理员权限才能踢人')
     expect(getGroupMemberKickDisabledReason(admin, owner)).toBe('管理员不能管理群主或管理员')
+  })
+
+  it('separates group member interactions from management menu content', () => {
+    const owner = { userId: '1', role: '群主' }
+    const admin = { userId: '2', role: '管理员' }
+    const member = { userId: '3', role: '成员' }
+
+    expect(getGroupMemberInteractionActions(owner, member)).toEqual(['mention', 'poke'])
+    expect(getGroupMemberManagementActions(owner, member)).toEqual([
+      'set-card',
+      'set-title',
+      'set-admin',
+      'kick',
+    ])
+    expect(getGroupMemberManagementActions(admin, member)).toEqual(['set-card', 'kick'])
+    expect(getGroupMemberManagementActions(member, admin)).toEqual([])
+    expect(getGroupMemberInteractionActions(owner, owner)).toEqual([])
+    expect(getGroupMemberManagementActions(owner, owner)).toEqual(['set-card', 'set-title'])
+    expect(getGroupMemberInteractionActions(undefined, member)).toEqual([])
+    expect(getGroupMemberManagementActions(undefined, member)).toEqual([])
+
+    const allActions = getGroupMemberMenuActions(owner, member)
+    expect([
+      ...getGroupMemberInteractionActions(owner, member),
+      ...getGroupMemberManagementActions(owner, member),
+    ]).toEqual(allActions)
+    expect(hasGroupMemberManagementMenu(owner, member)).toBe(true)
+    expect(hasGroupMemberManagementMenu(member, admin)).toBe(true)
+    expect(hasGroupMemberManagementMenu(undefined, member)).toBe(false)
   })
 })
 

@@ -42,7 +42,6 @@
             <WebQQGroupMemberMenu
               :actor="actor"
               :member="member"
-              @open-profile="emit('open-profile', member.userId)"
               @mention="emit('mention-group-member', member.userId)"
               @poke="emit('poke-group-member', member.userId)"
               @set-card="emit('set-group-card', member.userId)"

@@ -73,15 +73,24 @@
                   <ContextMenuItem @select="emit('open-profile', message.senderId)">
                     <IconId :size="16" aria-hidden="true" /> 查看资料
                   </ContextMenuItem>
-                  <ContextMenuSub v-if="chatType === 'group' && getGroupMember(message.senderId)">
+                  <ContextMenuItem
+                    v-if="chatType === 'group' && getMessageGroupMemberInteractionActions(message).includes('mention')"
+                    @select="emit('mention-group-member', message.senderId)"
+                  >
+                    <IconAt :size="16" aria-hidden="true" /> @ 用户
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    v-if="chatType === 'group' && getMessageGroupMemberInteractionActions(message).includes('poke')"
+                    @select="emit('poke-group-member', message.senderId)"
+                  >
+                    <IconHandClick :size="16" aria-hidden="true" /> 戳一戳
+                  </ContextMenuItem>
+                  <ContextMenuSub v-if="chatType === 'group' && hasMessageGroupMemberManagementMenu(message)">
                     <ContextMenuSubTrigger><IconUsers :size="16" aria-hidden="true" /> 群成员操作</ContextMenuSubTrigger>
                     <WebQQGroupMemberMenu
                       sub
                       :actor="getGroupMember(currentOperatorId)"
                       :member="getGroupMember(message.senderId)!"
-                      @open-profile="emit('open-profile', message.senderId)"
-                      @mention="emit('mention-group-member', message.senderId)"
-                      @poke="emit('poke-group-member', message.senderId)"
                       @set-card="emit('set-group-card', message.senderId)"
                       @set-title="emit('set-group-title', message.senderId)"
                       @set-admin="emit('set-group-admin', message.senderId, $event)"
@@ -413,6 +422,7 @@
 import { withProxy } from '@koishijs/client'
 import {
   IconArrowBackUp,
+  IconAt,
   IconCheck,
   IconChecks,
   IconHandClick,
@@ -439,6 +449,10 @@ import type { WebQQChatStyle } from '../settings'
 import type { WebQQGroupMember, WebQQMessage } from '../types'
 import { getFriendMenuActions, type FriendMenuState } from '../utils/friend-menu'
 import { rememberFloatingPanelAnchor } from '../utils/floating-panel'
+import {
+  getGroupMemberInteractionActions,
+  hasGroupMemberManagementMenu,
+} from '../utils/group-menu'
 import {
   formatSenderLevel,
   formatTime,
@@ -527,6 +541,16 @@ function getSelectedMessageIds() {
 function getGroupMember(userId: string | undefined) {
   if (!userId) return undefined
   return (props.groupMembers ?? []).find((member) => member.userId === userId)
+}
+function getMessageGroupMemberInteractionActions(message: WebQQMessage) {
+  const member = getGroupMember(message.senderId)
+  if (!member) return []
+  return getGroupMemberInteractionActions(getGroupMember(props.currentOperatorId), member)
+}
+function hasMessageGroupMemberManagementMenu(message: WebQQMessage) {
+  const member = getGroupMember(message.senderId)
+  if (!member) return false
+  return hasGroupMemberManagementMenu(getGroupMember(props.currentOperatorId), member)
 }
 function getFriendMenuState(userId: string): FriendMenuState {
   return props.friendMenuStates?.[userId] ?? { isFriend: false, pendingOutgoing: false, pendingIncoming: false }

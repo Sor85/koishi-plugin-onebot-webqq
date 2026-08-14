@@ -38,6 +38,7 @@ const webqqView = await readFile(new URL('../client/webqq/WebQQObserver.vue', im
 const webqqApi = await readFile(new URL('../client/webqq/api/webqq.ts', import.meta.url), 'utf8')
 const webqqSidebar = await readFile(new URL('../client/webqq/components/WebQQSidebar.vue', import.meta.url), 'utf8')
 const webqqMessageListView = await readFile(new URL('../client/webqq/components/WebQQMessageList.vue', import.meta.url), 'utf8')
+const webqqGroupMemberMenu = await readFile(new URL('../client/webqq/components/WebQQGroupMemberMenu.vue', import.meta.url), 'utf8')
 const webqqMessageReactionsView = await readFile(new URL('../client/webqq/components/WebQQMessageReactions.vue', import.meta.url), 'utf8')
 const webqqContactList = await readFile(new URL('../client/webqq/components/WebQQContactList.vue', import.meta.url), 'utf8')
 const webqqForwardModal = await readFile(new URL('../client/webqq/components/WebQQForwardModal.vue', import.meta.url), 'utf8')
@@ -844,18 +845,41 @@ describe('webqq observer view', () => {
     )
   })
 
+  it('promotes group member interactions to the message avatar root menu', () => {
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType === 'group' && getMessageGroupMemberInteractionActions(message).includes('mention')"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `@select="emit('mention-group-member', message.senderId)"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType === 'group' && getMessageGroupMemberInteractionActions(message).includes('poke')"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `@select="emit('poke-group-member', message.senderId)"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType === 'group' && hasMessageGroupMemberManagementMenu(message)"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `@select="emit('open-profile', message.senderId)"`,
+    )
+    expect(webqqGroupMemberMenu).not.toContain('查看资料')
+    expect(webqqGroupMemberMenu).not.toContain("'open-profile': []")
+    expect(webqqGroupMemberMenu).toContain(`v-if="!sub && actions.includes('mention')"`)
+    expect(webqqGroupMemberMenu).toContain(`v-if="!sub && actions.includes('poke')"`)
+    expect(webqqMessageListView).not.toContain(`@mention="emit('mention-group-member', message.senderId)"`)
+    expect(webqqMessageListView).not.toContain(`@poke="emit('poke-group-member', message.senderId)"`)
+    expect(webqqGroupInfoPanel).not.toContain(`@open-profile="emit('open-profile', member.userId)"`)
+    expect(webqqGroupInfoPanel).toContain(`@click="emit('open-profile', member.userId, $event)"`)
+  })
+
   it('hides friend management actions from group message avatar menus', () => {
     expect(webqqMessageListView).toContain(
       `v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('remark')"`,
     )
     expect(webqqMessageListView).toContain(
       `v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('delete')"`,
-    )
-    expect(webqqMessageListView).toContain(
-      `v-if="chatType === 'group' && getGroupMember(message.senderId)"`,
-    )
-    expect(webqqMessageListView).toContain(
-      `@select="emit('open-profile', message.senderId)"`,
     )
     expect(webqqContactList).toContain(
       `@select="emit('set-remark', friend.userId)"`,

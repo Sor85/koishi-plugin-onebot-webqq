@@ -1,12 +1,9 @@
 <template>
   <component :is="sub ? ContextMenuSubContent : ContextMenuContent" style="z-index: 10140">
-    <ContextMenuItem @select="emit('open-profile')">
-      <IconId :size="16" aria-hidden="true" /> 查看资料
-    </ContextMenuItem>
-    <ContextMenuItem v-if="actions.includes('mention')" @select="emit('mention')">
+    <ContextMenuItem v-if="!sub && actions.includes('mention')" @select="emit('mention')">
       <IconAt :size="16" aria-hidden="true" /> @ 用户
     </ContextMenuItem>
-    <ContextMenuItem v-if="actions.includes('poke')" @select="emit('poke')">
+    <ContextMenuItem v-if="!sub && actions.includes('poke')" @select="emit('poke')">
       <IconHandClick :size="16" aria-hidden="true" /> 戳一戳
     </ContextMenuItem>
     <ContextMenuItem v-if="actions.includes('set-card')" @select="emit('set-card')">
@@ -36,7 +33,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { IconAt, IconAward, IconHandClick, IconId, IconTag, IconUserMinus, IconUserPlus } from '@tabler/icons-vue'
+import { IconAt, IconAward, IconHandClick, IconTag, IconUserMinus, IconUserPlus } from '@tabler/icons-vue'
 import { ContextMenuContent, ContextMenuItem, ContextMenuSubContent } from '../../components/ui/context-menu'
 import {
   getGroupMemberKickDisabledReason,
@@ -51,7 +48,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'open-profile': []
   mention: []
   poke: []
   'set-card': []
