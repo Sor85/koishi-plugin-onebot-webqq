@@ -98,14 +98,12 @@
                     />
                   </ContextMenuSub>
                   <template v-if="message.senderId !== currentOperatorId">
-                    <ContextMenuSub v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('poke')">
-                      <ContextMenuSubTrigger><IconHandClick :size="16" aria-hidden="true" /> 好友互动</ContextMenuSubTrigger>
-                      <ContextMenuSubContent>
-                        <ContextMenuItem @select="emit('poke-friend', message.senderId)">
-                          <IconHandClick :size="16" aria-hidden="true" /> 戳一戳
-                        </ContextMenuItem>
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
+                    <ContextMenuItem
+                      v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('poke')"
+                      @select="emit('poke-friend', message.senderId)"
+                    >
+                      <IconHandClick :size="16" aria-hidden="true" /> 戳一戳
+                    </ContextMenuItem>
                     <ContextMenuItem v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('remark')" @select="emit('set-remark', message.senderId)">
                       <IconTag :size="16" aria-hidden="true" /> 设置好友备注
                     </ContextMenuItem>
@@ -439,7 +437,6 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSub,
-  ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '../../components/ui/context-menu'

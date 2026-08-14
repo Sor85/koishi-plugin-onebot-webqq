@@ -874,6 +874,17 @@ describe('webqq observer view', () => {
     expect(webqqGroupInfoPanel).toContain(`@click="emit('open-profile', member.userId, $event)"`)
   })
 
+  it('promotes private chat poke to the message avatar root menu', () => {
+    expect(webqqMessageListView).toContain(
+      `v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('poke')"`,
+    )
+    expect(webqqMessageListView).toContain(
+      `@select="emit('poke-friend', message.senderId)"`,
+    )
+    expect(webqqMessageListView).not.toContain('好友互动')
+    expect(webqqMessageListView).not.toContain('ContextMenuSubContent')
+  })
+
   it('hides friend management actions from group message avatar menus', () => {
     expect(webqqMessageListView).toContain(
       `v-if="chatType !== 'group' && getChatFriendActions(message.senderId).includes('remark')"`,
