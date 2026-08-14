@@ -51,6 +51,33 @@ describe('WebQQ message search', () => {
     })
   })
 
+  it('filters by a local-day range with or without a keyword', async () => {
+    const target = createMessage(3, '目标消息')
+    target.time = new Date('2026-08-14T12:00:00+08:00').getTime()
+    const outside = createMessage(2, '目标消息')
+    outside.time = new Date('2026-08-13T23:59:59+08:00').getTime()
+    const start = new Date('2026-08-14T00:00:00+08:00').toISOString()
+    const end = new Date('2026-08-15T00:00:00+08:00').toISOString()
+
+    await expect(searchWebQQMessageHistory({
+      type: 'friend',
+      peerId: '30000',
+      keyword: '',
+      createdAtStart: start,
+      createdAtEnd: end,
+    }, {
+      pageSize: 2,
+      maxPages: 10,
+      loadMessages: vi.fn()
+        .mockResolvedValueOnce([outside, target])
+        .mockResolvedValueOnce([]),
+    })).resolves.toEqual({
+      messages: [target],
+      scannedCount: 2,
+      exhausted: true,
+    })
+  })
+
   it('returns a continuation cursor when the scan reaches its page budget', async () => {
     const loadMessages = vi.fn(async ({ beforeSequence }: { beforeSequence?: string }) => (
       beforeSequence ? [createMessage(1, '目标'), createMessage(2, '普通')] : [createMessage(3, '普通'), createMessage(4, '普通')]

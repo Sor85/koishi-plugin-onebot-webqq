@@ -48,7 +48,7 @@
           />
         </div>
         <div class="onebot-webqq-webqq__chat-main">
-        <header class="onebot-webqq-webqq__chat-header">
+        <header class="onebot-webqq-webqq__chat-header" :class="{ 'is-searching': messageSearchOpen }">
           <div class="onebot-webqq-webqq__chat-title">
             <ContextMenu v-if="currentChat">
               <ContextMenuTrigger as-child>
@@ -76,9 +76,26 @@
             </div>
           </div>
           <div class="onebot-webqq-webqq__chat-header-actions">
-            <button ref="messageSearchTrigger" v-if="currentChat" type="button" aria-label="查找聊天记录" @click="openMessageSearch($event)">
-              <IconSearch class="onebot-webqq-webqq__header-icon" :size="20" aria-hidden="true" />
-            </button>
+            <div v-if="currentChat" class="webqq-chat-search-shell" :class="{ 'is-expanded': messageSearchOpen }">
+              <button v-if="!messageSearchOpen" ref="messageSearchTrigger" class="webqq-chat-search-trigger" type="button" aria-label="查找聊天记录" @click="openMessageSearch">
+                <IconSearch class="onebot-webqq-webqq__header-icon" :size="20" aria-hidden="true" />
+              </button>
+              <WebQQMessageSearchPage
+                v-else
+                v-model:query="messageSearchQuery"
+                v-model:local-date="messageSearchLocalDate"
+                :results="messageSearchResults"
+                :loading="messageSearchLoading"
+                :error-text="messageSearchErrorText"
+                :searched="messageSearchSearched"
+                :scanned-count="messageSearchScannedCount"
+                :exhausted="messageSearchExhausted"
+                @close="closeMessageSearch"
+                @search="searchMessages"
+                @more="searchMoreMessages"
+                @select="selectSearchResult"
+              />
+            </div>
             <button v-if="currentChat?.type === 'group'" :class="{ 'is-active': groupInfoOpen }" type="button" :aria-label="groupInfoOpen ? '关闭群信息' : '更多群信息'" @click="toggleGroupInfo">
               <svg class="onebot-webqq-webqq__header-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="12" r="1"></circle>
@@ -252,21 +269,6 @@
         @kick-group-member="handleKickGroupMember"
       />
     </section>
-    <WebQQMessageSearchPage
-      v-if="messageSearchOpen"
-      v-model:query="messageSearchQuery"
-      :results="messageSearchResults"
-      :loading="messageSearchLoading"
-      :error-text="messageSearchErrorText"
-      :searched="messageSearchSearched"
-      :scanned-count="messageSearchScannedCount"
-      :exhausted="messageSearchExhausted"
-      :style="webQQAccentStyle"
-      @close="closeMessageSearch"
-      @search="searchMessages"
-      @more="searchMoreMessages"
-      @select="selectSearchResult"
-    />
     <WebQQForwardModal
       v-if="forwardDialog"
       :dialog="forwardDialog"
@@ -353,6 +355,7 @@ import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGr
 import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMessageSearchResult, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
+import { localDateToMessageSearchRange } from './utils/message-search-date'
 import {
   createEmptyWebQQComposerDraft,
   detectWebQQMentionTrigger,
@@ -1175,6 +1178,7 @@ const selectionMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
 const messageSearchOpen = ref(false)
 const messageSearchQuery = ref('')
+const messageSearchLocalDate = ref('')
 const messageSearchResults = ref<WebQQMessage[]>([])
 const messageSearchLoading = ref(false)
 const messageSearchErrorText = ref('')
@@ -1321,6 +1325,8 @@ function handleSelectionForward() {
   forwardTargetOpen.value = true
 }
 
+let messageSearchSerial = 0
+
 function resetMessageSearchResults() {
   messageSearchResults.value = []
   messageSearchErrorText.value = ''
@@ -1330,9 +1336,8 @@ function resetMessageSearchResults() {
   messageSearchNextBeforeSequence.value = ''
 }
 
-function openMessageSearch(event?: MouseEvent) {
+function openMessageSearch() {
   if (!currentChat.value) return
-  if (event) rememberFloatingPanelAnchor(event)
   messageSearchOpen.value = true
   resetMessageSearchResults()
 }
@@ -1341,15 +1346,34 @@ function closeMessageSearch() {
   if (!messageSearchOpen.value) return
   messageSearchOpen.value = false
   messageSearchLoading.value = false
-  // 搜索弹窗由显式 v-if 卸载；必须等 DOM 移除后再恢复触发按钮焦点，避免 Chrome 与 Firefox 把焦点落到 body。
-  void nextTick(() => messageSearchTrigger.value?.focus())
+  messageSearchQuery.value = ''
+  messageSearchLocalDate.value = ''
+  resetMessageSearchResults()
+  messageSearchSerial++
+  // 搜索框由显式 v-if 卸载；外部 pointerdown 关闭时还会继续派发 mouseup/click，
+  // 必须等 DOM 更新和整条指针事件链结束后再恢复焦点，否则 Chrome 与 Firefox 最终仍会把焦点落到 body。
+  void nextTick(() => window.setTimeout(() => messageSearchTrigger.value?.focus(), 50))
 }
 
-async function requestMessageSearch(more: boolean) {
+async function requestMessageSearch(
+  more: boolean,
+  criteria?: { query: string, localDate?: string },
+) {
   const chat = currentChat.value
+  if (!chat) return
+  if (!more && criteria) {
+    messageSearchQuery.value = criteria.query
+    messageSearchLocalDate.value = criteria.localDate || ''
+  }
   const keyword = messageSearchQuery.value.trim()
-  if (!chat || !keyword || messageSearchLoading.value) return
+  const dateRange = localDateToMessageSearchRange(messageSearchLocalDate.value)
+  if (!keyword && !dateRange) {
+    resetMessageSearchResults()
+    return
+  }
+
   const expectedChatKey = `${chat.type}:${chat.peerId}`
+  const serial = ++messageSearchSerial
   messageSearchLoading.value = true
   messageSearchErrorText.value = ''
   if (!more) resetMessageSearchResults()
@@ -1358,26 +1382,30 @@ async function requestMessageSearch(more: boolean) {
       type: chat.type,
       peerId: chat.peerId,
       keyword,
+      ...dateRange,
       ...(more && messageSearchNextBeforeSequence.value ? { beforeSequence: messageSearchNextBeforeSequence.value } : {}),
     })
-    if (`${currentChat.value?.type}:${currentChat.value?.peerId}` !== expectedChatKey) return
+    if (serial !== messageSearchSerial || `${currentChat.value?.type}:${currentChat.value?.peerId}` !== expectedChatKey) return
     messageSearchResults.value = more
       ? mergeMessages(result.messages, messageSearchResults.value)
       : result.messages
-    messageSearchScannedCount.value += result.scannedCount
+    messageSearchScannedCount.value = more
+      ? messageSearchScannedCount.value + result.scannedCount
+      : result.scannedCount
     messageSearchExhausted.value = result.exhausted
     messageSearchNextBeforeSequence.value = result.nextBeforeSequence || ''
     messageSearchSearched.value = true
   } catch (error) {
+    if (serial !== messageSearchSerial) return
     messageSearchErrorText.value = error instanceof Error ? error.message : '查找聊天记录失败'
     messageSearchSearched.value = true
   } finally {
-    messageSearchLoading.value = false
+    if (serial === messageSearchSerial) messageSearchLoading.value = false
   }
 }
 
-function searchMessages() {
-  void requestMessageSearch(false)
+function searchMessages(criteria: { query: string, localDate?: string }) {
+  void requestMessageSearch(false, criteria)
 }
 
 function searchMoreMessages() {
@@ -1389,7 +1417,6 @@ async function selectSearchResult(message: WebQQMessage) {
   if (!chat) return
   messages.value = mergeMessages(messages.value, [message])
   rememberMessageSenderMetadata(chat.type, chat.peerId, [message])
-  closeMessageSearch()
   await nextTick()
   messageList.value?.scrollToMessage(message.id || message.sequence)
 }
@@ -1717,6 +1744,7 @@ watch(currentChat, () => {
   closeMessageSearch()
   resetMessageSearchResults()
   messageSearchQuery.value = ''
+  messageSearchLocalDate.value = ''
   clearReplyTarget()
   resetComposerDraft({ focus: false })
   closeMentionMenu()

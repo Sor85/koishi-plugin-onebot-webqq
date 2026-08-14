@@ -201,6 +201,8 @@ export interface WebQQMessageSearchQuery {
   type: WebQQChatType
   peerId: string
   keyword: string
+  createdAtStart?: string
+  createdAtEnd?: string
   beforeSequence?: string
 }
 

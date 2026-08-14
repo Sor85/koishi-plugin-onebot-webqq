@@ -8,6 +8,12 @@ function getMessageSearchText(message: WebQQMessage) {
   ].filter(Boolean).join('\n').toLocaleLowerCase()
 }
 
+function parseSearchBoundary(value?: string) {
+  if (!value) return undefined
+  const timestamp = Date.parse(value)
+  return Number.isNaN(timestamp) ? undefined : timestamp
+}
+
 export async function searchWebQQMessageHistory(
   query: WebQQMessageSearchQuery,
   options: {
@@ -17,7 +23,11 @@ export async function searchWebQQMessageHistory(
   },
 ): Promise<WebQQMessageSearchResult> {
   const keyword = query.keyword.trim().toLocaleLowerCase()
-  if (!keyword) return { messages: [], scannedCount: 0, exhausted: true }
+  const createdAtStart = parseSearchBoundary(query.createdAtStart)
+  const createdAtEnd = parseSearchBoundary(query.createdAtEnd)
+  if (!keyword && createdAtStart == null && createdAtEnd == null) {
+    return { messages: [], scannedCount: 0, exhausted: true }
+  }
 
   const messages: WebQQMessage[] = []
   const seenMessageKeys = new Set<string>()
@@ -44,7 +54,11 @@ export async function searchWebQQMessageHistory(
       if (key) seenMessageKeys.add(key)
       freshCount++
       scannedCount++
-      if (getMessageSearchText(message).includes(keyword)) messages.push(message)
+      const messageTime = new Date(message.time).getTime()
+      const matchesKeyword = !keyword || getMessageSearchText(message).includes(keyword)
+      const matchesStart = createdAtStart == null || messageTime >= createdAtStart
+      const matchesEnd = createdAtEnd == null || messageTime < createdAtEnd
+      if (matchesKeyword && matchesStart && matchesEnd) messages.push(message)
     }
 
     const nextBeforeSequence = page[0]?.sequence

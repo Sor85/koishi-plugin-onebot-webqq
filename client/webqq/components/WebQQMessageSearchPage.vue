@@ -1,73 +1,189 @@
 <template>
-  <Teleport to="body">
-    <section
-      ref="panelRef"
-      :class="['webqq-secondary-page onebot-webqq-webqq__portal-page webqq-message-search-page', `is-color-${resolvedWebQQColorMode}`]"
-      :style="panelStyle"
-      aria-label="查找聊天记录"
+  <section
+    ref="searchRoot"
+    class="webqq-message-search"
+    role="search"
+    aria-label="查找聊天记录"
+  >
+    <div
+      class="webqq-message-search-field"
+      :class="{ 'is-focused': searchFocused }"
+      @focusin="searchFocused = true"
+      @focusout="handleSearchFocusOut"
     >
-      <header
-        class="webqq-secondary-page-header"
-        :class="{ 'is-dragging': dragging }"
-        @pointerdown="startDrag"
+      <IconSearch :size="18" aria-hidden="true" />
+      <input
+        ref="searchInput"
+        :value="query"
+        type="search"
+        aria-label="搜索消息正文"
+        placeholder="查找聊天记录..."
+        autocomplete="off"
+        @input="handleQueryInput"
+        @keydown.esc.prevent="handleEscape"
       >
-        <strong>查找聊天记录</strong>
-      </header>
-      <div class="webqq-message-search-page-content">
-        <form class="onebot-webqq-webqq__message-search-form" @submit.prevent="emit('search')">
-          <span class="onebot-webqq-webqq__message-search-input-wrap">
-            <IconSearch :size="17" aria-hidden="true" />
-            <input
-              ref="searchInput"
-              :value="query"
-              type="search"
-              placeholder="输入关键词"
-              autocomplete="off"
-              aria-label="聊天记录关键词"
-              @input="emit('update:query', ($event.target as HTMLInputElement).value)"
-            >
-          </span>
-          <button type="submit" :disabled="loading || !query.trim()">查找</button>
-        </form>
-        <div class="onebot-webqq-webqq__message-search-status" aria-live="polite">
-          <span v-if="loading">正在查找历史消息…</span>
-          <span v-else-if="errorText" class="is-error">{{ errorText }}</span>
-          <span v-else-if="searched">找到 {{ results.length }} 条，已扫描 {{ scannedCount }} 条消息</span>
-          <span v-else>搜索当前会话的历史聊天记录</span>
-        </div>
-        <div class="onebot-webqq-webqq__message-search-results">
-          <button
-            v-for="message in results"
-            :key="message.id || message.sequence"
-            type="button"
-            class="onebot-webqq-webqq__message-search-result"
-            @click="emit('select', message)"
-          >
-            <span class="onebot-webqq-webqq__message-search-result-meta">
-              <strong>{{ message.senderName }}</strong>
-              <time>{{ formatSearchTime(message.time) }}</time>
-            </span>
-            <span class="onebot-webqq-webqq__message-search-result-summary">{{ message.summary || '[消息]' }}</span>
+      <button
+        type="button"
+        class="webqq-message-search-date-trigger"
+        :class="{ 'is-active': !!localDate }"
+        :aria-label="dateTriggerLabel"
+        :aria-pressed="!!localDate"
+        @click.stop="datePopoverOpen = !datePopoverOpen"
+      >
+        <IconCalendar :size="17" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="webqq-message-search-clear"
+        :aria-label="query ? '清空搜索' : '关闭查找聊天记录'"
+        @click="query ? clearQuery() : emit('close')"
+      >
+        <IconX :size="16" aria-hidden="true" />
+      </button>
+    </div>
+
+    <div
+      v-if="datePopoverOpen"
+      class="webqq-message-search-date-popover"
+      data-webqq-message-search-date
+      @pointerdown.stop
+    >
+      <div class="webqq-message-search-calendar-header">
+        <button type="button" aria-label="上个月" @click="shiftMonth(-1)">
+          <IconChevronLeft :size="18" aria-hidden="true" />
+        </button>
+        <div class="webqq-message-search-calendar-selectors">
+          <button type="button" :aria-expanded="monthMenuOpen" @click="toggleMonthMenu">
+            {{ displayMonth }}月
+            <IconChevronDown :size="16" aria-hidden="true" />
           </button>
-          <div v-if="searched && !loading && !results.length" class="onebot-webqq-webqq__message-search-empty">未找到相关聊天记录</div>
+          <button type="button" :aria-expanded="yearMenuOpen" @click="toggleYearMenu">
+            {{ displayYear }}年
+            <IconChevronDown :size="16" aria-hidden="true" />
+          </button>
         </div>
-        <footer v-if="searched && !exhausted" class="onebot-webqq-webqq__message-search-footer">
-          <button type="button" :disabled="loading" @click="emit('more')">继续搜索更早记录</button>
-        </footer>
+        <button type="button" aria-label="下个月" @click="shiftMonth(1)">
+          <IconChevronRight :size="18" aria-hidden="true" />
+        </button>
       </div>
-    </section>
-  </Teleport>
+
+      <div v-if="monthMenuOpen" v-webqq-scrollbar class="webqq-message-search-calendar-menu is-month" role="listbox" aria-label="选择月份">
+        <button
+          v-for="month in 12"
+          :key="month"
+          type="button"
+          role="option"
+          :aria-selected="month === displayMonth"
+          :class="{ 'is-selected': month === displayMonth }"
+          @click="selectMonth(month)"
+        >
+          {{ month }}月
+        </button>
+      </div>
+      <div v-if="yearMenuOpen" v-webqq-scrollbar class="webqq-message-search-calendar-menu is-year" role="listbox" aria-label="选择年份">
+        <button
+          v-for="year in yearOptions"
+          :key="year"
+          type="button"
+          role="option"
+          :aria-selected="year === displayYear"
+          :class="{ 'is-selected': year === displayYear }"
+          @click="selectYear(year)"
+        >
+          {{ year }}年
+        </button>
+      </div>
+
+      <div class="webqq-message-search-calendar-weekdays" aria-hidden="true">
+        <span v-for="weekday in weekdays" :key="weekday">{{ weekday }}</span>
+      </div>
+      <div class="webqq-message-search-calendar-grid" role="grid" aria-label="选择聊天记录日期">
+        <button
+          v-for="day in calendarDays"
+          :key="day.key"
+          type="button"
+          role="gridcell"
+          :class="{
+            'is-outside': !day.inCurrentMonth,
+            'is-today': day.localDate === todayLocalDate,
+            'is-selected': day.localDate === localDate,
+          }"
+          :aria-label="day.label"
+          :aria-selected="day.localDate === localDate"
+          @click="selectDate(day.localDate)"
+        >
+          {{ day.day }}
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="hasCriteria"
+      v-webqq-scrollbar="{ tone: 'accent' }"
+      class="webqq-message-search-results"
+      role="listbox"
+      aria-label="搜索结果"
+    >
+      <p v-if="statusText" class="webqq-message-search-status" role="status" aria-live="polite">
+        {{ statusText }}
+      </p>
+      <button
+        v-for="message in results"
+        :key="message.id || message.sequence"
+        type="button"
+        role="option"
+        class="webqq-message-search-hit"
+        :aria-selected="false"
+        @click="emit('select', message)"
+      >
+        <img
+          v-if="message.senderAvatar"
+          class="webqq-message-search-avatar"
+          :src="withProxy(message.senderAvatar)"
+          alt=""
+        >
+        <span v-else class="webqq-message-search-avatar is-fallback" aria-hidden="true">
+          {{ message.senderName.slice(0, 1) }}
+        </span>
+        <span class="webqq-message-search-hit-body">
+          <span class="webqq-message-search-hit-meta">
+            <strong>{{ message.senderName }}</strong>
+            <time :datetime="new Date(message.time).toISOString()">{{ formatSearchTime(message.time) }}</time>
+          </span>
+          <span class="webqq-message-search-hit-summary">{{ message.summary || '[消息]' }}</span>
+        </span>
+      </button>
+      <button
+        v-if="searched && !exhausted && results.length"
+        type="button"
+        class="webqq-message-search-more"
+        :disabled="loading"
+        @click="emit('more')"
+      >
+        {{ loading ? '加载中...' : '加载更多结果' }}
+      </button>
+    </div>
+  </section>
 </template>
 
 <script lang="ts" setup>
-import { IconSearch } from '@tabler/icons-vue'
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { resolvedWebQQColorMode } from '../settings'
+import { withProxy } from '@koishijs/client'
+import { IconCalendar, IconChevronDown, IconChevronLeft, IconChevronRight, IconSearch, IconX } from '@tabler/icons-vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { WebQQMessage } from '../types'
-import { clampFloatingPanelPosition, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
+import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
+
+interface CalendarDay {
+  key: string
+  day: number
+  localDate: string
+  label: string
+  inCurrentMonth: boolean
+}
 
 const props = defineProps<{
   query: string
+  localDate: string
   results: WebQQMessage[]
   loading: boolean
   errorText: string
@@ -78,70 +194,174 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  search: []
+  search: [criteria: { query: string, localDate?: string }]
   more: []
   select: [message: WebQQMessage]
   'update:query': [value: string]
+  'update:localDate': [value: string]
 }>()
 
-const panelRef = ref<HTMLElement>()
+const searchRoot = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
-const panelStyle = ref<Record<string, string>>(getFloatingPanelStyle({ width: 460, height: 520 }))
-const dragging = ref(false)
-let dragState: { pointerId: number, startX: number, startY: number, left: number, top: number } | undefined
+const datePopoverOpen = ref(false)
+const monthMenuOpen = ref(false)
+const yearMenuOpen = ref(false)
+const searchFocused = ref(false)
+const now = new Date()
+const displayYear = ref(now.getFullYear())
+const displayMonth = ref(now.getMonth() + 1)
+let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
-function closeOnOutsidePointer(event: PointerEvent) {
-  if (panelRef.value?.contains(event.target as Node)) return
-  emit('close')
-}
-
-function startDrag(event: PointerEvent) {
-  if (event.button !== 0 || isFloatingPanelInteractiveTarget(event.target) || !panelRef.value) return
-  const rect = panelRef.value.getBoundingClientRect()
-  dragState = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, left: rect.left, top: rect.top }
-  dragging.value = true
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-}
-
-function moveDrag(event: PointerEvent) {
-  if (!dragState || event.pointerId !== dragState.pointerId || !panelRef.value) return
-  const position = clampFloatingPanelPosition({
-    x: dragState.left + event.clientX - dragState.startX,
-    y: dragState.top + event.clientY - dragState.startY,
-  }, { width: window.innerWidth, height: window.innerHeight }, {
-    width: panelRef.value.offsetWidth,
-    height: panelRef.value.offsetHeight,
+const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+const todayLocalDate = toLocalDate(now)
+const yearOptions = computed(() => Array.from({ length: 10 }, (_, index) => now.getFullYear() - index))
+const hasCriteria = computed(() => !!props.query.trim() || !!props.localDate)
+const dateTriggerLabel = computed(() => props.localDate
+  ? `筛选日期，当前为 ${props.localDate}`
+  : '按日期筛选聊天记录')
+const statusText = computed(() => {
+  if (props.errorText) return props.errorText
+  if (props.loading && !props.results.length) return '搜索中...'
+  if (props.searched && !props.loading && !props.results.length) return '没有匹配的聊天记录'
+  return ''
+})
+const calendarDays = computed<CalendarDay[]>(() => {
+  const firstDay = new Date(displayYear.value, displayMonth.value - 1, 1)
+  const mondayOffset = (firstDay.getDay() + 6) % 7
+  const gridStart = new Date(displayYear.value, displayMonth.value - 1, 1 - mondayOffset)
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart)
+    date.setDate(gridStart.getDate() + index)
+    const localDate = toLocalDate(date)
+    return {
+      key: localDate,
+      day: date.getDate(),
+      localDate,
+      label: `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`,
+      inCurrentMonth: date.getFullYear() === displayYear.value && date.getMonth() + 1 === displayMonth.value,
+    }
   })
-  panelStyle.value = { left: `${position.x}px`, top: `${position.y}px` }
-}
+})
 
-function stopDrag(event: PointerEvent) {
-  if (!dragState || event.pointerId !== dragState.pointerId) return
-  dragState = undefined
-  dragging.value = false
-}
+watch(() => props.localDate, (value) => {
+  const parsed = parseLocalDate(value)
+  if (!parsed) return
+  displayYear.value = parsed.getFullYear()
+  displayMonth.value = parsed.getMonth() + 1
+}, { immediate: true })
 
 onMounted(() => {
   document.addEventListener('pointerdown', closeOnOutsidePointer)
-  document.addEventListener('pointermove', moveDrag)
-  document.addEventListener('pointerup', stopDrag)
-  document.addEventListener('pointercancel', stopDrag)
   nextTick(() => searchInput.value?.focus())
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeOnOutsidePointer)
-  document.removeEventListener('pointermove', moveDrag)
-  document.removeEventListener('pointerup', stopDrag)
-  document.removeEventListener('pointercancel', stopDrag)
+  if (debounceTimer) clearTimeout(debounceTimer)
 })
 
+function padDatePart(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+function toLocalDate(date: Date) {
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`
+}
+
+function parseLocalDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return undefined
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+function closeOnOutsidePointer(event: PointerEvent) {
+  if (searchRoot.value?.contains(event.target as Node)) return
+  emit('close')
+}
+
+function handleSearchFocusOut(event: FocusEvent) {
+  // 新挂载的搜索框会在 nextTick 中立刻聚焦；显式状态类用于触发稳定的样式重算，
+  // 避免同页其他插件存在同名 :focus-within 规则时，浏览器沿用未聚焦的初始计算结果。
+  const nextTarget = event.relatedTarget
+  searchFocused.value = nextTarget instanceof Node
+    && (event.currentTarget as HTMLElement).contains(nextTarget)
+}
+
+function handleQueryInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value
+  emit('update:query', query)
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => emit('search', {
+    query: query.trim(),
+    ...(props.localDate ? { localDate: props.localDate } : {}),
+  }), query.trim() ? 250 : 0)
+}
+
+function clearQuery() {
+  emit('update:query', '')
+  emit('search', {
+    query: '',
+    ...(props.localDate ? { localDate: props.localDate } : {}),
+  })
+  nextTick(() => searchInput.value?.focus())
+}
+
+function handleEscape() {
+  if (monthMenuOpen.value || yearMenuOpen.value) {
+    monthMenuOpen.value = false
+    yearMenuOpen.value = false
+    return
+  }
+  if (datePopoverOpen.value) {
+    datePopoverOpen.value = false
+    return
+  }
+  emit('close')
+}
+
+function toggleMonthMenu() {
+  monthMenuOpen.value = !monthMenuOpen.value
+  yearMenuOpen.value = false
+}
+
+function toggleYearMenu() {
+  yearMenuOpen.value = !yearMenuOpen.value
+  monthMenuOpen.value = false
+}
+
+function shiftMonth(offset: number) {
+  const next = new Date(displayYear.value, displayMonth.value - 1 + offset, 1)
+  displayYear.value = next.getFullYear()
+  displayMonth.value = next.getMonth() + 1
+  monthMenuOpen.value = false
+  yearMenuOpen.value = false
+}
+
+function selectMonth(month: number) {
+  displayMonth.value = month
+  monthMenuOpen.value = false
+}
+
+function selectYear(year: number) {
+  displayYear.value = year
+  yearMenuOpen.value = false
+}
+
+function selectDate(localDate: string) {
+  emit('update:localDate', localDate)
+  emit('search', { query: props.query.trim(), localDate })
+  datePopoverOpen.value = false
+  monthMenuOpen.value = false
+  yearMenuOpen.value = false
+}
+
 function formatSearchTime(time: number) {
-  return new Date(time).toLocaleString('zh-CN', {
-    month: 'numeric',
-    day: 'numeric',
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-  })
+  }).format(new Date(time))
 }
 </script>
