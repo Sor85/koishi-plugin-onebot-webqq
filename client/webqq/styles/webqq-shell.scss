@@ -28,6 +28,11 @@
   pointer-events: auto;
 }
 
+.onebot-webqq-webqq.is-resizing {
+  // 缩放只禁止 WebQQ 自身文本选择，不能再把 sandbox 和整个 Koishi 控制台一起锁住。
+  user-select: none;
+}
+
 .onebot-webqq-webqq__resize-zone {
   position: absolute;
   z-index: 6;

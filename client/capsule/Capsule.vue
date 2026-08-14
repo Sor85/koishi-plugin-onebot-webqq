@@ -526,9 +526,10 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
   // 但仍是 WebQQ 交互面；否则选择“贴表情”或“撤回”的 pointerdown 会先把整个 WebQQ 关闭。
   if (target instanceof Element && target.closest([
     '.webqq-context-menu-content',
-    '.webqq-secondary-page',
+    '.onebot-webqq-webqq__portal-page',
     '.webqq-dialog-overlay',
     '.webqq-dialog-content',
+    '.onebot-webqq-webqq__scrollbar-overlay',
   ].join(', '))) return
   webQQOpen.value = false
 }

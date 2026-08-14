@@ -242,6 +242,10 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('startWebQQResize(\'left\', $event)')
     expect(webqqView).toContain('startWebQQResize(\'top\', $event)')
     expect(webqqView).toContain('startWebQQResize(\'top-left\', $event)')
+    expect(webqqView).toContain("'is-resizing': webQQResizing")
+    expect(webqqView).toContain('webQQResizing.value = true')
+    expect(webqqView).toContain('webQQResizing.value = false')
+    expect(webqqView).not.toContain('document.body.style.userSelect')
     expect(webqqView).not.toContain('onebot-webqq-webqq__resize-icon')
   })
 
@@ -262,6 +266,8 @@ describe('webqq observer view', () => {
     expect(webqqView).toContain('isVisible: () => props.visible')
     expect(webqqLiveMessagesStore).toContain('!options.isVisible()')
     expect(webqqView).toContain('watch(() => props.visible')
+    expect(webqqView).toContain("if (!props.visible || event.key !== 'Escape') return")
+    expect(webqqView).toContain('if (!props.visible || !messageSearchTrigger.value?.isConnected) return')
   })
 
   it('closes WebQQ when clicking outside the capsule host', () => {
@@ -269,6 +275,9 @@ describe('webqq observer view', () => {
     expect(capsuleView).toContain('function closeWebQQOnOutsideClick')
     expect(capsuleView).toContain("document.addEventListener('pointerdown', closeWebQQOnOutsideClick)")
     expect(capsuleView).toContain("document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)")
+    expect(capsuleView).toContain("'.onebot-webqq-webqq__portal-page'")
+    expect(capsuleView).toContain("'.onebot-webqq-webqq__scrollbar-overlay'")
+    expect(capsuleView).not.toContain("'.webqq-secondary-page'")
   })
 
   it('renders contacts, groups, message history, and gated send input', () => {
@@ -945,9 +954,9 @@ describe('webqq observer view', () => {
   it('searches the current WebQQ conversation history from the inline header search and jumps to a result', () => {
     expect(webqqView).toContain('aria-label="查找聊天记录"')
     expect(webqqView).toContain('ref="messageSearchTrigger"')
-    expect(webqqView).toContain('messageSearchTrigger.value?.focus()')
+    expect(webqqView).toContain('messageSearchTrigger.value.focus()')
     expect(webqqView).toContain('@click="openMessageSearch"')
-    expect(webqqView).toContain("class=\"webqq-chat-search-shell\"")
+    expect(webqqView).toContain("class=\"onebot-webqq-webqq__chat-search-shell\"")
     expect(webqqView).toContain("'is-expanded': messageSearchOpen")
     expect(webqqView).toContain('<WebQQMessageSearchPage')
     expect(webqqView).toContain('v-model:local-date="messageSearchLocalDate"')
@@ -961,7 +970,7 @@ describe('webqq observer view', () => {
     expect(webqqMessageSearchPage).toContain("'is-focused': searchFocused")
     expect(webqqMessageSearchPage).toContain('@focusout="handleSearchFocusOut"')
     expect(webqqMessageSearchPage).toContain('placeholder="查找聊天记录..."')
-    expect(webqqMessageSearchPage).toContain('data-webqq-message-search-date')
+    expect(webqqMessageSearchPage).toContain('data-onebot-webqq-message-search-date')
     expect(webqqMessageSearchPage).toContain('class="webqq-message-search-calendar-grid"')
     expect(webqqMessageSearchPage).toContain("v-webqq-scrollbar=\"{ tone: 'accent' }\"")
     expect(webqqMessageSearchPage).not.toContain('<Teleport')

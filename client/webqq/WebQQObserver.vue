@@ -1,5 +1,5 @@
 <template>
-  <div ref="webQQRoot" :class="['onebot-webqq-webqq', enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain', `is-chat-style-${webQQChatStyle}`, { 'has-tim-bubble-tail': webQQTimBubbleTail, 'is-resizable': allowWebQQResize }, `is-color-${resolvedWebQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
+  <div ref="webQQRoot" :class="['onebot-webqq-webqq', enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain', `is-chat-style-${webQQChatStyle}`, { 'has-tim-bubble-tail': webQQTimBubbleTail, 'is-resizable': allowWebQQResize, 'is-resizing': webQQResizing }, `is-color-${resolvedWebQQColorMode}`]" :style="webQQAccentStyle" role="dialog" aria-label="WebQQ 观察窗" @click="closeNoticeMenu">
     <WebQQSidebar
       v-model:search-query="searchQuery"
       v-model:notice-menu-tab="noticeMenuTab"
@@ -76,7 +76,7 @@
             </div>
           </div>
           <div class="onebot-webqq-webqq__chat-header-actions">
-            <div v-if="currentChat" class="webqq-chat-search-shell" :class="{ 'is-expanded': messageSearchOpen }">
+            <div v-if="currentChat" class="onebot-webqq-webqq__chat-search-shell" :class="{ 'is-expanded': messageSearchOpen }">
               <button v-if="!messageSearchOpen" ref="messageSearchTrigger" class="webqq-chat-search-trigger" type="button" aria-label="查找聊天记录" @click="openMessageSearch">
                 <IconSearch class="onebot-webqq-webqq__header-icon" :size="20" aria-hidden="true" />
               </button>
@@ -1015,7 +1015,7 @@ const webQQResizeViewportWidthGap = 32
 const webQQResizeViewportHeightGap = 6
 const webQQResizeDefaultBottomGap = 116
 let webQQResizeState: WebQQResizeState | undefined
-let previousBodyUserSelect = ''
+const webQQResizing = ref(false)
 
 function normalizeWebQQShellSize(value: unknown): WebQQShellSize | undefined {
   if (!value || typeof value !== 'object') return
@@ -1352,7 +1352,10 @@ function closeMessageSearch() {
   messageSearchSerial++
   // 搜索框由显式 v-if 卸载；外部 pointerdown 关闭时还会继续派发 mouseup/click，
   // 必须等 DOM 更新和整条指针事件链结束后再恢复焦点，否则 Chrome 与 Firefox 最终仍会把焦点落到 body。
-  void nextTick(() => window.setTimeout(() => messageSearchTrigger.value?.focus(), 50))
+  void nextTick(() => window.setTimeout(() => {
+    if (!props.visible || !messageSearchTrigger.value?.isConnected) return
+    messageSearchTrigger.value.focus()
+  }, 50))
 }
 
 async function requestMessageSearch(
@@ -1717,7 +1720,7 @@ function handleKickGroupMember(userId: string) {
 }
 
 function handleSelectionKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Escape') return
+  if (!props.visible || event.key !== 'Escape') return
   if (messageSearchOpen.value) {
     event.preventDefault()
     closeMessageSearch()
@@ -1836,7 +1839,7 @@ function stopWebQQResize() {
   window.removeEventListener('pointermove', handleWebQQResizeMove)
   window.removeEventListener('pointerup', stopWebQQResize)
   window.removeEventListener('pointercancel', stopWebQQResize)
-  document.body.style.userSelect = previousBodyUserSelect
+  webQQResizing.value = false
   webQQResizeState = undefined
   if (webQQShellSize.value) persistWebQQShellSize(webQQShellSize.value)
 }
@@ -1852,8 +1855,7 @@ function startWebQQResize(edge: WebQQResizeEdge, event: PointerEvent) {
     startHeight: rect.height,
   }
   updateStoredWebQQShellSize({ width: rect.width, height: rect.height })
-  previousBodyUserSelect = document.body.style.userSelect
-  document.body.style.userSelect = 'none'
+  webQQResizing.value = true
   window.addEventListener('pointermove', handleWebQQResizeMove)
   window.addEventListener('pointerup', stopWebQQResize)
   window.addEventListener('pointercancel', stopWebQQResize)

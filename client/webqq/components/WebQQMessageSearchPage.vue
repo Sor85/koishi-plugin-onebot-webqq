@@ -45,7 +45,7 @@
     <div
       v-if="datePopoverOpen"
       class="webqq-message-search-date-popover"
-      data-webqq-message-search-date
+      data-onebot-webqq-message-search-date
       @pointerdown.stop
     >
       <div class="webqq-message-search-calendar-header">

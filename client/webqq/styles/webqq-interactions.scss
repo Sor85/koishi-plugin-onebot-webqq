@@ -1,7 +1,7 @@
 /* 右键菜单 / 资料卡 / 贴表情 / 多选 / Dialog：与 sandbox 关键尺寸、z-index 对齐。
    注意：Teleport 到 body 的面板拿不到 .onebot-webqq-webqq 作用域变量，这里镜像一份 token。 */
 
-.webqq-secondary-page,
+.onebot-webqq-webqq__portal-page,
 .webqq-dialog-content,
 .webqq-context-menu-content {
   --webqq-accent: var(--onebot-webqq-webqq-accent, #2563eb);
@@ -15,7 +15,7 @@
   --webqq-panel: #fff;
 }
 
-.webqq-secondary-page.is-color-dark,
+.onebot-webqq-webqq__portal-page.is-color-dark,
 .webqq-dialog-content.is-color-dark,
 .webqq-context-menu-content.is-color-dark {
   --webqq-bg: #2c2c30;
@@ -245,7 +245,7 @@
   display: none;
 }
 
-.webqq-secondary-page-header {
+.onebot-webqq-webqq__portal-page > .webqq-secondary-page-header {
   // 与聊天页顶栏一致：悬浮在内容上方，半透明底 + 高斯模糊，滚动时能透出下层内容。
   position: absolute;
   inset: 0 0 auto;
@@ -264,7 +264,7 @@
   user-select: none;
 }
 
-.webqq-secondary-page-header strong {
+.onebot-webqq-webqq__portal-page > .webqq-secondary-page-header strong {
   font-size: 14px;
   line-height: 20px;
 }
@@ -284,7 +284,7 @@
 }
 
 .onebot-webqq-webqq {
-.webqq-chat-search-shell {
+.onebot-webqq-webqq__chat-search-shell {
   // Koishi 会把所有插件样式注入同一文档；搜索组件与 onebot-sandbox 复用视觉类名，
   // 必须限定在本插件根节点内，否则加载顺序会互相覆盖日期 Portal 和聚焦强调环。
   position: relative;
@@ -294,7 +294,7 @@
   transition: width 180ms ease;
 }
 
-.webqq-chat-search-shell.is-expanded {
+.onebot-webqq-webqq__chat-search-shell.is-expanded {
   width: clamp(220px, 32vw, 320px);
 }
 
@@ -688,7 +688,7 @@
   }
 
   .onebot-webqq-webqq__chat-header.is-searching .onebot-webqq-webqq__chat-header-actions,
-  .onebot-webqq-webqq__chat-header.is-searching .webqq-chat-search-shell {
+  .onebot-webqq-webqq__chat-header.is-searching .onebot-webqq-webqq__chat-search-shell {
     width: 100%;
   }
 }
@@ -968,7 +968,7 @@
   opacity: 0.48;
 }
 
-.webqq-emoji-picker {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker {
   display: flex;
   min-height: 0;
   flex-direction: column;
@@ -982,29 +982,29 @@
   padding-top: 64px;
 }
 
-.webqq-emoji-picker-search {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-search {
   width: 100%;
 }
 
-.webqq-emoji-picker-section {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.webqq-emoji-picker-section > header {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-section > header {
   color: var(--webqq-muted);
   font-size: 12px;
   line-height: 16px;
 }
 
-.webqq-emoji-picker-grid {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 6px;
 }
 
-.webqq-emoji-picker-item {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-item {
   display: flex;
   aspect-ratio: 1 / 1;
   align-items: center;
@@ -1016,17 +1016,17 @@
   background: color-mix(in srgb, var(--webqq-panel) 88%, transparent);
 }
 
-.webqq-emoji-picker-item:hover {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-item:hover {
   background: color-mix(in srgb, var(--webqq-accent) 14%, transparent);
 }
 
-.webqq-emoji-picker-item img {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-item img {
   width: 24px;
   height: 24px;
   object-fit: contain;
 }
 
-.webqq-emoji-picker-empty {
+.onebot-webqq-webqq__portal-page .webqq-emoji-picker-empty {
   grid-column: 1 / -1;
   margin: 8px 0;
   color: var(--webqq-muted);
@@ -1035,7 +1035,7 @@
 }
 
 @media (max-width: 640px) {
-  .webqq-emoji-picker-grid {
+  .onebot-webqq-webqq__portal-page .webqq-emoji-picker-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
@@ -1245,6 +1245,7 @@
 }
 
 
+.webqq-dialog-content {
 .webqq-forward-target-dialog {
   display: grid;
   gap: 12px;
@@ -1393,4 +1394,5 @@
   font-size: 12px;
   background: #fff1f0;
   border-radius: 8px;
+}
 }
