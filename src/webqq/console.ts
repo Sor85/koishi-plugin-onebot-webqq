@@ -97,6 +97,20 @@ export function registerWebQQConsoleListeners(
       pageSize: Math.min(historyLimit, 100),
       maxPages: 10,
       loadMessages: (messageQuery) => webqq.loadMessages(messageQuery),
+      loadCachedMessages: query.beforeSequence
+        ? undefined
+        : async () => {
+          const live = liveMessages.get(getWebQQLiveMessageKey(query)) ?? []
+          try {
+            const cached = await loadKoishiWebQQMessageCache(inner, config, {
+              type: query.type,
+              peerId: query.peerId,
+            }, getStorageScope())
+            return mergeWebQQLiveMessages(cached, live)
+          } catch {
+            return live
+          }
+        },
     })
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/group-info', (query: WebQQGroupInfoQuery) => {

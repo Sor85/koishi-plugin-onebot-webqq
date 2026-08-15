@@ -1,29 +1,29 @@
 <template>
   <Teleport to="body">
-    <section ref="panelRef" v-if="open" :class="['webqq-secondary-page onebot-webqq-webqq__portal-page webqq-emoji-picker-page', `is-color-${resolvedWebQQColorMode}`]" :style="panelStyle" aria-label="贴表情">
+    <section ref="panelRef" v-if="open" :class="['onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__emoji-picker-page', `is-color-${resolvedWebQQColorMode}`]" :style="panelStyle" aria-label="贴表情">
       <header
-        class="webqq-secondary-page-header"
+        class="onebot-webqq-webqq__secondary-page-header"
         :class="{ 'is-dragging': dragging }"
         @pointerdown="startDrag"
       >
         <strong>贴表情</strong>
       </header>
-      <div class="webqq-emoji-picker">
+      <div class="onebot-webqq-webqq__emoji-picker">
         <Input
           v-model="query"
-          class="webqq-emoji-picker-search"
+          class="onebot-webqq-webqq__emoji-picker-search"
           type="search"
           placeholder="搜索表情名称、拼音或 ID"
           aria-label="搜索表情"
         />
-        <section v-if="!query.trim() && recentFaces.length" class="webqq-emoji-picker-section">
+        <section v-if="!query.trim() && recentFaces.length" class="onebot-webqq-webqq__emoji-picker-section">
           <header>常用</header>
-          <div class="webqq-emoji-picker-grid">
+          <div class="onebot-webqq-webqq__emoji-picker-grid">
             <button
               v-for="face in recentFaces"
               :key="`recent:${face.id}`"
               type="button"
-              class="webqq-emoji-picker-item"
+              class="onebot-webqq-webqq__emoji-picker-item"
               :title="face.label"
               @click="select(face.id)"
             >
@@ -32,14 +32,14 @@
             </button>
           </div>
         </section>
-        <section v-if="!query.trim()" class="webqq-emoji-picker-section">
+        <section v-if="!query.trim()" class="onebot-webqq-webqq__emoji-picker-section">
           <header>推荐</header>
-          <div class="webqq-emoji-picker-grid">
+          <div class="onebot-webqq-webqq__emoji-picker-grid">
             <button
               v-for="face in commonFaces"
               :key="`common:${face.id}`"
               type="button"
-              class="webqq-emoji-picker-item"
+              class="onebot-webqq-webqq__emoji-picker-item"
               :title="face.label"
               @click="select(face.id)"
             >
@@ -48,21 +48,21 @@
             </button>
           </div>
         </section>
-        <section class="webqq-emoji-picker-section">
+        <section class="onebot-webqq-webqq__emoji-picker-section">
           <header>{{ query.trim() ? '搜索结果' : '全部表情' }}</header>
-          <div class="webqq-emoji-picker-grid">
+          <div class="onebot-webqq-webqq__emoji-picker-grid">
             <button
               v-for="face in visibleFaces"
               :key="face.id"
               type="button"
-              class="webqq-emoji-picker-item"
+              class="onebot-webqq-webqq__emoji-picker-item"
               :title="face.label"
               @click="select(face.id)"
             >
               <img v-if="face.url" :src="face.url" :alt="face.label">
               <span v-else>{{ face.label }}</span>
             </button>
-            <p v-if="!visibleFaces.length" class="webqq-emoji-picker-empty">没有匹配的表情</p>
+            <p v-if="!visibleFaces.length" class="onebot-webqq-webqq__emoji-picker-empty">没有匹配的表情</p>
           </div>
         </section>
       </div>

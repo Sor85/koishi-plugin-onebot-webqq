@@ -185,7 +185,7 @@ export const vWebqqScrollbar: Directive<HTMLElement, WebQQScrollbarOptions | und
     }
 
     states.set(element, state)
-    element.dataset.webqqScrollbar = 'true'
+    element.dataset.onebotWebqqScrollbar = 'true'
     applyScrollbarOptions(state, binding)
 
     const enter = () => {
@@ -280,7 +280,7 @@ export const vWebqqScrollbar: Directive<HTMLElement, WebQQScrollbarOptions | und
     const state = states.get(element)
     if (!state) return
     states.delete(element)
-    delete element.dataset.webqqScrollbar
+    delete element.dataset.onebotWebqqScrollbar
     clearHideTimer(state)
     if (state.frame) window.cancelAnimationFrame(state.frame)
     state.resizeObserver?.disconnect()

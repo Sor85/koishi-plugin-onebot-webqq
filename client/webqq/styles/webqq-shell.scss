@@ -80,17 +80,17 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.onebot-webqq-webqq [data-webqq-scrollbar="true"] {
+.onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"] {
   scrollbar-width: none;
   scrollbar-color: transparent transparent;
 }
 
-.onebot-webqq-webqq [data-webqq-scrollbar="true"]::-webkit-scrollbar {
+.onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"]::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
 
-.onebot-webqq-webqq [data-webqq-scrollbar="true"]::-webkit-scrollbar-button {
+.onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"]::-webkit-scrollbar-button {
   display: none;
   width: 0;
   height: 0;

@@ -1,12 +1,12 @@
 <template>
   <section
     ref="searchRoot"
-    class="webqq-message-search"
+    class="onebot-webqq-webqq__message-search"
     role="search"
     aria-label="查找聊天记录"
   >
     <div
-      class="webqq-message-search-field"
+      class="onebot-webqq-webqq__message-search-field"
       :class="{ 'is-focused': searchFocused }"
       @focusin="searchFocused = true"
       @focusout="handleSearchFocusOut"
@@ -24,7 +24,7 @@
       >
       <button
         type="button"
-        class="webqq-message-search-date-trigger"
+        class="onebot-webqq-webqq__message-search-date-trigger"
         :class="{ 'is-active': !!localDate }"
         :aria-label="dateTriggerLabel"
         :aria-pressed="!!localDate"
@@ -34,7 +34,7 @@
       </button>
       <button
         type="button"
-        class="webqq-message-search-clear"
+        class="onebot-webqq-webqq__message-search-clear"
         :aria-label="query ? '清空搜索' : '关闭查找聊天记录'"
         @click="query ? clearQuery() : emit('close')"
       >
@@ -44,15 +44,15 @@
 
     <div
       v-if="datePopoverOpen"
-      class="webqq-message-search-date-popover"
+      class="onebot-webqq-webqq__message-search-date-popover"
       data-onebot-webqq-message-search-date
       @pointerdown.stop
     >
-      <div class="webqq-message-search-calendar-header">
+      <div class="onebot-webqq-webqq__message-search-calendar-header">
         <button type="button" aria-label="上个月" @click="shiftMonth(-1)">
           <IconChevronLeft :size="16" aria-hidden="true" />
         </button>
-        <div class="webqq-message-search-calendar-selectors">
+        <div class="onebot-webqq-webqq__message-search-calendar-selectors">
           <button type="button" :aria-expanded="monthMenuOpen" @click="toggleMonthMenu">
             {{ displayMonth }}月
             <IconChevronDown :size="16" aria-hidden="true" />
@@ -67,7 +67,7 @@
         </button>
       </div>
 
-      <div v-if="monthMenuOpen" v-webqq-scrollbar class="webqq-message-search-calendar-menu is-month" role="listbox" aria-label="选择月份">
+      <div v-if="monthMenuOpen" v-webqq-scrollbar class="onebot-webqq-webqq__message-search-calendar-menu is-month" role="listbox" aria-label="选择月份">
         <button
           v-for="month in 12"
           :key="month"
@@ -80,7 +80,7 @@
           {{ month }}月
         </button>
       </div>
-      <div v-if="yearMenuOpen" v-webqq-scrollbar class="webqq-message-search-calendar-menu is-year" role="listbox" aria-label="选择年份">
+      <div v-if="yearMenuOpen" v-webqq-scrollbar class="onebot-webqq-webqq__message-search-calendar-menu is-year" role="listbox" aria-label="选择年份">
         <button
           v-for="year in yearOptions"
           :key="year"
@@ -94,10 +94,10 @@
         </button>
       </div>
 
-      <div class="webqq-message-search-calendar-weekdays" aria-hidden="true">
+      <div class="onebot-webqq-webqq__message-search-calendar-weekdays" aria-hidden="true">
         <span v-for="weekday in weekdays" :key="weekday">{{ weekday }}</span>
       </div>
-      <div class="webqq-message-search-calendar-grid" role="grid" aria-label="选择聊天记录日期">
+      <div class="onebot-webqq-webqq__message-search-calendar-grid" role="grid" aria-label="选择聊天记录日期">
         <button
           v-for="day in calendarDays"
           :key="day.key"
@@ -120,11 +120,11 @@
     <div
       v-if="hasCriteria"
       v-webqq-scrollbar="{ tone: 'accent' }"
-      class="webqq-message-search-results"
+      class="onebot-webqq-webqq__message-search-results"
       role="listbox"
       aria-label="搜索结果"
     >
-      <p v-if="statusText" class="webqq-message-search-status" role="status" aria-live="polite">
+      <p v-if="statusText" class="onebot-webqq-webqq__message-search-status" role="status" aria-live="polite">
         {{ statusText }}
       </p>
       <button
@@ -132,31 +132,31 @@
         :key="message.id || message.sequence"
         type="button"
         role="option"
-        class="webqq-message-search-hit"
+        class="onebot-webqq-webqq__message-search-hit"
         :aria-selected="false"
         @click="emit('select', message)"
       >
         <img
           v-if="message.senderAvatar"
-          class="webqq-message-search-avatar"
+          class="onebot-webqq-webqq__message-search-avatar"
           :src="withProxy(message.senderAvatar)"
           alt=""
         >
-        <span v-else class="webqq-message-search-avatar is-fallback" aria-hidden="true">
+        <span v-else class="onebot-webqq-webqq__message-search-avatar is-fallback" aria-hidden="true">
           {{ message.senderName.slice(0, 1) }}
         </span>
-        <span class="webqq-message-search-hit-body">
-          <span class="webqq-message-search-hit-meta">
+        <span class="onebot-webqq-webqq__message-search-hit-body">
+          <span class="onebot-webqq-webqq__message-search-hit-meta">
             <strong>{{ message.senderName }}</strong>
             <time :datetime="new Date(message.time).toISOString()">{{ formatSearchTime(message.time) }}</time>
           </span>
-          <span class="webqq-message-search-hit-summary">{{ message.summary || '[消息]' }}</span>
+          <span class="onebot-webqq-webqq__message-search-hit-summary">{{ message.summary || '[消息]' }}</span>
         </span>
       </button>
       <button
         v-if="searched && !exhausted && results.length"
         type="button"
-        class="webqq-message-search-more"
+        class="onebot-webqq-webqq__message-search-more"
         :disabled="loading"
         @click="emit('more')"
       >
@@ -252,7 +252,8 @@ watch(() => props.localDate, (value) => {
 
 onMounted(() => {
   document.addEventListener('pointerdown', closeOnOutsidePointer)
-  nextTick(() => searchInput.value?.focus())
+  // 展开动画期间外壳还是 32px，默认 focus 会 scrollIntoView，把 overflow 窗口整块推走。
+  nextTick(() => searchInput.value?.focus({ preventScroll: true }))
 })
 
 onBeforeUnmount(() => {
@@ -304,7 +305,7 @@ function clearQuery() {
     query: '',
     ...(props.localDate ? { localDate: props.localDate } : {}),
   })
-  nextTick(() => searchInput.value?.focus())
+  nextTick(() => searchInput.value?.focus({ preventScroll: true }))
 }
 
 function handleEscape() {

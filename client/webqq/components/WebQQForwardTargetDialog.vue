@@ -1,23 +1,23 @@
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="webqq-forward-target-dialog">
+    <DialogContent class="onebot-webqq-webqq__forward-target-dialog">
       <DialogHeader>
         <DialogTitle>选择转发目标</DialogTitle>
         <DialogDescription>将已选消息合并转发到一个最近会话、好友或群组。</DialogDescription>
       </DialogHeader>
 
-      <label class="webqq-forward-target-search">
+      <label class="onebot-webqq-webqq__forward-target-search">
         <IconSearch :size="18" aria-hidden="true" />
         <input v-model="searchQuery" type="search" aria-label="搜索目标会话" placeholder="搜索最近、好友或群组..." autocomplete="off">
       </label>
 
-      <div class="webqq-forward-target-tabs" role="tablist" aria-label="目标分类">
+      <div class="onebot-webqq-webqq__forward-target-tabs" role="tablist" aria-label="目标分类">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           type="button"
           role="tab"
-          class="webqq-forward-target-tab"
+          class="onebot-webqq-webqq__forward-target-tab"
           :class="{ 'is-active': activeTab === tab.id }"
           :aria-selected="activeTab === tab.id"
           @click="activeTab = tab.id"
@@ -26,29 +26,29 @@
         </button>
       </div>
 
-      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10202 }" class="webqq-forward-target-list" role="listbox" aria-label="目标会话">
+      <div v-webqq-scrollbar="{ tone: 'accent', zIndex: 10202 }" class="onebot-webqq-webqq__forward-target-list" role="listbox" aria-label="目标会话">
         <button
           v-for="target in visibleTargets"
           :key="target.id"
           type="button"
           role="option"
-          class="webqq-forward-target-item"
+          class="onebot-webqq-webqq__forward-target-item"
           :class="{ 'is-active': selectedTargetId === target.id }"
           :aria-selected="selectedTargetId === target.id"
           @click="selectedTargetId = target.id"
         >
           <img v-if="target.avatar" :src="withProxy(target.avatar)" :alt="target.title">
-          <span v-else class="webqq-forward-target-avatar-fallback" aria-hidden="true">{{ target.title.slice(0, 1) }}</span>
-          <span class="webqq-forward-target-copy">
+          <span v-else class="onebot-webqq-webqq__forward-target-avatar-fallback" aria-hidden="true">{{ target.title.slice(0, 1) }}</span>
+          <span class="onebot-webqq-webqq__forward-target-copy">
             <strong>{{ target.title }}</strong>
             <small>{{ target.subtitle || target.peerId }}</small>
           </span>
-          <span class="webqq-forward-target-radio" aria-hidden="true"></span>
+          <span class="onebot-webqq-webqq__forward-target-radio" aria-hidden="true"></span>
         </button>
-        <div v-if="!visibleTargets.length" class="webqq-forward-target-empty">{{ emptyText }}</div>
+        <div v-if="!visibleTargets.length" class="onebot-webqq-webqq__forward-target-empty">{{ emptyText }}</div>
       </div>
 
-      <p v-if="errorMessage" class="webqq-forward-target-error" role="alert">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="onebot-webqq-webqq__forward-target-error" role="alert">{{ errorMessage }}</p>
       <DialogFooter>
         <Button variant="outline" :disabled="submitting" @click="emit('update:open', false)">取消</Button>
         <Button :disabled="!selectedTargetId || submitting" @click="confirm">{{ submitting ? '转发中...' : '合并转发' }}</Button>

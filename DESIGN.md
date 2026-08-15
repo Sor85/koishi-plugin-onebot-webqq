@@ -45,7 +45,7 @@ WebQQ 界面分为一级工作区和二级面。
 深色 Portal 令牌的基线为：
 
 ```scss
-.webqq-secondary-page.is-color-dark,
+.onebot-webqq-webqq__secondary-page.is-color-dark,
 .webqq-dialog-content.is-color-dark,
 .webqq-context-menu-content.is-color-dark {
   --webqq-bg: #2c2c30;
@@ -95,7 +95,7 @@ Teleport 到 `body` 的二级面不在 `.onebot-webqq-webqq` DOM 子树内，无
 - 内容超出容器时必须保留鼠标滚轮、触控板、触摸和键盘滚动能力；
 - 在实际可滚动 DOM 元素上使用 `v-webqq-scrollbar`；
 - 不得把指令挂在可能返回 Fragment 或注释节点的组件上；
-- 浏览器原生滚动条由 `[data-webqq-scrollbar="true"]` 的 Firefox 和 WebKit 兼容规则隐藏；
+- 浏览器原生滚动条由 `[data-onebot-webqq-scrollbar="true"]` 的 Firefox 和 WebKit 兼容规则隐藏；
 - 自定义轨道由 `onebot-webqq-webqq__scrollbar-overlay` 和 `onebot-webqq-webqq__scrollbar-thumb` 提供；
 - Portal 浮层必须设置足够的 `zIndex`，确保自定义滚动条高于对应二级面；
 - 不得通过 `overflow: hidden` 代替滚动条方案，以免截断内容或破坏键盘访问；

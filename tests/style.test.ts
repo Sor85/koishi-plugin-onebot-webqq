@@ -124,7 +124,7 @@ describe('chat capsule styles', () => {
 
   it('keeps teleported secondary pages above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
-    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.onebot-webqq-webqq__secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
 
     expect(shellZIndex).toBe(10001)
     expect(secondaryPageZIndex).toBeGreaterThan(shellZIndex)
@@ -135,10 +135,10 @@ describe('chat capsule styles', () => {
       '.onebot-webqq-webqq__portal-page.is-color-dark',
       webqqInteractionsStyle,
     )
-    const headerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page > .webqq-secondary-page-header', webqqInteractionsStyle)
+    const headerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page > .onebot-webqq-webqq__secondary-page-header', webqqInteractionsStyle)
 
-    expect(webqqInteractionsStyle).not.toMatch(/(?:^|\n)\.webqq-secondary-page\s*(?:,|\{)/)
-    expect(webqqInteractionsStyle).not.toMatch(/(?:^|\n)\.webqq-secondary-page-header\s*\{/)
+    expect(webqqInteractionsStyle).not.toMatch(/(?:^|\n)\.onebot-webqq-webqq__secondary-page\s*(?:,|\{)/)
+    expect(webqqInteractionsStyle).not.toMatch(/(?:^|\n)\.onebot-webqq-webqq__secondary-page-header\s*\{/)
     expect(darkPortalTokens).toContain('--webqq-bg: #2c2c30')
     expect(darkPortalTokens).toContain('--webqq-panel: #333338')
     expect(darkPortalTokens).toContain('--webqq-border: #45454c')
@@ -155,25 +155,25 @@ describe('chat capsule styles', () => {
 
   it('gives secondary pages one subtle outline and shadow while hiding every scrollbar', () => {
     const pageBody = ruleBodyIncluding(
-      '.webqq-secondary-page.onebot-webqq-webqq__portal-page',
+      '.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page',
       webqqInteractionsStyle,
     )
     const scrollbarBody = ruleBodyIncluding(
-      '.webqq-secondary-page.onebot-webqq-webqq__portal-page *',
+      '.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page *',
       webqqInteractionsStyle,
     )
 
     expect(pageBody).toContain('border: 1px solid color-mix(in srgb, var(--webqq-border) 42%, transparent)')
     expect(pageBody).toContain('box-shadow: 0 16px 38px rgb(0 0 0 / 16%)')
     expect(scrollbarBody).toContain('scrollbar-width: none')
-    expect(webqqInteractionsStyle).toMatch(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page \*::\-webkit-scrollbar\s*\{[\s\S]*?display:\s*none/)
+    expect(webqqInteractionsStyle).toMatch(/\.onebot-webqq-webqq__secondary-page\.onebot-webqq-webqq__portal-page \*::\-webkit-scrollbar\s*\{[\s\S]*?display:\s*none/)
     expect(webqqProfileCardView).not.toContain('v-webqq-scrollbar')
     expect(webqqEmojiPickerView).not.toContain('v-webqq-scrollbar')
   })
 
   it('keeps every portalled dialog layer and dialog scrollbar above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
-    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const secondaryPageZIndex = Number(webqqInteractionsStyle.match(/\.onebot-webqq-webqq__secondary-page\.onebot-webqq-webqq__portal-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const dialogLayerZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-layer\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
     const contentZIndex = Number(webqqInteractionsStyle.match(/\.webqq-dialog-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
@@ -200,22 +200,22 @@ describe('chat capsule styles', () => {
 
   it('keeps the teleported profile card above the WebQQ shell while dragging', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
-    const profileZIndex = Number(webqqInteractionsStyle.match(/\.webqq-secondary-page\.onebot-webqq-webqq__portal-page\.webqq-profile-card-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+    const profileZIndex = Number(webqqInteractionsStyle.match(/\.onebot-webqq-webqq__secondary-page\.onebot-webqq-webqq__portal-page\.onebot-webqq-webqq__profile-card-page\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
 
     expect(shellZIndex).toBe(10001)
     expect(profileZIndex).toBeGreaterThan(shellZIndex)
-    expect(webqqProfileCardView).toContain('webqq-secondary-page onebot-webqq-webqq__portal-page webqq-profile-card-page')
-    expect(webqqEmojiPickerView).toContain('webqq-secondary-page onebot-webqq-webqq__portal-page webqq-emoji-picker-page')
+    expect(webqqProfileCardView).toContain('onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__profile-card-page')
+    expect(webqqEmojiPickerView).toContain('onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__emoji-picker-page')
   })
 
   it('centers the profile avatar above field sections and styles inline edit actions', () => {
-    const heroBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-hero', webqqInteractionsStyle)
-    const avatarFrameBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar-frame', webqqInteractionsStyle)
-    const avatarBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-avatar', webqqInteractionsStyle)
-    const fieldRowBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-fields > div', webqqInteractionsStyle)
-    const fieldActionBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-field-action', webqqInteractionsStyle)
-    const headerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page > .webqq-secondary-page-header', webqqInteractionsStyle)
-    const selectTriggerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .webqq-profile-card-select-trigger', webqqInteractionsStyle)
+    const heroBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-hero', webqqInteractionsStyle)
+    const avatarFrameBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-avatar-frame', webqqInteractionsStyle)
+    const avatarBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-avatar', webqqInteractionsStyle)
+    const fieldRowBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-fields > div', webqqInteractionsStyle)
+    const fieldActionBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-field-action', webqqInteractionsStyle)
+    const headerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page > .onebot-webqq-webqq__secondary-page-header', webqqInteractionsStyle)
+    const selectTriggerBody = ruleBodyIncluding('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-select-trigger', webqqInteractionsStyle)
 
     expect(heroBody).toContain('flex-direction: column')
     expect(heroBody).toContain('align-items: center')
@@ -241,16 +241,16 @@ describe('chat capsule styles', () => {
     expect(headerBody).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
     expect(headerBody).toContain('background: color-mix(in srgb, var(--webqq-surface) 92%, transparent)')
     expect(selectTriggerBody).toContain('min-height: 32px')
-    expect(webqqInteractionsStyle).toContain('.webqq-profile-card-select-menu')
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__profile-card-select-menu')
     // 资料卡内容相对 48px 顶栏再下沉，避免头像贴边。
-    expect(webqqInteractionsStyle).toContain('.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-profile-card-page > .webqq-profile-card')
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page.onebot-webqq-webqq__profile-card-page > .onebot-webqq-webqq__profile-card')
     expect(webqqInteractionsStyle).toContain('padding-top: 72px')
-    expect(webqqInteractionsStyle).not.toContain('.webqq-profile-card-edit-actions')
+    expect(webqqInteractionsStyle).not.toContain('.onebot-webqq-webqq__profile-card-edit-actions')
   })
 
   it('keeps the emoji search field separated from the floating header', () => {
     const pickerBody = ruleBodyIncluding(
-      '.webqq-secondary-page.onebot-webqq-webqq__portal-page.webqq-emoji-picker-page > .webqq-emoji-picker',
+      '.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page.onebot-webqq-webqq__emoji-picker-page > .onebot-webqq-webqq__emoji-picker',
       webqqInteractionsStyle,
     )
 
@@ -258,7 +258,7 @@ describe('chat capsule styles', () => {
   })
 
   it('fully styles the selection cancel button without inherited theme tokens', () => {
-    const selector = ".onebot-webqq-webqq__selection-bar .webqq-selection-bar-button[data-variant='outline']"
+    const selector = ".onebot-webqq-webqq__selection-bar .onebot-webqq-webqq__selection-bar-button[data-variant='outline']"
     const buttonBody = ruleBodyIncluding(selector, webqqInteractionsStyle)
     const focusBody = ruleBodyIncluding(`${selector}:focus-visible`, webqqInteractionsStyle)
 
@@ -1054,9 +1054,9 @@ describe('chat capsule styles', () => {
   })
 
   it('hides native WebQQ scrollbars and uses the same overlay scrollbar across engines', () => {
-    const nativeBody = ruleBody('.onebot-webqq-webqq [data-webqq-scrollbar="true"]')
-    const webkitBody = ruleBody('.onebot-webqq-webqq [data-webqq-scrollbar="true"]::-webkit-scrollbar')
-    const webkitButtonBody = ruleBody('.onebot-webqq-webqq [data-webqq-scrollbar="true"]::-webkit-scrollbar-button')
+    const nativeBody = ruleBody('.onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"]')
+    const webkitBody = ruleBody('.onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"]::-webkit-scrollbar')
+    const webkitButtonBody = ruleBody('.onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"]::-webkit-scrollbar-button')
     const narrowBody = mediaBody('@media screen and (max-width: 768px)')
     const overlayBody = ruleBody('.onebot-webqq-webqq__scrollbar-overlay')
     const visibleBody = ruleBody('.onebot-webqq-webqq__scrollbar-overlay.is-visible')
@@ -1365,37 +1365,39 @@ describe('chat capsule styles', () => {
   it('styles WebQQ chat history search as an inline expanding field with calendar and result popovers', () => {
     const scopedSearchStyles = ruleBodyIncluding('.onebot-webqq-webqq', webqqInteractionsStyle)
     expect(scopedSearchStyles).toContain('.onebot-webqq-webqq__chat-search-shell')
-    expect(scopedSearchStyles).toContain('.webqq-message-search-date-popover')
-    expect(scopedSearchStyles).toContain('.webqq-message-search-results')
+    expect(scopedSearchStyles).toContain('.onebot-webqq-webqq__message-search-date-popover')
+    expect(scopedSearchStyles).toContain('.onebot-webqq-webqq__message-search-results')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__chat-search-shell', webqqInteractionsStyle)).toContain('width: 32px')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__chat-search-shell.is-expanded', webqqInteractionsStyle)).toContain('width: clamp(220px, 32vw, 320px)')
-    const searchField = ruleBodyIncluding('.webqq-message-search-field', webqqInteractionsStyle)
+    const searchField = ruleBodyIncluding('.onebot-webqq-webqq__message-search-field', webqqInteractionsStyle)
     expect(searchField).toContain('grid-template-columns: 18px minmax(0, 1fr) 28px 28px')
     expect(searchField).toContain('transition: background-color 120ms ease')
     expect(searchField).not.toContain('transition: border-color')
     expect(searchField).not.toContain('box-shadow 120ms')
-    expect(ruleBodyIncluding('.webqq-message-search-field.is-focused', webqqInteractionsStyle)).toContain('box-shadow: 0 0 0 3px')
-    expect(ruleBodyIncluding('.webqq-message-search-date-popover', webqqInteractionsStyle)).toContain('width: 250px')
-    expect(ruleBodyIncluding('.webqq-message-search-date-popover', webqqInteractionsStyle)).toContain('position: absolute')
-    expect(ruleBodyIncluding('.webqq-message-search-calendar-header', webqqInteractionsStyle)).toContain('margin-bottom: 16px')
-    const calendarSelectorButton = ruleBodyIncluding('.onebot-webqq-webqq__chat-header .webqq-message-search-calendar-selectors > button', webqqInteractionsStyle)
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-field.is-focused', webqqInteractionsStyle)).toContain('box-shadow: 0 0 0 3px')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-date-popover', webqqInteractionsStyle)).toContain('width: 250px')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-date-popover', webqqInteractionsStyle)).toContain('position: absolute')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-calendar-header', webqqInteractionsStyle)).toContain('margin-bottom: 16px')
+    const calendarSelectorButton = ruleBodyIncluding('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__message-search-calendar-selectors > button', webqqInteractionsStyle)
     expect(calendarSelectorButton).toContain('font-size: 14px')
     expect(calendarSelectorButton).toContain('font-weight: 500')
     expect(calendarSelectorButton).toContain('line-height: 20px')
     expect(calendarSelectorButton).toContain('white-space: nowrap')
-    expect(ruleBodyIncluding('.webqq-message-search-calendar-selectors', webqqInteractionsStyle)).toContain('gap: 4px')
-    expect(ruleBodyIncluding('.webqq-message-search-calendar-selectors svg', webqqInteractionsStyle)).toContain('flex: none')
-    expect(webqqInteractionsStyle).toContain(`.webqq-message-search-calendar-grid {
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-calendar-selectors', webqqInteractionsStyle)).toContain('gap: 4px')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-calendar-selectors svg', webqqInteractionsStyle)).toContain('flex: none')
+    expect(webqqInteractionsStyle).toContain(`.onebot-webqq-webqq__message-search-calendar-grid {
   row-gap: 8px;
   margin-top: 8px;
 }`)
-    const calendarDay = ruleBodyIncluding('.onebot-webqq-webqq__chat-header .webqq-message-search-calendar-grid > button', webqqInteractionsStyle)
+    const calendarDay = ruleBodyIncluding('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__message-search-calendar-grid > button', webqqInteractionsStyle)
     expect(calendarDay).toContain('width: 32px')
     expect(calendarDay).toContain('height: 32px')
     expect(calendarDay).toContain('font-size: 14px')
-    expect(ruleBodyIncluding('.webqq-message-search-results', webqqInteractionsStyle)).toContain('overflow-y: auto')
-    expect(ruleBodyIncluding('.onebot-webqq-webqq__chat-header .webqq-message-search-hit', webqqInteractionsStyle)).toContain('text-align: left')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-results', webqqInteractionsStyle)).toContain('overflow-y: auto')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__message-search-hit', webqqInteractionsStyle)).toContain('text-align: left')
     expect(`${style}\n${webqqInteractionsStyle}`).not.toContain('.onebot-webqq-webqq__message-search-backdrop')
+    expect(`${style}\n${webqqInteractionsStyle}`).not.toMatch(/(?<!onebot-webqq-webqq__)webqq-message-search/)
+    expect(`${style}\n${webqqInteractionsStyle}`).not.toContain('webqq-chat-search-trigger')
   })
 
   it('styles WebQQ forward message details as an LLBot-style centered modal', () => {

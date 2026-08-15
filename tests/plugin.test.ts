@@ -261,6 +261,8 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages'")
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages/search'")
     expect(webqqConsoleSource).toContain('searchWebQQMessageHistory(query')
+    expect(webqqConsoleSource).toContain('loadCachedMessages:')
+    expect(webqqConsoleSource).toContain('loadKoishiWebQQMessageCache')
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/record/transcribe'")
     expect(webqqConsoleSource).toContain("console.addListener('onebot-webqq/webqq/messages/cache/save'")
   })

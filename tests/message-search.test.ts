@@ -116,4 +116,77 @@ describe('WebQQ message search', () => {
     expect(result).toEqual({ messages: [], scannedCount: 2, exhausted: true })
     expect(loadMessages).toHaveBeenCalledTimes(2)
   })
+
+  it('searches persisted cache first and then continues OneBot pages without duplicating hits', async () => {
+    const cachedHit = createMessage(5, '缓存关键词')
+    const remoteHit = createMessage(8, '接口关键词')
+    const loadCachedMessages = vi.fn(async () => [cachedHit, createMessage(6, '缓存普通')])
+    const loadMessages = vi.fn()
+      .mockResolvedValueOnce([remoteHit, cachedHit])
+      .mockResolvedValueOnce([])
+
+    await expect(searchWebQQMessageHistory({
+      type: 'group',
+      peerId: '20000',
+      keyword: '关键词',
+    }, {
+      pageSize: 2,
+      maxPages: 10,
+      loadCachedMessages,
+      loadMessages,
+    })).resolves.toEqual({
+      messages: [cachedHit, remoteHit],
+      scannedCount: 3,
+      exhausted: true,
+    })
+    expect(loadCachedMessages).toHaveBeenCalledTimes(1)
+    expect(loadMessages).toHaveBeenNthCalledWith(1, {
+      type: 'group',
+      peerId: '20000',
+      limit: 2,
+    })
+  })
+
+  it('does not reload the cache when continuing from a history cursor', async () => {
+    const loadCachedMessages = vi.fn(async () => [createMessage(9, '关键词')])
+    const loadMessages = vi.fn(async () => [createMessage(2, '普通'), createMessage(1, '关键词')])
+
+    await expect(searchWebQQMessageHistory({
+      type: 'friend',
+      peerId: '30000',
+      keyword: '关键词',
+      beforeSequence: '3',
+    }, {
+      pageSize: 2,
+      maxPages: 1,
+      loadCachedMessages,
+      loadMessages,
+    })).resolves.toEqual({
+      messages: [createMessage(1, '关键词')],
+      scannedCount: 2,
+      exhausted: false,
+      nextBeforeSequence: '2',
+    })
+    expect(loadCachedMessages).not.toHaveBeenCalled()
+  })
+
+  it('returns cached hits when OneBot history never responds', async () => {
+    const cachedHit = createMessage(5, '缓存关键词')
+    const result = await searchWebQQMessageHistory({
+      type: 'group',
+      peerId: '20000',
+      keyword: '关键词',
+    }, {
+      pageSize: 2,
+      maxPages: 10,
+      pageTimeoutMs: 20,
+      searchTimeoutMs: 40,
+      loadCachedMessages: async () => [cachedHit],
+      loadMessages: () => new Promise(() => {}),
+    })
+
+    expect(result.messages).toEqual([cachedHit])
+    expect(result.scannedCount).toBe(1)
+    expect(result.exhausted).toBe(true)
+  })
 })

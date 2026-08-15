@@ -3,57 +3,57 @@
     <section
       v-if="open && model"
       ref="panelRef"
-      :class="['webqq-secondary-page onebot-webqq-webqq__portal-page webqq-profile-card-page', `is-color-${resolvedWebQQColorMode}`]"
+      :class="['onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__profile-card-page', `is-color-${resolvedWebQQColorMode}`]"
       :style="panelStyle"
       aria-label="查看资料"
     >
       <header
-        class="webqq-secondary-page-header"
+        class="onebot-webqq-webqq__secondary-page-header"
         :class="{ 'is-dragging': dragging }"
         @pointerdown="startDrag"
       >
         <strong>查看资料</strong>
       </header>
-      <div class="webqq-profile-card">
-        <div class="webqq-profile-card-hero">
+      <div class="onebot-webqq-webqq__profile-card">
+        <div class="onebot-webqq-webqq__profile-card-hero">
           <button
             v-if="model.canEditAvatar"
             type="button"
-            class="webqq-profile-card-avatar-button"
+            class="onebot-webqq-webqq__profile-card-avatar-button"
             :disabled="savingField != null"
             aria-label="点击更换头像"
             @click="openAvatarPicker"
           >
-            <span class="webqq-profile-card-avatar-frame">
+            <span class="onebot-webqq-webqq__profile-card-avatar-frame">
               <img
                 v-if="displayAvatar"
-                class="webqq-profile-card-avatar"
+                class="onebot-webqq-webqq__profile-card-avatar"
                 :src="withProxy(displayAvatar)"
                 :alt="model.name"
               >
-              <span v-else class="webqq-profile-card-avatar is-fallback" aria-hidden="true">
+              <span v-else class="onebot-webqq-webqq__profile-card-avatar is-fallback" aria-hidden="true">
                 {{ model.name.slice(0, 1) }}
               </span>
-              <span class="webqq-profile-card-avatar-overlay" aria-hidden="true">
+              <span class="onebot-webqq-webqq__profile-card-avatar-overlay" aria-hidden="true">
                 <IconCamera :size="22" />
               </span>
             </span>
-            <span class="webqq-profile-card-avatar-hint">{{ savingField === 'avatar' ? '正在更换头像…' : '点击更换头像' }}</span>
+            <span class="onebot-webqq-webqq__profile-card-avatar-hint">{{ savingField === 'avatar' ? '正在更换头像…' : '点击更换头像' }}</span>
           </button>
-          <span v-else class="webqq-profile-card-avatar-frame is-static">
+          <span v-else class="onebot-webqq-webqq__profile-card-avatar-frame is-static">
             <img
               v-if="model.avatar"
-              class="webqq-profile-card-avatar"
+              class="onebot-webqq-webqq__profile-card-avatar"
               :src="withProxy(model.avatar)"
               :alt="model.name"
             >
-            <span v-else class="webqq-profile-card-avatar is-fallback" aria-hidden="true">
+            <span v-else class="onebot-webqq-webqq__profile-card-avatar is-fallback" aria-hidden="true">
               {{ model.name.slice(0, 1) }}
             </span>
           </span>
           <input
             ref="avatarInputRef"
-            class="webqq-profile-card-avatar-input"
+            class="onebot-webqq-webqq__profile-card-avatar-input"
             type="file"
             accept="image/*"
             tabindex="-1"
@@ -63,26 +63,26 @@
         <section
           v-for="section in sections"
           :key="section.group"
-          class="webqq-profile-card-section"
+          class="onebot-webqq-webqq__profile-card-section"
         >
           <h3>{{ section.label }}</h3>
-          <dl class="webqq-profile-card-fields">
+          <dl class="onebot-webqq-webqq__profile-card-fields">
             <div
               v-for="field in section.fields"
               :key="`${section.group}:${field.label}`"
               :class="{ 'is-editing': editingField === field.editKey }"
             >
               <dt>{{ field.label }}</dt>
-              <dd v-if="editingField === field.editKey && field.editKey" class="webqq-profile-card-field-editor">
+              <dd v-if="editingField === field.editKey && field.editKey" class="onebot-webqq-webqq__profile-card-field-editor">
                 <div
                   v-if="field.editKey === 'sex'"
                   ref="sexSelectRef"
-                  class="webqq-profile-card-select"
+                  class="onebot-webqq-webqq__profile-card-select"
                   :class="{ 'is-open': sexSelectOpen }"
                 >
                   <button
                     type="button"
-                    class="webqq-profile-card-select-trigger"
+                    class="onebot-webqq-webqq__profile-card-select-trigger"
                     :disabled="savingField != null"
                     aria-haspopup="listbox"
                     :aria-expanded="sexSelectOpen"
@@ -94,7 +94,7 @@
                   </button>
                   <div
                     v-if="sexSelectOpen"
-                    class="webqq-profile-card-select-menu"
+                    class="onebot-webqq-webqq__profile-card-select-menu"
                     role="listbox"
                     aria-label="性别选项"
                   >
@@ -102,7 +102,7 @@
                       v-for="option in sexOptions"
                       :key="option.value"
                       type="button"
-                      class="webqq-profile-card-select-option"
+                      class="onebot-webqq-webqq__profile-card-select-option"
                       :class="{ 'is-active': editValue === option.value }"
                       role="option"
                       :aria-selected="editValue === option.value"
@@ -121,11 +121,11 @@
                 />
               </dd>
               <dd v-else :class="{ 'is-empty': !field.value }">{{ field.value || '未设置' }}</dd>
-              <span v-if="field.editKey" class="webqq-profile-card-field-actions">
+              <span v-if="field.editKey" class="onebot-webqq-webqq__profile-card-field-actions">
                 <template v-if="editingField === field.editKey">
                   <button
                     type="button"
-                    class="webqq-profile-card-field-action"
+                    class="onebot-webqq-webqq__profile-card-field-action"
                     :disabled="savingField != null"
                     :aria-label="`取消编辑${field.label}`"
                     @click="cancelFieldEdit"
@@ -134,7 +134,7 @@
                   </button>
                   <button
                     type="button"
-                    class="webqq-profile-card-field-action is-confirm"
+                    class="onebot-webqq-webqq__profile-card-field-action is-confirm"
                     :disabled="savingField != null || (field.editKey === 'nickname' && !editValue.trim())"
                     :aria-label="`保存${field.label}`"
                     @click="saveFieldEdit(field.editKey)"
@@ -145,7 +145,7 @@
                 <button
                   v-else
                   type="button"
-                  class="webqq-profile-card-field-action"
+                  class="onebot-webqq-webqq__profile-card-field-action"
                   :disabled="savingField != null"
                   :aria-label="`编辑${field.label}`"
                   @click="startFieldEdit(field.editKey)"

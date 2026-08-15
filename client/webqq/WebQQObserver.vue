@@ -78,7 +78,7 @@
           </div>
           <div class="onebot-webqq-webqq__chat-header-actions">
             <div v-if="currentChat" class="onebot-webqq-webqq__chat-search-shell" :class="{ 'is-expanded': messageSearchOpen }">
-              <button v-if="!messageSearchOpen" ref="messageSearchTrigger" class="webqq-chat-search-trigger" type="button" aria-label="查找聊天记录" @click="openMessageSearch">
+              <button v-if="!messageSearchOpen" ref="messageSearchTrigger" class="onebot-webqq-webqq__chat-search-trigger" type="button" aria-label="查找聊天记录" @click="openMessageSearch">
                 <IconSearch class="onebot-webqq-webqq__header-icon" :size="20" aria-hidden="true" />
               </button>
               <WebQQMessageSearchPage
@@ -159,8 +159,8 @@
           <div v-if="selectionMode" class="onebot-webqq-webqq__selection-bar" role="toolbar" aria-label="消息多选操作">
             <strong class="onebot-webqq-webqq__selection-bar-count">已选 {{ selectedMessageIds.length }} 条</strong>
             <div class="onebot-webqq-webqq__selection-bar-actions">
-              <Button variant="outline" class="webqq-selection-bar-button" @click="exitSelection">取消</Button>
-              <Button class="webqq-selection-bar-button" :disabled="!selectedMessageIds.length" @click="handleSelectionForward">
+              <Button variant="outline" class="onebot-webqq-webqq__selection-bar-button" @click="exitSelection">取消</Button>
+              <Button class="onebot-webqq-webqq__selection-bar-button" :disabled="!selectedMessageIds.length" @click="handleSelectionForward">
                 <IconShare3 :size="16" aria-hidden="true" />
                 合并转发
               </Button>
@@ -357,6 +357,7 @@ import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMess
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
 import { localDateToMessageSearchRange } from './utils/message-search-date'
+import { filterWebQQSearchMessages } from '../../src/webqq/message-search'
 import {
   createEmptyWebQQComposerDraft,
   detectWebQQMentionTrigger,
@@ -1358,7 +1359,7 @@ function closeMessageSearch() {
   // 必须等 DOM 更新和整条指针事件链结束后再恢复焦点，否则 Chrome 与 Firefox 最终仍会把焦点落到 body。
   void nextTick(() => window.setTimeout(() => {
     if (!props.visible || !messageSearchTrigger.value?.isConnected) return
-    messageSearchTrigger.value.focus()
+    messageSearchTrigger.value.focus({ preventScroll: true })
   }, 50))
 }
 
@@ -1384,28 +1385,54 @@ async function requestMessageSearch(
   messageSearchLoading.value = true
   messageSearchErrorText.value = ''
   if (!more) resetMessageSearchResults()
+  let localMatches: WebQQMessage[] = []
   try {
-    const result: WebQQMessageSearchResult = await searchWebQQMessages({
-      type: chat.type,
-      peerId: chat.peerId,
-      keyword,
-      ...dateRange,
-      ...(more && messageSearchNextBeforeSequence.value ? { beforeSequence: messageSearchNextBeforeSequence.value } : {}),
-    })
+    // 浏览器后端的持久化缓存只在前端；当前会话内存里的消息也可能比上次落盘更新。
+    // 首搜先并入这些本地命中，再让服务端继续翻 OneBot / Koishi 缓存。
+    let localScanned = 0
+    if (!more) {
+      const cached = await loadCachedWebQQMessages(chat.type, chat.peerId)
+      const localPool = mergeMessages(cached, messages.value)
+      localMatches = filterWebQQSearchMessages(localPool, { keyword, ...dateRange })
+      localScanned = localPool.length
+      // 有本地命中就先上屏，避免 OneBot 历史接口卡住时界面一直停在「搜索中...」。
+      if (localMatches.length) {
+        messageSearchResults.value = localMatches
+        messageSearchScannedCount.value = localScanned
+        messageSearchSearched.value = true
+      }
+    }
+    const result: WebQQMessageSearchResult = await Promise.race([
+      searchWebQQMessages({
+        type: chat.type,
+        peerId: chat.peerId,
+        keyword,
+        ...dateRange,
+        ...(more && messageSearchNextBeforeSequence.value ? { beforeSequence: messageSearchNextBeforeSequence.value } : {}),
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('查找聊天记录超时')), 12000)
+      }),
+    ])
     if (serial !== messageSearchSerial || `${currentChat.value?.type}:${currentChat.value?.peerId}` !== expectedChatKey) return
-    messageSearchResults.value = more
+    const mergedMessages = more
       ? mergeMessages(result.messages, messageSearchResults.value)
-      : result.messages
+      : mergeMessages(localMatches, result.messages)
+    messageSearchResults.value = mergedMessages
     messageSearchScannedCount.value = more
       ? messageSearchScannedCount.value + result.scannedCount
-      : result.scannedCount
+      : result.scannedCount + localScanned
     messageSearchExhausted.value = result.exhausted
     messageSearchNextBeforeSequence.value = result.nextBeforeSequence || ''
     messageSearchSearched.value = true
   } catch (error) {
     if (serial !== messageSearchSerial) return
-    messageSearchErrorText.value = error instanceof Error ? error.message : '查找聊天记录失败'
-    messageSearchSearched.value = true
+    if (localMatches.length) {
+      messageSearchSearched.value = true
+    } else {
+      messageSearchErrorText.value = error instanceof Error ? error.message : '查找聊天记录失败'
+      messageSearchSearched.value = true
+    }
   } finally {
     if (serial === messageSearchSerial) messageSearchLoading.value = false
   }
