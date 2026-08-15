@@ -936,7 +936,7 @@ async function sendCurrentWebQQMessage() {
     errorText.value = error instanceof Error ? error.message : '发送消息失败'
   } finally {
     sendingWebQQMessage.value = false
-    // 与 onebot-sandbox 保持一致：必须等 disabled 解除后再恢复焦点，否则浏览器会忽略 focus。
+    // 与 chatluna-sandbox 保持一致：必须等 disabled 解除后再恢复焦点，否则浏览器会忽略 focus。
     await nextTick()
     const activeChat = currentChat.value
     if (activeChat && `${activeChat.type}:${activeChat.peerId}` === requestChatKey && sendTextInput.value === requestInput) {

@@ -116,7 +116,7 @@ export function fitWebQQBubbleToInlineLines(bubble: HTMLElement) {
   const contentWidth = Math.max(maxLineWidth, reactionWidth)
   if (!contentWidth) return
 
-  // onebot-sandbox 依靠 reaction 的固有宽度撑开 column flex 气泡；这里的纯文本拟合会写死 width，
+  // chatluna-sandbox 依靠 reaction 的固有宽度撑开 column flex 气泡；这里的纯文本拟合会写死 width，
   // 因此必须把 reaction 宽度纳入同一次测量，避免短文本把贴表情胶囊挤出消息气泡。
   setBubbleContentWidth(bubble, contentWidth, horizontalInset)
 }

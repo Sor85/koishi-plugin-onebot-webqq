@@ -1764,7 +1764,7 @@ describe('webqq observer view', () => {
     vi.unstubAllGlobals()
   })
 
-  it('lets TIM reactions widen a fitted short-text bubble like onebot-sandbox', () => {
+  it('lets TIM reactions widen a fitted short-text bubble like chatluna-sandbox', () => {
     const inlineRun = {} as HTMLElement
     const reactions = {
       getBoundingClientRect: vi.fn(() => ({ width: 86.4 })),
