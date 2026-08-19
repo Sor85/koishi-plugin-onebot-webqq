@@ -17,7 +17,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 <template>
   <ContextMenuPortal>
     <ContextMenuContent
-      data-slot="context-menu-content"
+      data-slot="onebot-webqq-context-menu-content"
       v-bind="{ ...$attrs, ...forwarded }"
       :class="cn('webqq-context-menu-content', `is-color-${resolvedWebQQColorMode}`, props.class)"
     >

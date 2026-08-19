@@ -40,11 +40,13 @@
 body[data-onebot-webqq-frosted] :is(
   .webqq-dialog-content,
   .webqq-context-menu-content,
-  [data-slot="context-menu-content"],
-  [data-slot="context-menu-sub-content"]
+  [data-slot="onebot-webqq-context-menu-content"],
+  [data-slot="onebot-webqq-context-menu-sub-content"]
 ) {
   border-color: color-mix(in srgb, var(--webqq-secondary-outline) 64%, transparent);
-  background: color-mix(in srgb, var(--webqq-panel) 92%, transparent);
+  // 菜单位于观察窗 ::before 的合成层之上；92% 填充会把已模糊的背景再次盖成近乎实心，视觉上只剩透明白层。
+  // 降到 72% 保留背景纹理，让 backdrop-filter 的雾化边缘在 Chromium 与 Firefox 中都可见。
+  background: color-mix(in srgb, var(--webqq-panel) 72%, transparent);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }

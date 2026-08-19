@@ -115,6 +115,17 @@ describe('chat capsule styles', () => {
     expect(webqqChatStyle).toMatch(/\.onebot-webqq-webqq__send-image-preview video\s*\{[\s\S]*?pointer-events:\s*none/)
   })
 
+  it('portals the submenu beyond the root menu backdrop boundary', () => {
+    const menuBody = webqqInteractionsStyle.slice(
+      webqqInteractionsStyle.indexOf('.webqq-context-menu-content {'),
+      webqqInteractionsStyle.indexOf('.webqq-context-menu-item {'),
+    )
+
+    expect(contextMenuSubContentView).toContain("import { ContextMenuPortal, ContextMenuSubContent, useForwardPropsEmits } from 'reka-ui'")
+    expect(contextMenuSubContentView).toContain('<ContextMenuPortal>')
+    expect(menuBody).toContain('overflow: hidden')
+  })
+
   it('keeps portalled context menus above the WebQQ shell', () => {
     const shellZIndex = Number(ruleBody('.onebot-webqq-webqq').match(/z-index:\s*(\d+)/)?.[1])
     const menuZIndex = Number(webqqInteractionsStyle.match(/\.webqq-context-menu-content\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
@@ -1027,11 +1038,11 @@ describe('chat capsule styles', () => {
     const frostedSurfaceRule = webqqInteractionsStyle.slice(webqqInteractionsStyle.indexOf('body[data-onebot-webqq-frosted] :is(')).split('}')[0]
     const solidSecondaryPageRule = webqqInteractionsStyle.slice(webqqInteractionsStyle.indexOf('.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page.is-plain {')).split('}')[0]
 
-    expect(frostedSurfaceRule).toContain('background: color-mix(in srgb, var(--webqq-panel) 92%, transparent)')
+    expect(frostedSurfaceRule).toContain('background: color-mix(in srgb, var(--webqq-panel) 72%, transparent)')
     expect(frostedSurfaceRule).toContain('backdrop-filter: saturate(180%) blur(20px)')
     expect(frostedSurfaceRule).toContain('.webqq-dialog-content')
     expect(frostedSurfaceRule).toContain('.webqq-context-menu-content')
-    expect(frostedSurfaceRule).toContain('[data-slot="context-menu-content"]')
+    expect(frostedSurfaceRule).toContain('[data-slot="onebot-webqq-context-menu-content"]')
     expect(webqqInteractionsStyle).toContain('body[data-onebot-webqq-frosted] .webqq-dialog-overlay')
     expect(solidSecondaryPageRule).toContain('border-color: var(--webqq-secondary-outline)')
     expect(solidSecondaryPageRule).toContain('background: var(--webqq-panel)')

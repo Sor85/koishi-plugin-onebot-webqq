@@ -13,7 +13,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
 <template>
   <ContextMenuItem
-    data-slot="context-menu-item"
+    data-slot="onebot-webqq-context-menu-item"
     v-bind="forwarded"
     :class="cn('webqq-context-menu-item', props.class)"
   >
