@@ -44,7 +44,11 @@
 
     <div
       v-if="datePopoverOpen"
+      ref="datePopover"
+      popover="manual"
       class="onebot-webqq-webqq__message-search-date-popover"
+      :class="enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain'"
+      :style="datePopoverStyle"
       data-onebot-webqq-message-search-date
       @pointerdown.stop
     >
@@ -170,7 +174,9 @@
 import { withProxy } from '@koishijs/client'
 import { IconCalendar, IconChevronDown, IconChevronLeft, IconChevronRight, IconSearch, IconX } from '@tabler/icons-vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { enableWebQQFrostedGlass } from '../settings'
 import type { WebQQMessage } from '../types'
+import { showWebQQPopover } from '../utils/webqq-popover'
 import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
 
 interface CalendarDay {
@@ -203,6 +209,8 @@ const emit = defineEmits<{
 
 const searchRoot = ref<HTMLElement>()
 const searchInput = ref<HTMLInputElement>()
+const datePopover = ref<HTMLElement>()
+const datePopoverStyle = ref<Record<string, string>>({})
 const datePopoverOpen = ref(false)
 const monthMenuOpen = ref(false)
 const yearMenuOpen = ref(false)
@@ -250,16 +258,45 @@ watch(() => props.localDate, (value) => {
   displayMonth.value = parsed.getMonth() + 1
 }, { immediate: true })
 
+watch(datePopoverOpen, async (open) => {
+  if (!open) {
+    monthMenuOpen.value = false
+    yearMenuOpen.value = false
+    return
+  }
+  await nextTick()
+  updateDatePopoverPosition()
+  await showWebQQPopover(datePopover.value)
+})
+
 onMounted(() => {
   document.addEventListener('pointerdown', closeOnOutsidePointer)
+  window.addEventListener('resize', updateDatePopoverPosition)
   // 展开动画期间外壳还是 32px，默认 focus 会 scrollIntoView，把 overflow 窗口整块推走。
   nextTick(() => searchInput.value?.focus({ preventScroll: true }))
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  window.removeEventListener('resize', updateDatePopoverPosition)
   if (debounceTimer) clearTimeout(debounceTimer)
 })
+
+function updateDatePopoverPosition() {
+  const anchor = searchRoot.value?.getBoundingClientRect()
+  if (!anchor) return
+  const width = Math.min(250, window.innerWidth - 24)
+  const left = Math.min(
+    Math.max(12, anchor.right - width),
+    window.innerWidth - width - 12,
+  )
+  datePopoverStyle.value = {
+    top: `${anchor.bottom + 10}px`,
+    left: `${left}px`,
+    right: 'auto',
+    width: `${width}px`,
+  }
+}
 
 function padDatePart(value: number) {
   return String(value).padStart(2, '0')

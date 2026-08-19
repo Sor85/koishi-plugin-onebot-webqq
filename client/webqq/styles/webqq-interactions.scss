@@ -277,6 +277,13 @@ body[data-onebot-webqq-frosted] [data-slot="dialog-overlay"] {
   border-style: solid;
 }
 
+.onebot-webqq-webqq__message-search-date-popover[popover] {
+  inset: unset;
+  margin: 0;
+  overflow: visible;
+  color: inherit;
+}
+
 .webqq-dialog-layer[popover] {
   inset: 0;
   width: auto;
@@ -477,8 +484,19 @@ body:not([data-onebot-webqq-frosted]) .onebot-webqq-webqq__portal-page > .onebot
   box-shadow: 0 18px 42px rgb(15 23 42 / 18%);
 }
 
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message-search-date-popover,
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message-search-calendar-menu {
+.onebot-webqq-webqq__message-search-date-popover[popover] {
+  position: fixed;
+  inset: unset;
+  margin: 0;
+  overflow: visible;
+}
+
+// 必须写 &.is-frosted：本段嵌在 .onebot-webqq-webqq 里，再写完整窗口选择器会变成
+// “窗口里的窗口”，规则永远匹配不到。
+&.is-frosted .onebot-webqq-webqq__message-search-date-popover,
+&.is-frosted .onebot-webqq-webqq__message-search-calendar-menu,
+.onebot-webqq-webqq__message-search-date-popover.is-frosted,
+.onebot-webqq-webqq__message-search-calendar-menu.is-frosted {
   border-color: color-mix(in srgb, var(--webqq-border, #d9e1ea) 64%, transparent);
   background: color-mix(in srgb, var(--webqq-panel, #fff) 92%, transparent);
   backdrop-filter: saturate(180%) blur(20px);

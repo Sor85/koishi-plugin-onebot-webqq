@@ -1036,7 +1036,10 @@ describe('chat capsule styles', () => {
     expect(solidSecondaryPageRule).toContain('border-color: var(--webqq-secondary-outline)')
     expect(solidSecondaryPageRule).toContain('background: var(--webqq-panel)')
     expect(solidSecondaryPageRule).toContain('backdrop-filter: none')
-    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message-search-date-popover', webqqInteractionsStyle)).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(webqqInteractionsStyle).toContain('&.is-frosted .onebot-webqq-webqq__message-search-date-popover')
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__message-search-date-popover.is-frosted')
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__message-search-date-popover[popover]')
+    expect(webqqInteractionsStyle.slice(webqqInteractionsStyle.indexOf('&.is-frosted .onebot-webqq-webqq__message-search-date-popover')).slice(0, 800)).toContain('backdrop-filter: saturate(180%) blur(20px)')
   })
 
   it('uses inline SVG for WebQQ tab icons instead of pseudo elements', () => {

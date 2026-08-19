@@ -530,6 +530,7 @@ function closeWebQQOnOutsideClick(event: PointerEvent) {
     '.onebot-webqq-webqq__notice-menu',
     '.webqq-dialog-overlay',
     '.webqq-dialog-content',
+    '.onebot-webqq-webqq__message-search-date-popover',
     '.onebot-webqq-webqq__scrollbar-overlay',
   ].join(', '))) return
   webQQOpen.value = false
