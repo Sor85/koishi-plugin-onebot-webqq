@@ -370,11 +370,14 @@ body:not([data-onebot-webqq-frosted]) .onebot-webqq-webqq__portal-page > .onebot
   width: 32px;
   min-width: 0;
   flex: none;
+  overflow: clip;
+  overflow-clip-margin: 4px;
   transition: width 180ms ease;
 }
 
 .onebot-webqq-webqq__chat-search-shell.is-expanded {
   width: clamp(220px, 32vw, 320px);
+  margin-right: 8px;
 }
 
 .onebot-webqq-webqq__chat-header .onebot-webqq-webqq__chat-search-trigger {
