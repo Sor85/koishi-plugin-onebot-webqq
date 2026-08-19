@@ -36,6 +36,7 @@
         <Teleport to="body">
           <WebQQNoticeMenu
             v-if="noticeOpen"
+            popover="manual"
             :class="desktopNoticeMenuClass"
             :style="desktopNoticeMenuStyle"
             v-model:tab="noticeMenuTabModel"

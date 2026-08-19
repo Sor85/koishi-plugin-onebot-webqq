@@ -4,6 +4,7 @@ import { IconX } from '@tabler/icons-vue'
 import { inject, nextTick, ref, watch } from 'vue'
 import { cn } from '../../../lib/utils'
 import { resolvedWebQQColorMode } from '../../../webqq/settings'
+import { showWebQQPopover } from '../../../webqq/utils/webqq-popover'
 import { vWebqqScrollbar } from '../../../webqq/utils/webqq-scrollbar'
 import { webQQDialogContextKey } from './dialog-context'
 
@@ -13,6 +14,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>()
 const dialog = inject(webQQDialogContextKey)
 if (!dialog) throw new Error('DialogContent must be used inside Dialog')
 
+const layer = ref<HTMLElement | null>(null)
 const content = ref<HTMLElement | null>(null)
 const isOpen = dialog.open
 let previousFocus: HTMLElement | null = null
@@ -21,6 +23,7 @@ watch(isOpen, async (open) => {
   if (open) {
     previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
     await nextTick()
+    await showWebQQPopover(layer.value ?? undefined)
     content.value?.focus({ preventScroll: true })
     return
   }
@@ -33,6 +36,8 @@ watch(isOpen, async (open) => {
   <Teleport to="body">
     <div
       v-if="isOpen"
+      ref="layer"
+      popover="manual"
       data-state="open"
       data-slot="dialog-overlay"
       class="webqq-dialog-layer webqq-dialog-overlay"

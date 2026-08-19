@@ -1,5 +1,5 @@
 <template>
-  <div class="onebot-webqq-webqq__notice-menu">
+  <div ref="rootRef" class="onebot-webqq-webqq__notice-menu">
     <div class="onebot-webqq-webqq__notice-tabs">
       <button :class="{ 'is-active': tab === 'friends' }" type="button" @click="emit('update:tab', 'friends')">好友申请</button>
       <button :class="{ 'is-active': tab === 'groups' }" type="button" @click="emit('update:tab', 'groups')">群通知</button>
@@ -34,13 +34,22 @@
 </template>
 
 <script lang="ts" setup>
+import { nextTick, onMounted, ref } from 'vue'
 import type { WebQQNotice } from '../types'
 import {
   canHandleNotice,
   formatNoticeComment,
   getHandledNoticeStatusText,
 } from '../utils/webqq-notice-view'
+import { showWebQQPopover } from '../utils/webqq-popover'
 import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
+
+const rootRef = ref<HTMLElement>()
+
+onMounted(async () => {
+  await nextTick()
+  if (rootRef.value?.hasAttribute('popover')) await showWebQQPopover(rootRef.value)
+})
 
 defineProps<{
   tab: 'friends' | 'groups'

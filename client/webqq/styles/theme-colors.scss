@@ -6,9 +6,9 @@
 
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar,
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__tabs-row {
+  // 一级区域在毛玻璃外观下只保留半透明叠层，禁止 backdrop-filter：
+  // 这些区域一旦成为 Backdrop Root，内部控件与其上浮层的毛玻璃会全部静默失效（ADR 0002）。
   background: rgba(244, 246, 248, 0.02);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq.is-plain .onebot-webqq-webqq__tabs button.is-active,
@@ -77,9 +77,20 @@
   position: absolute;
   inset: 0 0 auto;
   z-index: 2;
+  // 顶栏盖在消息列表上，必须糊住滚上来的气泡。模糊挂在 ::before，
+  // 顶栏自己不成为 Backdrop Root，搜索结果下拉才能继续采样消息（ADR 0002）。
+  background: transparent;
+}
+
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgba(248, 250, 252, 0.92);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
+  pointer-events: none;
 }
 
 .onebot-webqq-webqq.is-plain .onebot-webqq-webqq__messages {
@@ -103,8 +114,6 @@
 
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-info {
   background: rgba(248, 250, 252, 0.34);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq.is-plain .onebot-webqq-webqq__notice-actions button,
@@ -132,8 +141,8 @@
 
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-menu,
 .onebot-webqq-webqq__notice-menu.is-frosted {
-  // 菜单必须保持 0.92：侧栏/顶栏已有 backdrop-filter 根时，子级毛玻璃采不到列表，
-  // 0.72 会退化成能看清水印的半透明。桌面菜单已 Teleport 到 body，模糊才能作用到背景。
+  // 工作区层已禁用 backdrop-filter（ADR 0002），菜单作为浮层可以真正采样到窗口内容。
+  // 桌面菜单仍 Teleport 到 body，避免被观察窗 overflow:hidden 裁切。
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(217, 225, 234, 0.78);
   backdrop-filter: saturate(180%) blur(20px);
@@ -143,10 +152,10 @@
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card,
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-announcement,
 .onebot-webqq-webqq__notice-menu.is-frosted .onebot-webqq-webqq__notice-card {
+  // 通知卡片嵌在已有 blur 的菜单里，子级 backdrop-filter 采不到菜单外的内容（ADR 0002），
+  // 只保留半透明叠层，模糊交给菜单这一层浮层。
   background: rgba(255, 255, 255, 0.72);
   border-color: rgba(217, 225, 234, 0.78);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq.is-plain .onebot-webqq-webqq__bubble {
@@ -184,6 +193,14 @@
   background: var(--webqq-bg);
   border-color: var(--webqq-border);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.onebot-webqq-webqq.is-frosted.is-color-dark {
+  background: transparent;
+}
+
+.onebot-webqq-webqq.is-frosted.is-color-dark::before {
+  background: color-mix(in srgb, var(--webqq-bg) 78%, transparent);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__sidebar,
@@ -242,6 +259,14 @@
 
 .onebot-webqq-webqq.is-plain.is-color-dark .onebot-webqq-webqq__chat-header {
   background: var(--webqq-bg);
+}
+
+.onebot-webqq-webqq.is-frosted.is-color-dark .onebot-webqq-webqq__chat-header {
+  background: transparent;
+}
+
+.onebot-webqq-webqq.is-frosted.is-color-dark .onebot-webqq-webqq__chat-header::before {
+  background: color-mix(in srgb, var(--webqq-bg) 92%, transparent);
 }
 
 .onebot-webqq-webqq.is-color-dark .onebot-webqq-webqq__chat-header span,
@@ -334,6 +359,16 @@
   background: var(--webqq-panel);
   border-color: var(--webqq-border);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+// 暗色实体规则写在雾化透明底之后，必须再覆写一次：否则发送栏会变回不透明面板色，
+// ::before 的毛玻璃被实心底挡住。
+.onebot-webqq-webqq.is-frosted.is-color-dark .onebot-webqq-webqq__send {
+  background: transparent;
+}
+
+.onebot-webqq-webqq.is-frosted.is-color-dark .onebot-webqq-webqq__send::before {
+  background: color-mix(in srgb, var(--webqq-panel) 62%, transparent);
 }
 
 .onebot-webqq.is-color-dark {

@@ -5,10 +5,11 @@
   display: flex;
   flex-direction: column;
   border-left: 1px solid rgba(229, 231, 235, 0.58);
+  // 一级区域禁止 backdrop-filter：否则群信息栏成为 Backdrop Root，
+  // 覆盖其上的右键菜单、资料卡等浮层毛玻璃全部失效（ADR 0002）。
   background:
     radial-gradient(circle at 18% 12%, rgba(167, 139, 250, 0.12), transparent 34%),
     linear-gradient(135deg, rgba(245, 241, 255, 0.96), rgba(255, 246, 250, 0.96));
-  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq__group-info-header {

@@ -24,7 +24,6 @@
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 24px;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
-  backdrop-filter: saturate(180%) blur(20px);
   pointer-events: auto;
 }
 
@@ -67,17 +66,29 @@
   border: 1px solid #d9e1ea;
   border-radius: 18px;
   box-shadow: 0 18px 52px rgba(15, 23, 42, 0.18);
-  backdrop-filter: none;
 }
 
+// 观察窗是浮在控制台上的窗口，外壳必须模糊控制台，否则 78% 半透明会穿帮成能看清背后文字。
+// 模糊挂在 ::before：外壳自己声明 backdrop-filter 会成为 Backdrop Root，
+// Teleport 到 body 的右键菜单/资料卡就采不到聊天内容（ADR 0002）。
 .onebot-webqq-webqq.is-frosted {
   color: #172033;
-  background: rgba(244, 246, 248, 0.78);
+  background: transparent;
   border: 1px solid rgba(217, 225, 234, 0.78);
   border-radius: 18px;
   box-shadow: 0 18px 52px rgba(15, 23, 42, 0.18);
+}
+
+.onebot-webqq-webqq.is-frosted::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: rgba(244, 246, 248, 0.78);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
+  pointer-events: none;
 }
 
 .onebot-webqq-webqq [data-onebot-webqq-scrollbar="true"] {
@@ -139,7 +150,6 @@
   flex-direction: column;
   border-right: 1px solid rgba(229, 231, 235, 0.58);
   background: transparent;
-  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq__tabs-row {
@@ -153,7 +163,6 @@
   border-bottom: 1px solid rgba(229, 231, 235, 0.58);
   border-radius: 24px 0 0 0;
   background: transparent;
-  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq__tabs {
@@ -238,8 +247,9 @@
   transform: translateX(-50%);
 }
 
-// 桌面通知菜单必须 Teleport 到 body。侧栏、顶栏和观察窗都建了 backdrop-filter
-// 根，菜单留在树内时毛玻璃采不到会话列表/聊天区，只会剩下半透明白底。
+// 桌面通知菜单必须 Teleport 到 body：菜单比侧栏宽，留在树内会被观察窗
+// overflow:hidden 裁切；Teleport 后 z-index 也必须高于观察窗根层（10001）。
+// 工作区层已禁用 backdrop-filter（ADR 0002），菜单的毛玻璃才能采样到窗口内容。
 .onebot-webqq-webqq__notice-menu--desktop {
   position: fixed;
   z-index: 10120;

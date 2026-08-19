@@ -206,6 +206,12 @@ describe('chat capsule styles', () => {
     expect(profileZIndex).toBeGreaterThan(shellZIndex)
     expect(webqqProfileCardView).toContain('onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__profile-card-page')
     expect(webqqEmojiPickerView).toContain('onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__emoji-picker-page')
+    expect(webqqProfileCardView).toContain('popover="manual"')
+    expect(webqqEmojiPickerView).toContain('popover="manual"')
+    expect(webqqProfileCardView).toContain("enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain'")
+    expect(webqqEmojiPickerView).toContain("enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain'")
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__portal-page[popover]')
+    expect(dialogContentView).toContain('popover="manual"')
   })
 
   it('centers the profile avatar above field sections and styles inline edit actions', () => {
@@ -991,13 +997,46 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__notice-menu--desktop')).toContain('z-index: 10120')
   })
 
-  it('uses iOS-like material blur on WebQQ glass surfaces', () => {
-    expect(ruleBody('.onebot-webqq-webqq')).toContain('backdrop-filter: saturate(180%) blur(20px)')
-    expect(ruleBody('.onebot-webqq-webqq__sidebar')).toContain('backdrop-filter: saturate(180%) blur(20px)')
-    expect(ruleBody('.onebot-webqq-webqq__tabs-row')).toContain('backdrop-filter: saturate(180%) blur(20px)')
+  it('keeps material blur on floating WebQQ surfaces only', () => {
     expect(ruleBody('.onebot-webqq-webqq__notice-menu')).toContain('backdrop-filter: saturate(180%) blur(20px)')
-    expect(ruleBody('.onebot-webqq-webqq__chat')).toContain('backdrop-filter: saturate(180%) blur(20px)')
-    expect(ruleBody('.onebot-webqq-webqq__group-info')).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(ruleBody('.onebot-webqq-webqq__scroll-bottom')).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(webqqChatStyle).toContain('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__send::before')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__send::before', webqqChatStyle)).toContain('backdrop-filter: saturate(180%) blur(22px)')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__mention-menu', webqqChatStyle)).toContain('backdrop-filter: saturate(180%) blur(20px)')
+  })
+
+  it('does not declare backdrop-filter on the window host or primary regions', () => {
+    // 外壳本体或一级区域出现 backdrop-filter 会成为 Backdrop Root，
+    // 静默杀死其内部控件与其上浮层的全部毛玻璃（ADR 0002）。
+    // 观察窗对控制台的模糊必须写在 is-frosted::before，不能写在宿主上。
+    expect(ruleBody('.onebot-webqq-webqq')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq.is-plain')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq__sidebar')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq__tabs-row')).not.toMatch(/backdrop-filter\s*:/)
+    expect(webqqGroupInfoStyle).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq__chat')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-info')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted::before')).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header::before')).toContain('backdrop-filter: saturate(180%) blur(20px)')
+  })
+
+  it('frosts teleported menus and dialogs from the body flag', () => {
+    const frostedSurfaceRule = webqqInteractionsStyle.slice(webqqInteractionsStyle.indexOf('body[data-onebot-webqq-frosted] :is(')).split('}')[0]
+    const solidSecondaryPageRule = webqqInteractionsStyle.slice(webqqInteractionsStyle.indexOf('.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page.is-plain {')).split('}')[0]
+
+    expect(frostedSurfaceRule).toContain('background: color-mix(in srgb, var(--webqq-panel) 92%, transparent)')
+    expect(frostedSurfaceRule).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(frostedSurfaceRule).toContain('.webqq-dialog-content')
+    expect(frostedSurfaceRule).toContain('.webqq-context-menu-content')
+    expect(frostedSurfaceRule).toContain('[data-slot="context-menu-content"]')
+    expect(webqqInteractionsStyle).toContain('body[data-onebot-webqq-frosted] .webqq-dialog-overlay')
+    expect(solidSecondaryPageRule).toContain('border-color: var(--webqq-secondary-outline)')
+    expect(solidSecondaryPageRule).toContain('background: var(--webqq-panel)')
+    expect(solidSecondaryPageRule).toContain('backdrop-filter: none')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message-search-date-popover', webqqInteractionsStyle)).toContain('backdrop-filter: saturate(180%) blur(20px)')
   })
 
   it('uses inline SVG for WebQQ tab icons instead of pseudo elements', () => {
@@ -1127,24 +1166,25 @@ describe('chat capsule styles', () => {
   })
 
   it('makes the default WebQQ surface frosted glass', () => {
-    expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('background: rgba(244, 246, 248, 0.78)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('border: 1px solid rgba(217, 225, 234, 0.78)')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('border-radius: 18px')
-    expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('backdrop-filter: saturate(180%) blur(20px)')
-    expect(ruleBody('.onebot-webqq-webqq.is-frosted')).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
-    expect(style).toContain(`.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar,
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__tabs-row {
-  background: rgba(244, 246, 248, 0.02)`)
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted')).not.toMatch(/backdrop-filter\s*:/)
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted::before')).toContain('background: rgba(244, 246, 248, 0.78)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted::before')).toContain('backdrop-filter: saturate(180%) blur(20px)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted::before')).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar', themeColorsStyle)).toContain('background: rgba(244, 246, 248, 0.02)')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__sidebar', themeColorsStyle)).not.toMatch(/backdrop-filter\s*:/)
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat')).toContain('background: transparent')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat')).toContain('backdrop-filter: none')
-    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header')).toContain('background: rgba(248, 250, 252, 0.92)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header')).toContain('background: transparent')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header::before')).toContain('background: rgba(248, 250, 252, 0.92)')
+    expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__chat-header::before')).toContain('backdrop-filter: saturate(180%) blur(20px)')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-info')).toContain('background: rgba(248, 250, 252, 0.34)')
     expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-menu')).toContain('background: rgba(255, 255, 255, 0.92)')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__notice-menu.is-frosted')).toContain('background: rgba(255, 255, 255, 0.92)')
-    expect(style).toContain(`.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card,
-.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__group-announcement,
-.onebot-webqq-webqq__notice-menu.is-frosted .onebot-webqq-webqq__notice-card {
-  background: rgba(255, 255, 255, 0.72)`)
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card', themeColorsStyle)).toContain('background: rgba(255, 255, 255, 0.72)')
+    expect(ruleBodyIncluding('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__notice-card', themeColorsStyle)).not.toMatch(/backdrop-filter\s*:/)
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__bubble')).toContain('background: rgba(255, 255, 255, 0.9)')
     expect(ruleBody('.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__message.is-outgoing .onebot-webqq-webqq__bubble')).toContain('background: var(--onebot-webqq-webqq-accent-surface)')
   })

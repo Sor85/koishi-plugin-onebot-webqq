@@ -3,7 +3,8 @@
     <section
       v-if="open && model"
       ref="panelRef"
-      :class="['onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__profile-card-page', `is-color-${resolvedWebQQColorMode}`]"
+      popover="manual"
+      :class="['onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__profile-card-page', enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain', `is-color-${resolvedWebQQColorMode}`]"
       :style="panelStyle"
       aria-label="查看资料"
     >
@@ -166,8 +167,9 @@ import { withProxy } from '@koishijs/client'
 import { IconCamera, IconCheck, IconChevronDown, IconPencil, IconX } from '@tabler/icons-vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Input } from '../../components/ui/input'
-import { resolvedWebQQColorMode } from '../settings'
+import { enableWebQQFrostedGlass, resolvedWebQQColorMode } from '../settings'
 import { groupProfileCardFields, type ProfileCardEditableField, type ProfileCardModel } from '../utils/profile-card'
+import { showWebQQPopover } from '../utils/webqq-popover'
 import { clampFloatingPanelPosition, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
 import type { WebQQSelfProfileUpdate } from '../types'
 
@@ -364,6 +366,7 @@ function saveFieldEdit(field: ProfileCardEditableField) {
 }
 
 onMounted(() => {
+  void showWebQQPopover(panelRef.value)
   document.addEventListener('pointerdown', closeOnOutsidePointer)
   document.addEventListener('pointermove', moveDrag)
   document.addEventListener('pointerup', stopDrag)

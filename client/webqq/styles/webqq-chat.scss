@@ -1,11 +1,13 @@
 .onebot-webqq-webqq__chat {
   position: relative;
+  z-index: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: row;
+  // 一级区域禁止 backdrop-filter：否则聊天区成为 Backdrop Root，
+  // 其内部发送控件与其上浮层的毛玻璃全部失效（ADR 0002）。
   background: rgba(255, 255, 255, 0.44);
-  backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq__chat-content {
@@ -169,7 +171,18 @@
   transform: translateX(-50%);
 }
 
+// 发送胶囊的毛玻璃放在 ::before 伪层：blur 挂在元素本体会让整个发送栏
+// 成为 Backdrop Root，回复草稿、附件片和 @ 菜单等子级的毛玻璃全部静默失效（ADR 0002）。
 .onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__send {
+  background: transparent;
+}
+
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__send::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.62);
   backdrop-filter: saturate(180%) blur(22px);
   -webkit-backdrop-filter: saturate(180%) blur(22px);
@@ -392,6 +405,13 @@
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.onebot-webqq-webqq.is-frosted .onebot-webqq-webqq__mention-menu {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(148, 163, 184, 0.22);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .onebot-webqq-webqq__mention-menu-item {

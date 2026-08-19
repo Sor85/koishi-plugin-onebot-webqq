@@ -15,13 +15,7 @@ WebQQ 界面分为一级工作区和二级面。
 
 实体二级面使用不透明或接近不透明的纯色背景，不通过 `backdrop-filter` 模糊其后方内容。
 
-典型场景包括：
-
-- 添加、编辑、确认等 Dialog；
-- 查看用户或群组资料；
-- 查找聊天记录和日期选择；
-- 右键菜单及其子菜单；
-- 纯色模式下的通知和其他 Portal 浮层。
+典型场景包括关闭毛玻璃外观时的全部二级面：表单对话框、右键菜单、查看资料、贴表情、日期选择器和通知面板。
 
 实现约定：
 
@@ -63,17 +57,15 @@ WebQQ 界面分为一级工作区和二级面。
 
 ## 雾化二级面（Frosted Secondary Surface）
 
-雾化二级面使用半透明背景，并通过 `backdrop-filter` 和 `-webkit-backdrop-filter` 模糊其后方内容。
-
-典型场景包括启用 WebQQ 毛玻璃外观时，需要延续主窗口材质的通知、贴表情或其他浮层。
+雾化二级面使用半透明背景，并通过 `backdrop-filter` 和 `-webkit-backdrop-filter` 模糊其后方内容。启用毛玻璃外观（`enableWebQQFrostedGlass`）时，全部二级面（表单对话框、右键菜单、查看资料、贴表情、日期选择器和通知面板）都应切换为雾化态。
 
 实现约定：
 
-- 使用 `.is-frosted` 或组件既有的雾化状态类标记；
-- 保留半透明背景、饱和度和背景模糊效果；
-- Chrome 和 Firefox 均需具备可接受的显示效果；使用 `backdrop-filter` 时同步评估 `-webkit-backdrop-filter`；
-- 不套用实体二级面的纯色覆盖；
-- 同一容器不得同时表达实体和雾化两种视觉语义；支持外观切换时，由 `.is-plain` 与 `.is-frosted` 决定最终模式；
+- 毛玻璃开关由 `useWebQQFrostedSurfaceFlag` 统一写入 `body[data-onebot-webqq-frosted]`；Teleport 到 body 的面板一律用该属性驱动双态，不为单个浮层组件传递 frosted prop。工作区内元素可使用 `.onebot-webqq-webqq.is-frosted` 后代选择器；通知面板沿用组件内 `is-frosted`/`is-plain` 状态类。
+- 保留半透明背景（面板色 92%）、饱和度和模糊效果；轻描边使用 `--webqq-secondary-outline` 的 64% 淡化值，阴影沿用统一阴影。
+- Chrome 和 Firefox 均需具备可接受的显示效果；使用 `backdrop-filter` 时同步评估 `-webkit-backdrop-filter`。
+- 同一容器不得同时表达实体和雾化两种视觉语义；实体覆盖必须同时覆写背景色，只关闭 `backdrop-filter` 会穿帮成“半透明但不模糊”的中间态。
+- 观察窗外壳的模糊挂在 `.onebot-webqq-webqq.is-frosted::before`，外壳本身不声明 `backdrop-filter`；一级区域禁止声明 `backdrop-filter`。模糊只出现在外壳伪层、浮层与控件层，否则浮层毛玻璃会被 Backdrop Root 边界静默杀死（见 ADR 0002）。
 - 浏览器不支持背景模糊时，半透明背景自身仍须保证文字对比度和内容可读性。
 
 ## Portal 与主题令牌

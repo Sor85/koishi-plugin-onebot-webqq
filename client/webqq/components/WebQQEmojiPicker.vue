@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <section ref="panelRef" v-if="open" :class="['onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__emoji-picker-page', `is-color-${resolvedWebQQColorMode}`]" :style="panelStyle" aria-label="贴表情">
+    <section ref="panelRef" v-if="open" popover="manual" :class="['onebot-webqq-webqq__secondary-page onebot-webqq-webqq__portal-page onebot-webqq-webqq__emoji-picker-page', enableWebQQFrostedGlass ? 'is-frosted' : 'is-plain', `is-color-${resolvedWebQQColorMode}`]" :style="panelStyle" aria-label="贴表情">
       <header
         class="onebot-webqq-webqq__secondary-page-header"
         :class="{ 'is-dragging': dragging }"
@@ -73,7 +73,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Input } from '../../components/ui/input'
-import { resolvedWebQQColorMode } from '../settings'
+import { enableWebQQFrostedGlass, resolvedWebQQColorMode } from '../settings'
+import { showWebQQPopover } from '../utils/webqq-popover'
 import {
   getCommonWebQQEmojiFaces,
   getWebQQEmojiFace,
@@ -147,6 +148,7 @@ function stopDrag(event: PointerEvent) {
 }
 
 onMounted(() => {
+  void showWebQQPopover(panelRef.value)
   document.addEventListener('pointerdown', closeOnOutsidePointer)
   document.addEventListener('pointermove', moveDrag)
   document.addEventListener('pointerup', stopDrag)

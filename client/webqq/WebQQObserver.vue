@@ -356,6 +356,7 @@ import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGr
 import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMessageSearchResult, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
+import { useWebQQFrostedSurfaceFlag } from './utils/webqq-frosted-surface'
 import { localDateToMessageSearchRange } from './utils/message-search-date'
 import { filterWebQQSearchMessages } from '../../src/webqq/message-search'
 import {
@@ -427,6 +428,10 @@ interface WebQQSendFile {
 const webQQVideoFileExtensions = new Set(['mp4', 'webm', 'mov', 'm4v', '3gp'])
 
 const props = defineProps<{ visible: boolean }>()
+
+// 把毛玻璃开关同步到 body[data-onebot-webqq-frosted]，
+// 供 Teleport 到 body 的右键菜单、Dialog 和二级页切换实体/雾化双态。
+useWebQQFrostedSurfaceFlag()
 const webQQRoot = ref<HTMLElement>()
 const messageSearchTrigger = ref<HTMLButtonElement>()
 const messageList = ref<{ scrollToMessage: (messageId: string) => boolean }>()
