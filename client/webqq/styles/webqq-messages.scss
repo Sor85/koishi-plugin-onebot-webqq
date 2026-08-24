@@ -27,7 +27,8 @@
     .onebot-webqq-webqq__bubble {
       color: #ffffff;
       background: var(--onebot-webqq-webqq-accent-surface);
-      box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
+      // 蓝色气泡会削弱与左侧相同透明度的投影视觉，沿用 Sandbox 的几何参数并提高对比度。
+      box-shadow: 0 2px 8px rgb(15 23 42 / 16%);
 
       .onebot-webqq-webqq__quote {
         border-left-color: rgba(255, 255, 255, 0.62);

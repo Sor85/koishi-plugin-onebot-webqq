@@ -1272,9 +1272,9 @@ describe('chat capsule styles', () => {
         : '暗色普通气泡没有使用 47,47,52 的贴表情背景层级',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-bubble-bg: var(--onebot-webqq-webqq-accent-surface)')
         && forcedOutgoingBubbleBody.includes('background: var(--onebot-webqq-webqq-accent-surface)')
-        && forcedOutgoingBubbleBody.includes('box-shadow: none')
+        && forcedOutgoingBubbleBody.includes('box-shadow: 0 2px 8px rgb(15 23 42 / 16%)')
         ? ''
-        : '暗色发出气泡没有使用柔和主题色表面或仍保留发光阴影',
+        : '暗色发出气泡没有使用柔和主题色表面或 Sandbox 发出消息阴影',
       forcedOutgoingBubbleBody.includes('--onebot-webqq-webqq-reaction-bg: color-mix(in srgb, var(--onebot-webqq-webqq-bubble-bg) 88%, var(--webqq-bg) 12%)')
         ? ''
         : '暗色发出气泡没有基于 Sandbox 背景覆盖 TIM 贴表情变量',
@@ -1313,7 +1313,8 @@ describe('chat capsule styles', () => {
     expect(style).toContain(`.onebot-webqq-webqq__bubble {
       color: #ffffff;
       background: var(--onebot-webqq-webqq-accent-surface);
-      box-shadow: 0 8px 18px var(--onebot-webqq-webqq-accent-shadow);
+      // 蓝色气泡会削弱与左侧相同透明度的投影视觉，沿用 Sandbox 的几何参数并提高对比度。
+      box-shadow: 0 2px 8px rgb(15 23 42 / 16%);
 
       .onebot-webqq-webqq__quote {
         border-left-color: rgba(255, 255, 255, 0.62);
