@@ -9,6 +9,7 @@ import type {
 import { registerCapsuleChatLunaActivity } from './chatluna-activity'
 import { registerChatLunaCharacterLockSync } from './character-lock'
 import { registerConsoleEntry } from './console-entry'
+import { createManagedConsole } from '../shared/console-listeners'
 import { createMessageInput } from './message-input'
 import {
   createCapsuleState,
@@ -31,6 +32,8 @@ export function registerCapsule(options: {
   consoleAuthOptions: { authority: number }
   readBotSenderMetadata: Parameters<typeof registerCapsuleChatLunaActivity>[0]['readBotSenderMetadata']
   logger?: DebugLogger
+  errorLogger?: DebugLogger
+  consoleOwner: object
 }) {
   const {
     ctx,
@@ -40,6 +43,8 @@ export function registerCapsule(options: {
     consoleAuthOptions,
     readBotSenderMetadata,
     logger,
+    errorLogger,
+    consoleOwner,
   } = options
   const state = createCapsuleState()
   const logSnapshot = (source: string) => logger?.info(`${source} %s`, JSON.stringify(state.snapshot() ?? null))
@@ -106,8 +111,9 @@ export function registerCapsule(options: {
     console: { required: true },
     database: { required: false },
   }, (inner) => {
-    const console = inner.console
-    if (!console) return
+    if (!inner.console) return
+    // 与 WebQQ 侧同理：入口数据回调必须随插件 dispose 一起摘除。
+    const console = createManagedConsole(inner.console, inner, consoleOwner, errorLogger ?? logger)
     registerConsoleEntry(console, state, config, { debug, logSnapshot, readBotState })
   })
 

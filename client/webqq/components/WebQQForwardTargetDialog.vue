@@ -64,6 +64,7 @@ import { computed, ref, watch } from 'vue'
 import { Button } from '../../components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { vWebqqScrollbar } from '../utils/webqq-scrollbar'
+import { readWebQQErrorMessage } from '../utils/webqq-error'
 
 export type WebQQForwardTargetTab = 'recent' | 'friends' | 'groups'
 export interface WebQQForwardTargetOption {
@@ -132,7 +133,7 @@ async function confirm() {
     emit('update:open', false)
   } catch (error) {
     // 多选态隐藏输入区，失败信息必须留在当前弹窗，用户才能直接重试而不丢失选择。
-    errorMessage.value = error instanceof Error ? error.message : '合并转发失败'
+    errorMessage.value = readWebQQErrorMessage(error, '合并转发失败')
   } finally {
     submitting.value = false
   }

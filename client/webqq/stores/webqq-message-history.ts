@@ -3,6 +3,7 @@ import type { WebQQMessage } from '../types'
 import type { WebQQMessageQuery } from '../api/webqq'
 import type { WebQQChatSelection } from '../utils/webqq-contact-view'
 import { mergeMessages } from '../utils/webqq-message-view'
+import { readWebQQErrorMessage } from '../utils/webqq-error'
 
 export function useWebQQMessageHistory(options: {
   currentChat: Ref<WebQQChatSelection | undefined>
@@ -42,14 +43,17 @@ export function useWebQQMessageHistory(options: {
     historyExhausted.value = false
     options.errorText.value = ''
     options.messages.value = []
+    // 本地缓存只是加速首屏，读失败不代表这个会话没有历史。
+    // 早期实现在这里直接 return，于是一次数据库抖动就会让整个会话永久停在「加载聊天历史失败」，
+    // 即使 OneBot 侧的实时历史本来可以取到。
+    let cacheErrorText = ''
     try {
       const cachedMessages = await options.loadCachedMessages(currentChat.type, currentChat.peerId)
       if (!isCurrentChat(currentChat)) return
       options.messages.value = limitMessages(cachedMessages)
     } catch (error) {
       if (!isCurrentChat(currentChat)) return
-      options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
-      return
+      cacheErrorText = readWebQQErrorMessage(error, '加载聊天历史缓存失败')
     }
     await scrollLoadedMessagesToBottom()
     try {
@@ -64,7 +68,11 @@ export function useWebQQMessageHistory(options: {
       await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
     } catch (error) {
       if (!isCurrentChat(currentChat) || options.messages.value.length) return
-      options.errorText.value = error instanceof Error ? error.message : '加载聊天历史失败'
+      options.errorText.value = readWebQQErrorMessage(error, '加载聊天历史失败')
+    }
+    // 远端成功但缓存读失败时仍要让用户看到缓存故障，否则数据库问题会被静默掉。
+    if (!options.errorText.value && cacheErrorText && !options.messages.value.length) {
+      options.errorText.value = cacheErrorText
     }
     await scrollLoadedMessagesToBottom()
   }
@@ -103,7 +111,7 @@ export function useWebQQMessageHistory(options: {
       await nextTick()
       if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
     } catch (error) {
-      options.errorText.value = error instanceof Error ? error.message : '加载更早聊天历史失败'
+      options.errorText.value = readWebQQErrorMessage(error, '加载更早聊天历史失败')
     } finally {
       historyLoading.value = false
     }

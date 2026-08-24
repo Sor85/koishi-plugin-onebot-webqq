@@ -15,6 +15,8 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     historyLimit,
     debug,
     logger,
+    errorLogger,
+    consoleOwner,
     imageUrlResolver,
     webqq,
     consoleAuthOptions,
@@ -27,6 +29,8 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     consoleAuthOptions,
     readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
     logger,
+    errorLogger,
+    consoleOwner,
   })
   const liveRuntime = registerWebQQ({
     ctx,
@@ -36,6 +40,8 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     consoleAuthOptions,
     historyLimit,
     logger,
+    errorLogger,
+    consoleOwner,
     getThinkingDurationMs: capsuleRuntime.getThinkingDurationMs,
     getStorageScope: capsuleRuntime.getStorageScope,
     readBotState: capsuleRuntime.readBotState,
@@ -45,32 +51,37 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     logger?.info('[bot-status-debug] %s %s', source, JSON.stringify(data))
   }
 
-  logBotStatus('runtime-start', {
-    service: webqq.getBotStatusDiagnostics(),
-  })
+  if (logger) {
+    logBotStatus('runtime-start', {
+      service: webqq.getBotStatusDiagnostics(),
+    })
+  }
 
   ctx.on('message', async (session) => {
     // hidden Bot 仍会发出标准 Koishi 事件；在共享扇出边界阻断，避免胶囊状态和 WebQQ 未读一起被污染。
     if (!isVisibleBotSession(session)) return
-    const matchingContextBots = (ctx.bots ?? []).flatMap((candidate, index) => {
-      if (!isRecord(candidate) || getStringField(candidate, ['selfId', 'self_id']) !== session.selfId) return []
-      return [{
-        index,
-        sameReferenceAsSessionBot: (candidate as unknown) === session.bot,
-        status: typeof candidate.status === 'number' ? candidate.status : undefined,
-        hidden: candidate.hidden === true,
-      }]
-    })
-    logBotStatus('message-observed', {
-      sessionBot: {
-        platform: session.bot.platform,
-        selfId: session.bot.selfId,
-        status: session.bot.status,
-        hidden: session.bot.hidden === true,
-      },
-      matchingContextBots,
-      serviceBeforeActivity: webqq.getBotStatusDiagnostics(),
-    })
+    // 诊断数据要遍历全部 bot 并做 JSON 序列化；关闭 debug 时不能为每条消息都算一遍。
+    if (logger) {
+      const matchingContextBots = (ctx.bots ?? []).flatMap((candidate, index) => {
+        if (!isRecord(candidate) || getStringField(candidate, ['selfId', 'self_id']) !== session.selfId) return []
+        return [{
+          index,
+          sameReferenceAsSessionBot: (candidate as unknown) === session.bot,
+          status: typeof candidate.status === 'number' ? candidate.status : undefined,
+          hidden: candidate.hidden === true,
+        }]
+      })
+      logBotStatus('message-observed', {
+        sessionBot: {
+          platform: session.bot.platform,
+          selfId: session.bot.selfId,
+          status: session.bot.status,
+          hidden: session.bot.hidden === true,
+        },
+        matchingContextBots,
+        serviceBeforeActivity: webqq.getBotStatusDiagnostics(),
+      })
+    }
     // 收到真实消息已证明 action 通道至少刚刚可用；先记录活动，再广播 Bot 状态，
     // 避免适配器仍上报 OFFLINE 时 WebQQ 永久排除该 Bot。
     webqq.noteBotActivity(session.selfId)

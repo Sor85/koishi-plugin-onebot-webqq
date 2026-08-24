@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from 'vue'
 import type { WebQQGroupInfo, WebQQGroupMember } from '../types'
 import { getVisibleGroupMembers, type WebQQChatSelection } from '../utils/webqq-contact-view'
+import { readWebQQErrorMessage } from '../utils/webqq-error'
 
 type WebQQGroupMemberPatch = Partial<Pick<WebQQGroupMember, 'card' | 'role' | 'rawRole' | 'title'>>
 const groupMemberPatchFields = ['card', 'role', 'rawRole', 'title'] as const
@@ -76,7 +77,7 @@ export function useWebQQGroupInfo(currentChat: Ref<WebQQChatSelection | undefine
       if (getCurrentGroupId() === groupId) groupInfo.value = nextGroupInfo
     } catch (error) {
       if (isLatestGroupInfoRequest(groupId, requestToken) && getCurrentGroupId() === groupId) {
-        groupInfoErrorText.value = error instanceof Error ? error.message : '加载群信息失败'
+        groupInfoErrorText.value = readWebQQErrorMessage(error, '加载群信息失败')
       }
     } finally {
       if (isLatestGroupInfoRequest(groupId, requestToken) && getCurrentGroupId() === groupId) {

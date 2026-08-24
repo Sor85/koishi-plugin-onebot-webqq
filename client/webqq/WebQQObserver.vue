@@ -356,6 +356,7 @@ import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGr
 import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMessageSearchResult, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
+import { readWebQQErrorMessage } from './utils/webqq-error'
 import { useWebQQFrostedSurfaceFlag } from './utils/webqq-frosted-surface'
 import { localDateToMessageSearchRange } from './utils/message-search-date'
 import { filterWebQQSearchMessages } from '../../src/webqq/message-search'
@@ -938,7 +939,7 @@ async function sendCurrentWebQQMessage() {
     clearSendFiles()
     clearReplyTarget()
   } catch (error) {
-    errorText.value = error instanceof Error ? error.message : '发送消息失败'
+    errorText.value = readWebQQErrorMessage(error, '发送消息失败')
   } finally {
     sendingWebQQMessage.value = false
     // 与 chatluna-sandbox 保持一致：必须等 disabled 解除后再恢复焦点，否则浏览器会忽略 focus。
@@ -1244,7 +1245,7 @@ async function runInteraction(action: () => Promise<unknown>, fallback: string) 
     await action()
     return true
   } catch (error) {
-    errorText.value = error instanceof Error ? error.message : fallback
+    errorText.value = readWebQQErrorMessage(error, fallback)
     return false
   }
 }
@@ -1435,7 +1436,7 @@ async function requestMessageSearch(
     if (localMatches.length) {
       messageSearchSearched.value = true
     } else {
-      messageSearchErrorText.value = error instanceof Error ? error.message : '查找聊天记录失败'
+      messageSearchErrorText.value = readWebQQErrorMessage(error, '查找聊天记录失败')
       messageSearchSearched.value = true
     }
   } finally {
@@ -1515,7 +1516,7 @@ async function openUserProfile(userId: string, event?: MouseEvent) {
     })
     profileCardModel.value = buildProfileCardModelFromProfile(profile)
   } catch (error) {
-    errorText.value = error instanceof Error ? error.message : '加载资料失败'
+    errorText.value = readWebQQErrorMessage(error, '加载资料失败')
   }
 }
 
@@ -1549,7 +1550,7 @@ function openActionDialog(input: {
   actionDialogConfirmText.value = input.confirmText || '保存'
   actionDialogSubmit = (value: string) => {
     void Promise.resolve(input.onConfirm(value)).catch((error) => {
-      errorText.value = error instanceof Error ? error.message : '操作失败'
+      errorText.value = readWebQQErrorMessage(error, '操作失败')
     })
   }
   actionDialogOpen.value = true
@@ -1611,7 +1612,7 @@ function confirmDestructiveAction(resolve: () => void, reject: (error: unknown) 
     confirmDialogSubmit = undefined
     resolve()
   }, (error) => {
-    errorText.value = error instanceof Error ? error.message : '操作失败'
+    errorText.value = readWebQQErrorMessage(error, '操作失败')
     reject(error)
   })
 }
@@ -1829,7 +1830,7 @@ async function loadContacts() {
   } catch (error) {
     if (loadVersion !== contactsLoadVersion) return
     contactsLoadFailed.value = true
-    errorText.value = error instanceof Error ? error.message : '加载联系人失败'
+    errorText.value = readWebQQErrorMessage(error, '加载联系人失败')
 
     // 首次 RPC 重试期间 Bot 可能已经恢复或收到消息；该变化早于 catch 时，普通 watch 会错过。
     // 这里补一次版本后的重载，避免固定重试窗口结束后联系人页永久停在失败状态。

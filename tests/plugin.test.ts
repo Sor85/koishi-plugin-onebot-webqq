@@ -273,8 +273,8 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain('service.acquireResponseLock = async')
     expect(pluginSource).not.toContain('service.releaseResponseLock = async')
     expect(chatlunaCharacterLockSource).toContain('export function registerChatLunaCharacterLockSync')
-    expect(chatlunaCharacterLockSource).toContain('service.acquireResponseLock = async')
-    expect(chatlunaCharacterLockSource).toContain('service.releaseResponseLock = async')
+    expect(chatlunaCharacterLockSource).toContain('service.acquireResponseLock = patchedAcquire')
+    expect(chatlunaCharacterLockSource).toContain('service.releaseResponseLock = patchedRelease')
     expect(chatlunaCharacterLockSource).toContain("ctx.on('dispose'")
   })
 
@@ -4464,7 +4464,9 @@ describe('chat capsule plugin wiring', () => {
       thinkingDurationMs: expect.any(Number),
     })
 
-    listeners.dispose[0]()
+    // 插件现在会注册多个 dispose 处理器（控制台监听器回收、响应锁还原等），
+    // 真实 Koishi 会全部触发，测试也必须全部触发而不是只调第一个。
+    await emitAll(listeners.dispose)
 
     expect(character.acquireResponseLock).toBe(originalAcquireResponseLock)
     expect(character.releaseResponseLock).toBe(originalReleaseResponseLock)

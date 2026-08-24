@@ -5,6 +5,7 @@ import type { WebQQImageUrlResolver } from './media/image-url-resolver'
 import { registerWebQQReactionInterceptor } from './adapters/onebot/reactions'
 import type { WebQQService } from './adapters/types'
 import { registerWebQQConsoleListeners } from './console'
+import { createManagedConsole } from '../shared/console-listeners'
 import {
   createWebQQFriendRequestNotice,
   createWebQQGroupLeaveNotice,
@@ -26,6 +27,8 @@ export function registerWebQQ(options: {
   consoleAuthOptions: { authority: number }
   historyLimit: number
   logger?: DebugLogger
+  errorLogger?: DebugLogger
+  consoleOwner: object
   getThinkingDurationMs: () => number
   getStorageScope: () => string | undefined
   readBotState: () => OneBotRobotState
@@ -39,12 +42,14 @@ export function registerWebQQ(options: {
     consoleAuthOptions,
     historyLimit,
     logger,
+    errorLogger,
+    consoleOwner,
     getThinkingDurationMs,
     getStorageScope,
     readBotState,
     broadcastBotState,
   } = options
-  const reactionErrorLogger = ctx.logger?.('onebot-webqq') ?? logger
+  const reactionErrorLogger = errorLogger ?? ctx.logger?.('onebot-webqq') ?? logger
   const friendRequestNotices = new Map<string, WebQQNotice>()
   const groupLeaveNotices = new Map<string, WebQQNotice>()
 
@@ -105,8 +110,9 @@ export function registerWebQQ(options: {
     console: { required: true },
     database: { required: false },
   }, (inner) => {
-    const console = inner.console
-    if (!console) return
+    if (!inner.console) return
+    // 停用或修改插件时必须把这些 RPC 一起摘掉，否则旧回调会继续服务控制台请求并落到已 dispose 的 ctx。
+    const console = createManagedConsole(inner.console, inner, consoleOwner, reactionErrorLogger)
     console.addListener('onebot-webqq/webqq/bot/select', async (input) => {
       webqq.selectSelfId(input.selfId)
       const botState = readBotState()

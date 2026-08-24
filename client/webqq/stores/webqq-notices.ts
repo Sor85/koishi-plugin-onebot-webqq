@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import type { WebQQNotice } from '../types'
 import { sortPendingNotices } from '../utils/webqq-notice-view'
+import { readWebQQErrorMessage } from '../utils/webqq-error'
 
 export function useWebQQNotices(options: {
   requestNotices: () => Promise<WebQQNotice[]>
@@ -27,7 +28,7 @@ export function useWebQQNotices(options: {
     try {
       notices.value = await options.requestNotices()
     } catch (error) {
-      noticeErrorText.value = error instanceof Error ? error.message : '加载通知失败'
+      noticeErrorText.value = readWebQQErrorMessage(error, '加载通知失败')
     } finally {
       noticeLoading.value = false
     }
@@ -46,7 +47,7 @@ export function useWebQQNotices(options: {
       await options.approveNotice(notice, approve)
       await loadNotices()
     } catch (error) {
-      noticeErrorText.value = error instanceof Error ? error.message : '处理通知失败'
+      noticeErrorText.value = readWebQQErrorMessage(error, '处理通知失败')
     } finally {
       handlingNoticeId.value = ''
     }

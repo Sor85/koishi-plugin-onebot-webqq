@@ -60,6 +60,10 @@ export interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown
   addListener<Event extends keyof ConsoleEvents>(event: Event, callback: ConsoleEvents[Event], options?: { authority?: number }): unknown
   broadcast(type: string, body: unknown, options?: { authority?: number }): unknown
+  // Koishi 的 Console.addListener 只做 `listeners[event] = {...}`，既不返回 disposable
+  // 也不随插件 ctx 回收。停用插件后这些回调会继续留在全局 listeners 上并指向已 dispose 的
+  // 上下文，因此需要按引用比对后自行摘除。
+  listeners?: Record<string, { callback?: unknown } | undefined>
 }
 
 export interface ModelService {
@@ -73,6 +77,8 @@ export interface DatabaseService {
 
 export interface DebugLogger {
   info(format: string, ...param: unknown[]): unknown
+  // 真实的 Koishi logger 一定有 warn；测试替身只提供 info，因此保持可选并回退到 info。
+  warn?(format: string, ...param: unknown[]): unknown
 }
 
 export interface FfmpegService {
