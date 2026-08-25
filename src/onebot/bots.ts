@@ -18,8 +18,17 @@ function isOneBotReady(bot: OneBotBot) {
   return (typeof bot.status !== 'number' || bot.status === oneBotOnlineStatus) && supportsOneBotAction(bot)
 }
 
-export function getOneBotProfileStatus(bot: OneBotBot) {
-  if (typeof bot.status === 'number') return bot.status
+// 某些适配器已能收到该 Bot 的消息时仍短暂上报 OFFLINE；实际活动（消息或主动探测）是比滞后状态更强的可用信号。
+function isOneBotActionVerified(bot: OneBotBot, activeSelfIds?: ReadonlySet<string>) {
+  return !!bot.selfId && !!activeSelfIds?.has(bot.selfId) && supportsOneBotAction(bot)
+}
+
+export function getOneBotProfileStatus(bot: OneBotBot, activeSelfIds?: ReadonlySet<string>) {
+  if (typeof bot.status === 'number') {
+    // 可用性判定已经用真实 action 通道证明这个 Bot 在线，对外画像必须跟随同一结论。
+    // 否则适配器滞后上报 OFFLINE/CONNECT 期间，WebQQ 明明能正常收发消息，胶囊指示灯却显示为不在线。
+    return isOneBotActionVerified(bot, activeSelfIds) ? oneBotOnlineStatus : bot.status
+  }
   // 部分 OneBot 实现 action 可用但未提供 Satori 数字状态；仅通过现有可用性检查后才推导在线，避免把未知 Bot 误标为在线。
   return isOneBotReady(bot) ? oneBotOnlineStatus : undefined
 }
@@ -40,9 +49,7 @@ export function getAvailableOneBotBots(ctx: OneBotContext, selfIds?: string[], a
   const allowList = createOneBotAllowList(selfIds)
   if (selfIds && !allowList.size) return []
   return getOneBotBots(ctx).filter((bot) => {
-    // 某些适配器已能收到该 Bot 的消息时仍短暂上报 OFFLINE；实际活动是比滞后状态更强的可用信号。
-    const recentlyActive = !!bot.selfId && !!activeSelfIds?.has(bot.selfId) && supportsOneBotAction(bot)
-    if (!isOneBotReady(bot) && !recentlyActive) return false
+    if (!isOneBotReady(bot) && !isOneBotActionVerified(bot, activeSelfIds)) return false
     return isAllowedOneBotBot(bot, allowList)
   })
 }

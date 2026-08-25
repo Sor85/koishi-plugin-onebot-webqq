@@ -136,6 +136,53 @@ describe('chat capsule state', () => {
     ])
   })
 
+  // 快照里的 bot.status 来自消息发生时的 session.bot.status，是适配器原始上报值。
+  // 可用 Bot 列表已经按 action 通道收敛过状态，快照必须跟随，否则胶囊指示灯会停在不在线。
+  it('reconciles the snapshot bot status with the available robot list', () => {
+    const state = createCapsuleState()
+    const message = {
+      bot: {
+        platform: 'onebot',
+        selfId: '10000',
+        // 0 = OFFLINE：适配器滞后上报，但 WebQQ 已判定该 Bot 可用。
+        status: 0,
+        name: 'Bot A',
+      },
+      channel: {
+        id: '20000',
+      },
+      user: {
+        id: '30000',
+      },
+      timestamp: 1710000000001,
+    }
+
+    recordIncomingMessage(state, message)
+    expect(state.snapshot()?.bot.status).toBe(0)
+
+    setAvailableBots(state, [{
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      name: 'Bot A',
+    }])
+    expect(state.snapshot()?.bot.status).toBe(1)
+
+    // 后续消息不能把滞后状态重新写回快照。
+    recordIncomingMessage(state, message)
+    expect(state.snapshot()?.bot.status).toBe(1)
+
+    // 不在可用列表里的 Bot（例如被 selfId 白名单排除）保留自身上报的状态。
+    setAvailableBots(state, [{
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      name: 'Bot B',
+    }])
+    recordIncomingMessage(state, message)
+    expect(state.snapshot()?.bot.status).toBe(0)
+  })
+
   it('tracks sent and received counters from plugin startup', () => {
     const state = createCapsuleState()
 

@@ -74,15 +74,23 @@ export function createCapsuleState(): CapsuleState {
   return capsule
 }
 
+// 可用 Bot 列表已经按 action 通道收敛过适配器的滞后状态；命中同一个 selfId 时以列表为准。
+// 未命中说明这个 Bot 不在 WebQQ 的可用集合里（例如被 selfId 白名单排除），此时只能保留原始上报值。
+function readReconciledBot(bot: CapsuleSnapshot['bot'], bots: CapsuleBotInput[]) {
+  const profile = bots.find((candidate) => candidate.selfId === bot.selfId)
+  if (!profile || profile.status === bot.status) return bot
+  return { ...bot, status: profile.status }
+}
+
 function createSnapshot(input: CapsuleMessageInput, state: MutableCapsuleState): CapsuleSnapshot {
   return {
-    bot: {
+    bot: readReconciledBot({
       platform: input.bot.platform,
       selfId: input.bot.selfId,
       status: input.bot.status,
       name: getBotName(input.bot),
       avatar: input.bot.avatar,
-    },
+    }, state.bots),
     conversation: {
       channelId: input.channel.id,
       channelName: input.channel.name || input.channel.id,
@@ -103,6 +111,9 @@ export function setAvailableBots(capsule: CapsuleState, bots: CapsuleBotInput[])
   if (!state.current) return
   state.current = {
     ...state.current,
+    // 快照里的 bot 状态来自消息发生时的 session.bot.status，是适配器原始上报值，可能停在 OFFLINE。
+    // 可用 Bot 列表已经按 action 通道收敛过状态，快照必须跟随它，否则胶囊指示灯会与实际可用性矛盾。
+    bot: readReconciledBot(state.current.bot, state.bots),
     ...(state.bots.length ? {
       bots: state.bots.map((bot) => ({ ...bot })),
     } : {

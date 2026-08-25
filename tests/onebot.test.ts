@@ -347,6 +347,40 @@ describe('onebot webqq adapter', () => {
     expect(staleStatusBot.internal.get_friend_list).toHaveBeenCalled()
   })
 
+  // 胶囊指示灯读的是 reconcileBotState 里的画像状态。可用性已经靠 action 通道认定 Bot 在线时，
+  // 画像不能继续暴露适配器滞后上报的 OFFLINE/CONNECT，否则 WebQQ 正常收发消息时指示灯却是不在线。
+  it('reports action-verified bots as online even while the adapter still reports a stale status', () => {
+    const staleStatusBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      name: 'Stale Bot',
+      status: 0,
+      internal: {
+        _request: vi.fn(async () => ({})),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [staleStatusBot] })
+
+    expect(service.reconcileBotState()).toEqual({ bots: [] })
+
+    service.noteBotActivity('10000')
+    expect(service.reconcileBotState()).toMatchObject({
+      bots: [expect.objectContaining({ selfId: '10000', status: 1 })],
+      selectedSelfId: '10000',
+    })
+
+    // CONNECT 同理：探测/消息证明通道可用后一律按在线呈现。
+    staleStatusBot.status = 2
+    expect(service.reconcileBotState()).toMatchObject({
+      bots: [expect.objectContaining({ selfId: '10000', status: 1 })],
+    })
+
+    // 没有活动覆盖的 Bot 仍如实呈现原始状态，并直接从可用列表里消失。
+    staleStatusBot.status = 3
+    const withoutOverride = createOneBotWebQQService({ bots: [staleStatusBot] })
+    expect(withoutOverride.reconcileBotState()).toEqual({ bots: [] })
+  })
+
   it('skips explicitly non-online OneBot bots when loading contacts', async () => {
     const connectingBot = {
       platform: 'onebot',

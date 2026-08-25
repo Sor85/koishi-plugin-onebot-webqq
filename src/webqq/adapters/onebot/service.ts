@@ -105,12 +105,12 @@ function getBotDisplayName(bot: OneBotBot) {
   return '机器人'
 }
 
-function toOneBotRobotProfile(bot: OneBotBot): OneBotRobotProfile | undefined {
+function toOneBotRobotProfile(bot: OneBotBot, activeSelfIds?: ReadonlySet<string>): OneBotRobotProfile | undefined {
   if (!bot.selfId) return
   return {
     platform: bot.platform || 'onebot',
     selfId: bot.selfId,
-    status: getOneBotProfileStatus(bot),
+    status: getOneBotProfileStatus(bot, activeSelfIds),
     name: getBotDisplayName(bot),
     avatar: bot.avatar || bot.user?.avatar || getWebQQUserAvatar(bot.selfId),
   }
@@ -357,8 +357,10 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     activeSelfIds: getRecentlyActiveSelfIds(),
   })
   const listBots = () => {
-    const bots = getAvailableOneBotBots(ctx, options.selfIds, getRecentlyActiveSelfIds())
-      .map(toOneBotRobotProfile)
+    // 可用性覆盖与画像状态必须来自同一份活动快照，否则会出现「Bot 在列表里但指示灯离线」的矛盾。
+    const activeSelfIds = getRecentlyActiveSelfIds()
+    const bots = getAvailableOneBotBots(ctx, options.selfIds, activeSelfIds)
+      .map((bot) => toOneBotRobotProfile(bot, activeSelfIds))
       .filter((bot): bot is OneBotRobotProfile => !!bot)
     return [
       ...bots,
