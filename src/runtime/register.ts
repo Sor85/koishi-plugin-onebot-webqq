@@ -57,6 +57,33 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     })
   }
 
+  // 适配器重启后往往在一段时间内继续上报 OFFLINE/CONNECT，而 action 通道其实已经可用。
+  // 过去只有 ctx.on('message') 里的 noteBotActivity 能解除这个状态，于是 WebQQ 首屏必须
+  // 等一条外部消息才能加载联系人。这里主动探测 action 通道，让重启后无需外部消息即可正常显示。
+  const probeBotAvailability = async (source: string) => {
+    let changed = false
+    try {
+      changed = await webqq.probeBotAvailability()
+    } catch {
+      return
+    }
+    if (!changed) return
+    if (logger) {
+      logBotStatus(source, { service: webqq.getBotStatusDiagnostics() })
+    }
+    // 广播后前端的 contactsRecoverySignal 会变化，失败过的联系人列表随即自动重载。
+    capsuleRuntime.broadcastBotState()
+  }
+
+  void probeBotAvailability('startup-probe')
+  // Bot 刚被注册或状态变化时立刻补一次探测，避免等到下一个轮询周期。
+  ctx.on('login-added', () => void probeBotAvailability('login-added-probe'))
+  ctx.on('login-updated', () => void probeBotAvailability('login-updated-probe'))
+  // 轮询兜底：覆盖「apply 时 Bot 还没进 ctx.bots，之后也不再发生命周期事件」的情况，
+  // 同时在只靠活动覆盖才可用的适配器上持续刷新覆盖，防止 5 分钟过期后可用性抖动。
+  // 所有 Bot 都如实上报在线时没有探测对象，这个定时器不会产生任何 OneBot 请求。
+  ctx.setInterval(() => void probeBotAvailability('interval-probe'), 15 * 1000)
+
   ctx.on('message', async (session) => {
     // hidden Bot 仍会发出标准 Koishi 事件；在共享扇出边界阻断，避免胶囊状态和 WebQQ 未读一起被污染。
     if (!isVisibleBotSession(session)) return

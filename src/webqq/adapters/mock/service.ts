@@ -296,6 +296,11 @@ export function createMockWebQQService(initialScene?: MockWebQQScene, options: {
 
     noteBotActivity(_selfId?: string) {},
 
+    // 模拟环境的 Bot 恒定可用，无需探测 action 通道。
+    async probeBotAvailability() {
+      return false
+    },
+
     getSelectedSelfId() {
       return scene.selectedSelfId || undefined
     },

@@ -2298,7 +2298,10 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast).toHaveBeenCalledWith('onebot-webqq/bots/update', {
       bots: [],
     }, { authority: 1 })
-    expect(listeners['login-added']).toHaveLength(1)
+    // login-added / login-updated 各有两个监听器：胶囊状态同步，以及重启后主动探测 action 通道。
+    // login-removed 不需要探测（Bot 已经消失）。
+    expect(listeners['login-added']).toHaveLength(2)
+    expect(listeners['login-updated']).toHaveLength(2)
     expect(listeners['login-removed']).toHaveLength(1)
   })
 

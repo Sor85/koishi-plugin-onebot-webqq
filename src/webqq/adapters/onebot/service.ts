@@ -15,6 +15,8 @@ import {
   getAvailableOneBotBots,
   getOneBotBots,
   getOneBotProfileStatus,
+  getProbeableOneBotBots,
+  oneBotProbeAction,
   selectBot,
   type OneBotContext,
 } from '../../../onebot/bots'
@@ -394,9 +396,51 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
   }
   const protocol = options.protocol ?? 'napcat'
   const { imageUrlResolver } = options
+  const listAvailableSelfIds = () =>
+    getAvailableOneBotBots(ctx, options.selfIds, getRecentlyActiveSelfIds())
+      .map((bot) => bot.selfId)
+      .filter((selfId): selfId is string => !!selfId)
+  let probeInFlight: Promise<boolean> | undefined
+  // 主动探测 action 通道，替代「等一条外部消息才可用」。探测成功时复用与消息活动完全相同的
+  // 覆盖机制（recentBotActivity），因此可用性语义与原来一致，只是不再依赖外部触发。
+  const probeBotAvailability = async () => {
+    const candidates = getProbeableOneBotBots(ctx, options.selfIds)
+    if (!candidates.length) return false
+    const before = new Set(listAvailableSelfIds())
+    await Promise.all(candidates.map(async (bot) => {
+      const selfId = bot.selfId
+      if (!selfId) return
+      try {
+        await callAction(bot, oneBotProbeAction, {})
+      } catch (error) {
+        logBotStatus('probe-failed', {
+          selfId,
+          rawStatusName: getOneBotStatusName(bot.status),
+          error: error instanceof Error ? error.message : String(error),
+        })
+        return
+      }
+      recentBotActivity.set(selfId, Date.now())
+      logBotStatus('probe-succeeded', {
+        selfId,
+        rawStatusName: getOneBotStatusName(bot.status),
+      })
+    }))
+    const after = listAvailableSelfIds()
+    return after.length !== before.size || after.some((selfId) => !before.has(selfId))
+  }
   return {
     getBotStatusDiagnostics() {
       return getBotStatusDiagnostics()
+    },
+
+    // 返回 true 表示可用 Bot 集合发生了变化，调用方需要广播新的 Bot 状态。
+    probeBotAvailability() {
+      // 探测走真实 action，慢实现下可能长时间悬挂；同一时刻只允许一次，避免定时器叠加请求。
+      probeInFlight ??= probeBotAvailability().finally(() => {
+        probeInFlight = undefined
+      })
+      return probeInFlight
     },
 
     noteBotActivity(selfId?: string) {

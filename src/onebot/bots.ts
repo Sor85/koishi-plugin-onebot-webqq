@@ -24,15 +24,41 @@ export function getOneBotProfileStatus(bot: OneBotBot) {
   return isOneBotReady(bot) ? oneBotOnlineStatus : undefined
 }
 
+// 最廉价的通用 OneBot action，仅用来证明 action 通道确实可用。
+export const oneBotProbeAction = 'get_login_info'
+
+function createOneBotAllowList(selfIds?: string[]) {
+  return new Set((selfIds ?? []).map((selfId) => selfId.trim()).filter(Boolean))
+}
+
+function isAllowedOneBotBot(bot: OneBotBot, allowList: ReadonlySet<string>) {
+  if (!allowList.size) return true
+  return !!bot.selfId && allowList.has(bot.selfId)
+}
+
 export function getAvailableOneBotBots(ctx: OneBotContext, selfIds?: string[], activeSelfIds?: ReadonlySet<string>) {
-  const allowList = new Set((selfIds ?? []).map((selfId) => selfId.trim()).filter(Boolean))
+  const allowList = createOneBotAllowList(selfIds)
   if (selfIds && !allowList.size) return []
   return getOneBotBots(ctx).filter((bot) => {
     // 某些适配器已能收到该 Bot 的消息时仍短暂上报 OFFLINE；实际活动是比滞后状态更强的可用信号。
     const recentlyActive = !!bot.selfId && !!activeSelfIds?.has(bot.selfId) && supportsOneBotAction(bot)
     if (!isOneBotReady(bot) && !recentlyActive) return false
-    if (!allowList.size) return true
-    return !!bot.selfId && allowList.has(bot.selfId)
+    return isAllowedOneBotBot(bot, allowList)
+  })
+}
+
+// Koishi 重启后适配器可能长时间上报 OFFLINE/CONNECT，即使 action 通道早已可用。
+// 这类 Bot 过去只能靠「等一条外部消息」触发 noteBotActivity 才会变可用，首屏因此加载失败。
+// 这里挑出所有不自报就绪的 Bot 作为主动探测对象；已经如实上报在线的无需探测。
+// 注意不能排除「当前靠活动覆盖才可用」的 Bot，否则覆盖会在 5 分钟后过期并造成可用性抖动。
+export function getProbeableOneBotBots(ctx: OneBotContext, selfIds?: string[]) {
+  const allowList = createOneBotAllowList(selfIds)
+  if (selfIds && !allowList.size) return []
+  return getOneBotBots(ctx).filter((bot) => {
+    if (!bot.selfId) return false
+    if (isOneBotReady(bot)) return false
+    if (!supportsOneBotAction(bot, oneBotProbeAction)) return false
+    return isAllowedOneBotBot(bot, allowList)
   })
 }
 
