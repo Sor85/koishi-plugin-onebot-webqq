@@ -29,7 +29,6 @@ const capsuleState = await readFile(new URL('../client/capsule/state.ts', import
 const entryState = await readFile(new URL('../client/entry-state.ts', import.meta.url), 'utf8')
 const onebotBots = await readFile(new URL('../client/onebot/bots.ts', import.meta.url), 'utf8')
 const webqqSettings = await readFile(new URL('../client/webqq/settings.ts', import.meta.url), 'utf8')
-const webqqRuntimeState = await readFile(new URL('../client/webqq/runtime-state.ts', import.meta.url), 'utf8')
 const webqqTypes = await readFile(new URL('../client/webqq/types.ts', import.meta.url), 'utf8')
 const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 const clientShell = await readFile(new URL('../client/ClientShell.vue', import.meta.url), 'utf8')
@@ -2072,10 +2071,8 @@ describe('webqq observer view', () => {
 
   it('shares the summed WebQQ unread count with the capsule state', () => {
     // 总未读数是观察窗的运行时状态，住在 runtime-state.ts 而不是配置镜像 settings.ts 里。
+    // 「配置镜像不再导出它」由 tests/webqq-members.test.ts 读运行时导出面断言，这里只钉 import 位置。
     expect(webqqView).toMatch(/import\s+\{[^}]*webQQTotalUnread[^}]*\}\s+from '\.\/runtime-state'/)
-    expect(webqqSettings).not.toContain('webQQTotalUnread')
-    expect(webqqRuntimeState).toContain('export const webQQTotalUnread = runtimeState.webQQTotalUnread')
-    expect(webqqRuntimeState).toContain('globalThis')
     expect(webqqConversationStateStore).toContain('const totalUnreadCount = computed(() => Object.values(conversationUnreadCounts.value).reduce((sum, count) => sum + count, 0))')
     expect(webqqView).toContain('watch(totalUnreadCount, (count) => {')
     expect(webqqView).toContain('webQQTotalUnread.value = count')

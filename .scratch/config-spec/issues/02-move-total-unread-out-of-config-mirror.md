@@ -23,3 +23,4 @@
 - `client/webqq/WebQQObserver.vue` 的 `watch(totalUnreadCount, ...)` 写入目标改从 `./runtime-state` 引入。
 - 钉住旧位置的三处断言都改到新位置：`tests/webqq-view.test.ts` 的 import 正则指向 `./runtime-state`，并补断言 settings.ts 不再出现 `webQQTotalUnread`；`tests/webqq-members.test.ts` 把初始值断言拆成独立用例，改从 runtime-state 引入，并用 `Object.keys(import * as settings)` 断言配置镜像不再导出它；`tests/capsule.test.ts` 在原有的「不 import ../webqq/settings」旁补上「不 import ../webqq/runtime-state」。
 - 收紧成「Capsule.vue 完全不 import ../webqq/*」时测试变红：`Capsule.vue` 现存 `import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'`。搬动这个 util 超出本 ticket 范围，所以断言仍按 module 逐个点名。
+- 代码审查后收回三条越界断言：`tests/webqq-view.test.ts` 里对 `runtime-state.ts` 的 `export const ...` 与 `globalThis` 子串断言、以及对 settings.ts 的 `not.toContain('webQQTotalUnread')`，都是新增的源码文本断言。本 ticket 只要求「更新旧 import 位置」，且 spec.md「不断言源码里出现过哪些字符串」；「配置镜像不再导出它」已由 `tests/webqq-members.test.ts` 读运行时导出面覆盖。现在这里只钉 import 位置。
