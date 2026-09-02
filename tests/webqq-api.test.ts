@@ -82,16 +82,6 @@ describe('webqq client api', () => {
     })
   })
 
-  it('preserves the mock environment marker from contacts', async () => {
-    sendState.response = { friends: [], groups: [], mockEnvironment: true }
-
-    await expect(requestWebQQContacts()).resolves.toEqual({
-      friends: [],
-      groups: [],
-      mockEnvironment: true,
-    })
-  })
-
   it('keeps an empty reaction array as an authoritative cleared state', async () => {
     sendState.response = [{
       id: 'message-1',

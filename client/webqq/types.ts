@@ -285,7 +285,6 @@ export type WebQQStoredState = {
 export interface WebQQContacts {
   friends: WebQQFriend[]
   groups: WebQQGroup[]
-  mockEnvironment?: boolean
   friendCategories?: WebQQFriendCategory[]
   recent?: WebQQRecentContact[]
 }

@@ -334,7 +334,6 @@ function normalizeWebQQContacts(value: unknown): WebQQContacts {
   return {
     friends: normalizeArray(value.friends, normalizeWebQQFriend),
     groups: normalizeArray(value.groups, normalizeWebQQGroup),
-    ...(value.mockEnvironment === true ? { mockEnvironment: true } : {}),
     ...(friendCategories.length ? { friendCategories } : {}),
     ...(recent.length ? { recent } : {}),
   }

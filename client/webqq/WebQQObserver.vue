@@ -430,7 +430,6 @@ const {
   selectRecent: selectWebQQRecent,
   resetContacts,
 } = useWebQQContacts(conversationSummaries, hiddenRecentKeys)
-const isWebQQMockEnvironment = computed(() => !!contacts.value.mockEnvironment)
 const { rememberMessageSenderMetadata, applyMessageSenderMetadata } = useWebQQSenderMetadata(currentChat)
 const { isThinkingExpanded, toggleThinking } = useWebQQThinkingExpansion()
 const loading = ref(false)
@@ -461,13 +460,10 @@ const selectedBotAvatar = computed(() => {
 })
 
 async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
-  // 模拟场景必须以服务端预设为唯一真相，避免旧浏览器缓存继续展示已经修正过的角色和测试消息。
-  if (isWebQQMockEnvironment.value) return []
   return loadStoredWebQQMessages(type, peerId, webQQStorageBackend.value, webQQStorageScope.value)
 }
 
 async function saveCachedWebQQMessages(type: 'friend' | 'group', peerId: string, messages: WebQQMessage[]) {
-  if (isWebQQMockEnvironment.value) return
   await saveStoredWebQQMessages(type, peerId, messages, webQQStorageBackend.value, webQQMessageCacheLimit.value, webQQStorageScope.value)
 }
 
