@@ -38,13 +38,21 @@ export function composerEditable(wrapper: WebQQComposerWrapper) {
   return wrapper.get('.onebot-webqq-webqq__send-text')
 }
 
-type WebQQComposerSubmitPayload = [WebQQSendElement[], (result: WebQQComposerSubmitResult) => void]
+type WebQQComposerSubmitPayload = [
+  buildElements: () => Promise<WebQQSendElement[]>,
+  complete: (result: WebQQComposerSubmitResult) => void,
+]
 
-/** 取最后一次 submit 的载荷：发送元素与交回会话层结果的回调。 */
+/** 取最后一次 submit 的载荷：发送元素构造器与交回会话层结果的回调。 */
 export function lastComposerSubmit(wrapper: WebQQComposerWrapper) {
   const events = wrapper.emitted('submit') as WebQQComposerSubmitPayload[] | undefined
   if (!events?.length) throw new Error('没有发出 submit')
   return events[events.length - 1]
+}
+
+/** 会话层拿到构造器后要自己调用它取发送元素，因此断言也走同一条路。 */
+export function submittedComposerElements(wrapper: WebQQComposerWrapper) {
+  return lastComposerSubmit(wrapper)[0]()
 }
 
 /** 零宽字符只是可编辑区的光标锚点，断言草稿文本时要去掉。 */

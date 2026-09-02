@@ -8,6 +8,7 @@ import {
   focusComposerEnd,
   groupMentionCandidates,
   lastComposerSubmit,
+  submittedComposerElements,
   mountWebQQComposer,
   pressComposerKey,
   setDomCaret,
@@ -89,7 +90,7 @@ describe('WebQQ 输入区输入法', () => {
     await flushPromises()
     await pressComposerKey(wrapper, 'Enter')
     await flushPromises()
-    expect(lastComposerSubmit(wrapper)[0]).toEqual([{ type: 'text', text: '晚上好' }])
+    expect(await submittedComposerElements(wrapper)).toEqual([{ type: 'text', text: '晚上好' }])
   })
 
   it('输入法进行中不弹提及菜单，上屏后才弹', async () => {
@@ -113,8 +114,8 @@ describe('WebQQ 输入区发送交接', () => {
     await pressComposerKey(wrapper, 'Enter')
     await flushPromises()
 
-    const [elements, complete] = lastComposerSubmit(wrapper)
-    expect(elements).toEqual([{ type: 'text', text: '早上好' }])
+    const [, complete] = lastComposerSubmit(wrapper)
+    expect(await submittedComposerElements(wrapper)).toEqual([{ type: 'text', text: '早上好' }])
     complete({ sent: true, restoreFocus: true })
     await flushPromises()
     expect(composerText(wrapper)).toBe('')
@@ -162,7 +163,7 @@ describe('WebQQ 输入区发送交接', () => {
     await typeIntoComposer(wrapper, '早上好')
     await wrapper.get('form.onebot-webqq-webqq__send').trigger('submit')
     await flushPromises()
-    expect(lastComposerSubmit(wrapper)[0]).toEqual([{ type: 'text', text: '早上好' }])
+    expect(await submittedComposerElements(wrapper)).toEqual([{ type: 'text', text: '早上好' }])
   })
 
   it('发送中禁用可编辑区与按钮，回车不再提交', async () => {

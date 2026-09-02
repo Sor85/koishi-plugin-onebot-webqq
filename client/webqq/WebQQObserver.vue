@@ -484,7 +484,10 @@ function openLocalImagePreview(url: string) {
 }
 
 // 输入区只产出可发送内容；会话、回复目标、发送 RPC、错误文案与发送锁留在会话层。
-async function sendCurrentWebQQMessage(elements: WebQQSendElement[], complete: (result: WebQQComposerSubmitResult) => void) {
+async function sendCurrentWebQQMessage(
+  buildElements: () => Promise<WebQQSendElement[]>,
+  complete: (result: WebQQComposerSubmitResult) => void,
+) {
   const chat = currentChat.value
   if (!chat || sendingWebQQMessage.value) {
     complete({ sent: false, restoreFocus: false })
@@ -496,10 +499,11 @@ async function sendCurrentWebQQMessage(elements: WebQQSendElement[], complete: (
   errorText.value = ''
   let sent = false
   try {
+    // 附件转字节也在这个 try 里：读文件失败与发送失败共用同一句错误文案。
     await sendWebQQMessage({
       type: chat.type,
       peerId: chat.peerId,
-      elements,
+      elements: await buildElements(),
       ...(replyingToMessageId.value ? { replyToMessageId: replyingToMessageId.value } : {}),
     })
     sent = true

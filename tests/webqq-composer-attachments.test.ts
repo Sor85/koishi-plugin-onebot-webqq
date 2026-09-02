@@ -2,10 +2,12 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  composerEditable,
   composerText,
   createComposerFile,
   focusComposerEnd,
   lastComposerSubmit,
+  submittedComposerElements,
   mountWebQQComposer,
   pasteIntoComposer,
   pressComposerKey,
@@ -138,12 +140,33 @@ describe('WebQQ 待发附件的发送', () => {
 
     await pressComposerKey(wrapper, 'Enter')
     await flushPromises()
-    const [elements] = lastComposerSubmit(wrapper)
+    const elements = await submittedComposerElements(wrapper)
     expect(elements).toHaveLength(1)
     expect(elements[0]).toMatchObject({ type: 'image', name: 'shot.png' })
     const [prefix, payload] = (elements[0].data ?? '').split(',')
     expect(prefix).toBe('data:image/png;base64')
     expect([...Buffer.from(payload, 'base64')]).toEqual([1, 2, 250])
+  })
+
+  it('回车同步交出构造器，会话层因此能先拿发送锁再转字节', async () => {
+    const wrapper = mountWebQQComposer()
+    await pasteIntoComposer(wrapper, [createComposerFile('shot.png', 'image/png')])
+
+    // 不 await：同步派发 keydown 后 submit 就该已经发出，转字节留给会话层在锁内触发。
+    composerEditable(wrapper).element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+    expect(typeof lastComposerSubmit(wrapper)[0]).toBe('function')
+  })
+
+  it('附件读不出字节时把失败交给会话层，输入区不自己咽掉', async () => {
+    const wrapper = mountWebQQComposer()
+    const file = createComposerFile('shot.png', 'image/png')
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(new Error('读取失败'))
+    await pasteIntoComposer(wrapper, [file])
+
+    await pressComposerKey(wrapper, 'Enter')
+    await flushPromises()
+    await expect(submittedComposerElements(wrapper)).rejects.toThrow('读取失败')
   })
 
   it('草稿文字排在附件之前，没有 MIME 时回退成通用二进制类型', async () => {
@@ -154,7 +177,7 @@ describe('WebQQ 待发附件的发送', () => {
 
     await pressComposerKey(wrapper, 'Enter')
     await flushPromises()
-    const [elements] = lastComposerSubmit(wrapper)
+    const elements = await submittedComposerElements(wrapper)
     expect(elements[0]).toEqual({ type: 'text', text: '看图' })
     expect(elements[1]).toMatchObject({ type: 'file', name: 'archive.mkv' })
     expect(elements[1].data?.startsWith('data:application/octet-stream;base64,')).toBe(true)

@@ -135,7 +135,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [elements: WebQQSendElement[], complete: (result: WebQQComposerSubmitResult) => void]
+  submit: [buildElements: () => Promise<WebQQSendElement[]>, complete: (result: WebQQComposerSubmitResult) => void]
   'clear-reply': []
   'preview-attachment': [url: string]
   'update:sendSpace': [space: number]
@@ -154,7 +154,6 @@ const composerIsComposing = ref(false)
 const mentionMenu = ref<{ tokenIndex: number, start: number, query: string }>()
 const mentionMenuIndex = ref(0)
 let suppressComposerInput = false
-let preparingSubmit = false
 
 const isComposerDraftEmpty = computed(() => isWebQQComposerDraftEmpty(composerDraft.value.tokens))
 const canSendWebQQMessage = computed(() => !isComposerDraftEmpty.value || !!sendFiles.value.length)
@@ -502,19 +501,18 @@ async function toSendElement(file: File): Promise<WebQQSendElement> {
 }
 
 // 输入区只负责产出可发送内容；会话、回复目标、发送 RPC 与错误文案都在会话层。
-async function requestSubmit() {
-  if (props.sending || preparingSubmit || !canSendWebQQMessage.value) return
-  preparingSubmit = true
-  try {
-    const elements: WebQQSendElement[] = [
-      ...serializeWebQQComposerDraft(composerDraft.value.tokens),
-      ...await Promise.all(sendFiles.value.map(({ file }) => toSendElement(file))),
-    ]
-    emit('submit', elements, completeSubmit)
-  } finally {
-    // 会话层在 submit 里同步拿到发送锁，因此这里放开重入闸门不会留出双发窗口。
-    preparingSubmit = false
-  }
+// 交出去的是一个待调用的构造器而不是现成的元素：附件转字节可能失败，必须和发送 RPC 落在
+// 会话层同一个 try 里，才能沿用同一句错误文案，并且在转字节之前就先拿到发送锁。
+async function buildSubmitElements(): Promise<WebQQSendElement[]> {
+  return [
+    ...serializeWebQQComposerDraft(composerDraft.value.tokens),
+    ...await Promise.all(sendFiles.value.map(({ file }) => toSendElement(file))),
+  ]
+}
+
+function requestSubmit() {
+  if (props.sending || !canSendWebQQMessage.value) return
+  emit('submit', buildSubmitElements, completeSubmit)
 }
 
 async function completeSubmit(result: WebQQComposerSubmitResult) {

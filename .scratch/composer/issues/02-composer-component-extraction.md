@@ -32,8 +32,8 @@ setCaret(编辑器, tokenIndex=2, offset=3) → getCaret(编辑器) === { tokenI
 - 输入区落地为 `client/webqq/components/WebQQComposer.vue`（约 610 行），观察窗 SFC 从 2042 行降到 1549 行。搬进去的是：模板（发送控件、回复条、待发附件、可编辑区、提及菜单、文件输入与两个按钮）、草稿与 token、光标往返、输入法 composition、提及菜单状态、待发附件、发送区占位观测。
 - 对外接口只有 props 与 emits，没有 `defineExpose`，也不交出任何 DOM 引用。接口形状与理由写进了 ADR 0004：
   - props：`visible`、`sending`、`mention-candidates`、`chat-key`、`bot-avatar`、`replying-to`、`mention-request`
-  - emits：`submit(elements, complete)`、`clear-reply`、`preview-attachment`、`update:sendSpace`、`update:mentionRequest`
-- 发送仍在会话层：`submit` 带出 `elements` 与 `complete` 回调，会话层执行 RPC 后用 `complete({ sent, restoreFocus })` 回报。原先「捕获发起时的 textarea 和会话，异步期间切会话不抢焦点」那条约束改由 `restoreFocus` 表达——会话层比较会话键，输入区只负责在收到许可后 `await nextTick()` 再聚焦。
+  - emits：`submit(buildElements, complete)`、`clear-reply`、`preview-attachment`、`update:sendSpace`、`update:mentionRequest`
+- 发送仍在会话层：`submit` 带出**发送元素构造器**与 `complete` 回调，会话层先拿发送锁、再在自己的 `try` 里调用构造器并执行 RPC，最后用 `complete({ sent, restoreFocus })` 回报。原先「捕获发起时的 textarea 和会话，异步期间切会话不抢焦点」那条约束改由 `restoreFocus` 表达——会话层比较会话键，输入区只负责在收到许可后 `await nextTick()` 再聚焦。
 - 发送区占位对外只有一个数字。`--onebot-webqq-webqq-send-height` 不再挂在观察窗根上，改挂输入区的 `form`：它唯一的消费者是 `.onebot-webqq-webqq__send-image`（附件缩略图），就在 `form` 内部，`grep` 确认过没有第二处消费点。
 - 切会话的清空由 `chat-key` prop 驱动，没有用父层换 `key` 重挂载的写法，理由见 ADR 0004。
 - 浮层挂载方式与滚动条挂点原样搬迁：提及菜单仍是 `.onebot-webqq-webqq__send-main` 里的 `v-if` 子节点（没有换成 Teleport），`v-webqq-scrollbar="{ tone: 'accent' }"` 仍挂在真实的可编辑区元素上。
@@ -49,3 +49,5 @@ setCaret(编辑器, tokenIndex=2, offset=3) → getCaret(编辑器) === { tokenI
   2. `lastSubmit` 原本在两个测试文件各写一份，收进 `tests/helpers/webqq-composer.ts` 的 `lastComposerSubmit`。
   3. 搬迁过来的光标代码里，「这个子节点算不算一个 token」判断重复三处，抽成 `isComposerTokenNode`；`handleComposerInput` 的 `nextTick` 回调与 `syncComposerCaretFromDom` 是同一段钳制逻辑，让后者返回是否读到光标，前者改成 `if (syncComposerCaretFromDom()) updateMentionMenuFromDraft(...)`。两处都是等价改写，行为不变，改完全量测试与失效实测都重跑过（`isComposerTokenNode` 改坏会变红）。把这个返回值恒真化则不会变红——那是个等价变异：读不到光标时草稿与上一次同步调用之间没有变化，重算提及菜单是幂等的。保留这个判断只为与搬迁前的语义逐字对齐。
   4. ADR 0004 里把发送区占位写成 `v-model:send-space` 有误——它只有 `update:send-space` 事件，没有对应 prop，已改成事件说法。提及请求那条才是真的 `v-model`。
+- 规格轴审查抓到一处真的行为回归，已修（见 `fix：附件转字节回到发送锁与错误文案之内` 那次提交）：第一版把附件转字节放在输入区的 `requestSubmit` 里，于是读文件失败不再落进会话层那句「发送消息失败」，还会产生未处理的 promise rejection；而且发送锁推迟到 RPC 之前才上，转 base64 期间可编辑区不再是禁用态（搬迁前是先 `sendingWebQQMessage = true` 再 `toSendElement`）。改法是 `submit` 交出构造器而不是现成元素，让转字节回到会话层同一个 `try` 里。补了两条断言：回车同步交出构造器、构造器失败原样抛给会话层；两条都做了失效实测。
+- 同一轮审查还提出「删掉 `watch(enableWebQQSend && currentChat)` 后关掉发送不再把占位打回 44+28」。核对后确认这条不成立：`--onebot-webqq-webqq-send-space` 的两个消费点（`webqq-chat.scss` 与 `theme-colors.scss`）都挂在 `.has-send-input` 下，而 `has-send-input` 正是 `enableWebQQSend && currentChat`；输入区不在场时这个值读不到，唯一「门禁开着但输入区不在」的情形是多选模式，那时父层用固定值 64。因此没有旧留白可残留，不做改动。
