@@ -29,7 +29,7 @@ export function registerCapsule(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
   bots: CapsuleBotRuntime
-  botScope?: OneBotBotScope
+  botScope: OneBotBotScope
   consoleAuthOptions: { authority: number }
   readBotSenderMetadata: Parameters<typeof registerCapsuleChatLunaActivity>[0]['readBotSenderMetadata']
   logger?: DebugLogger

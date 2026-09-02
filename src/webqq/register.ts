@@ -24,7 +24,7 @@ export function registerWebQQ(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
   webqq: WebQQService
-  botScope?: OneBotBotScope
+  botScope: OneBotBotScope
   imageUrlResolver: WebQQImageUrlResolver
   consoleAuthOptions: { authority: number }
   historyLimit: number

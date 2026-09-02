@@ -19,7 +19,7 @@ type CapsuleSenderMetadata = Pick<CapsuleMessageInput['user'], 'senderRole' | 's
 export function registerCapsuleChatLunaActivity(options: {
   ctx: ChatCapsuleContext
   state: CapsuleState
-  botScope?: OneBotBotScope
+  botScope: OneBotBotScope
   logSnapshot: (source: string) => void
   broadcast: () => void
   logger?: DebugLogger
