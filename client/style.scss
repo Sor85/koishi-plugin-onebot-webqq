@@ -1,3 +1,5 @@
+// 盒模型基线必须排在所有布局规则之前：它是同特异性的兜底，后续规则若显式声明 box-sizing 仍然生效。
+@use './webqq/styles/webqq-box-model';
 @use './capsule/styles';
 @use './webqq/styles/webqq-shell';
 @use './webqq/styles/webqq-chat';

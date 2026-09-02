@@ -13,9 +13,11 @@ const webqqMessageOverlaysStyle = await readFile(new URL('../client/webqq/styles
 const webqqMessageEffectsStyle = await readFile(new URL('../client/webqq/styles/webqq-message-effects.scss', import.meta.url), 'utf8')
 const themeColorsStyle = await readFile(new URL('../client/webqq/styles/theme-colors.scss', import.meta.url), 'utf8')
 const webqqInteractionsStyle = await readFile(new URL('../client/webqq/styles/webqq-interactions.scss', import.meta.url), 'utf8')
+const webqqBoxModelStyle = await readFile(new URL('../client/webqq/styles/webqq-box-model.scss', import.meta.url), 'utf8')
 const dialogContentView = await readFile(new URL('../client/components/ui/dialog/DialogContent.vue', import.meta.url), 'utf8')
 const webqqEmojiPickerView = await readFile(new URL('../client/webqq/components/WebQQEmojiPicker.vue', import.meta.url), 'utf8')
 const webqqProfileCardView = await readFile(new URL('../client/webqq/components/WebQQProfileCard.vue', import.meta.url), 'utf8')
+const webqqSidebarView = await readFile(new URL('../client/webqq/components/WebQQSidebar.vue', import.meta.url), 'utf8')
 const webqqForwardTargetDialogView = await readFile(new URL('../client/webqq/components/WebQQForwardTargetDialog.vue', import.meta.url), 'utf8')
 const contextMenuContentView = await readFile(new URL('../client/components/ui/context-menu/ContextMenuContent.vue', import.meta.url), 'utf8')
 const contextMenuSubContentView = await readFile(new URL('../client/components/ui/context-menu/ContextMenuSubContent.vue', import.meta.url), 'utf8')
@@ -88,7 +90,42 @@ function ruleBodyIncluding(selector: string, source = style) {
 
 describe('chat capsule styles', () => {
   it('never overrides the mouse cursor in WebQQ styles', () => {
-    expect(`${style}\n${webqqInteractionsStyle}`).not.toMatch(/cursor\s*:/)
+    expect(`${style}\n${webqqInteractionsStyle}\n${webqqBoxModelStyle}`).not.toMatch(/cursor\s*:/)
+  })
+
+  it('declares its own border-box baseline instead of borrowing a host reset', () => {
+    // 宿主 Koishi 控制台不提供 `* { box-sizing }` reset（app/index.scss 只给 body 设 margin 与字体）。
+    // 缺少这份基线时 min-height 与 padding 改为相加：右键菜单项从 36px 撑到 52px（实测 ×1.44），
+    // width: 100% 的项再横向溢出 20px 被菜单的 overflow: hidden 裁掉。
+    const bodyLevelSurfaceRoots = [
+      '.onebot-webqq-host',
+      '.webqq-context-menu-content',
+      '.webqq-dialog-layer',
+      '.onebot-webqq-webqq__portal-page',
+      '.onebot-webqq-webqq__notice-menu',
+      '.onebot-webqq-webqq__scrollbar-overlay',
+    ]
+    const baselinePrelude = webqqBoxModelStyle.slice(
+      webqqBoxModelStyle.lastIndexOf('*/') + 2,
+      webqqBoxModelStyle.indexOf('{', webqqBoxModelStyle.lastIndexOf('*/')),
+    )
+    const baselineRoots = baselinePrelude.split(',').map((item) => item.trim()).filter(Boolean)
+
+    // 基线必须最先输出：它与各处规则同特异性，排在后面会盖掉规则自己声明的 box-sizing。
+    expect(styleEntry.match(/@use\s+'([^']+)'/)?.[1]).toBe('./webqq/styles/webqq-box-model')
+    // 逐个登记 body 级浮层根：Portal/Teleport 出去的子树不在胶囊根的后代里，漏一个就静默退回 content-box。
+    expect(baselineRoots).toEqual(bodyLevelSurfaceRoots)
+    // 根自身与整棵子树都要覆盖，浮层内层元素同样拿不到宿主 reset。
+    expect(webqqBoxModelStyle).toMatch(/&,\s*\n\s*\*,\s*\n\s*\*::before,\s*\n\s*\*::after\s*\{\s*\n\s*box-sizing:\s*border-box/)
+    // 新增 body 级浮层时必须同步登记进上面的清单，这两条计数守卫会在漏登记时失败。
+    expect(
+      [dialogContentView, webqqEmojiPickerView, webqqProfileCardView, webqqSidebarView]
+        .join('\n')
+        .match(/<Teleport to="body">/g)?.length,
+    ).toBe(4)
+    expect(
+      [contextMenuContentView, contextMenuSubContentView].join('\n').match(/<ContextMenuPortal>/g)?.length,
+    ).toBe(2)
   })
 
   it('uses the standard dark border color below notification tabs', () => {
