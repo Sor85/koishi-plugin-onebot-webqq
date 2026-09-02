@@ -6,7 +6,9 @@ vi.mock('@koishijs/client', () => ({
 }))
 
 import { sortWebQQGroupMembers, type WebQQGroupMember } from '../client/webqq/types'
-import { enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, webQQTotalUnread } from '../client/webqq/settings'
+import * as webqqSettings from '../client/webqq/settings'
+import { enableCapsuleFrostedGlass, enableWebQQFrostedGlass, hideWebQQGroupLevel, showWebQQCapsuleUnread, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail } from '../client/webqq/settings'
+import { webQQTotalUnread } from '../client/webqq/runtime-state'
 
 function member(userId: string, card: string, role?: string, nickname = card): WebQQGroupMember {
   return {
@@ -31,7 +33,13 @@ describe('webqq group members', () => {
     expect(showWebQQCapsuleUnread.value).toBe(true)
     expect(showWebQQThinkingTokens.value).toBe(true)
     expect(showWebQQThinkingTiming.value).toBe(true)
+  })
+
+  it('keeps the observer total unread count out of the config mirror', () => {
+    // 总未读数不来自配置、不参与下发，所以它住在观察窗的运行时状态 module 里，
+    // 配置镜像的导出面只剩镜像配置项与其派生值。
     expect(webQQTotalUnread.value).toBe(0)
+    expect(Object.keys(webqqSettings)).not.toContain('webQQTotalUnread')
   })
 
   it('sorts owner first, then admins and members by A-Z display name', () => {

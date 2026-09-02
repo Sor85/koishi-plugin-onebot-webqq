@@ -20,8 +20,8 @@ import {
   webQQMessageCacheLimit,
   webQQStorageBackend,
   webQQTimBubbleTail,
-  webQQTotalUnread,
 } from './webqq/settings'
+import { webQQTotalUnread } from './webqq/runtime-state'
 
 interface WebQQEntryState {
   debug: Ref<boolean>

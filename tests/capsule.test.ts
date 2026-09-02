@@ -214,7 +214,10 @@ describe('chat capsule view', () => {
 
   it('renders total WebQQ unread count on the bot avatar when enabled', () => {
     expect(capsuleView).toMatch(/import \{[^}]*\bshowWebQQCapsuleUnread\b[^}]*\bwebQQTotalUnread\b[^}]*\} from '\.\.\/entry-state'/)
+    // ADR 0001：client/capsule 不得直接依赖 client/webqq 的状态 module，
+    // 配置镜像和观察窗运行时状态都只能经 entry-state 这个组合根拿到。
     expect(capsuleView).not.toContain("from '../webqq/settings'")
+    expect(capsuleView).not.toContain("from '../webqq/runtime-state'")
     expect(capsuleView).toContain('class="onebot-webqq__avatar-unread"')
     expect(capsuleView).toContain('v-if="showWebQQCapsuleUnread && webQQTotalUnread"')
     expect(capsuleView).toContain('{{ capsuleUnreadText }}')

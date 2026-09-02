@@ -18,7 +18,6 @@ interface WebQQClientSettingsState {
   showWebQQThinkingTokens: Ref<boolean>
   showWebQQThinkingTiming: Ref<boolean>
   useCompactCapsuleShadow: Ref<boolean>
-  webQQTotalUnread: Ref<number>
   webQQAccentColor: Ref<string>
   webQQChatStyle: Ref<WebQQChatStyle>
   webQQColorMode: Ref<WebQQColorMode>
@@ -42,7 +41,6 @@ function createWebQQClientSettingsState(): WebQQClientSettingsState {
     showWebQQThinkingTokens: ref(true),
     showWebQQThinkingTiming: ref(true),
     useCompactCapsuleShadow: ref(true),
-    webQQTotalUnread: ref(0),
     webQQAccentColor: ref('#2563eb'),
     webQQChatStyle: ref<WebQQChatStyle>('tim'),
     webQQColorMode: ref<WebQQColorMode>('auto'),
@@ -73,7 +71,6 @@ export const showWebQQRelationship = settingsState.showWebQQRelationship
 export const showWebQQThinkingTokens = settingsState.showWebQQThinkingTokens
 export const showWebQQThinkingTiming = settingsState.showWebQQThinkingTiming
 export const useCompactCapsuleShadow = settingsState.useCompactCapsuleShadow
-export const webQQTotalUnread = settingsState.webQQTotalUnread
 export const webQQAccentColor = settingsState.webQQAccentColor
 export const webQQChatStyle = settingsState.webQQChatStyle
 export const webQQColorMode = settingsState.webQQColorMode
