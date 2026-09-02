@@ -1,6 +1,7 @@
 import type { Config as PluginConfig } from '../config'
 import { readConfigValue } from '../config/spec'
 import type {
+  WebQQChatType,
   WebQQForwardSendInput,
   WebQQFriendAction,
   WebQQGroupAction,
@@ -49,6 +50,7 @@ export function registerWebQQConsoleListeners(
     groupLeaveNotices: Map<string, WebQQNotice>
     consoleAuthOptions: { authority: number }
     getStorageScope: () => string | undefined
+    recordSentMessage: (peer: { type: WebQQChatType; peerId: string }, messageId: string | undefined) => Promise<void>
     logger?: DebugLogger
   },
 ) {
@@ -61,6 +63,7 @@ export function registerWebQQConsoleListeners(
     groupLeaveNotices,
     consoleAuthOptions,
     getStorageScope,
+    recordSentMessage,
     logger,
   } = options
 
@@ -131,8 +134,10 @@ export function registerWebQQConsoleListeners(
       status: action.approve ? 'approved' : 'rejected',
     })
   }, consoleAuthOptions)
-  console.addListener('onebot-webqq/webqq/send', (payload: WebQQSendPayload) => {
-    return webqq.sendMessage(payload)
+  console.addListener('onebot-webqq/webqq/send', async (payload: WebQQSendPayload) => {
+    const messageId = await webqq.sendMessage(payload)
+    // 发完立刻回显，不依赖实现是否回报自发消息；回显失败不影响这次发送成功。
+    await recordSentMessage({ type: payload.type, peerId: payload.peerId }, messageId)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/message-recall', (input: WebQQMessageRecallInput) => {
     return webqq.recallMessage(input)
@@ -152,8 +157,9 @@ export function registerWebQQConsoleListeners(
   console.addListener('onebot-webqq/webqq/group-action', (input: WebQQGroupAction) => {
     return webqq.performGroupAction(input)
   }, consoleAuthOptions)
-  console.addListener('onebot-webqq/webqq/forward-send', (input: WebQQForwardSendInput) => {
-    return webqq.sendForward(input)
+  console.addListener('onebot-webqq/webqq/forward-send', async (input: WebQQForwardSendInput) => {
+    const messageId = await webqq.sendForward(input)
+    await recordSentMessage({ type: input.type, peerId: input.peerId }, messageId)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/storage/load', () => {
     return loadWebQQStorage(inner, config, getStorageScope())

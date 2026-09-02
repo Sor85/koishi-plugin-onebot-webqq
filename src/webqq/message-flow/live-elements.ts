@@ -1,11 +1,12 @@
 import type { Session } from 'koishi'
 import type { WebQQMessageElement } from '../types'
 import { normalizeCardElement } from '../adapters/onebot/card'
+import { missingImageElement } from '../adapters/onebot/images'
 import { normalizeFaceElement, summarizeElements } from '../adapters/onebot/messages'
 import { decodeTextEntity, normalizeMentionMarkupText, readMarkupAttribute } from '../adapters/onebot/text'
 import { isRecord, readRecordText } from '../../shared/record'
 import { readStructuredText } from '../structured-text'
-import { isRemoteImageSource } from '../media/image-url-resolver'
+import { isDirectMediaSource, isRemoteImageSource, isUnresolvableMediaSource } from '../media/image-url-resolver'
 
 function readElementText(value: unknown) {
   return value == null ? '' : String(value)
@@ -49,7 +50,9 @@ export type WebQQRecordResolver = WebQQImageResolver
 
 async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolveImage?: WebQQImageResolver): Promise<WebQQMessageElement> {
   const url = readElementText(attrs.src || attrs.url)
-  if (url) {
+  // 浏览器能直接渲染的取值不进代理；取不回的引用不算地址，继续按 file 解析。
+  if (isDirectMediaSource(url)) return { type: 'image', url }
+  if (url && !isUnresolvableMediaSource(url)) {
     try {
       return { type: 'image', url: resolveImage ? (await resolveImage(url, 'url')).url : url }
     } catch {
@@ -57,7 +60,9 @@ async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolve
     }
   }
   const file = readElementText(attrs.file || attrs.file_id)
-  if (!file) return { type: 'image' }
+  if (!file) return missingImageElement
+  if (isDirectMediaSource(file)) return { type: 'image', url: file }
+  if (isUnresolvableMediaSource(file)) return missingImageElement
   if (isRemoteImageSource(file)) {
     try {
       return { type: 'image', url: resolveImage ? (await resolveImage(file, 'url')).url : file }
@@ -68,7 +73,7 @@ async function normalizeLiveImageElement(attrs: Record<string, unknown>, resolve
   try {
     return { type: 'image', url: resolveImage ? (await resolveImage(file)).url : '' }
   } catch {
-    return { type: 'image' }
+    return missingImageElement
   }
 }
 
@@ -82,7 +87,8 @@ async function normalizeLiveRecordElement(attrs: Record<string, unknown>, resolv
     ...(transcript ? { transcript } : {}),
   }
   const url = readElementText(attrs.src || attrs.url || attrs.temp_url)
-  if (url) {
+  if (isDirectMediaSource(url)) return { ...base, url }
+  if (url && !isUnresolvableMediaSource(url)) {
     try {
       return { ...base, url: resolveRecord ? (await resolveRecord(url, 'url')).url : url }
     } catch {
@@ -91,6 +97,8 @@ async function normalizeLiveRecordElement(attrs: Record<string, unknown>, resolv
   }
   const file = readElementText(attrs.file || attrs.file_id || attrs.resource_id || attrs.path)
   if (!file) return base
+  if (isDirectMediaSource(file)) return { ...base, url: file }
+  if (isUnresolvableMediaSource(file)) return base
   try {
     return { ...base, url: resolveRecord ? (await resolveRecord(file)).url : '' }
   } catch {

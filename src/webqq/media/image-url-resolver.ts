@@ -64,6 +64,38 @@ export function isRemoteImageSource(file: string) {
   return /^https?:\/\//.test(file)
 }
 
+// 浏览器自己就能渲染的取值。塞进图片代理只会绕一圈再取不回来：代理既不会 fetch data:，
+// 也没法把它当路径 readFile，结果是 502 加一张碎图。
+const renderableDataMediaPattern = /^data:(?:image|audio|video)\//i
+const dataMediaPattern = /^data:/i
+// 非 http(s) 的 scheme。代理会把它当本地路径 readFile，注定失败——例如提供方自己的
+// 受管媒体引用（`sandbox-media://<hash>` 这类）只有它自己解得开。
+const foreignMediaSchemePattern = /^[a-z][a-z0-9+.-]*:\/\//i
+
+export function isDirectMediaSource(file: string) {
+  return renderableDataMediaPattern.test(file.trim())
+}
+
+export function isUnresolvableMediaSource(file: string) {
+  const value = file.trim()
+  if (!value || isRemoteImageSource(value) || isDirectMediaSource(value)) return false
+  return dataMediaPattern.test(value) || foreignMediaSchemePattern.test(value)
+}
+
+/**
+ * 把消息段里的媒体取值换成前端真能取回的地址。
+ *
+ * 三类取值分开处理：浏览器能直接渲染的原样交给前端，代理和浏览器都取不回的返回空串
+ * （由调用方渲染成占位，而不是让 `<img>` 变成碎图），其余照旧进代理。
+ */
+export function resolveWebQQMediaUrl(file: string, resolve?: (file: string) => string) {
+  const value = file.trim()
+  if (!value) return ''
+  if (isDirectMediaSource(value)) return value
+  if (isUnresolvableMediaSource(value)) return ''
+  return resolve?.(value) || value
+}
+
 export function detectMediaContentType(buf: Buffer): string | undefined {
   if (buf[0] === 0x23 && buf[1] === 0x21 && buf[2] === 0x41 && buf[3] === 0x4d && buf[4] === 0x52) return 'audio/amr'
   if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return 'audio/mpeg'

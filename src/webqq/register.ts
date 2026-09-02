@@ -138,6 +138,7 @@ export function registerWebQQ(options: {
       groupLeaveNotices,
       consoleAuthOptions,
       getStorageScope,
+      recordSentMessage: liveRuntime.recordSentWebQQMessage,
       logger,
     })
   })

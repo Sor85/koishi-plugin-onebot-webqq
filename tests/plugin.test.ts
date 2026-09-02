@@ -2572,6 +2572,101 @@ describe('chat capsule plugin wiring', () => {
     })
   })
 
+  it('echoes a message sent from WebQQ without waiting for the implementation to report it', async () => {
+    const sentMessage = {
+      message_id: 55,
+      message_seq: 155,
+      time: 1710000010,
+      sender: { user_id: 10000, nickname: 'Capsule Bot' },
+      message: [{ type: 'text', data: { text: 'hello' } }],
+    }
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        send_group_msg: vi.fn(async () => ({ message_id: 55 })),
+        send_group_forward_msg: vi.fn(async () => ({ message_id: 77 })),
+        get_msg: vi.fn(async () => sentMessage),
+      },
+      toJSON: () => ({ user: { name: 'Capsule Bot' } }),
+    }
+    const { ctx, addListener, broadcast } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    const sendMessage = findConsoleListener(addListener, 'onebot-webqq/webqq/send')
+    const sendForward = findConsoleListener(addListener, 'onebot-webqq/webqq/forward-send')
+    await sendMessage?.({ type: 'group', peerId: '20000', elements: [{ type: 'text', text: 'hello' }] })
+
+    // 读回来的这条按 get_msg 渲染，与切会话后重读历史看到的完全一致。
+    expect(bot.internal.get_msg).toHaveBeenCalledWith({ message_id: 55 })
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({
+        id: '55',
+        direction: 'outgoing',
+        senderId: '10000',
+        summary: 'hello',
+      }),
+    }, { authority: 1 })
+
+    await sendForward?.({ type: 'group', peerId: '20000', messageIds: ['12345'] })
+    expect(bot.internal.get_msg).toHaveBeenCalledWith({ message_id: 77 })
+  })
+
+  it('keeps one message when the implementation also reports the message WebQQ just sent', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        get_group_msg_history: vi.fn(async () => ({ messages: [] })),
+        send_group_msg: vi.fn(async () => ({ message_id: 55 })),
+        get_msg: vi.fn(async () => ({
+          message_id: 55,
+          message_seq: 155,
+          time: 1710000010,
+          sender: { user_id: 10000, nickname: 'Capsule Bot' },
+          message: [{ type: 'text', data: { text: 'hello' } }],
+        })),
+      },
+      toJSON: () => ({ user: { name: 'Capsule Bot' } }),
+    }
+    const { ctx, listeners, addListener } = createFakeContext({ bots: [bot] })
+
+    plugin.apply(ctx)
+    const sendMessage = findConsoleListener(addListener, 'onebot-webqq/webqq/send')
+    const loadMessages = findConsoleListener(addListener, 'onebot-webqq/webqq/messages')
+    await sendMessage?.({ type: 'group', peerId: '20000', elements: [{ type: 'text', text: 'hello' }] })
+    // 开了 report-self-message 的实现会把同一条消息再当事件送回来。
+    await emitAll(listeners.message, createSession({
+      bot,
+      userId: '10000',
+      event: {
+        platform: 'onebot',
+        timestamp: 1710000010000,
+        _data: { message_id: 55, message_seq: 155 },
+        guild: { id: '20000', name: 'Guild Name' },
+        channel: { id: '20000', name: 'Guild Name' },
+        user: { id: '10000', name: 'Capsule Bot' },
+        message: {
+          id: '55',
+          elements: [{ type: 'text', attrs: { content: 'hello' } }],
+        },
+      },
+    }))
+
+    await expect(loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })).resolves.toEqual([
+      expect.objectContaining({ id: '55', direction: 'outgoing', summary: 'hello' }),
+    ])
+  })
+
   it('loads and saves WebQQ state and message cache through the Koishi database backend', async () => {
     const storedState = {
       conversationSummaries: {

@@ -10,7 +10,7 @@ import type { WebQQChatType, WebQQLiveMessage, WebQQMessage, WebQQRecallPayload 
 import type { ChatCapsuleContext, ChatLunaModelUsage, DebugLogger } from '../../plugin-context'
 import { attachWebQQAffinityBadges } from '../affinity'
 import { applyWebQQRecallToLiveMessages, getWebQQLiveMessageKey, mergeWebQQLiveMessages } from './live-cache'
-import { createWebQQLiveMessage } from './live-message'
+import { createWebQQLiveMessage, type WebQQEventPeer } from './live-message'
 import type { WebQQImageUrlResolver } from '../media/image-url-resolver'
 import {
   readWebQQPeer,
@@ -286,6 +286,34 @@ export function createWebQQLiveRuntime(options: {
     broadcastWebQQLivePayload(payload)
     await refreshWebQQLiveSenderMetadata(session, payload)
   }
+  /**
+   * 把 WebQQ 自己刚发出去的这条消息回显到观察窗。
+   *
+   * 不能只等 Koishi 事件：只有回报自发消息的实现才会把它送回来（NapCat 的
+   * report-self-message 默认关闭，虚拟 OneBot 机器人也不会把自己发的消息投回给自己），
+   * 否则发完要切一次会话、等历史重读才看得到。按发送 action 返回的 message_id 用 get_msg
+   * 读回来，渲染口径与历史完全一致；实现真的回报了自发消息时，两条按 message_id 合成一条。
+   *
+   * 这里不接 thinking 与 usage：那两样属于 ChatLuna 生成的回复，挂到人工发送的消息上会把
+   * 下一条回复的思考块提前吃掉。
+   */
+  const recordSentWebQQMessage = async (peer: WebQQEventPeer, messageId: string | undefined) => {
+    if (!messageId) return
+    let message: WebQQMessage
+    try {
+      message = await options.webqq.resolveMessage(messageId)
+    } catch (error) {
+      options.logger?.info('webqq sent message echo failed %s', JSON.stringify({
+        ...peer,
+        messageId,
+        error: error instanceof Error ? error.message : String(error),
+      }))
+      return
+    }
+    const [messageWithAffinity = message] = await attachWebQQAffinityBadges(options.ctx, options.config, [message], options.logger)
+    broadcastWebQQLivePayload({ ...peer, message: messageWithAffinity })
+  }
+
   const updateLastOutgoingWebQQThinking = (payload: ChatLunaCharacterAfterChatPayload) => {
     if (!payload.session) return
     if (!isSelectedWebQQSession(payload.session)) return
@@ -383,6 +411,7 @@ export function createWebQQLiveRuntime(options: {
   return {
     liveMessages,
     recordWebQQLiveMessage,
+    recordSentWebQQMessage,
     recordWebQQNotice: (session: Session | undefined) => {
       if (session && !isSelectedWebQQSession(session)) return
       return noticeRuntime.recordWebQQNotice(session)

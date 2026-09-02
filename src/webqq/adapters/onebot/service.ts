@@ -266,6 +266,12 @@ function toOneBotSendSegment(element: WebQQSendElement) {
   }
 }
 
+// 发送类 action 返回的消息 ID。WebQQ 用它把刚发出的这条消息按 get_msg 读回来并回显——
+// 不是所有 OneBot 实现都会回报自己发出的消息（NapCat 的 report-self-message 默认关闭）。
+function readSentMessageId(result: unknown) {
+  return getStringField(getActionData(result), ['message_id', 'messageId', 'msg_id', 'msgId', 'id'])
+}
+
 function pushProfileField(fields: WebQQProfileField[], group: string, label: string, value?: string) {
   const next = value?.trim()
   if (!next) return
@@ -597,10 +603,9 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       if (!message.length) return
       const bot = getBot()
       if (payload.type === 'group') {
-        await callAction(bot, 'send_group_msg', { group_id: toOneBotId(payload.peerId), message })
-        return
+        return readSentMessageId(await callAction(bot, 'send_group_msg', { group_id: toOneBotId(payload.peerId), message }))
       }
-      await callAction(bot, 'send_private_msg', { user_id: toOneBotId(payload.peerId), message })
+      return readSentMessageId(await callAction(bot, 'send_private_msg', { user_id: toOneBotId(payload.peerId), message }))
     },
 
     async recallMessage(input: WebQQMessageRecallInput) {
@@ -842,24 +847,23 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       }))
       if (input.type === 'group') {
         // 优先实现专用转发接口，失败再回退通用 send_forward_msg。
-        await callSupportedAction(
+        return readSentMessageId(await callSupportedAction(
           bot,
           ['send_group_forward_msg', 'send_forward_msg'],
           {
             group_id: toOneBotId(input.peerId),
             messages,
           },
-        )
-        return
+        ))
       }
-      await callSupportedAction(
+      return readSentMessageId(await callSupportedAction(
         bot,
         ['send_private_forward_msg', 'send_forward_msg'],
         {
           user_id: toOneBotId(input.peerId),
           messages,
         },
-      )
+      ))
     },
 
     async loadGroupInfo(query: WebQQGroupInfoQuery): Promise<WebQQGroupInfo> {
