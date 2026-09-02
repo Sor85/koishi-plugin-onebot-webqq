@@ -1,6 +1,7 @@
 import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
 import type { OneBotRobotState } from '../onebot/types'
+import type { OneBotBotScope } from '../onebot/bots'
 import { isVisibleBotSession } from '../onebot/session'
 import type {
   ChatCapsuleContext,
@@ -28,6 +29,7 @@ export function registerCapsule(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
   bots: CapsuleBotRuntime
+  botScope?: OneBotBotScope
   consoleAuthOptions: { authority: number }
   readBotSenderMetadata: Parameters<typeof registerCapsuleChatLunaActivity>[0]['readBotSenderMetadata']
   logger?: DebugLogger
@@ -38,6 +40,7 @@ export function registerCapsule(options: {
     ctx,
     config,
     bots: botRuntime,
+    botScope,
     consoleAuthOptions,
     readBotSenderMetadata,
     logger,
@@ -82,6 +85,7 @@ export function registerCapsule(options: {
   const chatLunaActivity = registerCapsuleChatLunaActivity({
     ctx,
     state,
+    botScope,
     logSnapshot,
     broadcast,
     logger,
@@ -99,7 +103,7 @@ export function registerCapsule(options: {
   }, 60 * 1000)
 
   ctx.before('send', async (session) => {
-    if (!isVisibleBotSession(session)) return
+    if (!isVisibleBotSession(session, botScope)) return
     recordOutgoingMessage(state)
     logSnapshot('send')
     broadcast()

@@ -1,5 +1,6 @@
 import type { Config as PluginConfig } from '../config'
 import type { OneBotRobotState } from '../onebot/types'
+import type { OneBotBotScope } from '../onebot/bots'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
 import type { WebQQImageUrlResolver } from './media/image-url-resolver'
 import { registerWebQQReactionInterceptor } from './adapters/onebot/reactions'
@@ -23,6 +24,7 @@ export function registerWebQQ(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
   webqq: WebQQService
+  botScope?: OneBotBotScope
   imageUrlResolver: WebQQImageUrlResolver
   consoleAuthOptions: { authority: number }
   historyLimit: number
@@ -38,6 +40,7 @@ export function registerWebQQ(options: {
     ctx,
     config,
     webqq,
+    botScope,
     imageUrlResolver,
     consoleAuthOptions,
     historyLimit,
@@ -65,6 +68,7 @@ export function registerWebQQ(options: {
     ctx,
     config,
     webqq,
+    botScope,
     imageUrlResolver,
     consoleAuthOptions,
     logger,

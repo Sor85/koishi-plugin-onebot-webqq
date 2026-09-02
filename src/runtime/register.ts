@@ -19,12 +19,14 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     consoleOwner,
     imageUrlResolver,
     webqq,
+    botScope,
     consoleAuthOptions,
   } = createPluginRuntime(ctx, config)
   const capsuleRuntime = registerCapsule({
     ctx,
     config,
     bots: webqq,
+    botScope,
     consoleAuthOptions,
     readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
     logger,
@@ -35,6 +37,7 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
     ctx,
     config,
     webqq,
+    botScope,
     imageUrlResolver,
     consoleAuthOptions,
     historyLimit,
@@ -85,7 +88,8 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
 
   ctx.on('message', async (session) => {
     // hidden Bot 仍会发出标准 Koishi 事件；在共享扇出边界阻断，避免胶囊状态和 WebQQ 未读一起被污染。
-    if (!isVisibleBotSession(session)) return
+    // 纳入虚拟机器人时判据反过来：只有虚拟机器人的事件能进，真实群的消息不进模拟环境。
+    if (!isVisibleBotSession(session, botScope)) return
     // 诊断数据要遍历全部 bot 并做 JSON 序列化；关闭 debug 时不能为每条消息都算一遍。
     if (logger) {
       const matchingContextBots = (ctx.bots ?? []).flatMap((candidate, index) => {

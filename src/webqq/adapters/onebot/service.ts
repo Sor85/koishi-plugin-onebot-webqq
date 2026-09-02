@@ -307,7 +307,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         supportsAnyAction: bot ? supportsOneBotAction(bot) : false,
       }
     })
-    const availableBots = getAvailableOneBotBots(ctx, options.selfIds, activeSelfIds).map((bot) => ({
+    const availableBots = getAvailableOneBotBots(ctx, options.selfIds, activeSelfIds, options).map((bot) => ({
       selfId: bot.selfId,
       status: bot.status,
       statusName: getOneBotStatusName(bot.status),
@@ -317,6 +317,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       selectedSelfId,
       configuredSelfId: options.selfId,
       configuredSelfIds: options.selfIds,
+      includeVirtualBots: !!options.includeVirtualBots,
       recentActiveSelfIds: [...activeSelfIds],
       rawBots,
       availableBots,
@@ -341,12 +342,14 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
   const listBots = () => {
     // 可用性覆盖与画像状态必须来自同一份活动快照，否则会出现「Bot 在列表里但指示灯离线」的矛盾。
     const activeSelfIds = getRecentlyActiveSelfIds()
-    const bots = getAvailableOneBotBots(ctx, options.selfIds, activeSelfIds)
+    const bots = getAvailableOneBotBots(ctx, options.selfIds, activeSelfIds, options)
       .map((bot) => toOneBotRobotProfile(bot, activeSelfIds))
       .filter((bot): bot is OneBotRobotProfile => !!bot)
+    // 模拟环境下不再派生假画像：提供方插件里可以真的建多台虚拟机器人，走真实 action。
+    const mockBotCount = options.includeVirtualBots ? 0 : getMockBotCount(options.mockBotCount)
     return [
       ...bots,
-      ...createMockBotProfiles(bots, getMockBotCount(options.mockBotCount)),
+      ...createMockBotProfiles(bots, mockBotCount),
     ]
   }
   const reconcileBotState = (): OneBotRobotState => {
@@ -381,14 +384,14 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
   const protocol = options.protocol ?? readConfigDefault('onebotProtocol')
   const { imageUrlResolver } = options
   const listAvailableSelfIds = () =>
-    getAvailableOneBotBots(ctx, options.selfIds, getRecentlyActiveSelfIds())
+    getAvailableOneBotBots(ctx, options.selfIds, getRecentlyActiveSelfIds(), options)
       .map((bot) => bot.selfId)
       .filter((selfId): selfId is string => !!selfId)
   let probeInFlight: Promise<boolean> | undefined
   // 主动探测 action 通道，替代「等一条外部消息才可用」。探测成功时复用与消息活动完全相同的
   // 覆盖机制（recentBotActivity），因此可用性语义与原来一致，只是不再依赖外部触发。
   const probeBotAvailability = async () => {
-    const candidates = getProbeableOneBotBots(ctx, options.selfIds)
+    const candidates = getProbeableOneBotBots(ctx, options.selfIds, options)
     if (!candidates.length) return false
     const before = new Set(listAvailableSelfIds())
     await Promise.all(candidates.map(async (bot) => {
@@ -433,7 +436,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         logBotStatus('message-activity', { selfId, action: 'skip-missing-self-id' })
         return
       }
-      const bot = getOneBotBots(ctx).find((candidate) => candidate.selfId === realSelfId)
+      const bot = getOneBotBots(ctx, options).find((candidate) => candidate.selfId === realSelfId)
       if (bot?.status === 1) {
         recentBotActivity.delete(realSelfId)
         logBotStatus('message-activity', {

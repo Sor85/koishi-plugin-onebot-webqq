@@ -459,6 +459,147 @@ describe('onebot webqq adapter', () => {
     ])
   })
 
+  // 开发者模拟环境把候选集合换成虚拟 OneBot 机器人：由别的插件注册进 Koishi、platform 为 onebot、
+  // 对 UI 隐藏、action 通道由那个插件在自有场景里实现。真实机器人必须在此期间消失——WebQQ 的撤回、
+  // 踢人、禁言都真发 action，两边混列就可能在「模拟环境」里操作真实群。
+  it('lists only virtual OneBot bots while virtual bots are included', () => {
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const hiddenBotWithoutActions = {
+      platform: 'onebot',
+      selfId: '90002',
+      status: 1,
+      hidden: true,
+      internal: {},
+    }
+    const hiddenNonOneBot = {
+      platform: 'telegram',
+      selfId: '90003',
+      status: 1,
+      hidden: true,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const bots = [virtualBot, hiddenBotWithoutActions, hiddenNonOneBot, realBot]
+
+    expect(createOneBotWebQQService({ bots }, { includeVirtualBots: true }).listBots()).toEqual([
+      expect.objectContaining({ selfId: '90001', name: '虚拟机器人' }),
+    ])
+    expect(createOneBotWebQQService({ bots }).listBots()).toEqual([
+      expect.objectContaining({ selfId: '10001' }),
+    ])
+  })
+
+  // 虚拟机器人的 selfId 由提供方插件决定，不可能出现在管理员手写的白名单里；
+  // 白名单继续参与筛选的话，配了白名单的人永远看不到虚拟机器人。
+  it('ignores the configured selfId allow list while virtual bots are included', () => {
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      status: 1,
+      hidden: true,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const bots = [virtualBot, realBot]
+
+    expect(createOneBotWebQQService({ bots }, {
+      includeVirtualBots: true,
+      selfIds: ['10001'],
+    }).listBots()).toEqual([
+      expect.objectContaining({ selfId: '90001' }),
+    ])
+    expect(createOneBotWebQQService({ bots }, { selfIds: ['10001'] }).listBots()).toEqual([
+      expect.objectContaining({ selfId: '10001' }),
+    ])
+  })
+
+  it('reads and writes through the virtual bot own action channel', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_group_list') return [{ group_id: 30001, group_name: '虚拟群' }]
+      if (action === 'get_friend_list') return []
+      if (action === 'send_group_msg') return { message_id: 42 }
+      return {}
+    })
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      status: 1,
+      hidden: true,
+      internal: { _request: request },
+    }
+    const service = createOneBotWebQQService({ bots: [virtualBot] }, { includeVirtualBots: true })
+
+    await expect(service.loadContacts()).resolves.toMatchObject({
+      groups: [expect.objectContaining({ groupId: '30001', name: '虚拟群' })],
+    })
+    expect(request).toHaveBeenCalledWith('get_group_list', {})
+
+    await service.sendMessage({
+      type: 'group',
+      peerId: '30001',
+      elements: [{ type: 'text', text: '来自 WebQQ' }],
+    })
+    expect(request).toHaveBeenCalledWith('send_group_msg', {
+      group_id: 30001,
+      message: [{ type: 'text', data: { text: '来自 WebQQ' } }],
+    })
+
+    await service.recallMessage({ type: 'group', peerId: '30001', messageId: '42' })
+    expect(request).toHaveBeenCalledWith('delete_msg', { message_id: 42 })
+  })
+
+  // 落到既有那句「未找到可用的 OneBot 机器人」上会让人以为观察窗坏了；这种情形要说清缺的是提供方插件。
+  it('explains the missing provider plugin when no virtual bot is registered', async () => {
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+
+    await expect(createOneBotWebQQService({ bots: [realBot] }, { includeVirtualBots: true }).loadContacts())
+      .rejects.toThrow('未找到虚拟 OneBot 机器人')
+    await expect(createOneBotWebQQService({ bots: [] }).loadContacts())
+      .rejects.toThrow('未找到可用的 OneBot 机器人')
+    await expect(createOneBotWebQQService({ bots: [] }, { selfIds: ['10001'] }).loadContacts())
+      .rejects.toThrow('未找到配置 selfId 集合中的可用 OneBot 机器人')
+  })
+
   it('adds mock OneBot profiles and maps selected mock bots back to the real bot', async () => {
     const bot = {
       platform: 'onebot',

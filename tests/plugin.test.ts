@@ -2193,12 +2193,55 @@ describe('chat capsule plugin wiring', () => {
   // tests/config-panel.test.ts 读 Schema 运行时节点断言。本文件把 koishi 的 Schema 换成了
   // 只记录链式调用的替身，读不到真实默认值，因此这里不再重复断言配置 Schema 的源码文本。
 
-  it('serves the WebQQ mock environment from memory and keeps real ChatLuna affinity out', async () => {
+  it('hands only virtual OneBot bots to the console while the developer mock environment is on', async () => {
     const database = {
-      get: vi.fn(async () => []),
+      get: vi.fn(async (table: string) => (table === 'chatluna_affinity_v2'
+        ? [{ scopeId: 'default', userId: '30000', affinity: 168, relation: '友好' }]
+        : [])),
       upsert: vi.fn(async () => {}),
     }
-    const { ctx, addEntry, addListener } = createFakeContext({ database })
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_group_list') return [{ group_id: 20000, group_name: '虚拟群' }]
+      if (action === 'get_friend_list') return []
+      if (action === 'get_group_msg_history') {
+        return {
+          messages: [{
+            message_id: 1,
+            message_seq: 11,
+            time: 1710000000,
+            group_id: 20000,
+            sender: { user_id: 30000, nickname: 'Alice' },
+            message: [{ type: 'text', data: { text: '来自场景' } }],
+          }, {
+            message_id: 2,
+            message_seq: 12,
+            time: 1710000001,
+            group_id: 20000,
+            sender: { user_id: 90001, nickname: '虚拟机器人' },
+            message: [{ type: 'text', data: { text: '机器人回复' } }],
+          }],
+        }
+      }
+      return {}
+    })
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      internal: { _request: request },
+    }
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const { ctx, addEntry, addListener } = createFakeContext({ bots: [virtualBot, realBot], database })
 
     plugin.apply(ctx, {
       webQQMockEnvironment: true,
@@ -2207,20 +2250,96 @@ describe('chat capsule plugin wiring', () => {
       showWebQQRelationship: true,
     })
 
-    const loadContacts = findConsoleListener(addListener, 'onebot-webqq/webqq/contacts')
-    await expect(loadContacts?.()).resolves.toMatchObject({ mockEnvironment: true })
+    // 控制台拿到的机器人列表只含虚拟机器人：真实机器人和额外模拟画像都不在里面。
+    // 主胶囊照常拿到它的昵称、头像与在线状态。
     expect(addEntry.mock.calls[0][1]?.()).toMatchObject({
-      bots: expect.arrayContaining([
-        expect.objectContaining({ selfId: '10001:mock:1' }),
-        expect.objectContaining({ selfId: '10001:mock:2' }),
-      ]),
+      bots: [{
+        platform: 'onebot',
+        selfId: '90001',
+        name: '虚拟机器人',
+        status: 1,
+        avatar: 'https://q1.qlogo.cn/g?b=qq&nk=90001&s=640',
+      }],
+      selectedSelfId: '90001',
     })
 
+    const loadContacts = findConsoleListener(addListener, 'onebot-webqq/webqq/contacts')
+    await expect(loadContacts?.()).resolves.toMatchObject({
+      groups: [expect.objectContaining({ groupId: '20000', name: '虚拟群' })],
+    })
+    // 读取真的经虚拟机器人自己的 action 通道，而不是任何内存替身。
+    expect(request).toHaveBeenCalledWith('get_group_list', {})
+    expect(realBot.internal.get_group_list).not.toHaveBeenCalled()
+
     const loadMessages = findConsoleListener(addListener, 'onebot-webqq/webqq/messages')
-    const messages = await loadMessages?.({ type: 'group', peerId: '30001', limit: 20 })
-    expect(messages?.length).toBeGreaterThan(0)
-    // 模拟服务自带确定性的好感度与关系数据；开着 showWebQQAffinity 也不能去查真实 ChatLuna 表。
-    expect(database.get).not.toHaveBeenCalledWith('chatluna_affinity_v2', expect.anything())
+    const messages = await loadMessages?.({ type: 'group', peerId: '20000', limit: 20 })
+    // 模拟环境不再有专属分支：好感度与关系徽标照常按真实 ChatLuna 数据渲染。
+    expect(messages?.[0]).toMatchObject({
+      senderId: '30000',
+      senderAffinity: 168,
+      senderRelationship: '友好',
+    })
+    // 虚拟机器人在 ChatLuna 库里查不到记录，徽标就是空的，而不是编出一个数值。
+    expect(messages?.[1]).not.toHaveProperty('senderAffinity')
+    expect(messages?.[1]).not.toHaveProperty('senderRelationship')
+    expect(database.get).toHaveBeenCalledWith('chatluna_affinity_v2', expect.anything())
+  })
+
+  it('delivers virtual bot live messages and keeps real bot events out while the mock environment is on', async () => {
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      internal: {
+        _request: vi.fn(async () => ({})),
+      },
+    }
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const { ctx, listeners, broadcast } = createFakeContext({ bots: [virtualBot, realBot] })
+
+    plugin.apply(ctx, { webQQMockEnvironment: true })
+    broadcast.mockClear()
+
+    const messageEvent = {
+      guild: { id: '20000', name: '虚拟群' },
+      channel: { id: '20000', name: '虚拟群' },
+      user: { id: '30000', name: 'Alice' },
+      message: {
+        id: 'virtual-1',
+        elements: [{ type: 'text', attrs: { content: '来自场景' } }],
+      },
+    }
+
+    // 提供方插件以别人的身份发消息时派发的是真实 Koishi 事件，实时链路必须照常收到。
+    await listeners.message[0](createSession({
+      selfId: '90001',
+      bot: { platform: 'onebot', selfId: '90001', status: 1, hidden: true },
+      event: messageEvent,
+    }))
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {
+      type: 'group',
+      peerId: '20000',
+      message: expect.objectContaining({ id: 'virtual-1', summary: '来自场景' }),
+    }, { authority: 1 })
+    // 胶囊对话状态也照常更新，不需要按模式分别验收。
+    expect(broadcast).toHaveBeenCalledWith('onebot-webqq/update', expect.objectContaining({
+      conversation: expect.objectContaining({ channelId: '20000' }),
+    }), { authority: 1 })
+
+    // 真实机器人在开关开启期间不出现在 WebQQ 里，它的事件也不能推进观察窗。
+    broadcast.mockClear()
+    await listeners.message[0](createSession({ event: messageEvent }))
+    expect(broadcast).not.toHaveBeenCalledWith('onebot-webqq/webqq/message', expect.anything(), { authority: 1 })
   })
 
   it('registers a console entry with empty capsule data', () => {

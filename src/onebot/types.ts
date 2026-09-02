@@ -21,6 +21,8 @@ export interface OneBotWebQQOptions {
   selfId?: string
   selfIds?: string[]
   mockBotCount?: number
+  /** 纳入虚拟 OneBot 机器人：开发者模拟环境把候选集合换成它们，真实机器人不参与。 */
+  includeVirtualBots?: boolean
   protocol?: WebQQProtocol
   imageUrlResolver?: OneBotImageUrlResolver
   logBotStatus?: (source: string, data: Record<string, unknown>) => void

@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   MOCK_FRIEND_ALICE_ID,
   MOCK_GROUP_ID,
@@ -8,25 +8,26 @@ import {
   createMockWebQQScene,
 } from '../src/webqq/adapters/mock/scene'
 import { createMockWebQQService } from '../src/webqq/adapters/mock/service'
+import { createOneBotWebQQService } from '../src/webqq/adapters/onebot/service'
 
 const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
 const consoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
-const observerSource = await readFile(new URL('../client/webqq/WebQQObserver.vue', import.meta.url), 'utf8')
 const messageListSource = await readFile(new URL('../client/webqq/components/WebQQMessageList.vue', import.meta.url), 'utf8')
 
 describe('webqq mock environment', () => {
   // webQQMockEnvironment 在「开发者选项」分组里的默认值与说明文案由 tests/config-panel.test.ts
   // 读 Schema 运行时节点断言，这里不再匹配配置 Schema 的源码文本。
 
-  it('isolates mock messages from real affinity data and persisted browser caches', () => {
+  it('keeps the developer mock environment on the real WebQQ service and the real affinity path', () => {
     // create-runtime 与 console.ts 读哪个配置项、怎么兜底，由 tests/plugin.test.ts 通过
     // 插件 apply + 内存 Console 替身断言运行时行为；这里只钉住模块归属与前端渲染契约。
-    expect(runtimeSource).toContain("import { createMockWebQQService } from '../webqq/adapters/mock/service'")
+    // 装配层永远创建真实实现，开关只作为「是否纳入虚拟机器人」的选项传进去。
+    expect(runtimeSource).not.toContain("from '../webqq/adapters/mock/service'")
     expect(runtimeSource).toContain('createOneBotWebQQService(ctx, {')
+    expect(runtimeSource).toContain("includeVirtualBots: readConfigValue(config, 'webQQMockEnvironment')")
+    // 好感度徽标不再按模拟环境整体跳过：虚拟机器人在 ChatLuna 库里查不到记录时徽标为空，那是正确答案而不是缺陷。
     expect(consoleSource).toContain('attachWebQQAffinityBadges')
-    expect(observerSource).toContain('contacts.value.mockEnvironment')
-    expect(observerSource).toContain('if (isWebQQMockEnvironment.value) return []')
-    expect(observerSource).toContain('if (isWebQQMockEnvironment.value) return')
+    expect(consoleSource).not.toContain('webQQMockEnvironment')
     expect(messageListSource).toContain('message.senderId !== currentOperatorId && message.senderAffinity != null')
     expect(messageListSource).toContain('message.senderId !== currentOperatorId && message.senderRelationship')
   })
@@ -134,23 +135,42 @@ describe('webqq mock environment', () => {
     }])
   })
 
-  it('adds configured mock OneBot robots while the mock environment is enabled', () => {
-    const service = createMockWebQQService(undefined, { mockBotCount: 2 })
+  it('stops deriving extra mock robot profiles while the developer mock environment is enabled', () => {
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10001',
+      name: '真实机器人',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const bots = [virtualBot, realBot]
 
-    expect(service.listBots().map((bot) => bot.selfId)).toEqual([
-      MOCK_SELF_ID,
-      MOCK_SECOND_SELF_ID,
-      `${MOCK_SELF_ID}:mock:1`,
-      `${MOCK_SELF_ID}:mock:2`,
+    // 模拟环境下不再派生假画像：提供方插件里可以真的建多台虚拟机器人，走真实 action。
+    expect(createOneBotWebQQService({ bots }, {
+      includeVirtualBots: true,
+      mockBotCount: 2,
+    }).listBots().map((bot) => bot.selfId)).toEqual(['90001'])
+
+    // 真实环境下这个配置项的行为一字不变。
+    expect(createOneBotWebQQService({ bots }, { mockBotCount: 2 }).listBots().map((bot) => bot.selfId)).toEqual([
+      '10001',
+      '10001:mock:1',
+      '10001:mock:2',
     ])
-    expect(service.listBots().map((bot) => bot.name)).toEqual([
-      '模拟机器人',
-      '备用机器人',
-      '模拟机器人 模拟 1',
-      '模拟机器人 模拟 2',
-    ])
-    expect(service.selectSelfId(`${MOCK_SELF_ID}:mock:2`)).toBe(`${MOCK_SELF_ID}:mock:2`)
-    expect(service.reconcileBotState().selectedSelfId).toBe(`${MOCK_SELF_ID}:mock:2`)
   })
 
   it('mutates in-memory state for key actions', async () => {

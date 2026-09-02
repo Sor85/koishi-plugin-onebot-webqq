@@ -1,4 +1,5 @@
 import type { Session } from 'koishi'
+import type { OneBotBotScope } from '../onebot/bots'
 import { isVisibleBotSession } from '../onebot/session'
 import type {
   ChatCapsuleContext,
@@ -18,6 +19,7 @@ type CapsuleSenderMetadata = Pick<CapsuleMessageInput['user'], 'senderRole' | 's
 export function registerCapsuleChatLunaActivity(options: {
   ctx: ChatCapsuleContext
   state: CapsuleState
+  botScope?: OneBotBotScope
   logSnapshot: (source: string) => void
   broadcast: () => void
   logger?: DebugLogger
@@ -26,6 +28,7 @@ export function registerCapsuleChatLunaActivity(options: {
   const {
     ctx,
     state,
+    botScope,
     logSnapshot,
     broadcast,
     logger,
@@ -52,7 +55,7 @@ export function registerCapsuleChatLunaActivity(options: {
   }
 
   const recordGenerating = async (session: Session, message?: ChatLunaMessage, conversationId?: string) => {
-    if (!isVisibleBotSession(session)) return
+    if (!isVisibleBotSession(session, botScope)) return
     const thinkingStartedAt = Date.now()
     const input = createMessageInput(session, message)
     input.user.name = readCapsuleMemberName(session) || input.user.name

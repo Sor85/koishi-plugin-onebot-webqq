@@ -262,7 +262,7 @@ const PANEL: GroupContract[] = [
         key: 'webQQMockEnvironment',
         type: 'boolean',
         default: false,
-        description: '启用 WebQQ 开发者模拟环境',
+        description: '启用 WebQQ 开发者模拟环境：把虚拟 OneBot 机器人纳入 WebQQ，需要另装一个提供虚拟 OneBot 机器人的插件',
       },
       {
         key: 'debug',

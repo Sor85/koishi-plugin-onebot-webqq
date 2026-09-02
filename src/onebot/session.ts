@@ -1,5 +1,14 @@
 import type { Session } from 'koishi'
+import { isVirtualOneBotBot, type OneBotBotScope } from './bots'
 
-export function isVisibleBotSession(session?: Session) {
-  return !session || session.bot.hidden !== true
+/**
+ * 事件所属的 Bot 是否在当前候选集合里。
+ *
+ * 默认排除对 UI 隐藏的 Bot。纳入虚拟机器人时反过来只放行虚拟 OneBot 机器人：候选集合与事件扇出
+ * 必须同一个判据，否则开发者模拟环境会一边只列虚拟机器人、一边继续把真实群的消息推进观察窗。
+ */
+export function isVisibleBotSession(session?: Session, scope: OneBotBotScope = {}) {
+  if (!session) return true
+  if (scope.includeVirtualBots) return isVirtualOneBotBot(session.bot)
+  return session.bot.hidden !== true
 }

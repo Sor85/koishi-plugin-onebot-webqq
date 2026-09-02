@@ -1,7 +1,7 @@
 import type { Config as PluginConfig } from '../config'
 import { readConfigValue } from '../config/spec'
+import type { OneBotBotScope } from '../onebot/bots'
 import type { ChatCapsuleContext } from '../plugin-context'
-import { createMockWebQQService } from '../webqq/adapters/mock/service'
 import { createOneBotWebQQService } from '../webqq/adapters/onebot/service'
 import { createWebQQImageUrlResolver } from '../webqq/media/image-url-resolver'
 import { createConsoleOwnerToken } from '../shared/console-listeners'
@@ -25,26 +25,31 @@ export function createPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfi
   const errorLogger = ctx.logger?.('onebot-webqq') ?? logger
   const configuredOneBotSelfIds = getConfiguredOneBotSelfIds(config)
   const useRuntimeOneBotBots = readConfigValue(config, 'onebotUseRuntimeBots')
-  const initialOneBotSelfId = !useRuntimeOneBotBots ? configuredOneBotSelfIds[0] : undefined
+  // 开发者模拟环境把候选集合换成虚拟 OneBot 机器人，读写与实时链路都走真实 OneBot action 与真实 Koishi 事件。
+  const botScope: OneBotBotScope = {
+    includeVirtualBots: readConfigValue(config, 'webQQMockEnvironment'),
+  }
+  // 虚拟机器人的 selfId 由提供方插件决定，白名单在模拟环境下整体不参与筛选，初始选中项同样不能钉在白名单第一项上。
+  const initialOneBotSelfId = !useRuntimeOneBotBots && !botScope.includeVirtualBots
+    ? configuredOneBotSelfIds[0]
+    : undefined
   const mockBotCount = readConfigValue(config, 'onebotMockBotCount')
   const imageUrlResolver = createWebQQImageUrlResolver(ctx, logger, {
     cacheEnabled: readConfigValue(config, 'webQQImageCacheEnabled'),
     cacheLimitBytes: readConfigValue(config, 'webQQImageCacheLimitMB') * 1024 * 1024,
     cacheItemLimitBytes: readConfigValue(config, 'webQQImageCacheItemLimitMB') * 1024 * 1024,
   })
-  // 开发者模拟环境完全走内存预设，避免依赖真实 OneBot bot / 协议实现。
-  const webqq = readConfigValue(config, 'webQQMockEnvironment')
-    ? createMockWebQQService(undefined, { mockBotCount })
-    : createOneBotWebQQService(ctx, {
-      selfId: initialOneBotSelfId,
-      selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
-      mockBotCount,
-      protocol: readConfigValue(config, 'onebotProtocol'),
-      imageUrlResolver,
-      logBotStatus: logger
-        ? (source, data) => logger.info('[bot-status-debug] %s %s', source, JSON.stringify(data))
-        : undefined,
-    })
+  const webqq = createOneBotWebQQService(ctx, {
+    selfId: initialOneBotSelfId,
+    selfIds: useRuntimeOneBotBots ? undefined : configuredOneBotSelfIds,
+    mockBotCount,
+    ...botScope,
+    protocol: readConfigValue(config, 'onebotProtocol'),
+    imageUrlResolver,
+    logBotStatus: logger
+      ? (source, data) => logger.info('[bot-status-debug] %s %s', source, JSON.stringify(data))
+      : undefined,
+  })
 
   return {
     historyLimit,
@@ -54,6 +59,7 @@ export function createPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfi
     consoleOwner: createConsoleOwnerToken(),
     imageUrlResolver,
     webqq,
+    botScope,
     consoleAuthOptions: { authority: 1 },
   }
 }

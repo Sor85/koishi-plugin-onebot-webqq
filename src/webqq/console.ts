@@ -89,8 +89,6 @@ export function registerWebQQConsoleListeners(
       ? await loadKoishiWebQQRecalledMessageCache(inner, nextQuery, getStorageScope())
       : []
     const mergedMessages = mergeWebQQLiveMessages(messages, recalledMessages)
-    // 模拟服务已经提供确定性的角色、好感度和关系数据；不能再混入真实 ChatLuna 数据库，否则模拟 Bot 会带上真实关系徽标。
-    if (readConfigValue(config, 'webQQMockEnvironment')) return mergedMessages
     return attachWebQQAffinityBadges(inner, config, mergedMessages, logger)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/messages/search', async (query: WebQQMessageSearchQuery) => {
