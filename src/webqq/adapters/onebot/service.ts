@@ -6,6 +6,7 @@ import {
   toOneBotId,
   toTimestampMs,
 } from '../../../onebot/data'
+import { readConfigDefault } from '../../../config/spec'
 import {
   callAction,
   supportsOneBotAction,
@@ -396,7 +397,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     }
     return state
   }
-  const protocol = options.protocol ?? 'napcat'
+  const protocol = options.protocol ?? readConfigDefault('onebotProtocol')
   const { imageUrlResolver } = options
   const listAvailableSelfIds = () =>
     getAvailableOneBotBots(ctx, options.selfIds, getRecentlyActiveSelfIds())

@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue'
+import { readConfigDefault, type ConfigValue } from '../../src/config/spec'
 import type { OneBotRobotProfile } from '../onebot/bots'
 
 export interface CapsuleData {
@@ -30,7 +31,7 @@ export interface CapsuleData {
 
 interface CapsuleClientState {
   capsule: Ref<CapsuleData | undefined>
-  hiddenCapsuleActivityIds: Ref<string[]>
+  hiddenCapsuleActivityIds: Ref<ConfigValue<'hiddenCapsuleActivityIds'>>
 }
 
 const CAPSULE_STATE_KEY = '__onebot_webqq_client_capsule__'
@@ -38,7 +39,8 @@ const CAPSULE_STATE_KEY = '__onebot_webqq_client_capsule__'
 function createCapsuleClientState(): CapsuleClientState {
   return {
     capsule: ref<CapsuleData>(),
-    hiddenCapsuleActivityIds: ref(['logs']),
+    // 镜像配置项的初始值来自配置规格，小胶囊领域不再自带一份默认值。
+    hiddenCapsuleActivityIds: ref(readConfigDefault('hiddenCapsuleActivityIds')),
   }
 }
 

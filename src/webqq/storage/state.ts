@@ -1,4 +1,5 @@
 import type { Config } from '../../config'
+import { readConfigValue } from '../../config/spec'
 import { isRecord } from '../../shared/record'
 import { chatCapsuleStorageTable, getWebQQDatabase, type WebQQStorageContext } from './schema'
 import { getWebQQStateStorageId } from './scope'
@@ -75,13 +76,13 @@ async function saveKoishiWebQQStorage(ctx: WebQQStorageContext, state: WebQQStor
 }
 
 export async function loadWebQQStorage(ctx: WebQQStorageContext, config: Config, scopeId?: string): Promise<WebQQStoredState> {
-  if (config.webQQStorageBackend === 'koishi') return loadKoishiWebQQStorage(ctx, scopeId)
+  if (readConfigValue(config, 'webQQStorageBackend') === 'koishi') return loadKoishiWebQQStorage(ctx, scopeId)
   return createEmptyWebQQStoredState()
 }
 
 export async function saveWebQQStorage(ctx: WebQQStorageContext, config: Config, state: WebQQStoredState, scopeId?: string): Promise<void> {
   const normalized = readWebQQStoredState(state)
-  if (config.webQQStorageBackend === 'koishi') {
+  if (readConfigValue(config, 'webQQStorageBackend') === 'koishi') {
     await saveKoishiWebQQStorage(ctx, normalized, scopeId)
   }
 }

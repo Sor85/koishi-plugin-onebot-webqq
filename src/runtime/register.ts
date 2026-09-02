@@ -1,4 +1,5 @@
 import type { Config as PluginConfig } from '../config'
+import { readConfigValue } from '../config/spec'
 import { registerCapsule } from '../capsule/register'
 import type {
   ChatCapsuleContext,
@@ -13,7 +14,6 @@ import { createPluginRuntime } from './create-runtime'
 export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginConfig) {
   const {
     historyLimit,
-    debug,
     logger,
     errorLogger,
     consoleOwner,
@@ -24,7 +24,6 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
   const capsuleRuntime = registerCapsule({
     ctx,
     config,
-    debug,
     bots: webqq,
     consoleAuthOptions,
     readBotSenderMetadata: readWebQQBotGroupSenderMetadata,
@@ -118,6 +117,6 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
   })
 
   ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
-    if (config.showWebQQCharacterThinking ?? true) liveRuntime.updateLastOutgoingWebQQThinking(payload)
+    if (readConfigValue(config, 'showWebQQCharacterThinking')) liveRuntime.updateLastOutgoingWebQQThinking(payload)
   })
 }

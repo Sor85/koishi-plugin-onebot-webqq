@@ -3,6 +3,8 @@ import * as dns from 'dns/promises'
 import { readFile } from 'fs/promises'
 import { isIP } from 'net'
 import { extname } from 'path'
+import { readConfigDefault } from '../../config/spec'
+
 export interface WebQQImageUrlResolverEntryOptions {
   refresh?: () => Promise<string>
 }
@@ -48,8 +50,9 @@ interface WebQQImageMapping {
 }
 
 const WEBQQ_IMAGE_CACHE_CONTROL = 'private, max-age=86400, immutable'
-const WEBQQ_IMAGE_CACHE_LIMIT = 100 * 1024 * 1024
-const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = 10 * 1024 * 1024
+// 缓存上限的默认值来自配置规格；这里只负责把 MB 换算成字节。
+const WEBQQ_IMAGE_CACHE_LIMIT = readConfigDefault('webQQImageCacheLimitMB') * 1024 * 1024
+const WEBQQ_IMAGE_CACHE_ITEM_LIMIT = readConfigDefault('webQQImageCacheItemLimitMB') * 1024 * 1024
 const WEBQQ_IMAGE_MAPPING_LIMIT = 1000
 const WEBQQ_IMAGE_REDIRECT_LIMIT = 5
 const WEBQQ_IMAGE_REFRESH_LIMIT = 3
@@ -219,7 +222,7 @@ export function createWebQQImageUrlResolver(
   const ids = new Map<string, string>()
   const imageCache = new Map<string, CachedWebQQImage>()
   let imageCacheSize = 0
-  const cacheEnabled = options.cacheEnabled ?? true
+  const cacheEnabled = options.cacheEnabled ?? readConfigDefault('webQQImageCacheEnabled')
   const cacheLimitBytes = options.cacheLimitBytes ?? WEBQQ_IMAGE_CACHE_LIMIT
   const cacheItemLimitBytes = options.cacheItemLimitBytes ?? WEBQQ_IMAGE_CACHE_ITEM_LIMIT
 

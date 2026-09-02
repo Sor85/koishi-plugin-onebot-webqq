@@ -1,53 +1,44 @@
 import { useColorMode } from '@koishijs/client'
 import { computed, ref, type Ref } from 'vue'
+import { readConfigDefault, type ConfigValue, type MirroredConfigKey } from '../../src/config/spec'
 import { resolveWebQQColorMode } from './utils/webqq-color-mode'
 
-export type WebQQChatStyle = 'qq' | 'tim'
-export type WebQQColorMode = 'auto' | 'light' | 'dark'
-export type WebQQStorageBackend = 'browser' | 'koishi'
+// 取值类型由配置规格统一声明，前端只做转发，避免同一个联合类型在两侧各写一遍。
+export type { WebQQChatStyle, WebQQColorMode, WebQQStorageBackend } from '../../src/config/spec'
 
-interface WebQQClientSettingsState {
-  enableWebQQFrostedGlass: Ref<boolean>
-  enableWebQQSend: Ref<boolean>
-  enableCapsuleFrostedGlass: Ref<boolean>
-  hideWebQQGroupLevel: Ref<boolean>
-  allowWebQQResize: Ref<boolean>
-  showWebQQAffinity: Ref<boolean>
-  showWebQQCapsuleUnread: Ref<boolean>
-  showWebQQRelationship: Ref<boolean>
-  showWebQQThinkingTokens: Ref<boolean>
-  showWebQQThinkingTiming: Ref<boolean>
-  useCompactCapsuleShadow: Ref<boolean>
-  webQQAccentColor: Ref<string>
-  webQQChatStyle: Ref<WebQQChatStyle>
-  webQQColorMode: Ref<WebQQColorMode>
-  webQQMessageCacheLimit: Ref<number>
-  webQQStorageBackend: Ref<WebQQStorageBackend>
-  webQQTimBubbleTail: Ref<boolean>
+// 观察窗领域持有的那一批镜像配置项。小胶囊的 hiddenCapsuleActivityIds 与入口的 debug 各自留在
+// 自己的领域里（ADR 0001：不新建被两个前端领域共同依赖的 module），组合根负责把三份拼起来。
+const WEBQQ_SETTINGS_KEYS = [
+  'enableWebQQFrostedGlass',
+  'enableWebQQSend',
+  'enableCapsuleFrostedGlass',
+  'hideWebQQGroupLevel',
+  'allowWebQQResize',
+  'showWebQQAffinity',
+  'showWebQQCapsuleUnread',
+  'showWebQQRelationship',
+  'showWebQQThinkingTokens',
+  'showWebQQThinkingTiming',
+  'useCompactCapsuleShadow',
+  'webQQAccentColor',
+  'webQQChatStyle',
+  'webQQColorMode',
+  'webQQMessageCacheLimit',
+  'webQQStorageBackend',
+  'webQQTimBubbleTail',
+] as const satisfies readonly MirroredConfigKey[]
+
+type WebQQClientSettingsState = {
+  [K in typeof WEBQQ_SETTINGS_KEYS[number]]: Ref<ConfigValue<K>>
 }
 
 const SETTINGS_STATE_KEY = '__onebot_webqq_client_settings__'
 
 function createWebQQClientSettingsState(): WebQQClientSettingsState {
-  return {
-    enableWebQQFrostedGlass: ref(true),
-    enableWebQQSend: ref(false),
-    enableCapsuleFrostedGlass: ref(true),
-    hideWebQQGroupLevel: ref(true),
-    allowWebQQResize: ref(false),
-    showWebQQAffinity: ref(false),
-    showWebQQCapsuleUnread: ref(true),
-    showWebQQRelationship: ref(false),
-    showWebQQThinkingTokens: ref(true),
-    showWebQQThinkingTiming: ref(true),
-    useCompactCapsuleShadow: ref(true),
-    webQQAccentColor: ref('#2563eb'),
-    webQQChatStyle: ref<WebQQChatStyle>('tim'),
-    webQQColorMode: ref<WebQQColorMode>('auto'),
-    webQQMessageCacheLimit: ref(100),
-    webQQStorageBackend: ref<WebQQStorageBackend>('koishi'),
-    webQQTimBubbleTail: ref(true),
-  }
+  // ref 初始值全部来自配置规格；前端不再自带一份默认值，也就不会和服务端兜底的那一份分叉。
+  return Object.fromEntries(
+    WEBQQ_SETTINGS_KEYS.map((key) => [key, ref(readConfigDefault(key))]),
+  ) as WebQQClientSettingsState
 }
 
 // portal + Vite @fs 可能把同一源码解析成两个模块实例（node_modules 软链路径 vs 真实源码路径）。

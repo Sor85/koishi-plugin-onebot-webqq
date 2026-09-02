@@ -1,6 +1,7 @@
 import type { Session } from 'koishi'
 import { isVisibleBotSession } from '../../onebot/session'
 import type { Config as PluginConfig } from '../../config'
+import { readConfigValue } from '../../config/spec'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from '../thinking'
 import { parseThinkContent, readCharacterAfterChatText } from '../thinking'
 import type { WebQQService } from '../adapters/types'
@@ -149,7 +150,7 @@ export function createWebQQLiveRuntime(options: {
 
   function attachCurrentWebQQUsage(message: WebQQMessage): WebQQMessage {
     if (message.direction !== 'outgoing' || message.thinking?.content || message.usage) return message
-    if ((options.config.showWebQQCharacterThinking ?? true) && (currentUsageSource === 'chatluna-character' || currentUsageSource === 'character')) return message
+    if (readConfigValue(options.config, 'showWebQQCharacterThinking') && (currentUsageSource === 'chatluna-character' || currentUsageSource === 'character')) return message
     const usage = consumeCurrentWebQQUsage()
     return usage ? { ...message, usage } : message
   }
@@ -334,7 +335,7 @@ export function createWebQQLiveRuntime(options: {
     const operatorId = session.operatorId || session.event.operator?.id || session.userId || ''
     const operatorName = session.event.member?.name || session.event.operator?.name || session.event.user?.name || operatorId || '有人'
     const summary = `${operatorName} 撤回了一条消息`
-    const markRecalledMessage = options.config.webQQMarkRecalledMessages ?? true
+    const markRecalledMessage = readConfigValue(options.config, 'webQQMarkRecalledMessages')
     const eventMessage: WebQQMessage = {
       id: `recall:${peer.type}:${peer.peerId}:${messageId}:${session.timestamp}`,
       sequence: `recall:${messageId}:${session.timestamp}`,

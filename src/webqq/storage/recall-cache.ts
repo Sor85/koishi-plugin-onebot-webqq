@@ -1,8 +1,8 @@
 import type { Config } from '../../config'
+import { readConfigValue } from '../../config/spec'
 import { isRecord } from '../../shared/record'
 import { chatCapsuleStorageTable, type WebQQStorageContext } from './schema'
 import {
-  defaultWebQQMessageCacheLimit,
   readWebQQStoredMessages,
   type WebQQMessageCachePayload,
   type WebQQMessageCacheQuery,
@@ -17,7 +17,7 @@ export async function loadKoishiWebQQRecalledMessageCache(ctx: WebQQStorageConte
 
 export async function saveKoishiWebQQRecalledMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload, scopeId?: string) {
   if (!ctx.database) return
-  const messageCacheLimit = config.webQQMessageCacheLimit ?? defaultWebQQMessageCacheLimit
+  const messageCacheLimit = readConfigValue(config, 'webQQMessageCacheLimit')
   const messages = payload.messages.filter((message) => message.recalled).slice(-messageCacheLimit)
   if (!messages.length) return
   await ctx.database.upsert(chatCapsuleStorageTable, [{

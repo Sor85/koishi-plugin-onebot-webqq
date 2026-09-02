@@ -1,4 +1,5 @@
 import type { Config as PluginConfig } from '../config'
+import { readConfigValue } from '../config/spec'
 import type {
   WebQQForwardSendInput,
   WebQQFriendAction,
@@ -84,12 +85,12 @@ export function registerWebQQConsoleListeners(
     }
     const history = await webqq.loadMessages(nextQuery)
     const messages = mergeWebQQLiveMessages(history, liveMessages.get(getWebQQLiveMessageKey(nextQuery)), nextQuery.limit)
-    const recalledMessages = config.webQQMarkRecalledMessages ?? true
+    const recalledMessages = readConfigValue(config, 'webQQMarkRecalledMessages')
       ? await loadKoishiWebQQRecalledMessageCache(inner, nextQuery, getStorageScope())
       : []
     const mergedMessages = mergeWebQQLiveMessages(messages, recalledMessages)
     // 模拟服务已经提供确定性的角色、好感度和关系数据；不能再混入真实 ChatLuna 数据库，否则模拟 Bot 会带上真实关系徽标。
-    if (config.webQQMockEnvironment) return mergedMessages
+    if (readConfigValue(config, 'webQQMockEnvironment')) return mergedMessages
     return attachWebQQAffinityBadges(inner, config, mergedMessages, logger)
   }, consoleAuthOptions)
   console.addListener('onebot-webqq/webqq/messages/search', async (query: WebQQMessageSearchQuery) => {

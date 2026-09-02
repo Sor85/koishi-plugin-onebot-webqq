@@ -159,8 +159,6 @@ describe('webqq observer view', () => {
     expect(webqqContactView).toContain('sortWebQQGroupMembers')
     expect(webqqSettings).toContain('export const enableWebQQFrostedGlass = settingsState.enableWebQQFrostedGlass')
     expect(clientIndex).toContain('enableWebQQFrostedGlass')
-    expect(clientIndex).toMatch(/enableWebQQFrostedGlass\?:\s*boolean/)
-    expect(clientIndex).toContain('enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true')
     expect(webqqView).toContain('webQQAccentColor')
     expect(webqqView).toContain('webQQChatStyle')
     expect(webqqView).toContain('webQQTimBubbleTail')
@@ -191,12 +189,8 @@ describe('webqq observer view', () => {
   })
 
   it('uses the configured WebQQ color mode without rendering an in-panel switcher', () => {
-    expect(webqqSettings).toContain("export type WebQQColorMode = 'auto' | 'light' | 'dark'")
     expect(webqqSettings).toContain('export const webQQColorMode = settingsState.webQQColorMode')
     expect(clientIndex).toContain('webQQColorMode')
-    expect(clientIndex).toContain('type WebQQColorMode')
-    expect(clientIndex).toMatch(/webQQColorMode\?:\s*WebQQColorMode/)
-    expect(clientIndex).toMatch(/webQQColorMode\.value\s*=\s*value\?\.webQQColorMode\s*(?:\?\?|\|\|)\s*'auto'/)
     expect(webqqSettings).toContain("import { useColorMode } from '@koishijs/client'")
     expect(webqqSettings).toContain('const koishiColorMode = useColorMode()')
     expect(webqqSettings).toContain('export const resolvedWebQQColorMode = computed')
@@ -211,13 +205,9 @@ describe('webqq observer view', () => {
   it('keeps compact capsule shadow enabled by default from console entry data', () => {
     expect(webqqSettings).toContain('export const enableCapsuleFrostedGlass = settingsState.enableCapsuleFrostedGlass')
     expect(clientIndex).toContain('enableCapsuleFrostedGlass')
-    expect(clientIndex).toMatch(/enableCapsuleFrostedGlass\?:\s*boolean/)
-    expect(clientIndex).toContain('enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true')
     expect(capsuleView).toContain("enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain'")
     expect(webqqSettings).toContain('export const useCompactCapsuleShadow = settingsState.useCompactCapsuleShadow')
     expect(clientIndex).toContain('useCompactCapsuleShadow')
-    expect(clientIndex).toMatch(/useCompactCapsuleShadow\?:\s*boolean/)
-    expect(clientIndex).toContain('useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true')
     expect(capsuleView).toContain("'is-capsule-shadow-wide': !useCompactCapsuleShadow")
   })
 
@@ -234,8 +224,6 @@ describe('webqq observer view', () => {
   it('allows optional browser-local WebQQ shell resizing from invisible top and left edges', () => {
     expect(webqqSettings).toContain('export const allowWebQQResize = settingsState.allowWebQQResize')
     expect(clientIndex).toContain('allowWebQQResize')
-    expect(clientIndex).toMatch(/allowWebQQResize\?:\s*boolean/)
-    expect(clientIndex).toContain('allowWebQQResize.value = value?.allowWebQQResize ?? false')
     expect(webqqView).toContain('const webQQResizeStorageKey = \'onebot-webqq:webqq:resize:v1\'')
     expect(webqqView).toContain('const webQQResizeMinWidth = 640')
     expect(webqqView).toContain('const webQQResizeMinHeight = 420')

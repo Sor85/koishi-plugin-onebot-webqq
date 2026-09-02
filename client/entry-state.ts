@@ -1,30 +1,18 @@
 import { ref, type Ref } from 'vue'
+import { readConfigDefault, type ConfigValue } from '../src/config/spec'
 import { capsule, type CapsuleData } from './capsule/state'
-import { availableBots, selectedBotSelfId } from './onebot/bots'
 import {
-  allowWebQQResize,
   enableCapsuleFrostedGlass,
-  enableWebQQFrostedGlass,
-  enableWebQQSend,
-  hideWebQQGroupLevel,
-  showWebQQAffinity,
-  showWebQQCapsuleUnread,
-  showWebQQRelationship,
-  showWebQQThinkingTiming,
-  showWebQQThinkingTokens,
   resolvedWebQQColorMode,
+  showWebQQCapsuleUnread,
   useCompactCapsuleShadow,
   webQQAccentColor,
-  webQQChatStyle,
   webQQColorMode,
-  webQQMessageCacheLimit,
-  webQQStorageBackend,
-  webQQTimBubbleTail,
 } from './webqq/settings'
 import { webQQTotalUnread } from './webqq/runtime-state'
 
 interface WebQQEntryState {
-  debug: Ref<boolean>
+  debug: Ref<ConfigValue<'debug'>>
   webQQOpen: Ref<boolean>
 }
 
@@ -32,7 +20,8 @@ const ENTRY_STATE_KEY = '__onebot_webqq_client_entry__'
 
 function createWebQQEntryState(): WebQQEntryState {
   return {
-    debug: ref(false),
+    // debug 是镜像配置项，初始值来自配置规格；webQQOpen 只是会话态，与配置无关。
+    debug: ref(readConfigDefault('debug')),
     webQQOpen: ref(false),
   }
 }

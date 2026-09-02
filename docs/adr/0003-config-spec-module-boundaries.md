@@ -16,6 +16,7 @@
 
 - **配置规格 module 不得引用 `koishi`**，也不得引用任何间接引用 `koishi` 的 module。需要 `Schema` 的构造代码放在只被服务端引用的另一个 module 里，与规格分文件。
 - 落地为 `src/config/` 目录：`schema.ts` 放 `Schema` 构造与 `Config` interface，配置规格另立文件，`index.ts` 只做 re-export。目录以 `'../config'` 这个模块名对外暴露，因此 ADR 0001 目标文件树里的 `src/config.ts` 变成 `src/config/`，二十多处现有引用与对外导出方式都不变。
+- **`index.ts` 只 re-export `schema.ts`，不 re-export 配置规格。** 服务端与前端都写完整路径 `'…/config/spec'`。如果 `'../config'` 也能拿到规格，前端某天把 import 写成 `'../../src/config'` 就会把整个 `koishi` 静默打进浏览器产物；不给这条捷径，这类错误就写不出来。
 - 把这两个文件合并会把整个 `koishi` 打进浏览器产物，而且**不会产生任何报错**——只能靠检查构建产物发现。因此即使它们看起来是可以合并的两个小文件，也不要合并。
 - 若将来确实需要合并，前提是先把 `koishi` 加入前端构建的 external 并确认控制台运行时能提供它；在那之前不得合并。
 - **`Config` 类型保持手写 interface，不从配置规格派生。** 派生成映射类型后，使用者在 IDE 里看到的是展不开的条件类型，而不是可读的字段列表。

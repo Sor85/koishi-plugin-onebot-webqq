@@ -27,7 +27,6 @@ export interface CapsuleBotRuntime {
 export function registerCapsule(options: {
   ctx: ChatCapsuleContext
   config: PluginConfig
-  debug: boolean
   bots: CapsuleBotRuntime
   consoleAuthOptions: { authority: number }
   readBotSenderMetadata: Parameters<typeof registerCapsuleChatLunaActivity>[0]['readBotSenderMetadata']
@@ -38,7 +37,6 @@ export function registerCapsule(options: {
   const {
     ctx,
     config,
-    debug,
     bots: botRuntime,
     consoleAuthOptions,
     readBotSenderMetadata,
@@ -114,7 +112,7 @@ export function registerCapsule(options: {
     if (!inner.console) return
     // 与 WebQQ 侧同理：入口数据回调必须随插件 dispose 一起摘除。
     const console = createManagedConsole(inner.console, inner, consoleOwner, errorLogger ?? logger)
-    registerConsoleEntry(console, state, config, { debug, logSnapshot, readBotState })
+    registerConsoleEntry(console, state, config, { logSnapshot, readBotState })
   })
 
   ctx.inject({

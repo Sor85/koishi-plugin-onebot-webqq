@@ -31,6 +31,7 @@ import {
   mergeWebQQLiveMessages,
 } from '../src/webqq/message-flow/live-cache'
 import { createMessageInput } from '../src/capsule/message-input'
+import { createPluginRuntime } from '../src/runtime/create-runtime'
 
 const dnsMock = vi.hoisted(() => ({
   lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
@@ -241,10 +242,8 @@ describe('chat capsule plugin wiring', () => {
     expect(pluginSource).not.toContain("from './capsule/console-entry'")
     expect(capsuleRegisterSource).toContain("from './console-entry'")
     expect(pluginSource).not.toContain("dev: resolve(__dirname, '../client/index.ts')")
-    expect(pluginSource).not.toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'koishi'")
     expect(consoleEntrySource).toContain('export function registerConsoleEntry')
     expect(consoleEntrySource).toContain("dev: resolve(__dirname, '../client/index.ts')")
-    expect(consoleEntrySource).toContain("webQQStorageBackend: config.webQQStorageBackend ?? 'koishi'")
   })
 
   it('keeps WebQQ console listeners outside the plugin entry', () => {
@@ -403,9 +402,6 @@ describe('chat capsule plugin wiring', () => {
     expect(runtimeSource).toContain("from '../webqq/media/image-url-resolver'")
     expect(pluginSource).not.toContain('function createWebQQImageUrlResolver(')
     expect(webqqImageUrlResolverSource).toContain('export function createWebQQImageUrlResolver')
-    expect(runtimeSource).toContain('cacheEnabled: config.webQQImageCacheEnabled ?? true')
-    expect(runtimeSource).toContain('cacheLimitBytes: (config.webQQImageCacheLimitMB ?? 100) * 1024 * 1024')
-    expect(runtimeSource).toContain('cacheItemLimitBytes: (config.webQQImageCacheItemLimitMB ?? 10) * 1024 * 1024')
     expect(serverGet).toHaveBeenCalledWith('/onebot-webqq/webqq/image/:id', expect.any(Function))
 
     const localImageFile = fileURLToPath(new URL('../src/webqq/media/image-url-resolver.ts', import.meta.url))
@@ -760,6 +756,42 @@ describe('chat capsule plugin wiring', () => {
       expect(arrayBuffer).not.toHaveBeenCalled()
       expect(routerCtx.status).toBe(413)
       expect(routerCtx.body).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('converts the configured WebQQ image cache MB limits into the proxy byte limits', async () => {
+    const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
+    const runtime = createPluginRuntime({
+      server: { get: serverGet },
+    } as unknown as ChatCapsuleContext, {
+      webQQImageCacheItemLimitMB: 1,
+    })
+    const arrayBuffer = vi.fn(async () => Uint8Array.from([1]).buffer)
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: vi.fn((name: string) => name.toLowerCase() === 'content-length' ? String(2 * 1024 * 1024) : null),
+      },
+      arrayBuffer,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const imageUrl = runtime.imageUrlResolver('https://example.com/two-mb.jpg')
+      const handler = serverGet.mock.calls[0][1]
+      const routerCtx: { params: Record<string, string>; set: ReturnType<typeof vi.fn>; status?: number; body?: unknown } = {
+        params: { id: imageUrl.split('/').pop() || '' },
+        set: vi.fn(),
+      }
+
+      await handler(routerCtx)
+
+      // 单张上限配成 1 MB，2 MB 的响应必须在读 body 之前就被拒绝；用默认的 10 MB 则会放行。
+      expect(arrayBuffer).not.toHaveBeenCalled()
+      expect(routerCtx.status).toBe(413)
     } finally {
       vi.unstubAllGlobals()
     }
@@ -2158,6 +2190,36 @@ describe('chat capsule plugin wiring', () => {
   // 配置面板的分组名称与顺序、字段顺序、默认值、控件 role、数值上下限和说明文案由
   // tests/config-panel.test.ts 读 Schema 运行时节点断言。本文件把 koishi 的 Schema 换成了
   // 只记录链式调用的替身，读不到真实默认值，因此这里不再重复断言配置 Schema 的源码文本。
+
+  it('serves the WebQQ mock environment from memory and keeps real ChatLuna affinity out', async () => {
+    const database = {
+      get: vi.fn(async () => []),
+      upsert: vi.fn(async () => {}),
+    }
+    const { ctx, addEntry, addListener } = createFakeContext({ database })
+
+    plugin.apply(ctx, {
+      webQQMockEnvironment: true,
+      onebotMockBotCount: 2,
+      showWebQQAffinity: true,
+      showWebQQRelationship: true,
+    })
+
+    const loadContacts = findConsoleListener(addListener, 'onebot-webqq/webqq/contacts')
+    await expect(loadContacts?.()).resolves.toMatchObject({ mockEnvironment: true })
+    expect(addEntry.mock.calls[0][1]?.()).toMatchObject({
+      bots: expect.arrayContaining([
+        expect.objectContaining({ selfId: '10001:mock:1' }),
+        expect.objectContaining({ selfId: '10001:mock:2' }),
+      ]),
+    })
+
+    const loadMessages = findConsoleListener(addListener, 'onebot-webqq/webqq/messages')
+    const messages = await loadMessages?.({ type: 'group', peerId: '30001', limit: 20 })
+    expect(messages?.length).toBeGreaterThan(0)
+    // 模拟服务自带确定性的好感度与关系数据；开着 showWebQQAffinity 也不能去查真实 ChatLuna 表。
+    expect(database.get).not.toHaveBeenCalledWith('chatluna_affinity_v2', expect.anything())
+  })
 
   it('registers a console entry with empty capsule data', () => {
     const { ctx, addEntry } = createFakeContext()

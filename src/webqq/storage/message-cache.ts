@@ -1,4 +1,5 @@
 import type { Config } from '../../config'
+import { readConfigValue } from '../../config/spec'
 import { isRecord } from '../../shared/record'
 import type { WebQQChatType, WebQQMessage, WebQQMessageElement, WebQQMessageReaction, WebQQMessageReactionUser } from '../types'
 import { chatCapsuleStorageTable, getWebQQDatabase, type WebQQStorageContext } from './schema'
@@ -12,8 +13,6 @@ export interface WebQQMessageCacheQuery {
 export interface WebQQMessageCachePayload extends WebQQMessageCacheQuery {
   messages: WebQQMessage[]
 }
-
-export const defaultWebQQMessageCacheLimit = 100
 
 function readStringField(source: Record<string, unknown>, key: string) {
   const value = source[key]
@@ -228,16 +227,16 @@ export function readWebQQStoredMessages(value: unknown) {
 }
 
 export async function loadKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, query: WebQQMessageCacheQuery, scopeId?: string) {
-  if (config.webQQStorageBackend !== 'koishi') return []
+  if (readConfigValue(config, 'webQQStorageBackend') !== 'koishi') return []
   const database = getWebQQDatabase(ctx)
   const [row] = await database.get(chatCapsuleStorageTable, { id: getWebQQMessageStorageId(query, scopeId) })
   return readWebQQStoredMessages(isRecord(row) ? row.payload : undefined)
 }
 
 export async function saveKoishiWebQQMessageCache(ctx: WebQQStorageContext, config: Config, payload: WebQQMessageCachePayload, scopeId?: string) {
-  if (config.webQQStorageBackend !== 'koishi') return
+  if (readConfigValue(config, 'webQQStorageBackend') !== 'koishi') return
   const database = getWebQQDatabase(ctx)
-  const messageCacheLimit = config.webQQMessageCacheLimit ?? defaultWebQQMessageCacheLimit
+  const messageCacheLimit = readConfigValue(config, 'webQQMessageCacheLimit')
   const messages = payload.messages.slice(-messageCacheLimit)
   await database.upsert(chatCapsuleStorageTable, [{
     id: getWebQQMessageStorageId(payload, scopeId),

@@ -1,36 +1,49 @@
 import { Context, receive } from '@koishijs/client'
 import { watch, type Ref } from 'vue'
+import {
+  mirroredConfigKeys,
+  readConfigValue,
+  type ConfigValue,
+  type MirroredConfigKey,
+  type MirroredConfigValues,
+} from '../src/config/spec'
 import ClientShell from './ClientShell.vue'
 import { capsule, hiddenCapsuleActivityIds, type CapsuleData } from './capsule/state'
 import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
-import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail, type WebQQChatStyle, type WebQQColorMode, type WebQQStorageBackend } from './webqq/settings'
+import { allowWebQQResize, enableCapsuleFrostedGlass, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, showWebQQAffinity, showWebQQCapsuleUnread, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, useCompactCapsuleShadow, webQQAccentColor, webQQChatStyle, webQQColorMode, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail } from './webqq/settings'
 import './style.scss?onebot-webqq=composer-mention-v3'
 
-interface ClientData {
+// 配置镜像的类型由配置规格派生，只覆盖镜像配置项；非配置字段仍然手写。
+interface ClientData extends Partial<MirroredConfigValues> {
   capsule?: CapsuleData
   bots?: OneBotRobotState['bots']
   selectedSelfId?: string
-  debug?: boolean
-  enableWebQQFrostedGlass?: boolean
-  enableWebQQSend?: boolean
-  webQQChatStyle?: WebQQChatStyle
-  webQQTimBubbleTail?: boolean
-  webQQColorMode?: WebQQColorMode
-  webQQStorageBackend?: WebQQStorageBackend
-  webQQMessageCacheLimit?: number
-  webQQAccentColor?: string
-  enableCapsuleFrostedGlass?: boolean
-  useCompactCapsuleShadow?: boolean
-  hiddenCapsuleActivityIds?: string[]
-  allowWebQQResize?: boolean
-  hideWebQQGroupLevel?: boolean
-  showWebQQAffinity?: boolean
-  showWebQQRelationship?: boolean
-  showWebQQThinkingTokens?: boolean
-  showWebQQThinkingTiming?: boolean
-  showWebQQCapsuleUnread?: boolean
+}
+
+// 组合根把三个领域各自持有的配置镜像 ref 拼成一张完整的表。少一个键就编译报错，
+// 因此「新增镜像配置项时漏掉前端这一端」不再可能静默通过。
+const configMirror: { [K in MirroredConfigKey]: Ref<ConfigValue<K>> } = {
+  allowWebQQResize,
+  debug,
+  enableCapsuleFrostedGlass,
+  enableWebQQFrostedGlass,
+  enableWebQQSend,
+  hiddenCapsuleActivityIds,
+  hideWebQQGroupLevel,
+  showWebQQAffinity,
+  showWebQQCapsuleUnread,
+  showWebQQRelationship,
+  showWebQQThinkingTiming,
+  showWebQQThinkingTokens,
+  useCompactCapsuleShadow,
+  webQQAccentColor,
+  webQQChatStyle,
+  webQQColorMode,
+  webQQMessageCacheLimit,
+  webQQStorageBackend,
+  webQQTimBubbleTail,
 }
 
 function applyOneBotRobotState(state?: Partial<OneBotRobotState>) {
@@ -38,28 +51,19 @@ function applyOneBotRobotState(state?: Partial<OneBotRobotState>) {
   selectedBotSelfId.value = state?.selectedSelfId || ''
 }
 
+// 逐键泛型赋值：直接在循环里写 configMirror[key].value 会退化成联合类型而无法赋值。
+function applyMirroredConfigValue<K extends MirroredConfigKey>(key: K, data?: ClientData) {
+  configMirror[key].value = readConfigValue(data, key)
+}
+
 function applyClientData(value?: ClientData) {
   capsule.value = value?.capsule
   applyOneBotRobotState(value)
-  debug.value = !!value?.debug
-  enableWebQQFrostedGlass.value = value?.enableWebQQFrostedGlass ?? true
-  enableWebQQSend.value = value?.enableWebQQSend ?? false
-  webQQChatStyle.value = value?.webQQChatStyle || 'tim'
-  webQQTimBubbleTail.value = value?.webQQTimBubbleTail ?? true
-  webQQColorMode.value = value?.webQQColorMode || 'auto'
-  webQQStorageBackend.value = value?.webQQStorageBackend || 'koishi'
-  webQQMessageCacheLimit.value = value?.webQQMessageCacheLimit ?? 100
-  webQQAccentColor.value = value?.webQQAccentColor || '#2563eb'
-  enableCapsuleFrostedGlass.value = value?.enableCapsuleFrostedGlass ?? true
-  useCompactCapsuleShadow.value = value?.useCompactCapsuleShadow ?? true
-  hiddenCapsuleActivityIds.value = value?.hiddenCapsuleActivityIds ?? ['logs']
-  allowWebQQResize.value = value?.allowWebQQResize ?? false
-  hideWebQQGroupLevel.value = value?.hideWebQQGroupLevel ?? true
-  showWebQQAffinity.value = value?.showWebQQAffinity ?? false
-  showWebQQRelationship.value = value?.showWebQQRelationship ?? false
-  showWebQQThinkingTokens.value = value?.showWebQQThinkingTokens ?? true
-  showWebQQThinkingTiming.value = value?.showWebQQThinkingTiming ?? true
-  showWebQQCapsuleUnread.value = value?.showWebQQCapsuleUnread ?? true
+  // 空值语义由配置规格统一裁决：只有未设置才落默认值，标注了 blankIsUnset 的枚举与颜色
+  // 配置项额外把空字符串视为未设置。前端不再各处写 `?? 字面量` 或 `|| 字面量`。
+  for (const key of mirroredConfigKeys) {
+    applyMirroredConfigValue(key, value)
+  }
 }
 
 export default function (ctx: Context, data?: Ref<ClientData>) {

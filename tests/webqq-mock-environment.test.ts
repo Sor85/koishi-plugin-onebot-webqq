@@ -19,11 +19,10 @@ describe('webqq mock environment', () => {
   // 读 Schema 运行时节点断言，这里不再匹配配置 Schema 的源码文本。
 
   it('isolates mock messages from real affinity data and persisted browser caches', () => {
+    // create-runtime 与 console.ts 读哪个配置项、怎么兜底，由 tests/plugin.test.ts 通过
+    // 插件 apply + 内存 Console 替身断言运行时行为；这里只钉住模块归属与前端渲染契约。
     expect(runtimeSource).toContain("import { createMockWebQQService } from '../webqq/adapters/mock/service'")
-    expect(runtimeSource).toContain('config.webQQMockEnvironment')
-    expect(runtimeSource).toContain('createMockWebQQService(undefined, { mockBotCount: config.onebotMockBotCount })')
     expect(runtimeSource).toContain('createOneBotWebQQService(ctx, {')
-    expect(consoleSource).toContain('config.webQQMockEnvironment')
     expect(consoleSource).toContain('attachWebQQAffinityBadges')
     expect(observerSource).toContain('contacts.value.mockEnvironment')
     expect(observerSource).toContain('if (isWebQQMockEnvironment.value) return []')
