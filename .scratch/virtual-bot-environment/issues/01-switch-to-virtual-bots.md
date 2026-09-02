@@ -47,3 +47,10 @@
 - `tests/webqq-mock-environment.test.ts` 的两条按 spec 改写：「额外模拟机器人数量」那条改为断言模拟环境下不再派生假画像、真实环境下仍派生两个；「与真实 ChatLuna 数据隔离」那条改为反向断言（装配层不再引用内存实现、开关只作为选项传入、`console.ts` 不再出现 `webQQMockEnvironment`）。另三条覆盖内存实现的用例本票不动，由 ticket 02 处置。
 - 配置面板契约表同步新文案，`webQQMockEnvironment` 仍不在镜像配置项里，分组与字段顺序未动。
 - 验证：`yarn vitest run tests` 40 文件 613 通过；`yarn typecheck` 无输出；`yarn build` 服务端 `lib/index.js` 179.08 KB、前端 `dist/index.js` 586.92 kB（gzip 138.76 kB）、`dist/style.css` 114.18 kB。这三个数字是 ticket 02 体积比较的基线。
+
+### 代码审查后的两处补正
+
+- **通知菜单漏了同一判据。** `webqq/register.ts` 的 `friend-request` 与 `guild-member-removed` 两个 handler 只在 notice 工厂里判了 platform，没接 scope。开关开启时真实机器人的好友申请与退群通知照样进通知菜单，而菜单里的「同意」会拿事件里的真实 flag 去调**虚拟机器人**的 `set_friend_add_request`——正是「只列虚拟机器人」这条要防的那类事故。两个 handler 补上 `isVisibleBotSession(session, botScope)`，并在 `tests/plugin.test.ts` 加一条装配层断言（真实机器人的两类通知不进菜单、虚拟机器人的照常进）。副作用：开关关闭时隐藏机器人的这两类通知现在也被挡住了。这与 `runtime/register.ts` 里那句注释（hidden Bot 的事件必须在共享扇出边界阻断）本来就是同一个意图，此前只是漏了通知这条路径；没有任何既有断言依赖旧行为。
+- **缺提供方文案的分支顺序。** 原先 `options.selfId` 分支排在虚拟机器人文案之前，前端残留一个真实 selfId 再 select 时会落到「未找到 selfId 为 X」。改成「候选集合为空且要虚拟机器人」优先，虚拟机器人存在但点名的那台不在时仍给精确的 selfId 文案。断言补在既有那条用例里。
+- 保留 `getBotStatusDiagnostics()` 里新增的 `includeVirtualBots` 字段：这个对象的用途就是让调试日志解释「为什么某台机器人不在列表里」，而这个标志现在是该结论最主要的输入。
+- 补正后重新验证：`yarn vitest run tests` 40 文件 612 通过（+1 条通知菜单断言，ticket 02 已删掉 4 条旧用例）；`yarn typecheck` 无输出；`yarn build` 通过。

@@ -111,9 +111,10 @@ export function selectBot(ctx: OneBotContext, options: OneBotBotScope & { selfId
     ? bots.find((bot) => bot.selfId === options.selfId)
     : bots[0]
   if (!selected) {
+    // 候选集合为空且要的是虚拟机器人时，缺的一定是提供方插件——即使调用方点名了某个 selfId，
+    // 「未找到 selfId 为 X」也只会让人以为观察窗坏了。
+    if (!bots.length && options.includeVirtualBots) throw new Error('未找到虚拟 OneBot 机器人，WebQQ 开发者模拟环境需要另装一个提供虚拟 OneBot 机器人的插件')
     if (options.selfId) throw new Error(`未找到 selfId 为 ${options.selfId} 的 OneBot 机器人`)
-    // 缺提供方插件时不能落到下面那句通用文案上：那会让人以为观察窗坏了，而不是去装提供方插件。
-    if (options.includeVirtualBots) throw new Error('未找到虚拟 OneBot 机器人，WebQQ 开发者模拟环境需要另装一个提供虚拟 OneBot 机器人的插件')
     throw new Error(options.selfIds ? '未找到配置 selfId 集合中的可用 OneBot 机器人' : '未找到可用的 OneBot 机器人')
   }
   return selected

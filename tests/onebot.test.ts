@@ -594,6 +594,11 @@ describe('onebot webqq adapter', () => {
 
     await expect(createOneBotWebQQService({ bots: [realBot] }, { includeVirtualBots: true }).loadContacts())
       .rejects.toThrow('未找到虚拟 OneBot 机器人')
+    // 前端残留一个真实 selfId 再 select 时也要落到这句上：候选集合为空时缺的一定是提供方插件。
+    await expect(createOneBotWebQQService({ bots: [realBot] }, {
+      includeVirtualBots: true,
+      selfId: '10001',
+    }).loadContacts()).rejects.toThrow('未找到虚拟 OneBot 机器人')
     await expect(createOneBotWebQQService({ bots: [] }).loadContacts())
       .rejects.toThrow('未找到可用的 OneBot 机器人')
     await expect(createOneBotWebQQService({ bots: [] }, { selfIds: ['10001'] }).loadContacts())

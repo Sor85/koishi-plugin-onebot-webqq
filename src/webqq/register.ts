@@ -1,6 +1,7 @@
 import type { Config as PluginConfig } from '../config'
 import type { OneBotRobotState } from '../onebot/types'
 import type { OneBotBotScope } from '../onebot/bots'
+import { isVisibleBotSession } from '../onebot/session'
 import type { ChatCapsuleContext, DebugLogger } from '../plugin-context'
 import type { WebQQImageUrlResolver } from './media/image-url-resolver'
 import { registerWebQQReactionInterceptor } from './adapters/onebot/reactions'
@@ -98,13 +99,18 @@ export function registerWebQQ(options: {
     })
   })
 
+  // 通知菜单也是共享扇出边界：这两个事件写入的 notice 会经 loadNotices 进菜单，而菜单里的
+  // 「同意」会拿事件里的 flag 去调当前选中机器人的 action。不按同一判据过滤，模拟环境下就会
+  // 出现「用虚拟机器人批准真实好友申请」。
   ctx.on('friend-request', (session) => {
+    if (!isVisibleBotSession(session, botScope)) return
     const notice = createWebQQFriendRequestNotice(session)
     if (!notice) return
     friendRequestNotices.set(notice.id, notice)
   })
 
   ctx.on('guild-member-removed', (session) => {
+    if (!isVisibleBotSession(session, botScope)) return
     const notice = createWebQQGroupLeaveNotice(session)
     if (!notice) return
     groupLeaveNotices.set(notice.id, notice)

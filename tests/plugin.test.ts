@@ -2342,6 +2342,66 @@ describe('chat capsule plugin wiring', () => {
     expect(broadcast).not.toHaveBeenCalledWith('onebot-webqq/webqq/message', expect.anything(), { authority: 1 })
   })
 
+  it('keeps real bot notices out of the notice menu while the mock environment is on', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_group_system_msg') return { data: { join_requests: [] } }
+      return {}
+    })
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      internal: { _request: request },
+    }
+    const realBot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+      },
+    }
+    const { ctx, listeners, addListener } = createFakeContext({ bots: [virtualBot, realBot] })
+
+    plugin.apply(ctx, { webQQMockEnvironment: true })
+
+    // 真实机器人的好友申请与退群通知不能进模拟环境的通知菜单：在那里点「同意」会拿真实 flag 去调虚拟机器人的 action。
+    listeners['friend-request'][0](createSession({
+      userId: '40000',
+      event: {
+        user: { id: '40000', name: 'Bob' },
+        _data: { flag: 'real-flag' },
+      },
+    }))
+    listeners['guild-member-removed'][0](createSession({
+      channelId: '20000',
+      userId: '50000',
+      event: {
+        guild: { id: '20000', name: '真实群' },
+        user: { id: '50000', name: 'Carol' },
+      },
+    }))
+
+    // 虚拟机器人的同类事件照常进来。
+    listeners['friend-request'][0](createSession({
+      selfId: '90001',
+      bot: { platform: 'onebot', selfId: '90001', status: 1, hidden: true },
+      userId: '40001',
+      event: {
+        user: { id: '40001', name: '场景 Bob' },
+        _data: { flag: 'virtual-flag' },
+      },
+    }))
+
+    const loadNotices = findConsoleListener(addListener, 'onebot-webqq/webqq/notices')
+    await expect(loadNotices?.()).resolves.toEqual([
+      expect.objectContaining({ id: 'friend:virtual-flag', type: 'friend-request' }),
+    ])
+  })
+
   it('registers a console entry with empty capsule data', () => {
     const { ctx, addEntry } = createFakeContext()
 
