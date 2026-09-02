@@ -166,73 +166,20 @@
               </Button>
             </div>
           </div>
-          <form v-if="enableWebQQSend && currentChat && !selectionMode" ref="sendForm" class="onebot-webqq-webqq__send" @submit.prevent="sendCurrentWebQQMessage">
-            <div v-if="replyingToMessage || sendFiles.length" ref="sendContext" class="onebot-webqq-webqq__send-context">
-              <div v-if="replyingToMessage" class="onebot-webqq-webqq__reply-draft">
-                <span>回复 {{ replyingToMessage.senderName }}：{{ replyingToMessage.summary }}</span>
-                <button type="button" class="onebot-webqq-webqq__reply-draft-close" aria-label="清除回复" @click="clearReplyTarget">
-                  <IconX :size="15" aria-hidden="true" />
-                </button>
-              </div>
-              <template v-for="file in sendFiles" :key="file.id">
-                <span v-if="file.kind === 'file' || !file.previewUrl" class="onebot-webqq-webqq__send-file">
-                  <svg class="onebot-webqq-webqq__send-file-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"></path>
-                    <path d="M14 2v5h5"></path>
-                  </svg>
-                  <span class="onebot-webqq-webqq__send-file-name">
-                    <span class="onebot-webqq-webqq__send-file-base">{{ file.baseName }}</span><span>{{ file.extension }}</span>
-                  </span>
-                  <button type="button" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
-                    <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                  </button>
-                </span>
-                <span v-else-if="file.kind === 'video'" class="onebot-webqq-webqq__send-image">
-                  <span class="onebot-webqq-webqq__send-image-preview" role="img" :aria-label="`视频 ${file.file.name}`">
-                    <video :src="file.previewUrl" muted playsinline preload="metadata" aria-hidden="true"></video>
-                  </span>
-                  <button type="button" class="onebot-webqq-webqq__send-image-remove" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
-                    <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                  </button>
-                </span>
-                <span v-else class="onebot-webqq-webqq__send-image">
-                  <button class="onebot-webqq-webqq__send-image-preview" type="button" :aria-label="`预览 ${file.file.name}`" @click="openLocalImagePreview(file.previewUrl)"><img :src="file.previewUrl" :alt="file.file.name"></button>
-                  <button type="button" class="onebot-webqq-webqq__send-image-remove" :aria-label="`移除 ${file.file.name}`" @click="removeSendFile(file.id)">
-                    <svg class="onebot-webqq-webqq__send-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                  </button>
-                </span>
-              </template>
-            </div>
-            <img v-if="selectedBotAvatar" class="onebot-webqq-webqq__send-avatar" :src="withProxy(selectedBotAvatar)" alt="">
-            <span v-else class="onebot-webqq-webqq__send-avatar" aria-hidden="true"></span>
-            <div class="onebot-webqq-webqq__send-main">
-              <span v-if="isComposerDraftEmpty" class="onebot-webqq-webqq__send-placeholder" aria-hidden="true">发送消息</span>
-              <div
-                ref="sendTextInput"
-                v-webqq-scrollbar="{ tone: 'accent' }"
-                class="onebot-webqq-webqq__send-text"
-                role="textbox"
-                aria-multiline="true"
-                :aria-disabled="sendingWebQQMessage ? 'true' : undefined"
-                :contenteditable="sendingWebQQMessage ? 'false' : 'true'"
-                @keydown="handleComposerKeydown"
-                @input="handleComposerInput"
-                @compositionstart="composerIsComposing = true"
-                @compositionend="handleComposerCompositionEnd"
-                @paste="handleSendPaste"
-                @mouseup="syncComposerCaretFromDom"
-                @keyup="syncComposerCaretFromDom"
-              ></div>
-              <WebQQMentionMenu v-if="mentionMenuOpen" :candidates="filteredMentionCandidates" :active-index="mentionMenuIndex" @select="selectMentionCandidate" @hover="mentionMenuIndex = $event" />
-            </div>
-            <input ref="sendFileInput" class="onebot-webqq-webqq__send-file-input" type="file" multiple @change="handleSendFileSelect">
-            <button class="onebot-webqq-webqq__send-action" type="button" aria-label="选择文件" :disabled="sendingWebQQMessage" @click="openSendFilePicker">
-              <svg class="onebot-webqq-webqq__send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.5 12.5 21a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9 9a2 2 0 0 1-2.8-2.8l8.5-8.5"></path></svg>
-            </button>
-            <button class="onebot-webqq-webqq__send-action is-primary" type="submit" aria-label="发送" :disabled="sendingWebQQMessage || !canSendWebQQMessage">
-              <svg class="onebot-webqq-webqq__send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg>
-            </button>
-          </form>
+          <WebQQComposer
+            v-if="enableWebQQSend && currentChat && !selectionMode"
+            v-model:mention-request="composerMentionRequest"
+            :visible="visible"
+            :sending="sendingWebQQMessage"
+            :mention-candidates="mentionCandidates"
+            :chat-key="currentChatKey"
+            :bot-avatar="selectedBotAvatar"
+            :replying-to="replyingToMessage ? { senderName: replyingToMessage.senderName, summary: replyingToMessage.summary } : undefined"
+            @submit="sendCurrentWebQQMessage"
+            @clear-reply="clearReplyTarget"
+            @preview-attachment="openLocalImagePreview"
+            @update:send-space="webQQSendSpace = $event"
+          />
           <Transition name="webqq-scroll-bottom">
             <button
               v-if="!trackingMessages && visibleMessages.length"
@@ -315,15 +262,15 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Binary, withProxy } from '@koishijs/client'
-import { IconId, IconSearch, IconShare3, IconX } from '@tabler/icons-vue'
+import { withProxy } from '@koishijs/client'
+import { IconId, IconSearch, IconShare3 } from '@tabler/icons-vue'
 import { Button } from '../components/ui/button'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '../components/ui/context-menu'
 import WebQQActionDialog from './components/WebQQActionDialog.vue'
+import WebQQComposer, { type WebQQComposerMentionRequest, type WebQQComposerSubmitResult } from './components/WebQQComposer.vue'
 import WebQQConfirmDialog from './components/WebQQConfirmDialog.vue'
 import WebQQEmojiPicker from './components/WebQQEmojiPicker.vue'
 import WebQQMessageList from './components/WebQQMessageList.vue'
-import WebQQMentionMenu from './components/WebQQMentionMenu.vue'
 import WebQQSidebar from './components/WebQQSidebar.vue'
 import WebQQNoticeMenu from './components/WebQQNoticeMenu.vue'
 import WebQQForwardModal from './components/WebQQForwardModal.vue'
@@ -361,19 +308,7 @@ import { readWebQQErrorMessage } from './utils/webqq-error'
 import { useWebQQFrostedSurfaceFlag } from './utils/webqq-frosted-surface'
 import { localDateToMessageSearchRange } from './utils/message-search-date'
 import { filterWebQQSearchMessages } from '../../src/webqq/message-search'
-import {
-  createEmptyWebQQComposerDraft,
-  detectWebQQMentionTrigger,
-  filterWebQQMentionCandidates,
-  insertWebQQComposerMention,
-  isWebQQComposerDraftEmpty,
-  normalizeWebQQComposerTokens,
-  replaceWebQQComposerTextRange,
-  serializeWebQQComposerDraft,
-  type WebQQComposerDraft,
-  type WebQQComposerDraftToken,
-  type WebQQMentionCandidate,
-} from './utils/webqq-composer-draft'
+import type { WebQQMentionCandidate } from './utils/webqq-composer-draft'
 import { applyLocalWebQQReaction, applyLocalWebQQRecall } from './utils/webqq-interaction-state'
 import { buildGroupProfileCardModel, buildProfileCardModelFromProfile, buildUserProfileCardModel, type ProfileCardModel } from './utils/profile-card'
 import { useWebQQContacts } from './stores/webqq-contacts'
@@ -415,19 +350,6 @@ interface WebQQResizeState {
   startWidth: number
   startHeight: number
 }
-
-type WebQQSendFileKind = 'image' | 'video' | 'file'
-
-interface WebQQSendFile {
-  id: string
-  file: File
-  kind: WebQQSendFileKind
-  previewUrl?: string
-  baseName: string
-  extension: string
-}
-
-const webQQVideoFileExtensions = new Set(['mp4', 'webm', 'mov', 'm4v', '3gp'])
 
 const props = defineProps<{ visible: boolean }>()
 
@@ -520,19 +442,9 @@ const contactsRecoverySignal = computed(() => JSON.stringify({
   conversationTimestamp: capsule.value?.conversation?.timestamp,
 }))
 const imagePreviewUrl = ref('')
-const composerDraft = ref<WebQQComposerDraft>(createEmptyWebQQComposerDraft())
-const sendFiles = ref<WebQQSendFile[]>([])
 const sendingWebQQMessage = ref(false)
-const sendTextInput = ref<HTMLElement>()
-const sendFileInput = ref<HTMLInputElement>()
-const sendForm = ref<HTMLElement>()
-const sendContext = ref<HTMLElement>()
 const webQQSendSpace = ref(80)
-const webQQSendHeight = ref(44)
-const composerIsComposing = ref(false)
-const mentionMenu = ref<{ tokenIndex: number, start: number, query: string }>()
-const mentionMenuIndex = ref(0)
-let suppressComposerInput = false
+const composerMentionRequest = ref<WebQQComposerMentionRequest>()
 let contactsLoadVersion = 0
 const selectedBotAvatar = computed(() => {
   const selected = availableBots.value.find((bot) => bot.selfId === selectedBotSelfId.value)
@@ -547,8 +459,6 @@ const selectedBotAvatar = computed(() => {
     (fallback?.selfId ? cachedSendBotAvatars.value[fallback.selfId] : '') ||
     ''
 })
-const isComposerDraftEmpty = computed(() => isWebQQComposerDraftEmpty(composerDraft.value.tokens))
-const canSendWebQQMessage = computed(() => !isComposerDraftEmpty.value || !!sendFiles.value.length)
 
 async function loadCachedWebQQMessages(type: 'friend' | 'group', peerId: string) {
   // 模拟场景必须以服务端预设为唯一真相，避免旧浏览器缓存继续展示已经修正过的角色和测试消息。
@@ -573,382 +483,36 @@ function openLocalImagePreview(url: string) {
   imagePreviewUrl.value = url
 }
 
-function getSendFileNameParts(name: string) {
-  const dotIndex = name.lastIndexOf('.')
-  if (dotIndex <= 0) return { baseName: name, extension: '' }
-  return {
-    baseName: name.slice(0, dotIndex),
-    extension: name.slice(dotIndex),
-  }
-}
-
-function getSendFileKind(file: File): WebQQSendFileKind {
-  const mime = file.type.toLowerCase()
-  if (mime.startsWith('image/')) return 'image'
-  if (mime.startsWith('video/')) return 'video'
-  const extension = file.name.split('.').pop()?.toLowerCase() || ''
-  // Firefox 与部分系统文件选择器可能不提供 MIME；仅对 QQ 常见可播放格式回退，
-  // 避免把不受支持的视频容器误发为原生视频消息。
-  return webQQVideoFileExtensions.has(extension) ? 'video' : 'file'
-}
-
-function addSendFiles(files: Iterable<File>) {
-  for (const file of files) {
-    const kind = getSendFileKind(file)
-    sendFiles.value.push({
-      id: `${file.name}:${file.size}:${file.lastModified}:${sendFiles.value.length}`,
-      file,
-      kind,
-      previewUrl: kind === 'image' || kind === 'video' ? URL.createObjectURL(file) : undefined,
-      ...getSendFileNameParts(file.name),
-    })
-  }
-}
-
-function removeSendFile(id: string) {
-  const file = sendFiles.value.find((file) => file.id === id)
-  if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl)
-  sendFiles.value = sendFiles.value.filter((file) => file.id !== id)
-}
-
-function clearSendFiles() {
-  for (const file of sendFiles.value) {
-    if (file.previewUrl) URL.revokeObjectURL(file.previewUrl)
-  }
-  sendFiles.value = []
-}
-
-function openSendFilePicker() {
-  sendFileInput.value?.click()
-}
-
-function handleSendFileSelect(event: Event) {
-  const input = event.currentTarget as HTMLInputElement
-  if (input.files) addSendFiles(input.files)
-  input.value = ''
-}
-
-function handleSendPaste(event: ClipboardEvent) {
-  const files = Array.from(event.clipboardData?.files ?? [])
-  if (!files.length) return
-  event.preventDefault()
-  addSendFiles(files)
-}
-
-function resetComposerDraft(options: { focus?: boolean } = {}) {
-  applyComposerDraft(createEmptyWebQQComposerDraft(), options)
-}
-
-function closeMentionMenu() {
-  mentionMenu.value = undefined
-  mentionMenuIndex.value = 0
-}
-
-function renderComposerDraft(current: WebQQComposerDraft) {
-  const editor = sendTextInput.value
-  if (!editor) return
-  suppressComposerInput = true
-  editor.replaceChildren()
-  for (const token of current.tokens) {
-    if (token.type === 'text') {
-      // 空文本 token 用零宽字符提供可点击的光标锚点；读回草稿时会统一移除。
-      editor.appendChild(document.createTextNode(token.text || '​'))
-      continue
-    }
-    const mention = document.createElement('span')
-    mention.className = 'onebot-webqq-webqq__composer-mention'
-    mention.contentEditable = 'false'
-    mention.dataset.mentionId = token.id
-    mention.dataset.mentionName = token.name
-    mention.textContent = `@${token.name}`
-    editor.appendChild(mention)
-  }
-  if (!editor.childNodes.length) editor.appendChild(document.createTextNode(''))
-  suppressComposerInput = false
-}
-
-function applyComposerDraft(next: WebQQComposerDraft, options: { focus?: boolean } = {}) {
-  composerDraft.value = {
-    tokens: normalizeWebQQComposerTokens(next.tokens),
-    tokenIndex: next.tokenIndex,
-    offset: next.offset,
-  }
-  renderComposerDraft(composerDraft.value)
-  if (options.focus === false) return
-  void nextTick(() => {
-    sendTextInput.value?.focus()
-    setComposerCaret(composerDraft.value.tokenIndex, composerDraft.value.offset)
-  })
-}
-
-function readComposerDraftFromDom(): WebQQComposerDraft {
-  const editor = sendTextInput.value
-  if (!editor) return createEmptyWebQQComposerDraft()
-  const tokens: WebQQComposerDraftToken[] = []
-  const walk = (node: Node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      tokens.push({ type: 'text', text: node.textContent ?? '' })
-      return
-    }
-    if (!(node instanceof HTMLElement)) return
-    if (node.dataset.mentionId) {
-      tokens.push({
-        type: 'mention',
-        id: node.dataset.mentionId,
-        name: node.dataset.mentionName || node.textContent?.replace(/^@/, '') || node.dataset.mentionId,
-      })
-      return
-    }
-    if (node.tagName === 'BR') {
-      tokens.push({ type: 'text', text: '\n' })
-      return
-    }
-    node.childNodes.forEach(walk)
-  }
-  editor.childNodes.forEach(walk)
-  return {
-    tokens: normalizeWebQQComposerTokens(tokens),
-    tokenIndex: composerDraft.value.tokenIndex,
-    offset: composerDraft.value.offset,
-  }
-}
-
-function getComposerCaret(tokens = composerDraft.value.tokens) {
-  const editor = sendTextInput.value
-  const selection = window.getSelection()
-  if (!editor || !selection || selection.rangeCount === 0) return
-  const range = selection.getRangeAt(0)
-  if (!editor.contains(range.startContainer)) return
-
-  const mapNodeToToken = (node: Node) => {
-    let index = 0
-    for (const child of Array.from(editor.childNodes)) {
-      if (child === node || child.contains(node)) return index
-      if (child.nodeType === Node.TEXT_NODE || (child instanceof HTMLElement && child.dataset.mentionId)) index += 1
-    }
-    return Math.max(0, tokens.length - 1)
-  }
-
-  if (range.startContainer === editor) {
-    let tokenIndex = 0
-    for (let childIndex = 0; childIndex < editor.childNodes.length; childIndex += 1) {
-      const child = editor.childNodes[childIndex]
-      if (childIndex === range.startOffset) {
-        if (child.nodeType === Node.TEXT_NODE) return { tokenIndex, offset: 0 }
-        return { tokenIndex: Math.max(0, tokenIndex - 1), offset: Number.MAX_SAFE_INTEGER }
-      }
-      if (child.nodeType === Node.TEXT_NODE || (child instanceof HTMLElement && child.dataset.mentionId)) tokenIndex += 1
-    }
-    return { tokenIndex: Math.max(0, tokens.length - 1), offset: Number.MAX_SAFE_INTEGER }
-  }
-
-  let tokenIndex = mapNodeToToken(range.startContainer)
-  let offset = range.startContainer.nodeType === Node.TEXT_NODE ? range.startOffset : 0
-  const token = tokens[tokenIndex]
-  if (token?.type === 'text') {
-    offset = Math.min(Math.max(offset, 0), token.text.length)
-  } else {
-    tokenIndex = Math.min(tokenIndex + 1, tokens.length - 1)
-    offset = 0
-  }
-  return { tokenIndex, offset }
-}
-
-function setComposerCaret(tokenIndex: number, offset: number) {
-  const editor = sendTextInput.value
-  const selection = window.getSelection()
-  if (!editor || !selection) return
-  let index = 0
-  let targetNode: Node | undefined
-  let targetOffset = 0
-  for (const child of Array.from(editor.childNodes)) {
-    const isToken = child.nodeType === Node.TEXT_NODE || (child instanceof HTMLElement && !!child.dataset.mentionId)
-    if (!isToken) continue
-    if (index === tokenIndex) {
-      if (child.nodeType === Node.TEXT_NODE) {
-        targetNode = child
-        targetOffset = Math.min(Math.max(offset, 0), child.textContent?.length ?? 0)
-      } else {
-        const next = child.nextSibling
-        targetNode = next?.nodeType === Node.TEXT_NODE ? next : child
-      }
-      break
-    }
-    index += 1
-  }
-  if (!targetNode) {
-    targetNode = editor
-    targetOffset = editor.childNodes.length
-  }
-  const range = document.createRange()
-  try {
-    range.setStart(targetNode, targetOffset)
-    range.collapse(true)
-    selection.removeAllRanges()
-    selection.addRange(range)
-  } catch {
-    // Chrome 与 Firefox 在节点刚替换时都可能暂时拒绝 setStart；下次输入会重新同步光标。
-  }
-}
-
-function syncComposerCaretFromDom() {
-  const caret = getComposerCaret()
-  if (!caret) return
-  const token = composerDraft.value.tokens[caret.tokenIndex]
-  composerDraft.value = {
-    ...composerDraft.value,
-    tokenIndex: caret.tokenIndex,
-    offset: token?.type === 'text' ? Math.min(caret.offset, token.text.length) : 0,
-  }
-}
-
-function updateMentionMenuFromDraft(current: WebQQComposerDraft) {
-  if (!mentionCandidates.value.length || composerIsComposing.value) {
-    closeMentionMenu()
-    return
-  }
-  const token = current.tokens[current.tokenIndex]
-  if (token?.type !== 'text') {
-    closeMentionMenu()
-    return
-  }
-  const trigger = detectWebQQMentionTrigger(token.text, current.offset)
-  if (!trigger) {
-    closeMentionMenu()
-    return
-  }
-  mentionMenu.value = { tokenIndex: current.tokenIndex, start: trigger.start, query: trigger.query }
-  mentionMenuIndex.value = 0
-}
-
-function handleComposerInput() {
-  if (suppressComposerInput) return
-  const next = readComposerDraftFromDom()
-  // 当前 DOM 已经包含新输入，光标必须按 next.tokens 限制；若仍按旧草稿长度钳制，中途键入的 @ 会被截到光标之后。
-  const caret = getComposerCaret(next.tokens)
-  composerDraft.value = {
-    tokens: next.tokens,
-    tokenIndex: caret?.tokenIndex ?? next.tokenIndex,
-    offset: caret?.offset ?? next.offset,
-  }
-  updateMentionMenuFromDraft(composerDraft.value)
-  // 与 sandbox 一致：contenteditable 的 input 可能早于 Selection 更新，下一微任务必须重新读取真实光标。
-  void nextTick(() => {
-    const currentCaret = getComposerCaret()
-    if (!currentCaret) return
-    const currentToken = composerDraft.value.tokens[currentCaret.tokenIndex]
-    composerDraft.value = {
-      ...composerDraft.value,
-      tokenIndex: currentCaret.tokenIndex,
-      offset: currentToken?.type === 'text'
-        ? Math.min(currentCaret.offset, currentToken.text.length)
-        : 0,
-    }
-    updateMentionMenuFromDraft(composerDraft.value)
-  })
-}
-
-function handleComposerCompositionEnd() {
-  composerIsComposing.value = false
-  handleComposerInput()
-}
-
-function insertExternalMention(candidate: Pick<WebQQMentionCandidate, 'id' | 'name'>) {
-  syncComposerCaretFromDom()
-  const current = composerDraft.value
-  const token = current.tokens[current.tokenIndex]
-  const offset = token?.type === 'text' ? current.offset : 0
-  applyComposerDraft(insertWebQQComposerMention(current.tokens, current.tokenIndex, offset, candidate))
-  closeMentionMenu()
-}
-
-function selectMentionCandidate(candidate: WebQQMentionCandidate) {
-  const menu = mentionMenu.value
-  if (!menu) return
-  const token = composerDraft.value.tokens[menu.tokenIndex]
-  const end = token?.type === 'text' ? composerDraft.value.offset : menu.start
-  applyComposerDraft(replaceWebQQComposerTextRange(
-    composerDraft.value.tokens,
-    menu.tokenIndex,
-    menu.start,
-    Math.max(menu.start, end),
-    candidate,
-  ))
-  closeMentionMenu()
-}
-
-function handleComposerKeydown(event: KeyboardEvent) {
-  if (sendingWebQQMessage.value) {
-    event.preventDefault()
-    return
-  }
-  if (mentionMenuOpen.value) {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault()
-      if (!filteredMentionCandidates.value.length) return
-      const direction = event.key === 'ArrowDown' ? 1 : -1
-      mentionMenuIndex.value = (mentionMenuIndex.value + direction + filteredMentionCandidates.value.length) % filteredMentionCandidates.value.length
-      return
-    }
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault()
-      const candidate = filteredMentionCandidates.value[mentionMenuIndex.value]
-      if (candidate) selectMentionCandidate(candidate)
-      return
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      closeMentionMenu()
-      return
-    }
-  }
-  if (event.key === 'Enter' && !event.shiftKey && !composerIsComposing.value) {
-    event.preventDefault()
-    void sendCurrentWebQQMessage()
-  }
-}
-
-async function toSendElement(file: File): Promise<WebQQSendElement> {
-  return {
-    type: getSendFileKind(file),
-    data: `data:${file.type || 'application/octet-stream'};base64,${Binary.toBase64(await file.arrayBuffer())}`,
-    name: file.name,
-  }
-}
-
-async function sendCurrentWebQQMessage() {
+// 输入区只产出可发送内容；会话、回复目标、发送 RPC、错误文案与发送锁留在会话层。
+async function sendCurrentWebQQMessage(elements: WebQQSendElement[], complete: (result: WebQQComposerSubmitResult) => void) {
   const chat = currentChat.value
-  if (!chat || sendingWebQQMessage.value || !canSendWebQQMessage.value) return
-  // 捕获发送发起时的 textarea 和会话；异步期间切换会话时，不能把焦点错误地抢到新会话输入框。
-  const requestInput = sendTextInput.value
+  if (!chat || sendingWebQQMessage.value) {
+    complete({ sent: false, restoreFocus: false })
+    return
+  }
+  // 捕获发送发起时的会话；异步期间切换会话时，不能把焦点错误地抢到新会话输入区。
   const requestChatKey = `${chat.type}:${chat.peerId}`
   sendingWebQQMessage.value = true
   errorText.value = ''
+  let sent = false
   try {
-    const elements: WebQQSendElement[] = [
-      ...serializeWebQQComposerDraft(composerDraft.value.tokens),
-      ...await Promise.all(sendFiles.value.map(({ file }) => toSendElement(file))),
-    ]
     await sendWebQQMessage({
       type: chat.type,
       peerId: chat.peerId,
       elements,
       ...(replyingToMessageId.value ? { replyToMessageId: replyingToMessageId.value } : {}),
     })
-    resetComposerDraft({ focus: false })
-    closeMentionMenu()
-    clearSendFiles()
+    sent = true
     clearReplyTarget()
   } catch (error) {
     errorText.value = readWebQQErrorMessage(error, '发送消息失败')
   } finally {
     sendingWebQQMessage.value = false
-    // 与 chatluna-sandbox 保持一致：必须等 disabled 解除后再恢复焦点，否则浏览器会忽略 focus。
-    await nextTick()
     const activeChat = currentChat.value
-    if (activeChat && `${activeChat.type}:${activeChat.peerId}` === requestChatKey && sendTextInput.value === requestInput) {
-      requestInput?.focus()
-    }
+    complete({
+      sent,
+      restoreFocus: !!activeChat && `${activeChat.type}:${activeChat.peerId}` === requestChatKey,
+    })
   }
 }
 
@@ -1005,19 +569,6 @@ const mentionCandidates = computed<WebQQMentionCandidate[]>(() => {
       ...(keywords.length ? { keywords } : {}),
     }
   })
-})
-const mentionMenuOpen = computed(() => !!mentionMenu.value && !!mentionCandidates.value.length)
-const filteredMentionCandidates = computed(() => (
-  mentionMenu.value
-    ? filterWebQQMentionCandidates(mentionCandidates.value, mentionMenu.value.query)
-    : []
-))
-
-watch(filteredMentionCandidates, (candidates) => {
-  if (!mentionMenu.value) return
-  mentionMenuIndex.value = candidates.length
-    ? Math.min(mentionMenuIndex.value, candidates.length - 1)
-    : 0
 })
 
 const webQQResizeStorageKey = 'onebot-webqq:webqq:resize:v1'
@@ -1090,9 +641,9 @@ function loadStoredWebQQShellSize() {
 
 const webQQAccentStyle = computed(() => {
   const style = getWebQQAccentStyle(webQQAccentColor.value)
+  // 多选模式下输入区整块不渲染，占位取固定值；其余时候用输入区自己观测出来的数字。
   const sendSpaceStyle = {
     '--onebot-webqq-webqq-send-space': `${selectionMode.value ? 64 : webQQSendSpace.value}px`,
-    '--onebot-webqq-webqq-send-height': `${webQQSendHeight.value}px`,
   }
   if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle }
   return {
@@ -1102,31 +653,6 @@ const webQQAccentStyle = computed(() => {
     height: `${webQQShellSize.value.height}px`,
   }
 })
-
-let sendFormResizeObserver: ResizeObserver | undefined
-let sendContextResizeObserver: ResizeObserver | undefined
-
-function updateWebQQSendSpace() {
-  const form = sendForm.value
-  const context = sendContext.value
-  const contextHeight = context ? Math.ceil(context.getBoundingClientRect().height) + 8 : 0
-  webQQSendHeight.value = form ? Math.ceil(form.getBoundingClientRect().height) : 44
-  // 回复和附件共用同一个 wrap 包络，只计一次真实高度，避免两者同时存在时重复撑大消息区留白。
-  webQQSendSpace.value = webQQSendHeight.value + contextHeight + 28
-}
-
-async function observeWebQQSendForm() {
-  sendFormResizeObserver?.disconnect()
-  sendContextResizeObserver?.disconnect()
-  await nextTick()
-  updateWebQQSendSpace()
-  if (typeof ResizeObserver === 'undefined' || !sendForm.value) return
-  sendFormResizeObserver = new ResizeObserver(updateWebQQSendSpace)
-  sendFormResizeObserver.observe(sendForm.value)
-  if (!sendContext.value) return
-  sendContextResizeObserver = new ResizeObserver(updateWebQQSendSpace)
-  sendContextResizeObserver.observe(sendContext.value)
-}
 
 const {
   forwardDialog,
@@ -1239,6 +765,8 @@ const reactionPickerOpen = computed({
   },
 })
 const replyingToMessage = computed(() => visibleMessages.value.find((message) => message.id === replyingToMessageId.value))
+// 输入区只拿到一个不透明的会话标识：它凭此清空草稿与待发附件，但不认识会话类型与 peerId。
+const currentChatKey = computed(() => currentChat.value ? `${currentChat.value.type}:${currentChat.value.peerId}` : '')
 
 async function runInteraction(action: () => Promise<unknown>, fallback: string) {
   errorText.value = ''
@@ -1659,7 +1187,7 @@ function handleMentionGroupMember(userId: string) {
   }
   const member = groupInfo.value.members.find((item) => item.userId === userId)
   // 右键提及与键入 @ 必须进入同一 token 草稿；否则两条入口会产生不同的顺序、删除和序列化行为。
-  insertExternalMention({ id: userId, name: member ? getGroupMemberName(member) : userId })
+  composerMentionRequest.value = { id: userId, name: member ? getGroupMemberName(member) : userId }
 }
 
 async function refreshCurrentGroupInfo(groupId: string) {
@@ -1789,8 +1317,7 @@ watch(currentChat, () => {
   messageSearchQuery.value = ''
   messageSearchLocalDate.value = ''
   clearReplyTarget()
-  resetComposerDraft({ focus: false })
-  closeMentionMenu()
+  // 草稿、提及菜单与待发附件由输入区自己按 chat-key 清空。
   reactionPickerMessageId.value = ''
   profileCardOpen.value = false
 })
@@ -1959,9 +1486,6 @@ const disposeWebQQLiveMessages = useWebQQLiveMessages({
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleSelectionKeydown)
   disposeWebQQLiveMessages()
-  clearSendFiles()
-  sendFormResizeObserver?.disconnect()
-  sendContextResizeObserver?.disconnect()
   stopWebQQResize()
   window.removeEventListener('resize', clampCurrentWebQQShellSize)
 })
@@ -1973,25 +1497,8 @@ watch(allowWebQQResize, (enabled) => {
 
 watch(() => props.visible, (visible) => {
   if (!visible) return
-  observeWebQQSendForm()
   clearCurrentUnreadCount()
   if (trackingMessages.value) scrollMessagesToBottom()
-})
-
-watch(() => enableWebQQSend.value && !!currentChat.value, () => {
-  observeWebQQSendForm()
-}, { immediate: true })
-
-watch(sendTextInput, (editor) => {
-  if (editor) renderComposerDraft(composerDraft.value)
-})
-
-watch(() => sendFiles.value.length, () => {
-  observeWebQQSendForm()
-})
-
-watch(replyingToMessage, () => {
-  observeWebQQSendForm()
 })
 
 watch(totalUnreadCount, (count) => {
