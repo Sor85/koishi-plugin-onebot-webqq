@@ -164,14 +164,15 @@ async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: Web
   }
 }
 
+// NapCat 与 LLBot 的 action 清单里都只有 _get_group_notice，没有不带下划线的写法，
+// 因此没有第二个名字可试。取不到公告不算错误：群本来就可能没有公告，群资料栏此时不显示公告区。
 async function loadGroupAnnouncements(bot: OneBotBot, groupId: string) {
-  for (const action of ['_get_group_notice', 'get_group_notice']) {
-    try {
-      const result = await callAction(bot, action, { group_id: toOneBotId(groupId) })
-      return toArrayResult(result, 'notices').map(normalizeGroupAnnouncement)
-    } catch {}
+  try {
+    const result = await callAction(bot, '_get_group_notice', { group_id: toOneBotId(groupId) })
+    return toArrayResult(result, 'notices').map(normalizeGroupAnnouncement)
+  } catch {
+    return []
   }
-  return []
 }
 
 function getContactLoadErrorMessage(error: unknown) {

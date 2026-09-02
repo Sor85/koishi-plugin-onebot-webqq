@@ -703,6 +703,36 @@ describe('onebot webqq adapter', () => {
     expect(request).toHaveBeenCalledWith('_get_group_notice', { group_id: 20000 })
   })
 
+  // 公告取不到不能让整个群资料失败：群本来就可能没有公告，实现也可能不支持这个 action。
+  it('keeps group info usable when the announcement action fails', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_group_member_list') return [{ user_id: 30000, nickname: 'Alice' }]
+      throw new Error(`不支持 ${action}`)
+    })
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        _request: request,
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.loadGroupInfo({ groupId: '20000' })).resolves.toEqual({
+      announcements: [],
+      members: [{
+        userId: '30000',
+        nickname: 'Alice',
+        card: '',
+        avatar: 'https://q1.qlogo.cn/g?b=qq&nk=30000&s=640',
+      }],
+    })
+    // 两种实现都只有 _get_group_notice，没有别名可退，因此失败后不该再发第二次公告请求。
+    expect(request.mock.calls.filter(([action]) => action.includes('group_notice'))).toEqual([
+      ['_get_group_notice', { group_id: 20000 }],
+    ])
+  })
+
   it('loads group and friend history without calling send actions', async () => {
     const bot = {
       platform: 'onebot',
