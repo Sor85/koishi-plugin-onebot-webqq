@@ -4,6 +4,8 @@ This context defines the project-specific language for the floating WebQQ capsul
 
 ## Language
 
+### 界面
+
 **主胶囊**:
 Koishi 控制台右下角的浮动 WebQQ 入口外壳，承载当前机器人头像和摘要信息。
 _Avoid_: 大胶囊, 外层按钮
@@ -55,3 +57,17 @@ _Avoid_: 毛玻璃卡片, 玻璃弹窗
 **Backdrop Root 边界**:
 带 `backdrop-filter` 的元素形成的采样边界，其内部后代和覆盖其上的浮层都采不到边界外的内容。
 _Avoid_: 模糊祖先, 滤镜根
+
+### 配置
+
+**配置规格**:
+插件全部配置项的唯一权威声明，逐项记录键名、默认值和是否镜像到前端。
+_Avoid_: 配置表, 配置清单, schema 定义
+
+**镜像配置项**:
+配置规格中标注为需要送到前端的配置项；未标注的只在服务端消费。
+_Avoid_: 下发字段, 客户端配置
+
+**配置镜像**:
+前端持有的一份镜像配置项副本，由服务端下发写入并供界面读取，不参与配置的权威判定。
+_Avoid_: 前端配置, settings
