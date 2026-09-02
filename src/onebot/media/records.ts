@@ -1,5 +1,6 @@
-import { callAction, type OneBotBot } from '../actions'
+import { callAction, callSupportedAction, type OneBotBot } from '../actions'
 import { getActionData, getStringField, isRecord, toOneBotId } from '../data'
+import type { WebQQProtocol } from '../protocol'
 import { assertSafeOneBotMediaFile } from './images'
 
 function resolveRecordUrl(result: unknown, mediaUrlResolver?: (file: string) => string) {
@@ -28,8 +29,18 @@ export async function resolveOneBotRecord(bot: OneBotBot, file: string, mediaUrl
   }
 }
 
-export async function transcribeOneBotRecord(bot: OneBotBot, messageId: string) {
-  const result = await callAction(bot, 'voice_msg_to_text', { message_id: toOneBotId(messageId) })
+// 语音转文字在两种实现里是两个 action 名：NapCat 只有 fetch_ptt_text，LLBot 只有 voice_msg_to_text。
+// 按配置的协议把更可能命中的排在前面，协议配错时仍能靠另一个名字兜住，两者的返回都是 `{ text }`。
+function getRecordTranscriptionActions(protocol?: WebQQProtocol) {
+  return protocol === 'llbot'
+    ? ['voice_msg_to_text', 'fetch_ptt_text']
+    : ['fetch_ptt_text', 'voice_msg_to_text']
+}
+
+export async function transcribeOneBotRecord(bot: OneBotBot, messageId: string, protocol?: WebQQProtocol) {
+  const result = await callSupportedAction(bot, getRecordTranscriptionActions(protocol), {
+    message_id: toOneBotId(messageId),
+  })
   if (typeof result === 'string') return result
   const source = isRecord(result) ? getActionData(result) : {}
   return getStringField(source, ['text']) || ''

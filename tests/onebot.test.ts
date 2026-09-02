@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
+import { resolveOneBotEmojiType } from '../src/onebot/emoji'
 import { createOneBotWebQQService } from '../src/webqq/adapters/onebot/service'
 
 const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
@@ -572,12 +573,51 @@ describe('onebot webqq adapter', () => {
     expect(secondBot.internal.fetch_emoji_like).toHaveBeenCalledWith({
       message_id: 123,
       emoji_id: '76',
+      emojiId: '76',
+      emojiType: 1,
       count: 2,
     })
     expect(secondBot.internal.get_msg).toHaveBeenCalledWith({ message_id: 123 })
 
     secondBot.status = 0
     expect(service.supportsReactionUsers('10001')).toBe(false)
+  })
+
+  // NapCat 的 fetch_emoji_like 按 emojiType 区分小黄脸和 Unicode 表情，传错类型会查回空名单。
+  // 判据与 NapCat 自己在 set_msg_emoji_like 内部用的一致（emojiId 超过 3 位视为 Unicode 码点）。
+  it('marks unicode codepoint reactions as the unicode emoji type', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      status: 1,
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_emoji_like: vi.fn(async () => ({ emojiLikesList: [] })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await service.loadReactionUsers('123', '128077', 20)
+
+    expect(bot.internal.fetch_emoji_like).toHaveBeenCalledWith({
+      message_id: 123,
+      emoji_id: '128077',
+      emojiId: '128077',
+      emojiType: 2,
+      count: 20,
+    })
+  })
+
+  it('splits emoji types at the three digit QQ face boundary', () => {
+    // QQ 小黄脸的 QSid 最多三位，Unicode 码点十进制至少四位（☀ 的 9728、👍 的 128077）。
+    expect(resolveOneBotEmojiType('4')).toBe(1)
+    expect(resolveOneBotEmojiType('76')).toBe(1)
+    expect(resolveOneBotEmojiType('400')).toBe(1)
+    expect(resolveOneBotEmojiType('9728')).toBe(2)
+    expect(resolveOneBotEmojiType('128077')).toBe(2)
+    // 上报值带空白时按去空白后的长度判定，否则短表情会被误判成 Unicode 码点。
+    expect(resolveOneBotEmojiType(' 76 ')).toBe(1)
   })
 
   it('uses the Satori bot user profile as the robot display profile', () => {
@@ -1211,7 +1251,7 @@ describe('onebot webqq adapter', () => {
     expect(bot.internal.get_record).not.toHaveBeenCalled()
   })
 
-  it('transcribes record messages through the OneBot voice_msg_to_text action', async () => {
+  it('falls back to voice_msg_to_text when the implementation lacks fetch_ptt_text', async () => {
     const bot = {
       platform: 'onebot',
       selfId: '10000',
@@ -1229,6 +1269,44 @@ describe('onebot webqq adapter', () => {
     expect(bot.internal.voice_msg_to_text).toHaveBeenCalledWith({
       message_id: 12345,
     })
+  })
+
+  // NapCat 只暴露 fetch_ptt_text，LLBot 只暴露 voice_msg_to_text；先发哪个由配置协议决定，
+  // 两个都挂上才能证明选的是协议对应的那个，而不是碰巧命中唯一存在的实现。
+  it('transcribes record messages through NapCat fetch_ptt_text by default', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_ptt_text: vi.fn(async () => ({ text: 'NapCat 结果' })),
+        voice_msg_to_text: vi.fn(async () => ({ text: 'LLBot 结果' })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] })
+
+    await expect(service.transcribeRecord('12345')).resolves.toBe('NapCat 结果')
+    expect(bot.internal.fetch_ptt_text).toHaveBeenCalledWith({ message_id: 12345 })
+    expect(bot.internal.voice_msg_to_text).not.toHaveBeenCalled()
+  })
+
+  it('prefers voice_msg_to_text when the configured protocol is llbot', async () => {
+    const bot = {
+      platform: 'onebot',
+      selfId: '10000',
+      internal: {
+        get_friend_list: vi.fn(async () => []),
+        get_group_list: vi.fn(async () => []),
+        fetch_ptt_text: vi.fn(async () => ({ text: 'NapCat 结果' })),
+        voice_msg_to_text: vi.fn(async () => ({ text: 'LLBot 结果' })),
+      },
+    }
+    const service = createOneBotWebQQService({ bots: [bot] }, { protocol: 'llbot' })
+
+    await expect(service.transcribeRecord('12345')).resolves.toBe('LLBot 结果')
+    expect(bot.internal.voice_msg_to_text).toHaveBeenCalledWith({ message_id: 12345 })
+    expect(bot.internal.fetch_ptt_text).not.toHaveBeenCalled()
   })
 
   it('converts local get_image file paths to browser-accessible image URLs', async () => {

@@ -2084,6 +2084,8 @@ describe('chat capsule plugin wiring', () => {
     expect(bot.internal.fetch_emoji_like).toHaveBeenCalledWith({
       message_id: 'new-1',
       emoji_id: '76',
+      emojiId: '76',
+      emojiType: 1,
       count: 2,
     })
     expect(broadcast).toHaveBeenCalledWith('onebot-webqq/webqq/message', {

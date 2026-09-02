@@ -7,8 +7,10 @@ import {
   toTimestampMs,
 } from '../../../onebot/data'
 import { readConfigDefault } from '../../../config/spec'
+import { resolveOneBotEmojiType } from '../../../onebot/emoji'
 import {
   callAction,
+  callSupportedAction,
   supportsOneBotAction,
   type OneBotBot,
 } from '../../../onebot/actions'
@@ -275,28 +277,6 @@ function normalizeSexLabel(value: unknown) {
   return String(value)
 }
 
-async function callSupportedAction(
-  bot: OneBotBot,
-  actions: string[],
-  params: Record<string, unknown>,
-) {
-  let lastError: unknown
-  for (const action of actions) {
-    // 有 _request 时 supportsOneBotAction 对任意 action 都为 true，这里仍按顺序尝试，
-    // 直到真实实现接受其中一个别名，避免 NapCat/LLBot 命名差异导致直接失败。
-    if (!supportsOneBotAction(bot, action) && typeof bot.internal._request !== 'function') {
-      continue
-    }
-    try {
-      return await callAction(bot, action, params)
-    } catch (error) {
-      lastError = error
-    }
-  }
-  if (lastError instanceof Error) throw lastError
-  throw new Error(`当前 OneBot 实现不支持 ${actions.join(' / ')}`)
-}
-
 // 创建通过 OneBot action 读写 WebQQ 数据的服务。
 export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQQOptions = {}) {
   let selectedSelfId = options.selfId
@@ -530,7 +510,12 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       const bot = getBot(selfId)
       const result = await callAction(bot, 'fetch_emoji_like', {
         message_id: toOneBotId(messageId),
+        // NapCat 的 fetch_emoji_like 只认 camelCase 的 emojiId 且要求 emojiType，与它自己的
+        // set_msg_emoji_like（snake_case emoji_id、不收类型）并不一致；LLBot 两种拼写都接受，
+        // 并会丢弃它没声明的 emojiType。两种拼写连同类型一起带上，两种实现都能命中同一次查询。
         emoji_id: emojiId,
+        emojiId,
+        emojiType: resolveOneBotEmojiType(emojiId),
         count,
       })
       return toArrayResult(result, 'emojiLikesList').map(normalizeEmojiLikeUser).filter((user): user is WebQQMessageReactionUser => !!user)
@@ -545,7 +530,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
     },
 
     async transcribeRecord(messageId: WebQQRecordTranscriptionQuery['messageId']) {
-      return transcribeOneBotRecord(getBot(), messageId)
+      return transcribeOneBotRecord(getBot(), messageId, protocol)
     },
 
     async loadContacts(): Promise<WebQQContacts> {
