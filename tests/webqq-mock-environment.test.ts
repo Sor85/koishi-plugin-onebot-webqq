@@ -9,20 +9,14 @@ import {
 } from '../src/webqq/adapters/mock/scene'
 import { createMockWebQQService } from '../src/webqq/adapters/mock/service'
 
-const configSource = await readFile(new URL('../src/config.ts', import.meta.url), 'utf8')
 const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
 const consoleSource = await readFile(new URL('../src/webqq/console.ts', import.meta.url), 'utf8')
 const observerSource = await readFile(new URL('../client/webqq/WebQQObserver.vue', import.meta.url), 'utf8')
 const messageListSource = await readFile(new URL('../client/webqq/components/WebQQMessageList.vue', import.meta.url), 'utf8')
 
 describe('webqq mock environment', () => {
-  it('exposes webQQMockEnvironment in developer options with default false', () => {
-    expect(configSource).toContain('webQQMockEnvironment?: boolean')
-    expect(configSource).toContain("webQQMockEnvironment: Schema.boolean().default(false).description('启用 WebQQ 开发者模拟环境')")
-    expect(configSource).toContain(".description('开发者选项')")
-    expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境。')")
-    expect(configSource).not.toContain("description('启用 WebQQ 开发者模拟环境.')")
-  })
+  // webQQMockEnvironment 在「开发者选项」分组里的默认值与说明文案由 tests/config-panel.test.ts
+  // 读 Schema 运行时节点断言，这里不再匹配配置 Schema 的源码文本。
 
   it('isolates mock messages from real affinity data and persisted browser caches', () => {
     expect(runtimeSource).toContain("import { createMockWebQQService } from '../webqq/adapters/mock/service'")
