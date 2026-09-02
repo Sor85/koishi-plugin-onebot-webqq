@@ -1,7 +1,6 @@
 import type { Session } from 'koishi'
 import type { WebQQMessage } from '../types'
 import { isRecord, readRecordText } from '../../shared/record'
-import { getWebQQGroupAvatar, getWebQQUserAvatar } from '../display'
 import { readWebQQSenderMetadata } from '../sender/sender-metadata'
 
 export function readBotProfile(session: Session) {

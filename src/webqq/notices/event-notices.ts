@@ -1,7 +1,11 @@
 import type { Session } from 'koishi'
 import type { WebQQNotice } from '../types'
 import { isRecord, readRecordText } from '../../shared/record'
-import { getWebQQGroupAvatar, getWebQQUserAvatar } from '../display'
+import { resolveWebQQGroupAvatar, resolveWebQQUserAvatar } from '../display'
+import {
+  readWebQQSessionAvatarScope,
+  readWebQQSessionUserAvatar,
+} from '../adapters/onebot/avatar-scope'
 import { readUserName } from '../message-flow/session'
 
 export function createWebQQFriendRequestNotice(session: Session): WebQQNotice | undefined {
@@ -18,7 +22,7 @@ export function createWebQQFriendRequestNotice(session: Session): WebQQNotice | 
     type: 'friend-request',
     title: requesterName || '好友申请',
     subtitle: requesterId ? `来自 QQ ${requesterId}` : '新的好友申请',
-    avatar: getWebQQUserAvatar(requesterId || ''),
+    avatar: resolveWebQQUserAvatar(readWebQQSessionUserAvatar(session), requesterId || '', readWebQQSessionAvatarScope(session)),
     status: 'pending',
     time: session.timestamp,
     ...(flag ? { flag } : {}),
@@ -40,7 +44,7 @@ export function createWebQQGroupLeaveNotice(session: Session): WebQQNotice | und
     type: 'group-notice',
     title: groupName || '群通知',
     subtitle: requesterName ? `${requesterName} 退出群聊` : '成员退出群聊',
-    avatar: getWebQQGroupAvatar(groupId),
+    avatar: resolveWebQQGroupAvatar(session.event.guild?.avatar, groupId, readWebQQSessionAvatarScope(session)),
     status: 'approved',
     time: session.timestamp,
     subType: 'leave',

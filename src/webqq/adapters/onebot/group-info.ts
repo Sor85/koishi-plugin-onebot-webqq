@@ -5,9 +5,11 @@ import {
   toTimestampMs,
 } from '../../../onebot/data'
 import {
-  getWebQQUserAvatar,
+  resolveWebQQUserAvatar,
   normalizeWebQQGroupRole,
+  type WebQQAvatarScope,
 } from '../../display'
+import { oneBotAvatarFields } from './contacts'
 import { getTextValue } from './text'
 
 function normalizeRawGroupRole(role: string): WebQQGroupMember['rawRole'] | undefined {
@@ -16,7 +18,7 @@ function normalizeRawGroupRole(role: string): WebQQGroupMember['rawRole'] | unde
   if (role === 'member') return 'member'
 }
 
-export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
+export function normalizeGroupMember(raw: unknown, scope: WebQQAvatarScope): WebQQGroupMember {
   const item = isRecord(raw) ? raw : {}
   const userId = getStringField(item, ['user_id', 'userId', 'uin', 'uid'])
   const nickname = getStringField(item, ['nickname', 'nick', 'name']) || userId
@@ -29,7 +31,7 @@ export function normalizeGroupMember(raw: unknown): WebQQGroupMember {
     userId,
     nickname,
     card,
-    avatar: getWebQQUserAvatar(userId),
+    avatar: resolveWebQQUserAvatar(getStringField(item, oneBotAvatarFields), userId, scope),
     ...(role ? { role } : {}),
     ...(rawRole ? { rawRole } : {}),
     ...(title ? { title } : {}),

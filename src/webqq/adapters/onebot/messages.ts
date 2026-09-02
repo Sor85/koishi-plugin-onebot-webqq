@@ -24,9 +24,11 @@ import type {
   WebQQMessageElement,
 } from '../../types'
 import {
-  getWebQQUserAvatar,
+  resolveWebQQUserAvatar,
   normalizeWebQQGroupRole,
 } from '../../display'
+import { oneBotAvatarFields } from './contacts'
+import { readOneBotAvatarScope } from './avatar-scope'
 
 const QFACE_BASE = 'https://koishi.js.org/QFace'
 
@@ -106,7 +108,11 @@ async function normalizeForwardNode(raw: unknown, bot: OneBotBot, imageUrlResolv
     item: {
       ...(title ? { title } : {}),
       ...(senderId ? { senderId } : {}),
-      senderAvatar: senderId ? getWebQQUserAvatar(senderId) : getWebQQUserAvatar('0'),
+      senderAvatar: resolveWebQQUserAvatar(
+        getStringField(sender, oneBotAvatarFields),
+        senderId || '0',
+        readOneBotAvatarScope(bot),
+      ),
       elements: normalizedElements,
     },
     text: title ? `${title}：${summary}` : summary,
@@ -197,7 +203,9 @@ export async function normalizeMessage(raw: unknown, bot: OneBotBot, imageUrlRes
     time: toTimestampMs(item.time),
     senderId,
     senderName: getStringField(sender, ['card', 'nickname', 'name']) || senderId,
-    senderAvatar: senderId ? getWebQQUserAvatar(senderId) : '',
+    senderAvatar: senderId
+      ? resolveWebQQUserAvatar(getStringField(sender, oneBotAvatarFields), senderId, readOneBotAvatarScope(bot))
+      : '',
     ...(senderRole ? { senderRole } : {}),
     ...(senderLevel ? { senderLevel } : {}),
     ...(senderTitle ? { senderTitle } : {}),

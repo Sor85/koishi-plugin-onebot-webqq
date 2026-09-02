@@ -16,7 +16,11 @@ import {
   readWebQQPeer,
   readWebQQLiveSenderMetadata,
 } from './session'
-import { getWebQQUserAvatar } from '../display'
+import { resolveWebQQUserAvatar } from '../display'
+import {
+  readWebQQSessionAvatarScope,
+  readWebQQSessionUserAvatar,
+} from '../adapters/onebot/avatar-scope'
 
 function readRawMessageData(session: Session) {
   const data = (session.event as { _data?: unknown })._data
@@ -32,6 +36,7 @@ export function createWebQQEventMessage(
   summary: string,
   senderId: string,
   senderName: string,
+  senderAvatar: string,
   targetMessageId?: string,
 ): WebQQMessage {
   return {
@@ -40,7 +45,7 @@ export function createWebQQEventMessage(
     time,
     senderId,
     senderName,
-    senderAvatar: getWebQQUserAvatar(senderId),
+    senderAvatar,
     direction: 'incoming',
     summary,
     event: {
@@ -85,7 +90,12 @@ export async function createWebQQLiveMessage(
       time: session.timestamp,
       senderId,
       senderName,
-      senderAvatar: getWebQQUserAvatar(senderId),
+      // 事件里带的头像优先：虚拟机器人场景里的头像只会从这里来。
+      senderAvatar: resolveWebQQUserAvatar(
+        readWebQQSessionUserAvatar(session),
+        senderId,
+        readWebQQSessionAvatarScope(session),
+      ),
       ...readWebQQLiveSenderMetadata(session),
       direction,
       summary: summarizeWebQQElements(elements),

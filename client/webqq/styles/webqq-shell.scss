@@ -404,6 +404,19 @@
     object-fit: cover;
   }
 
+  .onebot-webqq-webqq__contact-avatar-fallback {
+    // 与 img 严格同位：没有头像时占位圆必须盖满 38px 容器，否则未读角标会跟着错位。
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--onebot-webqq-webqq-accent);
+    background: var(--onebot-webqq-webqq-accent-soft);
+    font-weight: 600;
+  }
+
   strong,
   small {
     display: block;

@@ -6,7 +6,8 @@ import {
   toArrayResult,
   toTimestampMs,
 } from '../../../onebot/data'
-import { getWebQQGroupAvatar } from '../../display'
+import { resolveWebQQGroupAvatar, type WebQQAvatarScope } from '../../display'
+import { oneBotAvatarFields } from './contacts'
 
 function isHandledGroupNotice(raw: unknown) {
   if (!isRecord(raw)) return false
@@ -28,7 +29,7 @@ function getGroupNoticeStatus(item: Record<string, unknown>): WebQQNotice['statu
   return approved === false ? 'rejected' : 'approved'
 }
 
-function normalizeGroupNotice(raw: unknown, bucket: string, index: number): WebQQNotice {
+function normalizeGroupNotice(raw: unknown, bucket: string, index: number, scope: WebQQAvatarScope): WebQQNotice {
   const item = isRecord(raw) ? raw : {}
   const requestId = getStringField(item, ['request_id', 'requestId', 'notice_id', 'noticeId', 'flag', 'seq', 'id']) || String(index)
   const groupId = getStringField(item, ['group_id', 'groupId', 'group_code', 'groupCode'])
@@ -47,7 +48,7 @@ function normalizeGroupNotice(raw: unknown, bucket: string, index: number): WebQ
     type: 'group-notice',
     title: groupName || '群通知',
     subtitle: requesterName ? `${requesterName} ${actionText}` : actionText,
-    avatar: groupId ? getWebQQGroupAvatar(groupId) : '',
+    avatar: groupId ? resolveWebQQGroupAvatar(getStringField(item, oneBotAvatarFields), groupId, scope) : '',
     status: subType === 'leave' ? 'approved' : getGroupNoticeStatus(item),
     time: toTimestampMs(getStringField(item, ['time', 'timestamp', 'request_time', 'requestTime', 'create_time', 'createTime'])),
     subType,
@@ -60,12 +61,12 @@ function normalizeGroupNotice(raw: unknown, bucket: string, index: number): WebQ
   }
 }
 
-export function normalizeGroupNotices(result: unknown) {
+export function normalizeGroupNotices(result: unknown, scope: WebQQAvatarScope) {
   const notices: WebQQNotice[] = []
   for (const bucket of ['join_requests', 'JoinRequest', 'invited_requests', 'InvitedRequest', 'requests', 'notices', 'leave_notices', 'leave_notifications', 'decrease_notices']) {
     const items = toArrayResult(result, bucket)
     items.forEach((item, index) => {
-      notices.push(normalizeGroupNotice(item, bucket, index))
+      notices.push(normalizeGroupNotice(item, bucket, index, scope))
     })
   }
   return notices

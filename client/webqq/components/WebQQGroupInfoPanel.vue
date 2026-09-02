@@ -31,7 +31,8 @@
                 @pointerdown="(event) => { if (event.button === 2) rememberFloatingPanelAnchor(event) }"
                 @contextmenu.capture="rememberFloatingPanelAnchor($event)"
               >
-                <img :src="withProxy(member.avatar)" :alt="getGroupMemberName(member)">
+                <img v-if="member.avatar" :src="withProxy(member.avatar)" :alt="getGroupMemberName(member)">
+                <span v-else class="onebot-webqq-webqq__group-member-avatar-fallback" aria-hidden="true">{{ getGroupMemberName(member).slice(0, 1) }}</span>
                 <span>
                   <strong>{{ getGroupMemberName(member) }}</strong>
                   <small>{{ member.userId }}</small>

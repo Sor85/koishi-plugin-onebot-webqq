@@ -5,7 +5,7 @@ import type { WebQQRawReaction } from '../adapters/onebot/reactions'
 import { isRecord } from '../../shared/record'
 import { applyWebQQReactionToLiveMessages, getWebQQLiveMessageKey } from './live-cache'
 import { createWebQQEventMessage } from './live-message'
-import { getWebQQUserAvatar } from '../display'
+import { resolveWebQQUserAvatar, type WebQQAvatarScope } from '../display'
 
 interface WebQQReactionService {
   isAvailableSelectedSelfId(selfId?: string): boolean
@@ -83,6 +83,8 @@ function applyWebQQReaction(messages: WebQQMessage[], targetIds: string[], entry
 export function createWebQQReactionRuntime(options: {
   liveMessages: Map<string, WebQQMessage[]>
   webqq: WebQQReactionService
+  // 贴表情走原始 WS 事件，拿不到 session；头像取值范围只能由装配层传入。
+  avatarScope: WebQQAvatarScope
   logger?: DebugLogger
   broadcastWebQQLivePayload: (payload: WebQQLiveMessage) => void
   rememberLiveMessages: (key: string, messages: WebQQMessage[]) => void
@@ -119,7 +121,7 @@ export function createWebQQReactionRuntime(options: {
     const peer = { type: 'group' as const, peerId: reaction.groupId }
     const label = readWebQQReactionLabel(reaction.emojiId)
     const emojiUrl = readWebQQReactionEmojiUrl(reaction.emojiId)
-    const userAvatar = reaction.userId ? getWebQQUserAvatar(reaction.userId) : ''
+    const userAvatar = reaction.userId ? resolveWebQQUserAvatar('', reaction.userId, options.avatarScope) : ''
     const entry: WebQQMessageReaction = {
       emojiId: reaction.emojiId,
       label,
@@ -170,7 +172,7 @@ export function createWebQQReactionRuntime(options: {
     const time = Date.now()
     options.broadcastWebQQLivePayload({
       ...peer,
-      message: createWebQQEventMessage(peer, time, 'reaction', summary, reaction.userId, senderName, reaction.messageId),
+      message: createWebQQEventMessage(peer, time, 'reaction', summary, reaction.userId, senderName, resolveWebQQUserAvatar('', reaction.userId, options.avatarScope), reaction.messageId),
     })
   }
 

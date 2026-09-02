@@ -2251,14 +2251,15 @@ describe('chat capsule plugin wiring', () => {
     })
 
     // 控制台拿到的机器人列表只含虚拟机器人：真实机器人和额外模拟画像都不在里面。
-    // 主胶囊照常拿到它的昵称、头像与在线状态。
+    // 主胶囊照常拿到它的昵称与在线状态；场景没给可渲染头像时头像为空，交给界面的首字母占位，
+    // 不能把场景编号当 QQ 号去腾讯 CDN 换一张陌生人的头像。
     expect(addEntry.mock.calls[0][1]?.()).toMatchObject({
       bots: [{
         platform: 'onebot',
         selfId: '90001',
         name: '虚拟机器人',
         status: 1,
-        avatar: 'https://q1.qlogo.cn/g?b=qq&nk=90001&s=640',
+        avatar: '',
       }],
       selectedSelfId: '90001',
     })

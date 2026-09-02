@@ -605,6 +605,75 @@ describe('onebot webqq adapter', () => {
       .rejects.toThrow('未找到配置 selfId 集合中的可用 OneBot 机器人')
   })
 
+  // 场景编号不是 QQ 号：按它合成腾讯 CDN 地址会真的拉回同号真实用户的头像，或者 CDN 的默认群头像。
+  it('never synthesizes QQ CDN avatars for virtual bot data', async () => {
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_friend_list') return [{ user_id: 30001, nickname: '测试用户1' }]
+      if (action === 'get_group_list') return [{ group_id: 30001, group_name: '测试群', member_count: 4 }]
+      if (action === 'get_group_member_list') return [{ user_id: 30001, nickname: '测试用户1', role: 'owner' }]
+      if (action === 'get_stranger_info') return { user_id: 30001, nickname: '测试用户1' }
+      if (action === 'get_group_msg_history') {
+        return {
+          messages: [{
+            message_id: 1,
+            message_seq: 11,
+            time: 1710000000,
+            sender: { user_id: 30001, nickname: '测试用户1' },
+            message: [{ type: 'text', data: { text: 'koishi' } }],
+          }],
+        }
+      }
+      return {}
+    })
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      // 提供方给的是它自己的受管媒体引用，进不了 <img>，只能当作没有头像。
+      user: { id: '90001', name: '虚拟机器人', avatar: 'sandbox-media://0123456789abcdef0123456789abcdef' },
+      internal: { _request: request },
+    }
+    const service = createOneBotWebQQService({ bots: [virtualBot] }, { includeVirtualBots: true })
+
+    expect(service.listBots()).toEqual([expect.objectContaining({ selfId: '90001', avatar: '' })])
+    const contacts = await service.loadContacts()
+    expect(contacts.friends).toEqual([expect.objectContaining({ userId: '30001', avatar: '' })])
+    expect(contacts.groups).toEqual([expect.objectContaining({ groupId: '30001', avatar: '' })])
+    const groupInfo = await service.loadGroupInfo({ groupId: '30001' })
+    expect(groupInfo.members).toEqual([expect.objectContaining({ userId: '30001', avatar: '' })])
+    const messages = await service.loadMessages({ type: 'group', peerId: '30001', limit: 20 })
+    expect(messages).toEqual([expect.objectContaining({ senderId: '30001', senderAvatar: '' })])
+    await expect(service.loadProfile({ userId: '30001' })).resolves.toMatchObject({ avatar: '' })
+  })
+
+  it('prefers avatars the OneBot implementation provides', async () => {
+    const sceneAvatar = 'data:image/svg+xml;base64,PHN2Zy8+'
+    const request = vi.fn(async (action: string) => {
+      if (action === 'get_friend_list') return [{ user_id: 30001, nickname: '测试用户1', avatar: sceneAvatar }]
+      if (action === 'get_group_list') return [{ group_id: 30001, group_name: '测试群', avatar: sceneAvatar }]
+      if (action === 'get_group_member_list') return [{ user_id: 30001, nickname: '测试用户1', avatar_url: sceneAvatar }]
+      return {}
+    })
+    const virtualBot = {
+      platform: 'onebot',
+      selfId: '90001',
+      name: '虚拟机器人',
+      status: 1,
+      hidden: true,
+      user: { id: '90001', name: '虚拟机器人', avatar: sceneAvatar },
+      internal: { _request: request },
+    }
+    const service = createOneBotWebQQService({ bots: [virtualBot] }, { includeVirtualBots: true })
+
+    expect(service.listBots()).toEqual([expect.objectContaining({ avatar: sceneAvatar })])
+    const contacts = await service.loadContacts()
+    expect(contacts.friends[0]?.avatar).toBe(sceneAvatar)
+    expect(contacts.groups[0]?.avatar).toBe(sceneAvatar)
+    expect((await service.loadGroupInfo({ groupId: '30001' })).members[0]?.avatar).toBe(sceneAvatar)
+  })
+
   it('adds mock OneBot profiles and maps selected mock bots back to the real bot', async () => {
     const bot = {
       platform: 'onebot',

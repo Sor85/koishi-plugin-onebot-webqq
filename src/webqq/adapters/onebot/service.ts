@@ -23,6 +23,7 @@ import {
   selectBot,
   type OneBotContext,
 } from '../../../onebot/bots'
+import { readOneBotAvatarScope } from './avatar-scope'
 import { getTextValue } from './text'
 import { normalizeGroupNotices } from './notices'
 import {
@@ -34,6 +35,7 @@ import {
   normalizeFriend,
   normalizeFriendCategory,
   normalizeGroup,
+  oneBotAvatarFields,
 } from './contacts'
 import {
   resolveOneBotImage,
@@ -55,9 +57,11 @@ import type {
   OneBotRobotState,
 } from '../../../onebot/types'
 import {
-  getWebQQGroupAvatar,
   getWebQQGroupSubtitle,
-  getWebQQUserAvatar,
+  readWebQQProvidedAvatar,
+  resolveWebQQGroupAvatar,
+  resolveWebQQUserAvatar,
+  type WebQQAvatarScope,
 } from '../../display'
 import type {
   WebQQChatType,
@@ -115,7 +119,9 @@ function toOneBotRobotProfile(bot: OneBotBot, activeSelfIds?: ReadonlySet<string
     selfId: bot.selfId,
     status: getOneBotProfileStatus(bot, activeSelfIds),
     name: getBotDisplayName(bot),
-    avatar: bot.avatar || bot.user?.avatar || getWebQQUserAvatar(bot.selfId),
+    // 提供方插件给的可能是它自己的媒体引用，进不了 <img>；那种取值当作没有头像，交给界面的首字母占位。
+    avatar: readWebQQProvidedAvatar(bot.avatar)
+      || resolveWebQQUserAvatar(bot.user?.avatar, bot.selfId, readOneBotAvatarScope(bot)),
   }
 }
 
@@ -142,6 +148,7 @@ function createMockBotProfiles(bots: OneBotRobotProfile[], count: number): OneBo
 }
 
 async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: WebQQFriend[], groups: WebQQGroup[], imageUrlResolver?: (file: string) => string): Promise<WebQQRecentContact | undefined> {
+  const scope = readOneBotAvatarScope(bot)
   const item = isRecord(raw) ? raw : {}
   const peerId = getStringField(item, ['peerUin', 'peer_uin', 'uin', 'user_id', 'group_id'])
   if (!peerId) return
@@ -158,7 +165,10 @@ async function normalizeRecentContact(raw: unknown, bot: OneBotBot, friends: Web
     peerId,
     name: friend?.name || group?.name || rawName || peerId,
     subtitle: friend?.nickname || (group ? getWebQQGroupSubtitle(group) : rawName || peerId),
-    avatar: type === 'friend' ? getWebQQUserAvatar(peerId) : getWebQQGroupAvatar(peerId),
+    // 好友与群列表里的头像已经按同一规则解析过，优先沿用，避免同一个人在两处显示不同头像。
+    avatar: friend?.avatar || group?.avatar || (type === 'friend'
+      ? resolveWebQQUserAvatar(getStringField(item, oneBotAvatarFields), peerId, scope)
+      : resolveWebQQGroupAvatar(getStringField(item, oneBotAvatarFields), peerId, scope)),
     summary,
     time,
   }
@@ -188,8 +198,10 @@ async function loadRequiredContactData<T>(stage: string, loader: () => Promise<T
 }
 
 async function loadFriendCategories(bot: OneBotBot) {
+  const scope = readOneBotAvatarScope(bot)
   try {
-    return toArrayResult(await callAction(bot, 'get_friends_with_category'), 'categories').map(normalizeFriendCategory)
+    return toArrayResult(await callAction(bot, 'get_friends_with_category'), 'categories')
+      .map((category, index) => normalizeFriendCategory(category, index, scope))
   } catch {
     return []
   }
@@ -205,7 +217,7 @@ async function loadRecentContacts(bot: OneBotBot, friends: WebQQFriend[], groups
   }
 }
 
-function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefined {
+function normalizeEmojiLikeUser(raw: unknown, scope: WebQQAvatarScope): WebQQMessageReactionUser | undefined {
   const item = isRecord(raw) ? raw : {}
   const userId = getStringField(item, ['tinyId'])
   if (!userId) return
@@ -213,7 +225,7 @@ function normalizeEmojiLikeUser(raw: unknown): WebQQMessageReactionUser | undefi
   return {
     userId,
     ...(userName ? { userName } : {}),
-    userAvatar: getStringField(item, ['headUrl']) || getWebQQUserAvatar(userId),
+    userAvatar: resolveWebQQUserAvatar(getStringField(item, ['headUrl', ...oneBotAvatarFields]), userId, scope),
   }
 }
 
@@ -522,7 +534,10 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         emojiType: resolveOneBotEmojiType(emojiId),
         count,
       })
-      return toArrayResult(result, 'emojiLikesList').map(normalizeEmojiLikeUser).filter((user): user is WebQQMessageReactionUser => !!user)
+      const scope = readOneBotAvatarScope(bot)
+      return toArrayResult(result, 'emojiLikesList')
+        .map((user) => normalizeEmojiLikeUser(user, scope))
+        .filter((user): user is WebQQMessageReactionUser => !!user)
     },
 
     async resolveImage(file: string) {
@@ -539,6 +554,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
 
     async loadContacts(): Promise<WebQQContacts> {
       const bot = getBot()
+      const avatarScope = readOneBotAvatarScope(bot)
       const [friendCategories, groupsResult] = await Promise.all([
         loadFriendCategories(bot),
         loadRequiredContactData('加载群列表', () => callAction(bot, 'get_group_list')),
@@ -546,8 +562,8 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       const friends = friendCategories.length
         ? friendCategories.flatMap((category) => category.friends)
         : toArrayResult(await loadRequiredContactData('加载好友列表', () => callAction(bot, 'get_friend_list')), 'friends')
-            .map((friend) => normalizeFriend(friend))
-      const groups = toArrayResult(groupsResult, 'groups').map(normalizeGroup)
+            .map((friend) => normalizeFriend(friend, avatarScope))
+      const groups = toArrayResult(groupsResult, 'groups').map((group) => normalizeGroup(group, avatarScope))
       const recent = await loadRecentContacts(bot, friends, groups, imageUrlResolver)
       return {
         friends,
@@ -650,7 +666,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
           const member = normalizeGroupMember(getActionData(await callAction(bot, 'get_group_member_info', {
             group_id: toOneBotId(query.groupId),
             user_id: toOneBotId(query.userId),
-          })))
+          })), readOneBotAvatarScope(bot))
           groupCard = member.card
           groupTitle = member.title || ''
           groupRole = member.role || ''
@@ -681,7 +697,7 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
         kind: isSelf ? 'bot' : 'user',
         id: query.userId,
         name: nickname,
-        avatar: getWebQQUserAvatar(query.userId),
+        avatar: resolveWebQQUserAvatar(getStringField(stranger, oneBotAvatarFields), query.userId, readOneBotAvatarScope(bot)),
         ...(nickname ? { nickname } : {}),
         ...(remark ? { remark } : {}),
         ...(personalNote ? { personalNote } : {}),
@@ -850,16 +866,18 @@ export function createOneBotWebQQService(ctx: OneBotContext, options: OneBotWebQ
       const bot = getBot()
       const membersResult = await callAction(bot, 'get_group_member_list', { group_id: toOneBotId(query.groupId) })
       const announcements = await loadGroupAnnouncements(bot, query.groupId)
+      const avatarScope = readOneBotAvatarScope(bot)
       return {
         announcements,
-        members: toArrayResult(membersResult, 'members').map(normalizeGroupMember),
+        members: toArrayResult(membersResult, 'members').map((member) => normalizeGroupMember(member, avatarScope)),
       }
     },
 
     async loadNotices(friendRequests: WebQQNotice[] = []): Promise<WebQQNotice[]> {
+      const bot = getBot()
       try {
-        const result = await callAction(getBot(), 'get_group_system_msg', {})
-        return [...friendRequests, ...normalizeGroupNotices(result)]
+        const result = await callAction(bot, 'get_group_system_msg', {})
+        return [...friendRequests, ...normalizeGroupNotices(result, readOneBotAvatarScope(bot))]
       } catch {
         return friendRequests
       }

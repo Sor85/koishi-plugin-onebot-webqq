@@ -11,7 +11,8 @@
             @contextmenu.capture="rememberFloatingPanelAnchor($event)"
           >
             <span class="onebot-webqq-webqq__contact-avatar">
-              <img :src="withProxy(item.avatar)" :alt="item.name">
+              <img v-if="item.avatar" :src="withProxy(item.avatar)" :alt="item.name">
+              <span v-else class="onebot-webqq-webqq__contact-avatar-fallback" aria-hidden="true">{{ item.name.slice(0, 1) }}</span>
               <span v-if="getUnreadCount(item.type, item.peerId)" class="onebot-webqq-webqq__contact-unread">{{ getUnreadText(getUnreadCount(item.type, item.peerId)) }}</span>
             </span>
             <span class="onebot-webqq-webqq__contact-info">
@@ -46,7 +47,8 @@
               @contextmenu.capture="rememberFloatingPanelAnchor($event)"
             >
               <span class="onebot-webqq-webqq__contact-avatar">
-                <img :src="withProxy(friend.avatar)" :alt="friend.name">
+                <img v-if="friend.avatar" :src="withProxy(friend.avatar)" :alt="friend.name">
+                <span v-else class="onebot-webqq-webqq__contact-avatar-fallback" aria-hidden="true">{{ friend.name.slice(0, 1) }}</span>
                 <span v-if="getUnreadCount('friend', friend.userId)" class="onebot-webqq-webqq__contact-unread">{{ getUnreadText(getUnreadCount('friend', friend.userId)) }}</span>
               </span>
               <span class="onebot-webqq-webqq__contact-info">
@@ -78,7 +80,8 @@
             @contextmenu.capture="rememberFloatingPanelAnchor($event)"
           >
             <span class="onebot-webqq-webqq__contact-avatar">
-              <img :src="withProxy(group.avatar)" :alt="group.name">
+              <img v-if="group.avatar" :src="withProxy(group.avatar)" :alt="group.name">
+              <span v-else class="onebot-webqq-webqq__contact-avatar-fallback" aria-hidden="true">{{ group.name.slice(0, 1) }}</span>
               <span v-if="getUnreadCount('group', group.groupId)" class="onebot-webqq-webqq__contact-unread">{{ getUnreadText(getUnreadCount('group', group.groupId)) }}</span>
             </span>
             <span class="onebot-webqq-webqq__contact-info">

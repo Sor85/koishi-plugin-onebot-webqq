@@ -2,6 +2,11 @@ import type { Session } from 'koishi'
 import type { WebQQLiveMessage } from '../types'
 import { isRecord, readRecordText } from '../../shared/record'
 import { readWebQQGroupMemberName } from '../adapters/onebot/group-sender-metadata'
+import { resolveWebQQUserAvatar } from '../display'
+import {
+  readWebQQSessionAvatarScope,
+  readWebQQSessionUserAvatar,
+} from '../adapters/onebot/avatar-scope'
 import { createWebQQEventMessage } from './live-message'
 import { readWebQQPeer } from './session'
 
@@ -38,6 +43,10 @@ function readWebQQPrivatePokeName(session: Session, userId: string, fallbackName
 
 function readSessionUserName(session: Session, fallbackId = '') {
   return session.event.member?.name || session.event.operator?.name || session.event.user?.name || session.username || fallbackId || '有人'
+}
+
+function readSessionUserAvatar(session: Session, userId: string) {
+  return resolveWebQQUserAvatar(readWebQQSessionUserAvatar(session), userId, readWebQQSessionAvatarScope(session))
 }
 
 async function readWebQQNoticeMemberName(session: Session, userId: string, fallbackName: string, genericName: string) {
@@ -86,7 +95,7 @@ export function createWebQQNoticeRuntime(options: {
         : await readWebQQNoticeMemberName(session, targetId, targetFallback, '对方')
       options.broadcastWebQQLivePayload({
         ...peer,
-        message: createWebQQEventMessage(peer, session.timestamp, 'poke', `${senderName} 戳了戳 ${targetName}`, senderId, readSessionUserName(session, senderId)),
+        message: createWebQQEventMessage(peer, session.timestamp, 'poke', `${senderName} 戳了戳 ${targetName}`, senderId, readSessionUserName(session, senderId), readSessionUserAvatar(session, senderId)),
       })
       return
     }
@@ -114,7 +123,7 @@ export function createWebQQNoticeRuntime(options: {
         : `${operatorName} 禁言了 ${targetName}${durationText ? ` ${durationText}` : ''}`
       options.broadcastWebQQLivePayload({
         ...peer,
-        message: createWebQQEventMessage(peer, session.timestamp, 'mute', summary, operatorId, readSessionUserName(session, operatorId)),
+        message: createWebQQEventMessage(peer, session.timestamp, 'mute', summary, operatorId, readSessionUserName(session, operatorId), readSessionUserAvatar(session, operatorId)),
       })
     }
   }

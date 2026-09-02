@@ -83,6 +83,15 @@
   object-fit: cover;
 }
 
+.onebot-webqq-webqq__message-avatar.is-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--onebot-webqq-webqq-accent);
+  background: var(--onebot-webqq-webqq-accent-soft);
+  font-weight: 600;
+}
+
 .onebot-webqq-webqq__message.is-merged .onebot-webqq-webqq__message-avatar-wrap {
   visibility: hidden;
 }

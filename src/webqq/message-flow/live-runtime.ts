@@ -16,7 +16,11 @@ import {
   readWebQQPeer,
   readWebQQLiveDirection,
 } from './session'
-import { getWebQQUserAvatar } from '../display'
+import { resolveWebQQUserAvatar } from '../display'
+import {
+  readWebQQSessionAvatarScope,
+  readWebQQSessionUserAvatar,
+} from '../adapters/onebot/avatar-scope'
 import {
   readWebQQGroupSenderMetadata,
 } from '../adapters/onebot/group-sender-metadata'
@@ -344,7 +348,7 @@ export function createWebQQLiveRuntime(options: {
       time: session.timestamp,
       senderId: operatorId,
       senderName: operatorName,
-      senderAvatar: getWebQQUserAvatar(operatorId),
+      senderAvatar: resolveWebQQUserAvatar(readWebQQSessionUserAvatar(session), operatorId, readWebQQSessionAvatarScope(session)),
       direction: 'incoming',
       summary,
       event: {
@@ -370,6 +374,7 @@ export function createWebQQLiveRuntime(options: {
   const reactionRuntime = createWebQQReactionRuntime({
     liveMessages,
     webqq: options.webqq,
+    avatarScope: { synthesizeQQAvatars: !options.botScope.includeVirtualBots },
     logger: options.logger,
     broadcastWebQQLivePayload,
     rememberLiveMessages,

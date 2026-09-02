@@ -126,6 +126,18 @@
     object-fit: cover;
   }
 
+  .onebot-webqq-webqq__group-member-avatar-fallback {
+    display: flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--onebot-webqq-webqq-accent);
+    background: var(--onebot-webqq-webqq-accent-soft);
+    font-weight: 600;
+  }
+
   span {
     min-width: 0;
   }

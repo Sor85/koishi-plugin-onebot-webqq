@@ -22,7 +22,8 @@
         <article v-for="(item, itemIndex) in items" :key="`forward:${itemIndex}`" :class="['onebot-webqq-webqq__message', 'is-incoming', getForwardItemClusterClass(itemIndex), { 'is-merged': isMergedForwardItem(itemIndex) }]">
           <!-- TIM 合并项依赖 wrapper 保留头像占位并隐藏重复头像，弹窗需和普通消息保持同一结构。 -->
           <span class="onebot-webqq-webqq__message-avatar-wrap">
-            <img class="onebot-webqq-webqq__message-avatar" :src="withProxy(getForwardItemAvatar(item))" :alt="getForwardItemName(item)">
+            <img v-if="getForwardItemAvatar(item)" class="onebot-webqq-webqq__message-avatar" :src="withProxy(getForwardItemAvatar(item))" :alt="getForwardItemName(item)">
+            <span v-else class="onebot-webqq-webqq__message-avatar is-fallback" aria-hidden="true">{{ getForwardItemName(item).slice(0, 1) }}</span>
           </span>
           <div class="onebot-webqq-webqq__message-content">
             <div v-if="!isMergedForwardItem(itemIndex)" class="onebot-webqq-webqq__sender-line">
