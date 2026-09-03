@@ -210,6 +210,21 @@ describe('会话内查找编排', () => {
     expect(harness.store.messageSearchSearched.value).toBe(false)
   })
 
+  it('远端结果在途时切走会话，远端失败也不写错误文案', async () => {
+    const harness = createSearchHarness()
+
+    harness.store.searchMessages({ query: '早安' })
+    await settle()
+    harness.currentChat.value = otherChat
+    harness.deferreds[0].reject('Error: 群历史接口不可用')
+    await settle()
+
+    expect(harness.store.messageSearchErrorText.value).toBe('')
+    expect(harness.store.messageSearchSearched.value).toBe(false)
+    // 会话切走但没有更新的查找接手时，卡住的 loading 只能由这次查找自己放下。
+    expect(harness.store.messageSearchLoading.value).toBe(false)
+  })
+
   it('还在读缓存阶段就切走会话时，既不写状态也不发请求', async () => {
     let releaseCache: (messages: WebQQMessage[]) => void = () => {}
     const harness = createSearchHarness({

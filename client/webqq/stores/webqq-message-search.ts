@@ -129,13 +129,17 @@ export function useWebQQMessageSearch(options: {
       nextBeforeSequence = result.nextBeforeSequence || ''
       messageSearchSearched.value = true
     } catch (error) {
-      if (serial !== searchSerial) return
+      // 失败路径与成功路径查同一件事：会话已经切走时，上一个会话的失败文案不该写给当前会话。
+      if (!isCurrentSearch(serial, expectedChatKey)) return
       // 本地命中已经上屏时，远端那半失败不该把它们换成一条错误文案。
       if (!localMatches.length) messageSearchErrorText.value = readWebQQErrorMessage(error, '查找聊天记录失败')
       messageSearchSearched.value = true
     } finally {
       // 不清计时器就每次查找泄一个；输入即搜时会成批堆积（ADR 0006）。
       if (timeoutTimer) clearTimeout(timeoutTimer)
+      // 这里刻意只查序号，不像 catch 那样连会话一起查。这一句的职责是「只有当这次查找还占着
+      // loading 标志时才把它放下」：有更新的查找接手（序号已变）就不该动；而会话切走却没有更新的
+      // 查找接手时，这次查找仍然占着那个标志，必须放下，否则「搜索中...」会永久卡住。
       if (serial === searchSerial) messageSearchLoading.value = false
     }
   }
