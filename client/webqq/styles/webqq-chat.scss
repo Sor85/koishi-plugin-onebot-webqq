@@ -237,7 +237,9 @@
   align-items: center;
   gap: 2px;
   margin: 0 1px;
-  padding: 1px 4px 1px 7px;
+  // 胶囊里只有一个 `@名称` 文本节点，左右内边距必须相等；7px/4px 的不对称值是给带尾部图标的
+  // 多子节点结构留的，这里没有那个图标，只会让 @ 一侧看起来比末尾更空。
+  padding: 1px 6px;
   color: var(--onebot-webqq-webqq-accent);
   font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
