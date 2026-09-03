@@ -225,7 +225,7 @@ client/
 - `webqq/message-flow/` 不直接 import `onebot/*`；历史消息、CQ/XML 文本、segment 展示归一化由 `webqq/adapters/onebot/*` 提供。
 - `shared` 不得依赖任意业务领域。
 - `shared` 不得收纳 OneBot action result、OneBot id、timestamp、WebQQ storage codec、WebQQ thinking、affinity 或 Console event 名称。
-- 不建立 `client/shared/`，除非前端真的出现两个以上领域共同依赖的深 module。
+- 不建立 `client/shared/`，除非前端真的出现两个以上领域共同依赖的深 module。（该例外已于 ADR 0008 被行使：跨模块实例共享状态的兜底被四个前端领域共同依赖，判据与准入门槛见 ADR 0008。本条决定本身不变。）
 - 不建立顶层 `chatluna/` 或 `integrations/chatluna/`，除非未来出现真实复用的第二个 adapter seam。
 - `webqq/affinity.ts` 不得迁到共享层；它只服务 WebQQ 消息展示。
 - `webqq/thinking.ts` 不得被 `capsule` 依赖；胶囊只记录活动状态和 duration。
