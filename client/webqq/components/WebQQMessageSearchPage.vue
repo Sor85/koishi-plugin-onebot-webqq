@@ -194,7 +194,6 @@ const props = defineProps<{
   loading: boolean
   errorText: string
   searched: boolean
-  scannedCount: number
   exhausted: boolean
 }>()
 

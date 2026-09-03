@@ -89,7 +89,6 @@
                 :loading="messageSearchLoading"
                 :error-text="messageSearchErrorText"
                 :searched="messageSearchSearched"
-                :scanned-count="messageSearchScannedCount"
                 :exhausted="messageSearchExhausted"
                 @close="closeMessageSearch"
                 @search="searchMessages"
@@ -301,13 +300,11 @@ import { webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
 import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, resolvedWebQQColorMode, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail } from './settings'
 import { webQQTotalUnread } from './runtime-state'
-import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQMessageSearchResult, WebQQSendElement } from './types'
+import type { WebQQFriend, WebQQGroup, WebQQGroupMember, WebQQMessage, WebQQSendElement } from './types'
 import type { FriendMenuState } from './utils/friend-menu'
 import { rememberFloatingPanelAnchor } from './utils/floating-panel'
 import { readWebQQErrorMessage } from './utils/webqq-error'
 import { useWebQQFrostedSurfaceFlag } from './utils/webqq-frosted-surface'
-import { localDateToMessageSearchRange } from './utils/message-search-date'
-import { filterWebQQSearchMessages } from '../../src/webqq/message-search'
 import type { WebQQMentionCandidate } from './utils/webqq-composer-draft'
 import { applyLocalWebQQReaction, applyLocalWebQQRecall } from './utils/webqq-interaction-state'
 import { buildGroupProfileCardModel, buildProfileCardModelFromProfile, buildUserProfileCardModel, type ProfileCardModel } from './utils/profile-card'
@@ -319,6 +316,7 @@ import { useWebQQMessageHistory } from './stores/webqq-message-history'
 import { useWebQQForwardDialog } from './stores/webqq-forward-dialog'
 import { useWebQQMessageList } from './stores/webqq-message-list'
 import { useWebQQMessageScroll } from './stores/webqq-message-scroll'
+import { useWebQQMessageSearch } from './stores/webqq-message-search'
 import { useWebQQNotices } from './stores/webqq-notices'
 import { useWebQQSenderMetadata } from './stores/webqq-sender-metadata'
 import { useWebQQThinkingExpansion } from './stores/webqq-thinking-expansion'
@@ -328,7 +326,6 @@ import {
   formatThinkingDuration,
   getGroupMemberName,
   getUnreadText,
-  mergeMessages,
   type WebQQMessageElement,
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
@@ -714,16 +711,36 @@ const {
 
 const selectionMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
-const messageSearchOpen = ref(false)
-const messageSearchQuery = ref('')
-const messageSearchLocalDate = ref('')
-const messageSearchResults = ref<WebQQMessage[]>([])
-const messageSearchLoading = ref(false)
-const messageSearchErrorText = ref('')
-const messageSearchSearched = ref(false)
-const messageSearchScannedCount = ref(0)
-const messageSearchExhausted = ref(true)
-const messageSearchNextBeforeSequence = ref('')
+const {
+  messageSearchOpen,
+  messageSearchQuery,
+  messageSearchLocalDate,
+  messageSearchResults,
+  messageSearchLoading,
+  messageSearchErrorText,
+  messageSearchSearched,
+  messageSearchExhausted,
+  openMessageSearch,
+  closeMessageSearch,
+  searchMessages,
+  searchMoreMessages,
+  selectSearchResult,
+} = useWebQQMessageSearch({
+  currentChat,
+  messages,
+  requestMessageSearch: searchWebQQMessages,
+  loadCachedMessages: loadCachedWebQQMessages,
+  rememberMessageSenderMetadata,
+  scrollToMessage: (messageKey) => { messageList.value?.scrollToMessage(messageKey) },
+  restoreTriggerFocus: () => {
+    // 搜索框由显式 v-if 卸载；外部 pointerdown 关闭时还会继续派发 mouseup/click，
+    // 必须等 DOM 更新和整条指针事件链结束后再恢复焦点，否则 Chrome 与 Firefox 最终仍会把焦点落到 body。
+    void nextTick(() => window.setTimeout(() => {
+      if (!props.visible || !messageSearchTrigger.value?.isConnected) return
+      messageSearchTrigger.value.focus({ preventScroll: true })
+    }, 50))
+  },
+})
 const forwardTargetOpen = ref(false)
 const replyingToMessageId = ref('')
 const reactionPickerMessageId = ref('')
@@ -863,131 +880,6 @@ function handleRecallMessage(messageId: string) {
 function handleSelectionForward() {
   if (!currentChat.value || !selectedMessageIds.value.length) return
   forwardTargetOpen.value = true
-}
-
-let messageSearchSerial = 0
-
-function resetMessageSearchResults() {
-  messageSearchResults.value = []
-  messageSearchErrorText.value = ''
-  messageSearchSearched.value = false
-  messageSearchScannedCount.value = 0
-  messageSearchExhausted.value = true
-  messageSearchNextBeforeSequence.value = ''
-}
-
-function openMessageSearch() {
-  if (!currentChat.value) return
-  messageSearchOpen.value = true
-  resetMessageSearchResults()
-}
-
-function closeMessageSearch() {
-  if (!messageSearchOpen.value) return
-  messageSearchOpen.value = false
-  messageSearchLoading.value = false
-  messageSearchQuery.value = ''
-  messageSearchLocalDate.value = ''
-  resetMessageSearchResults()
-  messageSearchSerial++
-  // 搜索框由显式 v-if 卸载；外部 pointerdown 关闭时还会继续派发 mouseup/click，
-  // 必须等 DOM 更新和整条指针事件链结束后再恢复焦点，否则 Chrome 与 Firefox 最终仍会把焦点落到 body。
-  void nextTick(() => window.setTimeout(() => {
-    if (!props.visible || !messageSearchTrigger.value?.isConnected) return
-    messageSearchTrigger.value.focus({ preventScroll: true })
-  }, 50))
-}
-
-async function requestMessageSearch(
-  more: boolean,
-  criteria?: { query: string, localDate?: string },
-) {
-  const chat = currentChat.value
-  if (!chat) return
-  if (!more && criteria) {
-    messageSearchQuery.value = criteria.query
-    messageSearchLocalDate.value = criteria.localDate || ''
-  }
-  const keyword = messageSearchQuery.value.trim()
-  const dateRange = localDateToMessageSearchRange(messageSearchLocalDate.value)
-  if (!keyword && !dateRange) {
-    resetMessageSearchResults()
-    return
-  }
-
-  const expectedChatKey = `${chat.type}:${chat.peerId}`
-  const serial = ++messageSearchSerial
-  messageSearchLoading.value = true
-  messageSearchErrorText.value = ''
-  if (!more) resetMessageSearchResults()
-  let localMatches: WebQQMessage[] = []
-  try {
-    // 浏览器后端的持久化缓存只在前端；当前会话内存里的消息也可能比上次落盘更新。
-    // 首搜先并入这些本地命中，再让服务端继续翻 OneBot / Koishi 缓存。
-    let localScanned = 0
-    if (!more) {
-      const cached = await loadCachedWebQQMessages(chat.type, chat.peerId)
-      const localPool = mergeMessages(cached, messages.value)
-      localMatches = filterWebQQSearchMessages(localPool, { keyword, ...dateRange })
-      localScanned = localPool.length
-      // 有本地命中就先上屏，避免 OneBot 历史接口卡住时界面一直停在「搜索中...」。
-      if (localMatches.length) {
-        messageSearchResults.value = localMatches
-        messageSearchScannedCount.value = localScanned
-        messageSearchSearched.value = true
-      }
-    }
-    const result: WebQQMessageSearchResult = await Promise.race([
-      searchWebQQMessages({
-        type: chat.type,
-        peerId: chat.peerId,
-        keyword,
-        ...dateRange,
-        ...(more && messageSearchNextBeforeSequence.value ? { beforeSequence: messageSearchNextBeforeSequence.value } : {}),
-      }),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('查找聊天记录超时')), 12000)
-      }),
-    ])
-    if (serial !== messageSearchSerial || `${currentChat.value?.type}:${currentChat.value?.peerId}` !== expectedChatKey) return
-    const mergedMessages = more
-      ? mergeMessages(result.messages, messageSearchResults.value)
-      : mergeMessages(localMatches, result.messages)
-    messageSearchResults.value = mergedMessages
-    messageSearchScannedCount.value = more
-      ? messageSearchScannedCount.value + result.scannedCount
-      : result.scannedCount + localScanned
-    messageSearchExhausted.value = result.exhausted
-    messageSearchNextBeforeSequence.value = result.nextBeforeSequence || ''
-    messageSearchSearched.value = true
-  } catch (error) {
-    if (serial !== messageSearchSerial) return
-    if (localMatches.length) {
-      messageSearchSearched.value = true
-    } else {
-      messageSearchErrorText.value = readWebQQErrorMessage(error, '查找聊天记录失败')
-      messageSearchSearched.value = true
-    }
-  } finally {
-    if (serial === messageSearchSerial) messageSearchLoading.value = false
-  }
-}
-
-function searchMessages(criteria: { query: string, localDate?: string }) {
-  void requestMessageSearch(false, criteria)
-}
-
-function searchMoreMessages() {
-  void requestMessageSearch(true)
-}
-
-async function selectSearchResult(message: WebQQMessage) {
-  const chat = currentChat.value
-  if (!chat) return
-  messages.value = mergeMessages(messages.value, [message])
-  rememberMessageSenderMetadata(chat.type, chat.peerId, [message])
-  await nextTick()
-  messageList.value?.scrollToMessage(message.id || message.sequence)
 }
 
 function confirmSelectionForward(target: WebQQForwardTargetOption, resolve: () => void, reject: (error: unknown) => void) {
@@ -1313,9 +1205,6 @@ function handleSelectionKeydown(event: KeyboardEvent) {
 watch(currentChat, () => {
   exitSelection()
   closeMessageSearch()
-  resetMessageSearchResults()
-  messageSearchQuery.value = ''
-  messageSearchLocalDate.value = ''
   clearReplyTarget()
   // 草稿、提及菜单与待发附件由输入区自己按 chat-key 清空。
   reactionPickerMessageId.value = ''
