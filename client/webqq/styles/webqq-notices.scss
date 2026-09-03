@@ -43,7 +43,7 @@
     border-radius: 7px;
     color: var(--onebot-webqq-webqq-accent);
     background: var(--onebot-webqq-webqq-accent-soft);
-    font-size: 12px;
+    font-size: var(--onebot-webqq-font-sm);
 
     &:disabled {
       opacity: 0.56;
@@ -68,14 +68,14 @@
 
   strong {
     display: block;
-    font-size: 13px;
+    font-size: var(--onebot-webqq-font-md);
     line-height: 18px;
   }
 
   span {
     margin-top: 1px;
     color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
-    font-size: 12px;
+    font-size: var(--onebot-webqq-font-sm);
     line-height: 17px;
   }
 
@@ -83,7 +83,7 @@
     display: block;
     margin-top: 4px;
     color: #9ca3af;
-    font-size: 12px;
+    font-size: var(--onebot-webqq-font-sm);
     line-height: 17px;
   }
 }
@@ -101,7 +101,7 @@
   border-radius: 6px;
   color: #237343;
   background: #e9f8ef;
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   font-weight: 700;
   line-height: 16px;
 
@@ -121,7 +121,7 @@
 .onebot-webqq-webqq__notice-time {
   margin-top: auto;
   color: #9ca3af;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   text-align: right;
   white-space: nowrap;

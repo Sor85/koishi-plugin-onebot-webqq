@@ -51,12 +51,12 @@
   }
 
   strong {
-    font-size: 15px;
+    font-size: var(--onebot-webqq-font-xl);
     line-height: 21px;
   }
 
   span {
-    font-size: 12px;
+    font-size: var(--onebot-webqq-font-sm);
     line-height: 17px;
     color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.7)));
   }
@@ -239,7 +239,7 @@
   margin: 0 1px;
   padding: 1px 4px 1px 7px;
   color: var(--onebot-webqq-webqq-accent);
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   white-space: nowrap;
   vertical-align: 1px;
@@ -256,7 +256,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 16px;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.66);
@@ -442,7 +442,7 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   font-weight: 700;
   object-fit: cover;
   background: var(--onebot-webqq-webqq-accent);
@@ -464,14 +464,14 @@
   }
 
   strong {
-    font-size: 13px;
+    font-size: var(--onebot-webqq-font-md);
     font-weight: 600;
     line-height: 16px;
   }
 
   small {
     color: var(--k-text-light, var(--fg3, rgba(40, 40, 44, 0.45)));
-    font-size: 11px;
+    font-size: var(--onebot-webqq-font-xs);
     line-height: 14px;
   }
 }
@@ -479,7 +479,7 @@
 .onebot-webqq-webqq__mention-menu-empty {
   padding: 10px 8px;
   color: var(--k-text-light, var(--fg3, rgba(40, 40, 44, 0.45)));
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   text-align: center;
 }
 

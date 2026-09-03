@@ -438,7 +438,7 @@ describe('chat capsule styles', () => {
     expect(content).toContain('border: 1px solid rgba(255, 255, 255, 0.62)')
     expect(content).toContain('backdrop-filter: saturate(180%) blur(18px)')
     expect(content).toContain('-webkit-backdrop-filter: saturate(180%) blur(18px)')
-    expect(content).toContain('font-size: 11px')
+    expect(content).toContain('font-size: var(--onebot-webqq-font-xs)')
     expect(content).toContain('line-height: 16px')
     expect(content).toContain('white-space: nowrap')
     expect(content).toContain('overflow: hidden')
@@ -456,13 +456,13 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq__body')).toContain('height: 50px')
     expect(ruleBody('.onebot-webqq__body')).toContain('padding: 7px 12px')
     expect(ruleBody('.onebot-webqq__body')).toContain('justify-content: flex-start')
-    expect(ruleBody('.onebot-webqq__title')).toContain('font-size: 13px')
+    expect(ruleBody('.onebot-webqq__title')).toContain('font-size: var(--onebot-webqq-font-md)')
     expect(ruleBody('.onebot-webqq__title')).toContain('line-height: 18px')
     expect(style).toContain(`.onebot-webqq__meta {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px`)
   })
 
@@ -844,7 +844,7 @@ describe('chat capsule styles', () => {
   })
 
   it('styles WebQQ friend category headings in the friend list', () => {
-    expect(ruleBody('.onebot-webqq-webqq__friend-category-title')).toContain('font-size: 12px')
+    expect(ruleBody('.onebot-webqq-webqq__friend-category-title')).toContain('font-size: var(--onebot-webqq-font-sm)')
     expect(ruleBody('.onebot-webqq-webqq__friend-category-title')).toContain('color: #9ca3af')
   })
 
@@ -1471,7 +1471,7 @@ describe('chat capsule styles', () => {
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-date-popover', webqqInteractionsStyle)).toContain('position: absolute')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-calendar-header', webqqInteractionsStyle)).toContain('margin-bottom: 16px')
     const calendarSelectorButton = ruleBodyIncluding('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__message-search-calendar-selectors > button', webqqInteractionsStyle)
-    expect(calendarSelectorButton).toContain('font-size: 14px')
+    expect(calendarSelectorButton).toContain('font-size: var(--onebot-webqq-font-lg)')
     expect(calendarSelectorButton).toContain('font-weight: 500')
     expect(calendarSelectorButton).toContain('line-height: 20px')
     expect(calendarSelectorButton).toContain('white-space: nowrap')
@@ -1484,7 +1484,7 @@ describe('chat capsule styles', () => {
     const calendarDay = ruleBodyIncluding('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__message-search-calendar-grid > button', webqqInteractionsStyle)
     expect(calendarDay).toContain('width: 32px')
     expect(calendarDay).toContain('height: 32px')
-    expect(calendarDay).toContain('font-size: 14px')
+    expect(calendarDay).toContain('font-size: var(--onebot-webqq-font-lg)')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__message-search-results', webqqInteractionsStyle)).toContain('overflow-y: auto')
     expect(ruleBodyIncluding('.onebot-webqq-webqq__chat-header .onebot-webqq-webqq__message-search-hit', webqqInteractionsStyle)).toContain('text-align: left')
     expect(`${style}\n${webqqInteractionsStyle}`).not.toContain('.onebot-webqq-webqq__message-search-backdrop')
@@ -1517,7 +1517,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__card-cover')).toContain('object-fit: cover')
     expect(ruleBody('.onebot-webqq-webqq__card-title')).toContain('font-weight: 600')
     expect(ruleBody('.onebot-webqq-webqq__card-desc')).toContain('overflow-wrap: anywhere')
-    expect(ruleBody('.onebot-webqq-webqq__card-source')).toContain('font-size: 11px')
+    expect(ruleBody('.onebot-webqq-webqq__card-source')).toContain('font-size: var(--onebot-webqq-font-xs)')
   })
 
   it('keeps the WebQQ thinking indicator compact with six-pixel dots', () => {
@@ -1564,7 +1564,7 @@ describe('chat capsule styles', () => {
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('opacity: 0')
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('visibility: hidden')
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('pointer-events: none')
-    expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('font-size: 12px')
+    expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('font-size: var(--onebot-webqq-font-sm)')
     expect(ruleBody('.onebot-webqq-webqq__thinking-usage')).toContain('line-height: 18px')
     expect(style).toContain(`.onebot-webqq-webqq__thinking-toggle:hover .onebot-webqq-webqq__thinking-usage,
 .onebot-webqq-webqq__thinking-toggle:focus-visible .onebot-webqq-webqq__thinking-usage {

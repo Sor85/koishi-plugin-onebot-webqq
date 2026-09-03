@@ -181,7 +181,7 @@
     border-radius: 8px 8px 0 0;
     color: #6b7280;
     background: transparent;
-    font-size: 13px;
+    font-size: var(--onebot-webqq-font-md);
     transition: background 160ms ease, color 160ms ease;
 
     &.is-active {
@@ -268,7 +268,7 @@
     border-radius: 8px;
     color: #64748b;
     background: transparent;
-    font-size: 13px;
+    font-size: var(--onebot-webqq-font-md);
     font-weight: 600;
 
     &.is-active {
@@ -288,7 +288,7 @@
   padding: 42px 12px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
   text-align: center;
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
 
   &.is-error {
     color: var(--k-color-danger, #f56c6c);
@@ -331,7 +331,7 @@
     border-radius: 9px;
     outline: none;
     box-sizing: border-box;
-    font-size: 13px;
+    font-size: var(--onebot-webqq-font-md);
 
     &:focus {
       border-color: var(--onebot-webqq-webqq-accent);
@@ -426,13 +426,13 @@
   }
 
   strong {
-    font-size: 13px;
+    font-size: var(--onebot-webqq-font-md);
     line-height: 18px;
   }
 
   small {
     margin-top: 1px;
-    font-size: 12px;
+    font-size: var(--onebot-webqq-font-sm);
     line-height: 16px;
     color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
   }
@@ -443,7 +443,7 @@
   top: 10px;
   right: 12px;
   color: #9ca3af;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
 }
 
@@ -457,7 +457,7 @@
   border-radius: 9px;
   color: #fff;
   background: #ef4444;
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   font-weight: 600;
   line-height: 18px;
   text-align: center;
@@ -467,7 +467,7 @@
   padding: 44px 12px;
   color: #9ca3af;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
 }
 
 .onebot-webqq-webqq__friend-category {
@@ -478,7 +478,7 @@
 .onebot-webqq-webqq__friend-category-title {
   margin: 10px 12px 4px;
   color: #9ca3af;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   font-weight: 600;
   line-height: 18px;
 }

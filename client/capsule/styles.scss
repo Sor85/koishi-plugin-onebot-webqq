@@ -101,6 +101,7 @@
   }
 
   .k-icon {
+    // 不是排版字号：Koishi 的 k-icon 用 font-size 决定图标字形大小。
     font-size: 22px;
   }
 }
@@ -234,7 +235,7 @@
   color: var(--k-text-dark, var(--fg1, #1f2328));
   background: color-mix(in srgb, var(--k-color-primary, #409eff) 16%, #ffffff 84%);
   overflow: hidden;
-  font-size: 10px;
+  font-size: var(--onebot-webqq-font-2xs);
   font-weight: 700;
   line-height: 1;
   text-align: left;
@@ -271,6 +272,7 @@
   }
 
   .k-icon {
+    // 不是排版字号：Koishi 的 k-icon 用 font-size 决定图标字形大小。
     font-size: 22px;
   }
 }
@@ -325,7 +327,7 @@
   border-radius: 999px;
   color: #fff;
   background: #ef4444;
-  font-size: 10px;
+  font-size: var(--onebot-webqq-font-2xs);
   font-weight: 700;
   line-height: 14px;
   text-align: center;
@@ -430,14 +432,14 @@
 .onebot-webqq__title {
   min-width: 0;
   flex-shrink: 1;
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
   font-weight: 700;
   line-height: 18px;
 }
 
 .onebot-webqq__title-status {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.7)));
 }
@@ -446,7 +448,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.7)));
 }
@@ -517,7 +519,7 @@
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16);
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   font-weight: 500;
   line-height: 16px;
   white-space: nowrap;

@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
 
   &.is-error {
     color: var(--k-color-danger, #f56c6c);
@@ -57,7 +57,7 @@
   border-radius: 999px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.58)));
   background: rgba(148, 163, 184, 0.14);
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   text-align: center;
 }
@@ -111,7 +111,7 @@
   color: #fff;
   background: #ec4899;
   box-shadow: 0 2px 6px rgba(190, 24, 93, 0.24);
-  font-size: 9px;
+  font-size: var(--onebot-webqq-font-2xs);
   font-weight: 700;
   line-height: 15px;
   white-space: nowrap;
@@ -295,7 +295,7 @@
   min-width: 18px;
   margin-left: 4px;
   color: inherit;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   font-weight: 600;
   line-height: 16px;
   text-align: left;
@@ -313,7 +313,7 @@
   border-radius: 50%;
   color: inherit;
   background: transparent;
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
   font-weight: 600;
   line-height: 19px;
   opacity: 0.62;
@@ -353,7 +353,7 @@
   border-radius: 8px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.72)));
   background: rgba(241, 245, 249, 0.94);
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   overflow-wrap: anywhere;
   text-align: left;
@@ -414,7 +414,7 @@
 
 .onebot-webqq-webqq__message-recall-status {
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.58)));
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   line-height: 16px;
   opacity: 0;
   pointer-events: none;
@@ -448,7 +448,7 @@
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.68)));
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(148, 163, 184, 0.26);
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   white-space: nowrap;
 }
@@ -517,7 +517,7 @@
 
 .onebot-webqq-webqq__message-name,
 .onebot-webqq-webqq__message-time {
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   line-height: 16px;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
 }
@@ -544,7 +544,7 @@
   border: 0;
   color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
   background: transparent;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
 }
 
@@ -558,7 +558,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   white-space: normal;
   transition: opacity 0.16s ease, visibility 0.16s ease;
@@ -634,7 +634,7 @@
   border-radius: 6px;
   color: var(--k-text-normal, var(--fg2, #475569));
   background: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
+  font-size: var(--onebot-webqq-font-sm);
   line-height: 18px;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -659,7 +659,7 @@
   padding: 1px 6px;
   border-radius: 5px;
   color: #334155;
-  font-size: 11px;
+  font-size: var(--onebot-webqq-font-xs);
   font-weight: 600;
   line-height: 16px;
   white-space: nowrap;
@@ -901,7 +901,7 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
   line-height: 19px;
   text-align: left;
   word-break: break-word;
@@ -918,7 +918,7 @@
     border-radius: 6px;
     background: rgba(148, 163, 184, 0.16);
     color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.62)));
-    font-size: 12px;
+    font-size: var(--onebot-webqq-font-sm);
     line-height: 17px;
   }
 
@@ -989,6 +989,7 @@
 }
 
 .onebot-webqq-webqq__forward-entry::after {
+  // 不是排版字号：这是箭头字形本身的大小，与行高 16px 配对撑出箭头的视觉尺寸。
   content: '›';
   font-size: 20px;
   line-height: 16px;

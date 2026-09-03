@@ -320,7 +320,7 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('.onebot-webqq__bot-overflow-plus')
         && capsuleStyle.includes('.onebot-webqq__bot-overflow-count')
         && capsuleStyle.includes('align-items: center;')
-        && capsuleStyle.includes('font-size: 10px;')
+        && capsuleStyle.includes('font-size: var(--onebot-webqq-font-2xs);')
         ? ''
         : '多余机器人数字没有和头像保持相同大小、宽度与折叠步进，或头像余量徽标没有按头像槽位同步计算展开位',
       capsuleView.includes("type BotStackOverflowMotion = 'idle' | 'expanding' | 'collapsing'")

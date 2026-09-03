@@ -39,7 +39,7 @@
     min-width: 0;
     overflow: hidden;
     color: #334155;
-    font-size: 14px;
+    font-size: var(--onebot-webqq-font-lg);
     line-height: 20px;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -73,7 +73,7 @@
 .onebot-webqq-webqq__forward-modal-empty {
   padding: 28px 0;
   color: #94a3b8;
-  font-size: 13px;
+  font-size: var(--onebot-webqq-font-md);
   line-height: 19px;
   text-align: center;
 }

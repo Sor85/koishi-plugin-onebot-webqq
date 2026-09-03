@@ -1,5 +1,7 @@
 // 盒模型基线必须排在所有布局规则之前：它是同特异性的兜底，后续规则若显式声明 box-sizing 仍然生效。
 @use './webqq/styles/webqq-box-model';
+// 排版基线同理：字号标度令牌要先于用到它们的规则输出，基准字号也必须能被后续规则覆盖。
+@use './webqq/styles/webqq-typography';
 @use './capsule/styles';
 @use './webqq/styles/webqq-shell';
 @use './webqq/styles/webqq-chat';
@@ -168,6 +170,7 @@
     padding: 0;
     gap: 0;
     border-radius: 12px;
+    // 不是排版字号：窄屏下标签只剩图标，靠 font-size: 0 压掉标签之间的行内空白。
     font-size: 0;
   }
 
