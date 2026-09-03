@@ -1,3 +1,4 @@
+import type { OneBotRobotProfile } from '../../onebot/types'
 import type {
   CapsuleActivityOptions,
   CapsuleBotInput,
@@ -21,7 +22,7 @@ export interface CapsuleState {
 
 interface MutableCapsuleState {
   current?: CapsuleSnapshot
-  bots: CapsuleBotInput[]
+  bots: OneBotRobotProfile[]
   counters: {
     received: number
     sent: number
@@ -76,7 +77,7 @@ export function createCapsuleState(): CapsuleState {
 
 // 可用 Bot 列表已经按 action 通道收敛过适配器的滞后状态；命中同一个 selfId 时以列表为准。
 // 未命中说明这个 Bot 不在 WebQQ 的可用集合里（例如被 selfId 白名单排除），此时只能保留原始上报值。
-function readReconciledBot(bot: CapsuleSnapshot['bot'], bots: CapsuleBotInput[]) {
+function readReconciledBot(bot: CapsuleSnapshot['bot'], bots: OneBotRobotProfile[]) {
   const profile = bots.find((candidate) => candidate.selfId === bot.selfId)
   if (!profile || profile.status === bot.status) return bot
   return { ...bot, status: profile.status }
@@ -105,7 +106,7 @@ function createSnapshot(input: CapsuleMessageInput, state: MutableCapsuleState):
   }
 }
 
-export function setAvailableBots(capsule: CapsuleState, bots: CapsuleBotInput[]) {
+export function setAvailableBots(capsule: CapsuleState, bots: OneBotRobotProfile[]) {
   const state = getState(capsule)
   state.bots = bots.map((bot) => ({ ...bot }))
   if (!state.current) return

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ChatCapsuleContext, ConsoleEvents, ConsoleService } from '../src/plugin-context'
+import type { ChatCapsuleContext, ConsoleService } from '../src/plugin-context'
 import { readWebQQErrorMessage } from '../client/webqq/utils/webqq-error'
+import { createKoishiLikeConsole } from './helpers/koishi-console'
 
 const koishiMock = vi.hoisted(() => {
   function createSchemaNode() {
@@ -33,21 +34,6 @@ vi.mock('koishi', () => koishiMock)
 const plugin = await import('../src')
 
 type Listener = (...payload: any[]) => void
-
-// 复刻 Koishi Console 的真实语义：addListener 只是往全局 listeners 里写一个键，
-// 既不返回 disposable 也不随 ctx 回收。停用插件后残留的回调就是生产事故的来源。
-function createKoishiLikeConsole() {
-  const listeners: Record<string, { callback?: unknown } | undefined> = Object.create(null)
-  const console: ConsoleService = {
-    addEntry: vi.fn(() => {}),
-    broadcast: vi.fn(() => {}),
-    listeners,
-    addListener<Event extends keyof ConsoleEvents>(event: Event, callback: ConsoleEvents[Event], options?: { authority?: number }) {
-      listeners[event] = { callback, ...options }
-    },
-  }
-  return { console, listeners }
-}
 
 function createSocket() {
   const bound: Array<{ type: string; listener: (event: { data: unknown }) => void }> = []

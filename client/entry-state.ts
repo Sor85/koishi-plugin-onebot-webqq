@@ -1,7 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { readConfigDefault, type ConfigValue } from '../src/config/spec'
 import { defineCrossInstanceState } from './shared/cross-instance-state'
-import { capsule, type CapsuleData } from './capsule/state'
+import { capsule } from './capsule/state'
 import {
   enableCapsuleFrostedGlass,
   resolvedWebQQColorMode,
@@ -40,7 +40,9 @@ export {
   webQQColorMode,
   webQQTotalUnread,
 }
-export type WebQQCapsuleData = CapsuleData
+// 观察窗经组合根这一层拿小胶囊快照的类型，不直接依赖小胶囊领域（ADR 0001 的前端依赖方向）。
+// 同名转发而不是别名：别名会重造「一个东西两个名字」。
+export type { CapsuleSnapshot } from './capsule/state'
 
 export function resetWebQQClientState() {
   // 只清会话态，不清配置镜像。

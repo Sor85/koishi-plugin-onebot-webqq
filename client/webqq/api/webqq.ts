@@ -1,5 +1,4 @@
 import { send } from '@koishijs/client'
-import type { OneBotRobotState } from '../../onebot/bots'
 import type {
   WebQQContacts,
   WebQQForwardItem,
@@ -14,6 +13,7 @@ import type {
   WebQQGroupMember,
   WebQQMessage,
   WebQQMessageElement,
+  WebQQMessageQuery,
   WebQQMessageSearchQuery,
   WebQQMessageSearchResult,
   WebQQMessageReaction,
@@ -28,12 +28,7 @@ import type {
   WebQQSelfProfileUpdate,
   WebQQSendPayload,
 } from '../types'
-
-export interface WebQQMessageQuery {
-  type: 'friend' | 'group'
-  peerId: string
-  beforeSequence?: string
-}
+import type { HandleableWebQQNotice } from '../utils/webqq-notice-view'
 
 const webQQContactsRetryLimit = 10
 const webQQContactsRetryDelayMs = 800
@@ -454,7 +449,7 @@ export async function requestWebQQNotices() {
   return normalizeArray(await send('onebot-webqq/webqq/notices'), normalizeWebQQNotice)
 }
 
-export async function approveWebQQNotice(notice: WebQQNotice, approve: boolean) {
+export async function approveWebQQNotice(notice: HandleableWebQQNotice, approve: boolean) {
   await send('onebot-webqq/webqq/notice-action', {
     id: notice.id,
     type: notice.type,
@@ -469,7 +464,7 @@ export async function sendWebQQMessage(payload: WebQQSendPayload) {
 }
 
 export async function selectWebQQBot(selfId: string) {
-  return await send('onebot-webqq/webqq/bot/select', { selfId }) as OneBotRobotState
+  return await send('onebot-webqq/webqq/bot/select', { selfId })
 }
 
 function normalizeWebQQProfileField(value: unknown): WebQQProfileField | undefined {

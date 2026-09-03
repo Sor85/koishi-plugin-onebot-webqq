@@ -1,6 +1,6 @@
 import { send } from '@koishijs/client'
 import type { WebQQStorageBackend } from '../settings'
-import type { ConversationSummary, WebQQMessage, WebQQStoredState } from '../types'
+import type { WebQQConversationSummary, WebQQMessage, WebQQStoredState } from '../types'
 import { loadBrowserWebQQMessages, saveBrowserWebQQMessages } from './browser-message-cache'
 
 const webQQStorageKey = 'onebot-webqq:webqq:v1'
@@ -10,7 +10,7 @@ function getScopedStorageKey(key: string, scopeId?: string) {
 }
 
 function readStoredConversationSummaries(value: unknown) {
-  const summaries: Record<string, ConversationSummary> = {}
+  const summaries: Record<string, WebQQConversationSummary> = {}
   if (!value || typeof value !== 'object') return summaries
   for (const [key, raw] of Object.entries(value)) {
     if (!raw || typeof raw !== 'object') continue

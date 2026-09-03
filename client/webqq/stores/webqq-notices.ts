@@ -1,11 +1,11 @@
 import { computed, ref } from 'vue'
 import type { WebQQNotice } from '../types'
-import { sortPendingNotices } from '../utils/webqq-notice-view'
+import { hasNoticeFlag, sortPendingNotices, type HandleableWebQQNotice } from '../utils/webqq-notice-view'
 import { readWebQQErrorMessage } from '../utils/webqq-error'
 
 export function useWebQQNotices(options: {
   requestNotices: () => Promise<WebQQNotice[]>
-  approveNotice: (notice: WebQQNotice, approve: boolean) => Promise<void>
+  approveNotice: (notice: HandleableWebQQNotice, approve: boolean) => Promise<void>
 }) {
   const notices = ref<WebQQNotice[]>([])
   const noticeOpen = ref(false)
@@ -40,7 +40,7 @@ export function useWebQQNotices(options: {
   }
 
   async function handleNotice(notice: WebQQNotice, approve: boolean) {
-    if (!notice.flag) return
+    if (!hasNoticeFlag(notice)) return
     handlingNoticeId.value = notice.id
     noticeErrorText.value = ''
     try {

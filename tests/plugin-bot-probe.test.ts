@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ChatCapsuleContext, ConsoleEvents, ConsoleService } from '../src/plugin-context'
+import type { ChatCapsuleContext, ConsoleService } from '../src/plugin-context'
+import { createKoishiLikeConsole } from './helpers/koishi-console'
 
 const koishiMock = vi.hoisted(() => {
   function createSchemaNode() {
@@ -32,20 +33,6 @@ vi.mock('koishi', () => koishiMock)
 const plugin = await import('../src')
 
 type Listener = (...payload: any[]) => void
-
-function createKoishiLikeConsole() {
-  const listeners: Record<string, { callback?: unknown } | undefined> = Object.create(null)
-  const broadcast = vi.fn(() => {})
-  const console: ConsoleService = {
-    addEntry: vi.fn(() => {}),
-    broadcast,
-    listeners,
-    addListener<Event extends keyof ConsoleEvents>(event: Event, callback: ConsoleEvents[Event], options?: { authority?: number }) {
-      listeners[event] = { callback, ...options }
-    },
-  }
-  return { console, listeners, broadcast }
-}
 
 function createContext(options: { console: ConsoleService; bots: unknown[] }) {
   const listeners: Record<string, Listener[]> = {}
@@ -159,7 +146,7 @@ describe('WebQQ 在 Koishi 重启后无需外部消息即可可用', () => {
     expect(bot.request).toHaveBeenCalledWith('get_login_info', {})
     await expect(loadContacts(consoleListeners)).rejects.toThrow('未找到可用的 OneBot 机器人')
     // 胶囊本来就会在生命周期事件上广播一次状态；关键是探测失败后不能出现可用 Bot。
-    for (const [event, body] of broadcast.mock.calls as unknown as Array<[string, unknown]>) {
+    for (const [event, body] of broadcast.mock.calls) {
       if (event !== 'onebot-webqq/bots/update') continue
       expect(body).toEqual({ bots: [] })
     }

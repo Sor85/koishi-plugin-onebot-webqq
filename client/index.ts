@@ -8,7 +8,7 @@ import {
   type MirroredConfigValues,
 } from '../src/config/spec'
 import ClientShell from './ClientShell.vue'
-import { capsule, hiddenCapsuleActivityIds, type CapsuleData } from './capsule/state'
+import { capsule, hiddenCapsuleActivityIds, type CapsuleSnapshot } from './capsule/state'
 import CapsuleActivitySelect from './capsule/CapsuleActivitySelect.vue'
 import { debug, resetWebQQClientState } from './entry-state'
 import { availableBots, selectedBotSelfId, type OneBotRobotState } from './onebot/bots'
@@ -17,7 +17,7 @@ import './style.scss?onebot-webqq=composer-mention-v3'
 
 // 配置镜像的类型由配置规格派生，只覆盖镜像配置项；非配置字段仍然手写。
 interface ClientData extends Partial<MirroredConfigValues> {
-  capsule?: CapsuleData
+  capsule?: CapsuleSnapshot
   bots?: OneBotRobotState['bots']
   selectedSelfId?: string
 }
@@ -85,14 +85,14 @@ export default function (ctx: Context, data?: Ref<ClientData>) {
       }, { deep: true })
       : undefined
     const disposeUpdateReceive = receive('onebot-webqq/update', (value) => {
-      capsule.value = value as CapsuleData | undefined
+      capsule.value = value
       availableBots.value = capsule.value?.bots ?? availableBots.value
       if (debug.value) {
         console.debug('[onebot-webqq] update', value)
       }
     })
     const disposeBotsUpdateReceive = receive('onebot-webqq/bots/update', (value) => {
-      applyOneBotRobotState(value as OneBotRobotState)
+      applyOneBotRobotState(value)
       if (debug.value) {
         console.debug('[onebot-webqq] bots update', value)
       }

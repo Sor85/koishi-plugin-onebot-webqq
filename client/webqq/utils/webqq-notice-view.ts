@@ -19,6 +19,16 @@ export function getHandledNoticeStatusText(notice: WebQQNotice) {
   return ''
 }
 
-export function canHandleNotice(notice: WebQQNotice) {
-  return notice.subType !== 'leave' && notice.status === 'pending' && !!notice.flag
+/** 可处理的通知：控制台契约里 notice-action 的 flag 是必填，而通知本身的 flag 可能缺失。 */
+export type HandleableWebQQNotice = WebQQNotice & { flag: string }
+
+// 写成类型守卫而不是返回 boolean：`!!notice.flag` 只窄化 notice.flag，不窄化 notice 本身，于是
+// 「只对带 flag 的通知发同意/拒绝」这条既有不变量到不了发送函数的类型上，最后只能靠把契约里的
+// flag 放宽成可选才能编译——那等于让「不带 flag 的请求」变成合法载荷。
+export function hasNoticeFlag(notice: WebQQNotice): notice is HandleableWebQQNotice {
+  return !!notice.flag
+}
+
+export function canHandleNotice(notice: WebQQNotice): notice is HandleableWebQQNotice {
+  return notice.subType !== 'leave' && notice.status === 'pending' && hasNoticeFlag(notice)
 }

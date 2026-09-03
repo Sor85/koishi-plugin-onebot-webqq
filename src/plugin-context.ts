@@ -2,64 +2,19 @@ import type { Entry } from '@koishijs/console'
 import type { Session } from 'koishi'
 import type { ChatLunaMessage } from './capsule/message-input'
 import type { ChatLunaCharacterAfterChatPayload as BaseChatLunaCharacterAfterChatPayload } from './webqq/thinking'
-import type {
-  WebQQContacts,
-  WebQQForwardSendInput,
-  WebQQFriendAction,
-  WebQQGroupAction,
-  WebQQGroupInfo,
-  WebQQGroupInfoQuery,
-  WebQQMessage,
-  WebQQMessageQuery,
-  WebQQMessageSearchQuery,
-  WebQQMessageSearchResult,
-  WebQQMessageReactionInput,
-  WebQQMessageRecallInput,
-  WebQQNotice,
-  WebQQNoticeAction,
-  WebQQProfile,
-  WebQQProfileQuery,
-  WebQQRecordTranscriptionQuery,
-  WebQQSelfProfileUpdate,
-  WebQQSendPayload,
-} from './webqq/types'
-import type { OneBotRobotState } from './onebot/types'
+import type { ConsoleBroadcastBody, ConsoleBroadcasts, ConsoleRequests } from './shared/console-contract'
 import type { WebQQImageServer } from './webqq/media/image-url-resolver'
-import type {
-  WebQQMessageCachePayload,
-  WebQQMessageCacheQuery,
-} from './webqq/storage/message-cache'
-import type {
-  WebQQStoredState,
-} from './webqq/storage/state'
 
-export interface ConsoleEvents {
-  'onebot-webqq/webqq/contacts': () => Promise<WebQQContacts>
-  'onebot-webqq/webqq/messages': (query: WebQQMessageQuery) => Promise<WebQQMessage[]>
-  'onebot-webqq/webqq/messages/search': (query: WebQQMessageSearchQuery) => Promise<WebQQMessageSearchResult>
-  'onebot-webqq/webqq/group-info': (query: WebQQGroupInfoQuery) => Promise<WebQQGroupInfo>
-  'onebot-webqq/webqq/record/transcribe': (query: WebQQRecordTranscriptionQuery) => Promise<string>
-  'onebot-webqq/webqq/notices': () => Promise<WebQQNotice[]>
-  'onebot-webqq/webqq/notice-action': (action: WebQQNoticeAction) => Promise<void>
-  'onebot-webqq/webqq/send': (payload: WebQQSendPayload) => Promise<void>
-  'onebot-webqq/webqq/message-recall': (input: WebQQMessageRecallInput) => Promise<void>
-  'onebot-webqq/webqq/message-reaction': (input: WebQQMessageReactionInput) => Promise<void>
-  'onebot-webqq/webqq/profile': (query: WebQQProfileQuery) => Promise<WebQQProfile>
-  'onebot-webqq/webqq/self-profile': (input: WebQQSelfProfileUpdate) => Promise<void>
-  'onebot-webqq/webqq/friend-action': (input: WebQQFriendAction) => Promise<void>
-  'onebot-webqq/webqq/group-action': (input: WebQQGroupAction) => Promise<void>
-  'onebot-webqq/webqq/forward-send': (input: WebQQForwardSendInput) => Promise<void>
-  'onebot-webqq/webqq/bot/select': (input: { selfId: string }) => Promise<OneBotRobotState>
-  'onebot-webqq/webqq/storage/load': () => Promise<WebQQStoredState>
-  'onebot-webqq/webqq/storage/save': (state: WebQQStoredState) => Promise<void>
-  'onebot-webqq/webqq/messages/cache/load': (query: WebQQMessageCacheQuery) => Promise<WebQQMessage[]>
-  'onebot-webqq/webqq/messages/cache/save': (payload: WebQQMessageCachePayload) => Promise<void>
-}
+// 请求映射就是控制台契约的请求那一组，不再另抄一遍。改契约、漏改这里都不可能：这里没有可漏改的
+// 东西。注册侧的类型锚仍然是这个名字，因此二十个 addListener 调用点一处不动。
+export type ConsoleEvents = ConsoleRequests
 
 export interface ConsoleService {
   addEntry(files: Entry.Files, data?: () => unknown): unknown
   addListener<Event extends keyof ConsoleEvents>(event: Event, callback: ConsoleEvents[Event], options?: { authority?: number }): unknown
-  broadcast(type: string, body: unknown, options?: { authority?: number }): unknown
+  // 广播名与载荷都按控制台契约检查。这是这条缝上最坏的失效形态：写错名字完全静默——没有报错也没
+  // 有失败提示，只是实时消息不再出现、小胶囊计数停在旧值，看起来像机器人掉线了。
+  broadcast<Event extends keyof ConsoleBroadcasts>(event: Event, body: ConsoleBroadcastBody<Event>, options?: { authority?: number }): unknown
   // Koishi 的 Console.addListener 只做 `listeners[event] = {...}`，既不返回 disposable
   // 也不随插件 ctx 回收。停用插件后这些回调会继续留在全局 listeners 上并指向已 dispose 的
   // 上下文，因此需要按引用比对后自行摘除。

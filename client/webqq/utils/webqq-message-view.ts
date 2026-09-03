@@ -1,4 +1,4 @@
-import type { WebQQCapsuleData } from '../../entry-state'
+import type { CapsuleSnapshot } from '../../entry-state'
 import type { WebQQForwardItem, WebQQGroupMember, WebQQMessage } from '../types'
 import type { WebQQChatSelection } from './webqq-contact-view'
 
@@ -94,7 +94,7 @@ export function hasOutgoingMessageAfter(messages: WebQQMessage[], timestamp: num
   return messages.some((message) => message.direction === 'outgoing' && message.time >= timestamp)
 }
 
-export function createBotThinkingMessage(capsule: WebQQCapsuleData | undefined, currentChat: WebQQChatSelection | undefined, messages: WebQQMessage[]) {
+export function createBotThinkingMessage(capsule: CapsuleSnapshot | undefined, currentChat: WebQQChatSelection | undefined, messages: WebQQMessage[]) {
   const conversation = capsule?.conversation
   const bot = capsule?.bot
   if (!currentChat || !conversation || !bot || conversation.activityText !== '正在思考') return

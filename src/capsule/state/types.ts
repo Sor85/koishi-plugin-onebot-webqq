@@ -1,3 +1,7 @@
+import type { OneBotRobotProfile } from '../../onebot/types'
+
+// 消息落地时拿到的机器人上下文：这条路径上机器人确实可能没有名字，所以 name 是可选的。
+// 快照里的可用机器人列表不是这个类型，见 CapsuleSnapshot.bots。
 export interface CapsuleBotInput {
   platform: string
   selfId: string
@@ -52,5 +56,7 @@ export interface CapsuleSnapshot {
     received: number
     sent: number
   }
-  bots?: CapsuleBotInput[]
+  // 唯一的生产者是可用机器人列表，那份列表里的机器人一定带名字，所以这里用机器人画像类型而不是
+  // CapsuleBotInput。用后者会让这个字段对现实撒谎，消费点得为一个实际不会出现的情况加兜底。
+  bots?: OneBotRobotProfile[]
 }

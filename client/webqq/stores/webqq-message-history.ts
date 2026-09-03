@@ -1,6 +1,5 @@
 import { nextTick, ref, type Ref } from 'vue'
-import type { WebQQMessage } from '../types'
-import type { WebQQMessageQuery } from '../api/webqq'
+import type { WebQQMessage, WebQQMessageQuery } from '../types'
 import type { WebQQChatSelection } from '../utils/webqq-contact-view'
 import { mergeMessages } from '../utils/webqq-message-view'
 import { readWebQQErrorMessage } from '../utils/webqq-error'

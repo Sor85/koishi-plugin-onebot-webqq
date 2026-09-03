@@ -1,4 +1,5 @@
 import type { ChatCapsuleContext, ConsoleEvents, ConsoleService, DebugLogger } from '../plugin-context'
+import type { ConsoleBroadcastBody, ConsoleBroadcasts } from './console-contract'
 
 // 用来标记「这个监听器属于哪一次 apply」。停用插件时只摘掉本次 apply 注册的回调，
 // 修改插件时新实例的回调带着新 token，旧实例的清理逻辑就不会误删。
@@ -50,8 +51,9 @@ export function createManagedConsole(
     addEntry(files, data) {
       return console.addEntry(files, data)
     },
-    broadcast(type, body, options) {
-      return console.broadcast(type, body, options)
+    // 转发也带上契约的类型参数：少了它这层门面会把广播端的收窄整个吃掉。
+    broadcast<Event extends keyof ConsoleBroadcasts>(event: Event, body: ConsoleBroadcastBody<Event>, options?: { authority?: number }) {
+      return console.broadcast(event, body, options)
     },
     get listeners() {
       return console.listeners

@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
 import type { WebQQStorageBackend } from '../settings'
-import type { ConversationSummary, WebQQChatType, WebQQMessage, WebQQStoredState } from '../types'
+import type { WebQQChatType, WebQQConversationSummary, WebQQMessage, WebQQStoredState } from '../types'
 import {
   getContactSubtitle as getContactSubtitleFromView,
   getContactTime as getContactTimeFromView,
@@ -15,7 +15,7 @@ import {
   persistWebQQStoredState,
 } from '../storage/webqq-storage'
 
-export function setConversationSummary(conversationSummaries: Record<string, ConversationSummary>, type: WebQQChatType, peerId: string, message: WebQQMessage | undefined) {
+export function setConversationSummary(conversationSummaries: Record<string, WebQQConversationSummary>, type: WebQQChatType, peerId: string, message: WebQQMessage | undefined) {
   if (!message) return conversationSummaries
   return {
     ...conversationSummaries,

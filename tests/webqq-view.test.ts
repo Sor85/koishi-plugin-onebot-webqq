@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import type { WebQQCapsuleData } from '../client/entry-state'
-import type { ConversationSummary, WebQQGroupInfo, WebQQMessage } from '../client/webqq/types'
+import type { CapsuleSnapshot } from '../client/entry-state'
+import type { WebQQConversationSummary, WebQQGroupInfo, WebQQMessage } from '../client/webqq/types'
 import { useWebQQContacts } from '../client/webqq/stores/webqq-contacts'
 import { useWebQQGroupInfo } from '../client/webqq/stores/webqq-group-info'
 import { useWebQQForwardDialog } from '../client/webqq/stores/webqq-forward-dialog'
@@ -25,15 +25,14 @@ vi.mock('@koishijs/client', () => ({
 }))
 
 const capsuleView = await readFile(new URL('../client/capsule/Capsule.vue', import.meta.url), 'utf8')
-const capsuleState = await readFile(new URL('../client/capsule/state.ts', import.meta.url), 'utf8')
 const entryState = await readFile(new URL('../client/entry-state.ts', import.meta.url), 'utf8')
 const onebotBots = await readFile(new URL('../client/onebot/bots.ts', import.meta.url), 'utf8')
 const webqqSettings = await readFile(new URL('../client/webqq/settings.ts', import.meta.url), 'utf8')
-const webqqTypes = await readFile(new URL('../client/webqq/types.ts', import.meta.url), 'utf8')
 const clientIndex = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 const clientShell = await readFile(new URL('../client/ClientShell.vue', import.meta.url), 'utf8')
 const onebotSource = await readFile(new URL('../src/onebot/index.ts', import.meta.url), 'utf8')
 const serverWebqqTypesSource = await readFile(new URL('../src/webqq/types.ts', import.meta.url), 'utf8')
+const capsuleSnapshotTypes = await readFile(new URL('../src/capsule/state/types.ts', import.meta.url), 'utf8')
 const webqqView = await readFile(new URL('../client/webqq/WebQQObserver.vue', import.meta.url), 'utf8')
 const webqqFrostedSurface = await readFile(new URL('../client/webqq/utils/webqq-frosted-surface.ts', import.meta.url), 'utf8')
 const webqqApi = await readFile(new URL('../client/webqq/api/webqq.ts', import.meta.url), 'utf8')
@@ -89,7 +88,7 @@ function runGetUnreadText(count: number) {
   return Function('count', `return ${returnExpression}`)(count)
 }
 
-function createCapsuleData(conversation: Partial<WebQQCapsuleData['conversation']> = {}): WebQQCapsuleData {
+function createCapsuleData(conversation: Partial<CapsuleSnapshot['conversation']> = {}): CapsuleSnapshot {
   return {
     bot: {
       platform: 'onebot',
@@ -277,9 +276,6 @@ describe('webqq observer view', () => {
   })
 
   it('renders contacts, groups, message history, and gated send input', () => {
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/contacts')")
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/messages'")
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/send'")
     expect(webqqView).toContain("from './stores/webqq-live-messages'")
     expect(webqqView).not.toContain("receive('onebot-webqq/webqq/message'")
     expect(webqqLiveMessagesStore).toContain("receive('onebot-webqq/webqq/message'")
@@ -295,7 +291,6 @@ describe('webqq observer view', () => {
     expect(webqqSettings).toContain('export const enableWebQQSend = settingsState.enableWebQQSend')
     expect(webqqView).toContain('v-if="enableWebQQSend && currentChat && !selectionMode"')
     expect(webqqView).toContain("'--onebot-webqq-webqq-send-space': `${selectionMode.value ? 64 : webQQSendSpace.value}px`")
-    expect(webqqTypes).toContain("'image' | 'video' | 'file'")
     expect(serverWebqqTypesSource).toContain("'image' | 'video' | 'file'")
     expect(webqqView).toContain("const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'")
     expect(webqqView).toContain('cachedCapsuleBotAvatar.value')
@@ -361,7 +356,7 @@ describe('webqq observer view', () => {
     expect(webqqSources).not.toContain("from '../../capsule")
     expect(webqqView).toContain("import { webQQCapsule as capsule } from '../entry-state'")
     expect(entryState).toContain('export const webQQCapsule = capsule')
-    expect(entryState).toContain('export type WebQQCapsuleData = CapsuleData')
+    expect(entryState).toContain("export type { CapsuleSnapshot } from './capsule/state'")
     expect(webqqMessageListStore).toContain('const botThinkingMessages = ref<Record<string, WebQQMessage>>({})')
     expect(webqqMessageListStore).toContain('function syncBotThinkingMessage()')
     expect(webqqMessageListStore).toContain('createBotThinkingMessage(options.capsule.value, options.currentChat.value, messages.value)')
@@ -383,7 +378,7 @@ describe('webqq observer view', () => {
 
   it('lets capsule conversation data carry group sender metadata', () => {
     const capsuleConversationSource = sourceBetween(
-      capsuleState,
+      capsuleSnapshotTypes,
       'conversation: {',
       '  counters: {',
     )
@@ -394,8 +389,6 @@ describe('webqq observer view', () => {
   })
 
   it('lets WebQQ messages carry ChatLuna affinity badges', () => {
-    expect(webqqTypes).toContain('senderAffinity?: number')
-    expect(webqqTypes).toContain('senderRelationship?: string')
     expect(serverWebqqTypesSource).toContain('senderAffinity?: number')
     expect(serverWebqqTypesSource).toContain('senderRelationship?: string')
   })
@@ -573,7 +566,7 @@ describe('webqq observer view', () => {
   })
 
   it('keeps WebQQ contact selection and header state in a focused store', () => {
-    const conversationSummaries = ref<Record<string, ConversationSummary>>({
+    const conversationSummaries = ref<Record<string, WebQQConversationSummary>>({
       'friend:10000': { summary: '最近消息', time: 2 },
     })
     const hiddenRecentKeys = ref<string[]>([])
@@ -639,9 +632,7 @@ describe('webqq observer view', () => {
     expect(webqqConversationStateStore).toContain('function createWebQQStoredState()')
     expect(webqqConversationStateStore).toContain('async function loadRemoteWebQQStoredState()')
     expect(webqqStorage).toContain("if (storageBackend === 'browser') return")
-    expect(webqqStorage).toContain("send('onebot-webqq/webqq/storage/load')")
     expect(webqqConversationStateStore).toContain('applyWebQQStoredState(stored)')
-    expect(webqqStorage).toContain("send('onebot-webqq/webqq/storage/save', state)")
     expect(webqqConversationStateStore).toContain('persistWebQQStoredState(storageBackend.value, createWebQQStoredState(), storageScope.value)')
     expect(webqqView).toContain('loadRemoteWebQQStoredState()')
   })
@@ -660,8 +651,6 @@ describe('webqq observer view', () => {
     expect(webqqStorage).toContain('async function loadCachedWebQQMessages')
     expect(webqqStorage).toContain('async function saveCachedWebQQMessages')
     expect(webqqStorage).toContain("if (storageBackend === 'koishi')")
-    expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/load'")
-    expect(webqqStorage).toContain("send('onebot-webqq/webqq/messages/cache/save'")
     expect(webqqStorage).toContain('loadBrowserWebQQMessages(type, peerId, scopeId)')
     expect(webqqStorage).toContain('const cachedMessages = messages.slice(-messageCacheLimit)')
     expect(webqqStorage).toContain('saveBrowserWebQQMessages(type, peerId, cachedMessages, messageCacheLimit, scopeId)')
@@ -774,10 +763,8 @@ describe('webqq observer view', () => {
     expect(webqqNoticeMenu).toContain("emit('handle', notice, false)")
     expect(webqqNoticeView).toContain('function sortPendingNotices(items: WebQQNotice[])')
     expect(webqqView).toContain('useWebQQNotices({ requestNotices: requestWebQQNotices, approveNotice: approveWebQQNotice })')
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/notices')")
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/notice-action'")
     expect(webqqNoticesStore).toContain('requestNotices: () => Promise<WebQQNotice[]>')
-    expect(webqqNoticesStore).toContain('approveNotice: (notice: WebQQNotice, approve: boolean) => Promise<void>')
+    expect(webqqNoticesStore).toContain('approveNotice: (notice: HandleableWebQQNotice, approve: boolean) => Promise<void>')
     expect(webqqNoticesStore).toContain('const filteredNotices = computed')
     expect(webqqNoticeMenu).toContain('v-for="notice in notices"')
     expect(webqqNoticeMenu).toContain('onebot-webqq-webqq__notice-card')
@@ -954,7 +941,6 @@ describe('webqq observer view', () => {
     expect(webqqMessageSearchPage).toContain("v-webqq-scrollbar=\"{ tone: 'accent' }\"")
     expect(webqqMessageSearchPage).not.toContain('<Teleport')
     expect(webqqMessageSearchPage).not.toContain('message-search-backdrop')
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/messages/search', query)")
   })
 
   it('attaches the WebQQ overlay scrollbar directive to primary and modal scroll areas', () => {
@@ -1136,27 +1122,20 @@ describe('webqq observer view', () => {
     expect(webqqImagePreviewView).toContain('aria-label="关闭图片预览"')
   })
 
-  it('declares optional completed thinking data on backend and client WebQQ messages', () => {
-    const backendMessageSource = sourceBetween(
+  it('declares optional completed thinking data on WebQQ messages', () => {
+    const messageSource = sourceBetween(
       serverWebqqTypesSource,
       'export interface WebQQMessage {',
       'export interface WebQQLiveMessage',
     )
-    const clientMessageSource = sourceBetween(
-      webqqTypes,
-      'export interface WebQQMessage {',
-      'export interface WebQQLiveMessage',
-    )
 
-    for (const messageSource of [backendMessageSource, clientMessageSource]) {
-      expect(messageSource).toContain('usage?:')
-      expect(messageSource).toContain('thinking?:')
-      expect(messageSource).toContain('content: string')
-      expect(messageSource).toContain('durationMs: number')
-      expect(messageSource).toContain('ttftMs?: number')
-      expect(messageSource).toContain('totalMs?: number')
-      expect(messageSource).toContain('tps?: number')
-    }
+    expect(messageSource).toContain('usage?:')
+    expect(messageSource).toContain('thinking?:')
+    expect(messageSource).toContain('content: string')
+    expect(messageSource).toContain('durationMs: number')
+    expect(messageSource).toContain('ttftMs?: number')
+    expect(messageSource).toContain('totalMs?: number')
+    expect(messageSource).toContain('tps?: number')
   })
 
   it('renders completed thinking below WebQQ messages as a collapsible disclosure', () => {
@@ -1210,7 +1189,7 @@ describe('webqq observer view', () => {
   it('keeps WebQQ message list display state inside a composable', () => {
     const scrollEvents: string[] = []
     const list = useWebQQMessageList({
-      capsule: ref<WebQQCapsuleData | undefined>(createCapsuleData()),
+      capsule: ref<CapsuleSnapshot | undefined>(createCapsuleData()),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
       chatStyle: ref('tim'),
       messageCacheLimit: ref(100),
@@ -1228,7 +1207,7 @@ describe('webqq observer view', () => {
   })
 
   it('keeps the current WebQQ chat thinking bubble when another chat starts thinking', () => {
-    const capsule = ref<WebQQCapsuleData | undefined>(createCapsuleData())
+    const capsule = ref<CapsuleSnapshot | undefined>(createCapsuleData())
     const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
     const list = useWebQQMessageList({
       capsule,
@@ -1259,7 +1238,7 @@ describe('webqq observer view', () => {
 
   it('limits the in-memory current WebQQ message list to the configured cache limit', () => {
     const list = useWebQQMessageList({
-      capsule: ref<WebQQCapsuleData | undefined>(),
+      capsule: ref<CapsuleSnapshot | undefined>(),
       currentChat: ref<WebQQChatSelection | undefined>(createGroupChatSelection()),
       chatStyle: ref('tim'),
       messageCacheLimit: ref(2),
@@ -1442,15 +1421,15 @@ describe('webqq observer view', () => {
   })
 
   it('renders WebQQ recall events and recalled message marks', () => {
-    expect(webqqTypes).toContain('recalled?: boolean')
-    expect(webqqTypes).toContain("event?: {")
-    expect(webqqTypes).toContain("type: 'recall'")
-    expect(webqqTypes).toContain("type: 'recall' | 'poke' | 'mute' | 'reaction'")
-    expect(webqqTypes).toContain('export interface WebQQMessageReactionUser')
-    expect(webqqTypes).toContain('users?: WebQQMessageReactionUser[]')
-    expect(webqqTypes).toContain('reactions?: WebQQMessageReaction[]')
-    expect(webqqTypes).toContain('emojiUrl?: string')
-    expect(webqqTypes).toContain('userAvatar?: string')
+    expect(serverWebqqTypesSource).toContain('recalled?: boolean')
+    expect(serverWebqqTypesSource).toContain("event?: {")
+    expect(serverWebqqTypesSource).toContain("type: 'recall'")
+    expect(serverWebqqTypesSource).toContain("type: 'recall' | 'poke' | 'mute' | 'reaction'")
+    expect(serverWebqqTypesSource).toContain('export interface WebQQMessageReactionUser')
+    expect(serverWebqqTypesSource).toContain('users?: WebQQMessageReactionUser[]')
+    expect(serverWebqqTypesSource).toContain('reactions?: WebQQMessageReaction[]')
+    expect(serverWebqqTypesSource).toContain('emojiUrl?: string')
+    expect(serverWebqqTypesSource).toContain('userAvatar?: string')
     expect(webqqMessageListView).toContain('chatStyle: WebQQChatStyle')
     expect(webqqMessageListView).toContain("message.event")
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__message-event')
@@ -1600,7 +1579,6 @@ describe('webqq observer view', () => {
 
   it('renders WebQQ face elements with QQ emoji images when available', () => {
     expect(serverWebqqTypesSource).toContain('emojiUrl?: string')
-    expect(webqqTypes).toContain('emojiUrl?: string')
     expect(webqqApi).toContain("const emojiUrl = readStringField(value, 'emojiUrl')")
     expect(webqqMessageListView).toContain("element.type === 'face' && element.emojiUrl")
     expect(webqqMessageListView).toContain(':src="withProxy(element.emojiUrl)"')
@@ -1805,7 +1783,6 @@ describe('webqq observer view', () => {
     expect(webqqView).not.toContain('@click="closeGroupInfo"')
     expect(webqqView).not.toContain('function closeGroupInfo()')
     expect(webqqView).toContain('useWebQQGroupInfo(currentChat, { requestGroupInfo: requestCurrentGroupInfo })')
-    expect(webqqApi).toContain("send('onebot-webqq/webqq/group-info'")
     expect(webqqGroupInfoStore).toContain('requestGroupInfo: () => Promise<WebQQGroupInfo>')
     expect(webqqView).toContain('onebot-webqq-webqq__chat-main')
     expect(webqqView).toContain('<WebQQGroupInfoPanel')
@@ -2215,26 +2192,18 @@ describe('webqq observer view', () => {
   })
 
   it('renders playable WebQQ record messages with voice transcription controls', () => {
-    const clientElementSource = sourceBetween(
-      webqqTypes,
-      'export interface WebQQMessageElement {',
-      'export interface WebQQMessageReaction {',
-    )
-    const backendElementSource = sourceBetween(
+    const elementSource = sourceBetween(
       serverWebqqTypesSource,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessageReaction {',
     )
     const missingRequirements = [
-      backendElementSource.includes('duration?: number') && clientElementSource.includes('duration?: number')
+      elementSource.includes('duration?: number')
         ? ''
         : 'WebQQMessageElement 缺少语音时长字段',
-      backendElementSource.includes('transcript?: string') && clientElementSource.includes('transcript?: string')
+      elementSource.includes('transcript?: string')
         ? ''
         : 'WebQQMessageElement 缺少语音转文字字段',
-      webqqApi.includes("send('onebot-webqq/webqq/record/transcribe'")
-        ? ''
-        : '前端 API 缺少语音转文字请求',
       webqqView.includes(':transcribe-record="requestWebQQRecordTranscription"')
         ? ''
         : 'WebQQObserver 没有把语音转文字 API 传给消息列表',
@@ -2279,7 +2248,7 @@ describe('webqq observer view', () => {
 
   it('lets clickable WebQQ quote blocks scroll to the original message in the current list', () => {
     const missingRequirements = [
-      webqqTypes.includes('targetMessageId?: string')
+      serverWebqqTypesSource.includes('targetMessageId?: string')
         ? ''
         : 'WebQQMessageElement 缺少引用目标消息 ID 字段',
       webqqMessageListView.includes(':ref="(element) => setMessageElementRef(message, element)"')
@@ -2312,35 +2281,21 @@ describe('webqq observer view', () => {
   })
 
   it('renders forward message elements as block previews inside WebQQ bubbles', () => {
-    const backendForwardItemSource = sourceBetween(
+    const forwardItemSource = sourceBetween(
       serverWebqqTypesSource,
       'export interface WebQQForwardItem {',
       'export interface WebQQMessageElement {',
     )
-    const clientForwardItemSource = sourceBetween(
-      webqqTypes,
-      'export interface WebQQForwardItem {',
-      'export interface WebQQMessageElement {',
-    )
-    const backendMessageSource = sourceBetween(
+    const messageElementSource = sourceBetween(
       serverWebqqTypesSource,
-      'export interface WebQQMessageElement {',
-      'export interface WebQQMessage {',
-    )
-    const clientMessageSource = sourceBetween(
-      webqqTypes,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessage {',
     )
 
-    expect(backendMessageSource).toContain("'forward'")
-    expect(clientMessageSource).toContain("'forward'")
-    expect(backendMessageSource).toContain('items?:')
-    expect(clientMessageSource).toContain('items?:')
-    expect(backendForwardItemSource).toContain('senderId?: string')
-    expect(backendForwardItemSource).toContain('senderAvatar?: string')
-    expect(clientForwardItemSource).toContain('senderId?: string')
-    expect(clientForwardItemSource).toContain('senderAvatar?: string')
+    expect(messageElementSource).toContain("'forward'")
+    expect(messageElementSource).toContain('items?:')
+    expect(forwardItemSource).toContain('senderId?: string')
+    expect(forwardItemSource).toContain('senderAvatar?: string')
     expect(webqqMessageListView).toContain("run.element.type === 'forward'")
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__forward')
     expect(webqqMessageListView).toContain("run.element.title || '合并转发'")
@@ -2366,30 +2321,22 @@ describe('webqq observer view', () => {
       hasTotalEntryInBubble && hasTotalEntryText ? '' : 'forward bubble shows 查看${items.length}条转发消息 total entry',
       forwardBubbleSource.includes("@click.stop=\"emit('open-forward', run.element)\"") ? '' : 'forward total entry keeps emitting open-forward with run.element',
       forwardBubbleSource.includes("run.element.text || '[合并转发]'") ? '' : 'forward elements without items keep the existing [合并转发] fallback',
-      /webQQ.*Forward.*Preview/i.test(webqqTypes) ? 'forward preview must not add a client state config option' : '',
+      /webQQ.*Forward.*Preview/i.test(serverWebqqTypesSource) ? 'forward preview must not add a client state config option' : '',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
   })
 
   it('renders card message elements as block previews inside WebQQ bubbles', () => {
-    const backendMessageSource = sourceBetween(
+    const messageElementSource = sourceBetween(
       serverWebqqTypesSource,
       'export interface WebQQMessageElement {',
       'export interface WebQQMessage {',
     )
-    const clientMessageSource = sourceBetween(
-      webqqTypes,
-      'export interface WebQQMessageElement {',
-      'export interface WebQQMessage {',
-    )
 
-    expect(backendMessageSource).toContain("'card'")
-    expect(clientMessageSource).toContain("'card'")
-    expect(backendMessageSource).toContain('imageUrl?:')
-    expect(clientMessageSource).toContain('imageUrl?:')
-    expect(backendMessageSource).toContain('source?:')
-    expect(clientMessageSource).toContain('source?:')
+    expect(messageElementSource).toContain("'card'")
+    expect(messageElementSource).toContain('imageUrl?:')
+    expect(messageElementSource).toContain('source?:')
     expect(webqqMessageListView).toContain("run.element.type === 'card'")
     expect(webqqMessageListView).toContain('onebot-webqq-webqq__card')
     expect(webqqMessageView).toContain("element.type !== 'card'")

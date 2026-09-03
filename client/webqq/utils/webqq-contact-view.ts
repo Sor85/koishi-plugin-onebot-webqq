@@ -1,4 +1,4 @@
-import { sortWebQQGroupMembers, type ConversationSummary, type WebQQContacts, type WebQQFriend, type WebQQGroup, type WebQQGroupMember } from '../types'
+import { sortWebQQGroupMembers, type WebQQContacts, type WebQQConversationSummary, type WebQQFriend, type WebQQGroup, type WebQQGroupMember } from '../types'
 
 export type WebQQChatSelection =
   | { type: 'friend'; peerId: string; name: string; subtitle: string; avatar: string }
@@ -118,7 +118,7 @@ export function revealRecentConversation(hiddenKeys: string[], type: WebQQChatSe
 
 export function getRecentItems(
   contacts: WebQQContacts,
-  conversationSummaries: Record<string, ConversationSummary>,
+  conversationSummaries: Record<string, WebQQConversationSummary>,
   hiddenKeys: string[] = [],
 ) {
   const items = new Map<string, WebQQRecentItem>()
@@ -140,15 +140,15 @@ export function getRecentItems(
     .sort((left, right) => (right.time || 0) - (left.time || 0))
 }
 
-export function getContactSummary(conversationSummaries: Record<string, ConversationSummary>, type: WebQQChatSelection['type'], peerId: string) {
+export function getContactSummary(conversationSummaries: Record<string, WebQQConversationSummary>, type: WebQQChatSelection['type'], peerId: string) {
   return conversationSummaries[getChatKey(type, peerId)]
 }
 
-export function getContactSubtitle(conversationSummaries: Record<string, ConversationSummary>, type: WebQQChatSelection['type'], peerId: string, fallback: string) {
+export function getContactSubtitle(conversationSummaries: Record<string, WebQQConversationSummary>, type: WebQQChatSelection['type'], peerId: string, fallback: string) {
   return getContactSummary(conversationSummaries, type, peerId)?.summary || fallback
 }
 
-export function getContactTime(conversationSummaries: Record<string, ConversationSummary>, type: WebQQChatSelection['type'], peerId: string, fallback = 0) {
+export function getContactTime(conversationSummaries: Record<string, WebQQConversationSummary>, type: WebQQChatSelection['type'], peerId: string, fallback = 0) {
   return getContactSummary(conversationSummaries, type, peerId)?.time || fallback
 }
 

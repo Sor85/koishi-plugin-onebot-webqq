@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import type { ConversationSummary, WebQQContacts, WebQQFriend, WebQQGroup } from '../types'
+import type { WebQQContacts, WebQQConversationSummary, WebQQFriend, WebQQGroup } from '../types'
 import {
   createFriendChatSelection,
   createGroupChatSelection,
@@ -15,7 +15,7 @@ import {
 } from '../utils/webqq-contact-view'
 
 export function useWebQQContacts(
-  conversationSummaries: Ref<Record<string, ConversationSummary>>,
+  conversationSummaries: Ref<Record<string, WebQQConversationSummary>>,
   hiddenRecentKeys: Ref<string[]>,
 ) {
   const activeTab = ref<'recent' | 'friends' | 'groups'>('recent')

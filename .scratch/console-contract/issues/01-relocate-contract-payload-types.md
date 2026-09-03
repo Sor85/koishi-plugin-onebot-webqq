@@ -8,16 +8,16 @@
 
 **Blocked by:** 无 — 可以立即开工。
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **参考:** `.scratch/console-contract/spec.md` 的「载荷类型搬家」与「小胶囊广播载荷那处不健全的收窄」；跨端共享 module 不得沾 koishi 这条明线见 ADR 0003；小胶囊依赖 OneBot 是认可的边，见 ADR 0001 的依赖图。
 
-- [ ] 那 4 条存储与缓存请求的载荷类型住进零依赖的 WebQQ 类型 module
-- [ ] 原来的两个 module 改成 re-export，服务端既有消费方的 import 一处不动
-- [ ] 小胶囊快照里机器人列表的元素类型换成机器人画像类型，两端一致
-- [ ] **不要**直接把原来那个输入类型的名字字段收紧成必填——它还给消息输入路径用，那条路径上机器人确实可能没名字
-- [ ] 客户端补上漏抄的那个会话字段
-- [ ] 搬家后这几个类型所在 module 的 import 闭包里仍然没有 koishi 边（本票手工核对即可，守卫测试在 04）
-- [ ] 逐条失效实测：把搬走的类型留在原处、或让新家 import 一个沾 koishi 的兄弟 module 时，能看出后果
-- [ ] 本轮没有任何行为改动，可见与不可见都没有
-- [ ] `yarn typecheck`、`yarn test` 与 `yarn build` 通过
+- [x] 那 4 条存储与缓存请求的载荷类型住进零依赖的 WebQQ 类型 module
+- [x] 原来的两个 module 改成 re-export，服务端既有消费方的 import 一处不动
+- [x] 小胶囊快照里机器人列表的元素类型换成机器人画像类型，两端一致
+- [x] **不要**直接把原来那个输入类型的名字字段收紧成必填——它还给消息输入路径用，那条路径上机器人确实可能没名字
+- [x] 客户端补上漏抄的那个会话字段
+- [x] 搬家后这几个类型所在 module 的 import 闭包里仍然没有 koishi 边（本票手工核对即可，守卫测试在 04）
+- [x] 逐条失效实测：把搬走的类型留在原处、或让新家 import 一个沾 koishi 的兄弟 module 时，能看出后果
+- [x] 本轮没有任何行为改动，可见与不可见都没有
+- [x] `yarn typecheck`、`yarn test` 与 `yarn build` 通过

@@ -1,19 +1,13 @@
 import type { Config } from '../../config'
 import { readConfigValue } from '../../config/spec'
 import { isRecord } from '../../shared/record'
+import type { WebQQConversationSummary, WebQQStoredState } from '../types'
 import { chatCapsuleStorageTable, getWebQQDatabase, type WebQQStorageContext } from './schema'
 import { getWebQQStateStorageId } from './scope'
 
-export interface WebQQConversationSummary {
-  summary: string
-  time: number
-}
-
-export interface WebQQStoredState {
-  conversationSummaries: Record<string, WebQQConversationSummary>
-  conversationUnreadCounts: Record<string, number>
-  hiddenRecentKeys: string[]
-}
+// 载荷类型住在零 koishi 依赖的 ../types 里（本 module 引用了配置入口与数据库机件，控制台契约
+// 不能经由它取类型）。这里 re-export，服务端既有消费方的 import 路径一处不动。
+export type { WebQQConversationSummary, WebQQStoredState } from '../types'
 
 function createEmptyWebQQStoredState(): WebQQStoredState {
   return {

@@ -54,7 +54,7 @@ export function useWebQQLiveMessages(options: {
       (!options.isVisible() || !options.trackingMessages.value)
   }
 
-  const disposeMessageReceive = receive('onebot-webqq/webqq/message', (payload: WebQQLiveMessage) => {
+  const disposeMessageReceive = receive('onebot-webqq/webqq/message', (payload) => {
     options.rememberMessageSenderMetadata(payload.type, payload.peerId, [payload.message])
     options.updateConversationSummary(payload.type, payload.peerId, payload.message)
     if (
@@ -73,7 +73,7 @@ export function useWebQQLiveMessages(options: {
     options.saveCachedMessages(payload.type, payload.peerId, options.messages.value).catch(() => {})
   })
 
-  const disposeRecallReceive = receive('onebot-webqq/webqq/recall', (payload: WebQQRecallPayload) => {
+  const disposeRecallReceive = receive('onebot-webqq/webqq/recall', (payload) => {
     if (!isCurrentChat(payload)) {
       if (shouldIncreaseRecallUnread(payload)) options.increaseUnreadCount(payload.type, payload.peerId)
       saveWebQQRecall(payload).catch(() => {})

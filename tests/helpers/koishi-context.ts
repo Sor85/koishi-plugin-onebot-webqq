@@ -4,6 +4,9 @@ import type { ChatCapsuleContext, ConsoleService, DatabaseService } from '../../
 import type { WebQQMessage } from '../../src/webqq/types'
 
 export type Listener = (...payload: any[]) => void
+// 断言只读广播载荷里的这两个字段。四条广播的载荷是四种互不相干的形状，替身没法用一个既能接住
+// 全部四种、又能直接点出这两个字段的类型，所以记录形状保持宽松，赋给 ConsoleService 时显式放宽
+// 一次。广播名与载荷的收窄由生产代码那一端的 ConsoleService 签名保证，替身不重述一遍。
 export type TestBroadcastBody = {
   message?: WebQQMessage
   conversation?: CapsuleSnapshot['conversation']
@@ -55,7 +58,7 @@ export function createFakeContext(options: { console?: boolean; character?: Chat
       ...(options.logger ? { logger: (_name: string) => options.logger! } : {}),
       console: {
         addEntry,
-        broadcast,
+        broadcast: broadcast as unknown as ConsoleService['broadcast'],
         addListener,
       },
       ...(options.server ? { server: { get: serverGet } } : {}),
