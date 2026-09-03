@@ -896,7 +896,10 @@ describe('webqq observer view', () => {
   })
 
   it('uses a concise friend deletion confirmation description', () => {
-    // 「描述是短的」由确认对话框的挂载断言接管；这里只留文案契约：啰嗦的那句不能从文件任何位置回归。
+    // 观察窗自己没有挂载接缝，这句措辞在本轮的两个接缝上都观测不到：确认对话框的挂载断言只能证明
+    // 「描述会渲染出来」，证不到观察窗拼出的就是这一句。所以这里退回文案片段而不是整条实现语句——
+    // 换插值写法或改 fallback 都不会误报，改措辞才会。
+    expect(webqqView).toContain('确定删除好友「')
     expect(webqqView).not.toContain('此操作将调用真实 OneBot 删除好友接口。')
   })
 
