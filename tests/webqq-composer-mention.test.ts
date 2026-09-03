@@ -38,6 +38,18 @@ async function openMentionMenu(query = '') {
   return wrapper
 }
 
+/** 先点进空输入框打字、再把光标移回文字中间：此时 DOM 偏移比草稿 token 偏移多一个零宽锚点。 */
+async function openMentionMenuMidText() {
+  const wrapper = mountWebQQComposer({ mentionCandidates: groupMentionCandidates })
+  focusComposerEnd(wrapper)
+  await typeIntoComposer(wrapper, '你好世界')
+  const node = composerEditable(wrapper).element.firstChild as Text
+  setDomCaret(node, node.data.indexOf('世'))
+  await typeIntoComposer(wrapper, '@')
+  await flushPromises()
+  return wrapper
+}
+
 describe('WebQQ 输入区提及菜单', () => {
   it('键入 @ 打开菜单并按查询串筛选候选', async () => {
     const wrapper = await openMentionMenu()
@@ -142,6 +154,21 @@ describe('WebQQ 输入区提及菜单', () => {
     await typeIntoComposer(wrapper, '@Ali')
     expect(wrapper.find('.onebot-webqq-webqq__mention-menu').exists()).toBe(false)
     expect(composerText(wrapper)).toBe('@Ali')
+  })
+})
+
+describe('WebQQ 输入区在文字中间提及', () => {
+  it('光标停在文字中间键入 @ 时，候选菜单按空查询串列出全部成员', async () => {
+    const wrapper = await openMentionMenuMidText()
+    expect(mentionOptions(wrapper).map((option) => option.get('strong').text())).toEqual(['Alice', 'Bob'])
+  })
+
+  it('在文字中间选中候选，提及插在光标处而不是偏一位', async () => {
+    const wrapper = await openMentionMenuMidText()
+    await pressComposerKey(wrapper, 'Enter')
+    await flushPromises()
+    expect(composerText(wrapper)).toBe(`你好 @Alice${NBSP}世界`)
+    expect(composerMentions(wrapper)).toEqual([{ id: '20001', name: 'Alice' }])
   })
 })
 

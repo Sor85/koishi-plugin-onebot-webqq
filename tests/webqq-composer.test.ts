@@ -34,6 +34,14 @@ describe('WebQQ 输入区草稿与光标', () => {
     expect(composerText(wrapper)).toBe('')
   })
 
+  it('空草稿里留着一个零宽锚点，点空白处也有光标落点', () => {
+    const wrapper = mountWebQQComposer()
+    const first = composerEditable(wrapper).element.firstChild as Text
+    expect(first.nodeType).toBe(Node.TEXT_NODE)
+    // 锚点必须是唯一的一个零宽字符：多了会算错光标，少了空草稿就点不进去。
+    expect([...first.data].map((char) => char.codePointAt(0))).toEqual([0x200b])
+  })
+
   it('把可编辑区里的输入读回草稿，占位文案随之消失', async () => {
     const wrapper = mountWebQQComposer()
     focusComposerEnd(wrapper)

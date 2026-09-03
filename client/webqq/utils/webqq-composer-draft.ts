@@ -30,6 +30,22 @@ export function createEmptyWebQQComposerDraft(): WebQQComposerDraft {
   return { tokens: [{ type: 'text', text: '' }], tokenIndex: 0, offset: 0 }
 }
 
+/** 空文本 token 在可编辑区里的光标锚点：DOM 需要一个能落光标的字符，草稿 token 不要它。 */
+export const WEBQQ_COMPOSER_CARET_ANCHOR = '​'
+
+const caretAnchorPattern = new RegExp(WEBQQ_COMPOSER_CARET_ANCHOR, 'g')
+
+/**
+ * 可编辑区偏移换成草稿 token 偏移：减掉光标之前的锚点。
+ * 锚点只存在于 DOM 里，`normalizeWebQQComposerTokens` 会把它从 token 文本剥掉，
+ * 不换算就会让 token 偏移比真实光标多出锚点的个数。
+ * 反方向不需要换算：锚点只出现在空文本 token 上，那里唯一合法的偏移就是 0。
+ */
+export function toWebQQComposerTokenOffset(domText: string, domOffset: number) {
+  const before = domText.slice(0, Math.max(0, domOffset))
+  return before.length - (before.match(caretAnchorPattern)?.length ?? 0)
+}
+
 export function isWebQQComposerDraftEmpty(tokens: readonly WebQQComposerDraftToken[]) {
   return !tokens.some((token) => token.type === 'mention' || !!token.text.trim())
 }
@@ -49,7 +65,7 @@ export function normalizeWebQQComposerTokens(tokens: readonly WebQQComposerDraft
       normalized.push({ ...token })
       continue
     }
-    const text = token.text.replace(/​/g, '')
+    const text = token.text.replace(caretAnchorPattern, '')
     const previous = normalized.at(-1)
     if (previous?.type === 'text') previous.text += text
     else normalized.push({ type: 'text', text })

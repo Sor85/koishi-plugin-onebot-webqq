@@ -84,6 +84,8 @@ import {
   normalizeWebQQComposerTokens,
   replaceWebQQComposerTextRange,
   serializeWebQQComposerDraft,
+  toWebQQComposerTokenOffset,
+  WEBQQ_COMPOSER_CARET_ANCHOR,
   type WebQQComposerDraft,
   type WebQQComposerDraftToken,
   type WebQQMentionCandidate,
@@ -243,7 +245,7 @@ function renderComposerDraft(current: WebQQComposerDraft) {
   for (const token of current.tokens) {
     if (token.type === 'text') {
       // 空文本 token 用零宽字符提供可点击的光标锚点；读回草稿时会统一移除。
-      editor.appendChild(document.createTextNode(token.text || '​'))
+      editor.appendChild(document.createTextNode(token.text || WEBQQ_COMPOSER_CARET_ANCHOR))
       continue
     }
     const mention = document.createElement('span')
@@ -338,7 +340,10 @@ function getComposerCaret(tokens = composerDraft.value.tokens) {
   }
 
   let tokenIndex = mapNodeToToken(range.startContainer)
-  let offset = range.startContainer.nodeType === Node.TEXT_NODE ? range.startOffset : 0
+  // DOM 偏移里可能夹着零宽锚点，必须换算成 token 偏移；否则光标停在文字中间时会多算 1。
+  let offset = range.startContainer.nodeType === Node.TEXT_NODE
+    ? toWebQQComposerTokenOffset(range.startContainer.textContent ?? '', range.startOffset)
+    : 0
   const token = tokens[tokenIndex]
   if (token?.type === 'text') {
     offset = Math.min(Math.max(offset, 0), token.text.length)

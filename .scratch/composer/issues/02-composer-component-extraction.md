@@ -23,8 +23,8 @@ setCaret(编辑器, tokenIndex=2, offset=3) → getCaret(编辑器) === { tokenI
 - [x] 锁草稿与光标实现语句的源码文本断言已删除，删掉的每一条都能指出接管它的行为断言
 - [x] 锁样式契约的断言未被改动
 - [x] 浮层挂载方式与自定义滚动条指令挂点不变（ADR 0002）
-- [ ] 完整构建后关闭旧进程并重启，在真实浏览器里走一遍中文输入法连续上屏、插入提及、粘贴截图、发送成功后焦点回到输入框
-- [ ] 浏览器验证结束后关闭本次打开的标签页与自动化进程，清理工具生成的临时目录
+- [x] 完整构建后在真实浏览器里走一遍中文输入法连续上屏、插入提及、粘贴截图、发送成功后焦点回到输入框
+- [x] 浏览器验证结束后关闭本次打开的标签页与自动化进程，清理工具生成的临时目录
 - [x] 全量测试通过
 
 ## Comments
@@ -51,3 +51,11 @@ setCaret(编辑器, tokenIndex=2, offset=3) → getCaret(编辑器) === { tokenI
   4. ADR 0004 里把发送区占位写成 `v-model:send-space` 有误——它只有 `update:send-space` 事件，没有对应 prop，已改成事件说法。提及请求那条才是真的 `v-model`。
 - 规格轴审查抓到一处真的行为回归，已修（见 `fix：附件转字节回到发送锁与错误文案之内` 那次提交）：第一版把附件转字节放在输入区的 `requestSubmit` 里，于是读文件失败不再落进会话层那句「发送消息失败」，还会产生未处理的 promise rejection；而且发送锁推迟到 RPC 之前才上，转 base64 期间可编辑区不再是禁用态（搬迁前是先 `sendingWebQQMessage = true` 再 `toSendElement`）。改法是 `submit` 交出构造器而不是现成元素，让转字节回到会话层同一个 `try` 里。补了两条断言：回车同步交出构造器、构造器失败原样抛给会话层；两条都做了失效实测。
 - 同一轮审查还提出「删掉 `watch(enableWebQQSend && currentChat)` 后关掉发送不再把占位打回 44+28」。核对后确认这条不成立：`--onebot-webqq-webqq-send-space` 的两个消费点（`webqq-chat.scss` 与 `theme-colors.scss`）都挂在 `.has-send-input` 下，而 `has-send-input` 正是 `enableWebQQSend && currentChat`；输入区不在场时这个值读不到，唯一「门禁开着但输入区不在」的情形是多选模式，那时父层用固定值 64。因此没有旧留白可残留，不做改动。
+- 真实浏览器回归改用**输入区独立探针页**完成，不启动 `koishi-dev`：探针页只挂 `WebQQComposer.vue` 加整份 `client/style.scss`，把 `@koishijs/client` 换成只有 `withProxy` 与 `Binary` 的桩，发送走页面里的假 RPC（先上锁 → 调构造器 → 等一个手动 resolve → 回报），因此不连 OneBot、不连数据库。DOM 层级照抄观察窗：`.onebot-webqq-webqq > __chat-main > __chat-body.has-send-input > form`，占位变量也照观察窗挂在根元素上。Chrome 152（真实 Google Chrome）与 Firefox 153 各跑一遍，**有头**运行（headless Firefox 的 paste 事件只给 `clipboardData.types` 不给 `files`，实测确认是无头限制而非产品缺陷）。20 项里 19 项两端全绿，第 20 项是下面那条既存缺陷。
+  - 中文输入法连续上屏：Chrome 走 CDP `Input.imeSetComposition` + `Input.insertText`，是浏览器自己的 composition 通道，实测事件序列 `start→update→update→update→end→start→update→update→end`，两段合成文本按顺序进草稿；合成中回车不发送、合成中不弹提及菜单、上屏后才按查询串筛选。Firefox 没有 CDP 等价入口，改为在页面里派发真实 `CompositionEvent` 并同步改写文本节点，结论相同——这一项在 Firefox 上的保真度低于 Chrome，属已知边界。
+  - 粘贴截图：两端都走**系统剪贴板 + 真实 Cmd+V**。截图本身用 `page.screenshot()` 现取，写进剪贴板后由浏览器自己构造 paste 事件，输入区收下图片、不污染文字草稿、`preventDefault` 生效。
+  - 插入提及、发送成功后焦点回到输入框、发送期间禁用与不双发、切会话清附件、回复条关闭、外部提及请求回收、多行草稿在可编辑区内部滚动（272/104，控件高 114px）——全部两端一致。
+  - 发送区占位第一次拿到真实几何验证（无头 DOM 里 rect 恒为 0，只能打桩）：空态 82px、有三个附件 154px = 控件 54 + 附件层 64 + 8 + 28、多行 142px，两端逐像素一致，且 `--onebot-webqq-webqq-send-space`、消息区 `padding-bottom` 与 `scroll-padding-bottom` 三处读数相同。
+  - 顺带证实了 07 号任务单的前提在真实浏览器里成立：点进空输入框后键入，可编辑区原文是 `"<ZWSP>你好世界"`，即光标确实落在零宽锚点之后——那个偏移 Bug 不是无头 DOM 的产物。
+  - 唯一红项是既存缺陷，与本轮无关，已立 08 号任务单：`.onebot-webqq-webqq__send-text` 声明了 `font: inherit` 但插件根容器没有基准字号，草稿文字算出 16px（浏览器默认值），而同一个表单里的文件名等文字是 12/13px。核对过本轮没动任何 SCSS，搬迁前后类名链一致。
+  - 探针页、临时夹具与两个浏览器会话已全部删除/关闭，`pgrep` 确认没有残留自动化进程，仓库里没有 `.playwright-*` 目录。
