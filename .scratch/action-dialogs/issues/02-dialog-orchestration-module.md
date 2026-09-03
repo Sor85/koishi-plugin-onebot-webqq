@@ -52,3 +52,16 @@
 - 把六个对话框的措辞从观察窗搬进纯函数（`utils/` 里的 view 层），各自直接断言。代价是新增一层，而且只为其中一句搬会让另外五句形态不一致——要做就六句一起。
 - 给观察窗本身立挂载接缝。它从来没被挂载过，替身面很大（控制台 RPC、存储、api module 全要 mock），本票的 Testing Decisions 明确写了「不新造接缝」。
 
+## 真机验证（票面之外，按维护者要求补做）
+
+票面判定本轮不触发生产兼容规则的真机流程（共用 Dialog 零改动）。但本轮确实换掉了两个对话框 `open` 的产生方式（`ref` → 带 setter 的计算值），维护者要求补一次，结果：**Chromium 151 与 Firefox 153 各 27/27 通过**，含遮罩与内容同时存在、内容是元素节点而非注释节点、遮罩被提升到 Top Layer、打开后聚焦、关闭后焦点恢复、Escape / 点遮罩 / 点关闭按钮 / 点内容不关、回车提交立即关闭、确认型处理中禁用与失败留在原地可重试、无 console 与页面级错误。
+
+生产构建产物那半单独核对过：`dist/index.js` 里内容节点是遮罩 children 数组里的直接一项，两者由同一个 `v-if` 创建，结构上不可能只挂遮罩；`DialogPortal` / `DialogOverlay` / Presence 零命中。
+
+**复现配方**（探针是临时的，验完即删，没有进仓库）：在仓库里建一个探针目录，放 `index.html` + `main.ts` + 一个 `.vue`，`.vue` 里直接 `useWebQQActionDialogs` 并把两个对话框的绑定逐字照抄观察窗；`index.html` 只给 body 设 `margin` 与 `font-family`，复刻 Koishi 控制台「不给全局 reset」的条件；Vite 配置把 `@koishijs/client` alias 到一个只提供 `useColorMode` 的本地替身，用同一套 `@vitejs/plugin-vue` 按生产模式 `vite build`，再 `vite preview` 起静态服务；Playwright 分别用 chromium 与 firefox 驱动，断言从 `page.evaluate` 里读真实 DOM 与探针暴露的状态，不看截图。
+
+两个踩过的坑值得记下：
+
+- `vite preview` 只绑 `[::1]`，而机器上另有进程占着同一端口的 IPv4。Chromium 解析到 IPv6 命中探针，Firefox 解析到 IPv4 命中了别人的服务，表现为「Firefox 里页面空白且零报错」。用 `--host 127.0.0.1` 加一个没被占的端口，URL 也写 `127.0.0.1`，别写 `localhost`。
+- 验证过程中发现一个潜伏问题：输入对话框若从**常驻可键盘激活的按钮**打开，Chromium 里回车提交会立刻重开它（焦点恢复 + keypress 激活）。现有三个入口都是右键菜单项所以不受影响，已另立票 `.scratch/dialog-focus-restore/issues/01-enter-resubmit-on-persistent-trigger.md`。
+
