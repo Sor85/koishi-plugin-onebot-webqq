@@ -2,8 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Session } from 'koishi'
 import { describe, expect, it, vi } from 'vitest'
-import type { ChatCapsuleContext, ChatLunaCharacterService, ConsoleEvents, ConsoleService, DatabaseService } from '../src/plugin-context'
-import type { CapsuleSnapshot } from '../src/capsule/state'
+import type { ChatCapsuleContext, ChatLunaCharacterService, ConsoleEvents } from '../src/plugin-context'
 import type { WebQQMessage, WebQQMessageElement } from '../src/webqq/types'
 import { summarizeWebQQElements } from '../src/webqq/message-flow/live-elements'
 import { createWebQQLiveMessage } from '../src/webqq/message-flow/live-message'
@@ -32,6 +31,7 @@ import {
 } from '../src/webqq/message-flow/live-cache'
 import { createMessageInput } from '../src/capsule/message-input'
 import { createPluginRuntime } from '../src/runtime/create-runtime'
+import { createFakeContext, emitAll, type TestLogger } from './helpers/koishi-context'
 
 const dnsMock = vi.hoisted(() => ({
   lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
@@ -71,6 +71,7 @@ const plugin = await import('../src')
 const pluginSource = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
 const runtimeSource = await readFile(new URL('../src/runtime/create-runtime.ts', import.meta.url), 'utf8')
 const runtimeRegisterSource = await readFile(new URL('../src/runtime/register.ts', import.meta.url), 'utf8')
+const messageLandingSource = await readFile(new URL('../src/message-landing.ts', import.meta.url), 'utf8')
 const capsuleRegisterSource = await readFile(new URL('../src/capsule/register.ts', import.meta.url), 'utf8')
 const chatlunaActivitySource = await readFile(new URL('../src/capsule/chatluna-activity.ts', import.meta.url), 'utf8')
 const chatlunaCharacterLockSource = await readFile(new URL('../src/capsule/character-lock.ts', import.meta.url), 'utf8')
@@ -91,86 +92,11 @@ const webqqEventNoticesSource = await readFile(new URL('../src/webqq/notices/eve
 const webqqSessionSource = await readFile(new URL('../src/webqq/message-flow/session.ts', import.meta.url), 'utf8')
 const pluginContextSource = await readFile(new URL('../src/plugin-context.ts', import.meta.url), 'utf8')
 
-type Listener = (...payload: any[]) => void
-type TestBroadcastBody = {
-  message?: WebQQMessage
-  conversation?: CapsuleSnapshot['conversation']
-  [key: string]: unknown
-} | undefined
-type TestLogger = {
-  info: ReturnType<typeof vi.fn>
-}
-
 function findConsoleListener<Event extends keyof ConsoleEvents>(
   addListener: { mock: { calls: Array<[keyof ConsoleEvents, ConsoleEvents[keyof ConsoleEvents], { authority?: number }?]> } },
   event: Event,
 ): ConsoleEvents[Event] | undefined {
   return addListener.mock.calls.find(([name]) => name === event)?.[1] as ConsoleEvents[Event] | undefined
-}
-
-async function emitAll(listeners: Listener[] | undefined, ...payload: unknown[]) {
-  for (const listener of listeners ?? []) {
-    await listener(...payload)
-  }
-}
-
-function createFakeContext(options: { console?: boolean; character?: ChatCapsuleContext['chatluna_character']; schedule?: ChatCapsuleContext['chatluna_schedule']; bots?: unknown[]; server?: boolean; database?: DatabaseService; logger?: TestLogger } = {}) {
-  const listeners: Record<string, Listener[]> = {}
-  const addEntry = vi.fn((_files: unknown, _data?: () => { capsule: CapsuleSnapshot | undefined }) => {})
-  const broadcast = vi.fn((_type: string, _body: TestBroadcastBody, _options?: { authority?: number }) => {})
-  const addListener = vi.fn<ConsoleService['addListener']>((_event, _listener, _options) => {})
-  const serverGet = vi.fn((_path: string, _callback: (ctx: unknown) => unknown) => {})
-  const modelExtend = vi.fn((_table: string, _fields: unknown, _options?: unknown) => {})
-  const hasConsole = options.console ?? true
-
-  const base: Pick<ChatCapsuleContext, 'on' | 'before' | 'setInterval'> = {
-    on(event, listener) {
-      ;(listeners[event] ||= []).push(listener)
-    },
-    before(event, listener) {
-      ;(listeners[`before:${event}`] ||= []).push(listener)
-    },
-    setInterval() {
-      return () => {}
-    },
-  }
-
-  if (hasConsole) {
-    const ctx: ChatCapsuleContext & { console: NonNullable<ChatCapsuleContext['console']>; bots?: unknown[] } = {
-      ...base,
-      ...(options.bots ? { bots: options.bots } : {}),
-      ...(options.logger ? { logger: (_name: string) => options.logger! } : {}),
-      console: {
-        addEntry,
-        broadcast,
-        addListener,
-      },
-      ...(options.server ? { server: { get: serverGet } } : {}),
-      ...(options.character ? { chatluna_character: options.character } : {}),
-      ...(options.schedule ? { chatluna_schedule: options.schedule } : {}),
-      ...(options.database ? { database: options.database, model: { extend: modelExtend } } : {}),
-      inject(services, callback) {
-        if ('console' in services) callback(ctx)
-        if ('chatluna_character' in services && options.character) callback(ctx)
-      },
-    }
-    return { ctx, listeners, addEntry, broadcast, addListener, serverGet, modelExtend }
-  }
-
-  const ctx: ChatCapsuleContext & { bots?: unknown[] } = {
-    ...base,
-    ...(options.bots ? { bots: options.bots } : {}),
-    ...(options.logger ? { logger: (_name: string) => options.logger! } : {}),
-    ...(options.server ? { server: { get: serverGet } } : {}),
-    ...(options.character ? { chatluna_character: options.character } : {}),
-    ...(options.schedule ? { chatluna_schedule: options.schedule } : {}),
-    ...(options.database ? { database: options.database, model: { extend: modelExtend } } : {}),
-    inject(services, callback) {
-      if ('chatluna_character' in services && options.character) callback(ctx)
-    },
-  }
-
-  return { ctx, listeners, addEntry, broadcast, addListener, serverGet, modelExtend }
 }
 
 function createSession(overrides: Record<string, unknown> = {}) {
@@ -315,19 +241,20 @@ describe('chat capsule plugin wiring', () => {
     expect(webqqLiveReactionsSource).not.toContain('id: `reaction:${peer.type}:${peer.peerId}:${time}:${reaction.userId}:${reaction.messageId}`')
   })
 
-  it('keeps message runtime orchestration order in the runtime register module', () => {
+  it('keeps the message listener and its diagnostics wiring in the runtime register module', () => {
     expect(pluginSource).not.toContain("ctx.on('message'")
     expect(capsuleRegisterSource).not.toContain("ctx.on('message'")
     expect(runtimeRegisterSource).toContain("ctx.on('message'")
     expect(runtimeRegisterSource).toContain("logBotStatus('runtime-start'")
     expect(runtimeRegisterSource).toContain("logBotStatus('message-observed'")
     expect(capsuleRegisterSource).toContain("logger?.info('[bot-status-debug] %s %s', source")
-    expect(runtimeRegisterSource.indexOf('webqq.noteBotActivity(session.selfId)'))
-      .toBeLessThan(runtimeRegisterSource.indexOf('capsuleRuntime.recordIncomingMessage(session)'))
-    expect(runtimeRegisterSource.indexOf('capsuleRuntime.recordIncomingMessage(session)'))
-      .toBeLessThan(runtimeRegisterSource.indexOf('await liveRuntime.recordWebQQLiveMessage(session)'))
-    expect(runtimeRegisterSource.indexOf('await liveRuntime.recordWebQQLiveMessage(session)'))
-      .toBeLessThan(runtimeRegisterSource.indexOf("await capsuleRuntime.refreshIdleScheduleActivity('message-schedule', session)"))
+    // 落地流程本身住在扇出 module 里，装配层只接线。次序不在这里断言：它由
+    // tests/message-landing.test.ts 用注入的假实现按运行时事件序列证明（ADR 0009）。
+    expect(runtimeRegisterSource).toContain("from '../message-landing'")
+    expect(runtimeRegisterSource).toContain('createMessageLanding({')
+    expect(runtimeRegisterSource).not.toContain('capsuleRuntime.recordIncomingMessage(session)')
+    expect(runtimeRegisterSource).not.toContain('await liveRuntime.recordWebQQLiveMessage(session)')
+    expect(messageLandingSource).toContain('export function createMessageLanding')
   })
 
   it('keeps WebQQ live element normalization outside the plugin entry', () => {

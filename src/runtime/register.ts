@@ -1,13 +1,14 @@
+import type { Session } from 'koishi'
 import type { Config as PluginConfig } from '../config'
 import { readConfigValue } from '../config/spec'
 import { registerCapsule } from '../capsule/register'
+import { createMessageLanding } from '../message-landing'
 import type {
   ChatCapsuleContext,
   ChatLunaCharacterAfterChatPayload,
 } from '../plugin-context'
 import { readWebQQBotGroupSenderMetadata } from '../webqq/adapters/onebot/group-sender-metadata'
 import { getStringField, isRecord } from '../onebot/data'
-import { isVisibleBotSession } from '../onebot/session'
 import { registerWebQQ } from '../webqq/register'
 import { createPluginRuntime } from './create-runtime'
 
@@ -86,12 +87,9 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
   // 所有 Bot 都如实上报在线时没有探测对象，这个定时器不会产生任何 OneBot 请求。
   ctx.setInterval(() => void probeBotAvailability('interval-probe'), 15 * 1000)
 
-  ctx.on('message', async (session) => {
-    // hidden Bot 仍会发出标准 Koishi 事件；在共享扇出边界阻断，避免胶囊状态和 WebQQ 未读一起被污染。
-    // 纳入虚拟机器人时判据反过来：只有虚拟机器人的事件能进，真实群的消息不进模拟环境。
-    if (!isVisibleBotSession(session, botScope)) return
-    // 诊断数据要遍历全部 bot 并做 JSON 序列化；关闭 debug 时不能为每条消息都算一遍。
-    if (logger) {
+  // 诊断数据要遍历全部 bot 并做 JSON 序列化；关闭 debug 时不能为每条消息都算一遍。
+  const logMessageObserved = logger
+    ? (session: Session) => {
       const matchingContextBots = (ctx.bots ?? []).flatMap((candidate, index) => {
         if (!isRecord(candidate) || getStringField(candidate, ['selfId', 'self_id']) !== session.selfId) return []
         return [{
@@ -112,13 +110,16 @@ export function registerPluginRuntime(ctx: ChatCapsuleContext, config: PluginCon
         serviceBeforeActivity: webqq.getBotStatusDiagnostics(),
       })
     }
-    // 收到真实消息已证明 action 通道至少刚刚可用；先记录活动，再广播 Bot 状态，
-    // 避免适配器仍上报 OFFLINE 时 WebQQ 永久排除该 Bot。
-    webqq.noteBotActivity(session.selfId)
-    capsuleRuntime.recordIncomingMessage(session)
-    await liveRuntime.recordWebQQLiveMessage(session)
-    await capsuleRuntime.refreshIdleScheduleActivity('message-schedule', session)
-  })
+    : undefined
+
+  ctx.on('message', createMessageLanding({
+    botScope,
+    noteBotActivity: webqq.noteBotActivity,
+    recordIncomingMessage: capsuleRuntime.recordIncomingMessage,
+    recordWebQQLiveMessage: liveRuntime.recordWebQQLiveMessage,
+    refreshIdleScheduleActivity: capsuleRuntime.refreshIdleScheduleActivity,
+    ...(logMessageObserved ? { logMessageObserved } : {}),
+  }))
 
   ctx.on('chatluna_character/after-chat', (payload: ChatLunaCharacterAfterChatPayload) => {
     if (readConfigValue(config, 'showWebQQCharacterThinking')) liveRuntime.updateLastOutgoingWebQQThinking(payload)
