@@ -69,3 +69,23 @@ export function clampFloatingPanelPosition(
 export function isFloatingPanelInteractiveTarget(target: EventTarget | null): boolean {
   return typeof Element !== 'undefined' && target instanceof Element && !!target.closest('button, input, textarea, select, [role="button"], a')
 }
+
+/**
+ * 门户页（资料卡、表情选择）的面板级 Escape。
+ * 这两个面板的根节点没有 tabindex，焦点未必落在面板内，`@keydown.esc` 挂在根节点上收不到事件；
+ * 它们的点外面关闭已经走 document 监听，Escape 走同一条路，注册与摘除都跟着现有的挂载钩子。
+ * `dismiss` 是「退掉当前最上层」而不一定是关面板：面板自己有内部层时，先退内部层。
+ */
+export function createFloatingPanelEscapeHandler(options: {
+  isOpen: () => boolean
+  dismiss: () => void
+}): (event: KeyboardEvent) => void {
+  return (event: KeyboardEvent) => {
+    if (!options.isOpen() || event.key !== 'Escape') return
+    // 门户页此刻是最上层：吃掉这一下，否则同一次 Escape 会继续冒到 window，
+    // 顺带触发观察窗那条分支（查找 → 转发目标 → 多选模式 → 回复目标）。
+    event.preventDefault()
+    event.stopPropagation()
+    options.dismiss()
+  }
+}

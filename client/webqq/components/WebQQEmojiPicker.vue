@@ -83,7 +83,7 @@ import {
   searchWebQQEmojiFaces,
   type WebQQEmojiFace,
 } from '../utils/emoji-catalog'
-import { getFloatingPanelStyle, clampFloatingPanelPosition, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
+import { getFloatingPanelStyle, clampFloatingPanelPosition, createFloatingPanelEscapeHandler, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
 
 const props = defineProps<{
   open: boolean
@@ -121,6 +121,12 @@ function closeOnOutsidePointer(event: PointerEvent) {
   emit('update:open', false)
 }
 
+// 表情选择没有内部层：Escape 直接关面板，不先清搜索词。
+const closeOnEscape = createFloatingPanelEscapeHandler({
+  isOpen: () => props.open,
+  dismiss: () => emit('update:open', false),
+})
+
 function startDrag(event: PointerEvent) {
   if (event.button !== 0 || isFloatingPanelInteractiveTarget(event.target) || !panelRef.value) return
   const rect = panelRef.value.getBoundingClientRect()
@@ -150,12 +156,14 @@ function stopDrag(event: PointerEvent) {
 onMounted(() => {
   void showWebQQPopover(panelRef.value)
   document.addEventListener('pointerdown', closeOnOutsidePointer)
+  document.addEventListener('keydown', closeOnEscape)
   document.addEventListener('pointermove', moveDrag)
   document.addEventListener('pointerup', stopDrag)
   document.addEventListener('pointercancel', stopDrag)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  document.removeEventListener('keydown', closeOnEscape)
   document.removeEventListener('pointermove', moveDrag)
   document.removeEventListener('pointerup', stopDrag)
   document.removeEventListener('pointercancel', stopDrag)

@@ -170,7 +170,7 @@ import { Input } from '../../components/ui/input'
 import { enableWebQQFrostedGlass, resolvedWebQQColorMode } from '../settings'
 import { groupProfileCardFields, type ProfileCardEditableField, type ProfileCardModel } from '../utils/profile-card'
 import { showWebQQPopover } from '../utils/webqq-popover'
-import { clampFloatingPanelPosition, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
+import { clampFloatingPanelPosition, createFloatingPanelEscapeHandler, getFloatingPanelStyle, isFloatingPanelInteractiveTarget } from '../utils/floating-panel'
 import type { WebQQSelfProfileUpdate } from '../types'
 
 type SavingField = ProfileCardEditableField | 'avatar'
@@ -253,6 +253,16 @@ function closeOnOutsidePointer(event: PointerEvent) {
   if (panelRef.value?.contains(target)) return
   emit('update:open', false)
 }
+
+// 资料卡有内部层，所以这一下不一定关面板：叫 dismiss 是为了别把「退一层」读成「关面板」。
+const dismissOnEscape = createFloatingPanelEscapeHandler({
+  isOpen: () => props.open,
+  dismiss: () => {
+    // 字段编辑是资料卡的内层：焦点不在编辑框里时按 Escape 也先退出编辑，再按一次才关整张卡。
+    if (editingField.value) return cancelFieldEdit()
+    emit('update:open', false)
+  },
+})
 
 function startDrag(event: PointerEvent) {
   if (event.button !== 0 || isFloatingPanelInteractiveTarget(event.target) || !panelRef.value) return
@@ -338,7 +348,11 @@ function cancelFieldEdit() {
 
 function handleEditorKeydown(event: KeyboardEvent, field: ProfileCardEditableField) {
   if (event.key === 'Enter') saveFieldEdit(field)
-  if (event.key === 'Escape') cancelFieldEdit()
+  if (event.key === 'Escape') {
+    // 编辑框里的这一下只属于内层：必须拦住，否则冒到 document 时编辑态已经退干净，面板会跟着一起关。
+    event.stopPropagation()
+    cancelFieldEdit()
+  }
 }
 
 function saveFieldEdit(field: ProfileCardEditableField) {
@@ -368,6 +382,7 @@ function saveFieldEdit(field: ProfileCardEditableField) {
 onMounted(() => {
   void showWebQQPopover(panelRef.value)
   document.addEventListener('pointerdown', closeOnOutsidePointer)
+  document.addEventListener('keydown', dismissOnEscape)
   document.addEventListener('pointermove', moveDrag)
   document.addEventListener('pointerup', stopDrag)
   document.addEventListener('pointercancel', stopDrag)
@@ -375,6 +390,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  document.removeEventListener('keydown', dismissOnEscape)
   document.removeEventListener('pointermove', moveDrag)
   document.removeEventListener('pointerup', stopDrag)
   document.removeEventListener('pointercancel', stopDrag)
