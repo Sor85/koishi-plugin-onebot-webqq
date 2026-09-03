@@ -239,18 +239,18 @@
     <WebQQProfileCard v-model:open="profileCardOpen" :model="profileCardModel" @save-self-profile="handleSaveSelfProfile" />
     <WebQQConfirmDialog
       v-model:open="confirmDialogOpen"
-      :title="confirmDialogTitle"
-      :description="confirmDialogDescription"
-      :confirm-text="confirmDialogConfirmText"
+      :title="confirmDialogSpec?.title ?? ''"
+      :description="confirmDialogSpec?.description ?? ''"
+      :confirm-text="confirmDialogSpec?.confirmText"
       @confirm="confirmDestructiveAction"
     />
     <WebQQActionDialog
       v-model:open="actionDialogOpen"
-      :title="actionDialogTitle"
-      :description="actionDialogDescription"
-      :placeholder="actionDialogPlaceholder"
-      :value="actionDialogValue"
-      :confirm-text="actionDialogConfirmText"
+      :title="actionDialogSpec?.title ?? ''"
+      :description="actionDialogSpec?.description"
+      :placeholder="actionDialogSpec?.placeholder"
+      :value="actionDialogSpec?.value"
+      :confirm-text="actionDialogSpec?.confirmText"
       @confirm="confirmActionDialog"
     />
     <span v-if="allowWebQQResize" class="onebot-webqq-webqq__resize-zone is-left" aria-hidden="true" @pointerdown.stop.prevent="startWebQQResize('left', $event)"></span>
@@ -308,6 +308,7 @@ import { useWebQQFrostedSurfaceFlag } from './utils/webqq-frosted-surface'
 import type { WebQQMentionCandidate } from './utils/webqq-composer-draft'
 import { applyLocalWebQQReaction, applyLocalWebQQRecall } from './utils/webqq-interaction-state'
 import { buildGroupProfileCardModel, buildProfileCardModelFromProfile, buildUserProfileCardModel, type ProfileCardModel } from './utils/profile-card'
+import { useWebQQActionDialogs } from './stores/webqq-action-dialogs'
 import { useWebQQContacts } from './stores/webqq-contacts'
 import { useWebQQConversationState } from './stores/webqq-conversation-state'
 import { useWebQQGroupInfo } from './stores/webqq-group-info'
@@ -746,18 +747,16 @@ const replyingToMessageId = ref('')
 const reactionPickerMessageId = ref('')
 const profileCardOpen = ref(false)
 const profileCardModel = ref<ProfileCardModel>()
-const actionDialogOpen = ref(false)
-const actionDialogTitle = ref('')
-const actionDialogDescription = ref('')
-const actionDialogPlaceholder = ref('')
-const actionDialogValue = ref('')
-const actionDialogConfirmText = ref('保存')
-let actionDialogSubmit: ((value: string) => void) | undefined
-const confirmDialogOpen = ref(false)
-const confirmDialogTitle = ref('')
-const confirmDialogDescription = ref('')
-const confirmDialogConfirmText = ref('确认')
-let confirmDialogSubmit: (() => Promise<void>) | undefined
+const {
+  actionDialogSpec,
+  confirmDialogSpec,
+  actionDialogOpen,
+  confirmDialogOpen,
+  openActionDialog,
+  openConfirmDialog,
+  confirmActionDialog,
+  confirmDestructiveAction,
+} = useWebQQActionDialogs({ errorText })
 
 const currentOperatorId = computed(() => selectedBotSelfId.value || availableBots.value[0]?.selfId || '')
 const friendMenuStates = computed<Record<string, FriendMenuState>>(() => {
@@ -956,34 +955,6 @@ async function handleSaveSelfProfile(input: { nickname?: string; personalNote?: 
   }
 }
 
-function openActionDialog(input: {
-  title: string
-  description?: string
-  placeholder?: string
-  value?: string
-  confirmText?: string
-  onConfirm: (value: string) => void | Promise<void>
-}) {
-  actionDialogTitle.value = input.title
-  actionDialogDescription.value = input.description || ''
-  actionDialogPlaceholder.value = input.placeholder || ''
-  actionDialogValue.value = input.value || ''
-  actionDialogConfirmText.value = input.confirmText || '保存'
-  actionDialogSubmit = (value: string) => {
-    void Promise.resolve(input.onConfirm(value)).catch((error) => {
-      errorText.value = readWebQQErrorMessage(error, '操作失败')
-    })
-  }
-  actionDialogOpen.value = true
-}
-
-function confirmActionDialog(value: string) {
-  const submit = actionDialogSubmit
-  actionDialogOpen.value = false
-  actionDialogSubmit = undefined
-  submit?.(value)
-}
-
 function openContactProfile(type: 'friend' | 'group', peerId: string) {
   if (type === 'friend') {
     void openUserProfile(peerId)
@@ -1008,33 +979,10 @@ function openRemarkDialog(userId: string) {
     description: '备注只对当前 Bot 视角生效，不会修改对方资料昵称。',
     placeholder: '留空可删除备注',
     value: friend && friend.name !== friend.nickname ? friend.name : '',
-    onConfirm: async (remark) => {
+    submit: async (remark) => {
       await performWebQQFriendAction({ action: 'set-remark', targetId: userId, remark })
       await loadContacts()
     },
-  })
-}
-
-function openConfirmDialog(input: { title: string, description: string, confirmText: string, onConfirm: () => Promise<void> }) {
-  confirmDialogTitle.value = input.title
-  confirmDialogDescription.value = input.description
-  confirmDialogConfirmText.value = input.confirmText
-  confirmDialogSubmit = input.onConfirm
-  confirmDialogOpen.value = true
-}
-
-function confirmDestructiveAction(resolve: () => void, reject: (error: unknown) => void) {
-  const submit = confirmDialogSubmit
-  if (!submit) {
-    reject(new Error('操作已失效'))
-    return
-  }
-  void submit().then(() => {
-    confirmDialogSubmit = undefined
-    resolve()
-  }, (error) => {
-    errorText.value = readWebQQErrorMessage(error, '操作失败')
-    reject(error)
   })
 }
 
@@ -1044,7 +992,7 @@ function confirmDeleteFriend(userId: string) {
     title: '删除好友',
     description: `确定删除好友「${friend?.name || userId}」？`,
     confirmText: '删除好友',
-    onConfirm: async () => {
+    submit: async () => {
       await performWebQQFriendAction({ action: 'delete', targetId: userId })
       await loadContacts()
     },
@@ -1057,7 +1005,7 @@ function confirmLeaveGroup(groupId: string) {
     title: '退出群组',
     description: `确定退出群「${group?.name || groupId}」？`,
     confirmText: '退出群组',
-    onConfirm: async () => {
+    submit: async () => {
       await performWebQQGroupAction({ action: 'leave', groupId })
       await loadContacts()
     },
@@ -1112,7 +1060,7 @@ function openGroupCardDialog(userId: string) {
     description: '留空可以清除当前群名片。',
     placeholder: '输入群名片',
     value: member?.card || '',
-    onConfirm: async (card) => {
+    submit: async (card) => {
       const chat = currentChat.value
       if (!chat || chat.type !== 'group') throw new Error('当前不是群聊')
       await performWebQQGroupAction({ action: 'set-card', groupId: chat.peerId, targetId: userId, card })
@@ -1128,7 +1076,7 @@ function openGroupTitleDialog(userId: string) {
     description: '专属头衔只能由群主授予，留空可以清除当前头衔。',
     placeholder: '输入专属头衔',
     value: member?.title || '',
-    onConfirm: async (title) => {
+    submit: async (title) => {
       const chat = currentChat.value
       if (!chat || chat.type !== 'group') throw new Error('当前不是群聊')
       await performWebQQGroupAction({ action: 'set-title', groupId: chat.peerId, targetId: userId, title })
@@ -1168,7 +1116,7 @@ function handleKickGroupMember(userId: string) {
     title: '踢出群组',
     description: `确定将「${member ? getGroupMemberName(member) : userId}」移出本群？`,
     confirmText: '踢出群组',
-    onConfirm: async () => {
+    submit: async () => {
       await performWebQQGroupAction({
         action: 'kick',
         groupId: chat.peerId,

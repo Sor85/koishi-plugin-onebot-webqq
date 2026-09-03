@@ -896,7 +896,7 @@ describe('webqq observer view', () => {
   })
 
   it('uses a concise friend deletion confirmation description', () => {
-    expect(webqqView).toContain('description: `确定删除好友「${friend?.name || userId}」？`,')
+    // 「描述是短的」由确认对话框的挂载断言接管；这里只留文案契约：啰嗦的那句不能从文件任何位置回归。
     expect(webqqView).not.toContain('此操作将调用真实 OneBot 删除好友接口。')
   })
 
