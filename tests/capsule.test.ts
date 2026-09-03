@@ -43,8 +43,6 @@ describe('chat capsule view', () => {
     expect(capsuleView).toContain('const isHiddenActivity = computed(() => hiddenCapsuleActivityIds.value.includes(currentActivityId.value))')
     expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isHiddenActivity.value)')
     expect(capsuleView).toContain('v-if="shouldShowCapsule"')
-    expect(capsuleState).toContain("const CAPSULE_STATE_KEY = '__onebot_webqq_client_capsule__'")
-    expect(capsuleState).toContain('globalThis')
     expect(capsuleState).toContain('export const hiddenCapsuleActivityIds = capsuleState.hiddenCapsuleActivityIds')
     expect(capsuleState).toContain('export const capsule = capsuleState.capsule')
   })

@@ -1,5 +1,6 @@
 import { send } from '@koishijs/client'
 import { ref, type Ref } from 'vue'
+import { defineCrossInstanceState } from '../shared/cross-instance-state'
 
 export interface OneBotRobotProfile {
   platform: string
@@ -19,8 +20,6 @@ interface OneBotClientState {
   selectedBotSelfId: Ref<string>
 }
 
-const BOT_STATE_KEY = '__onebot_webqq_client_bots__'
-
 function createOneBotClientState(): OneBotClientState {
   return {
     availableBots: ref<OneBotRobotProfile[]>([]),
@@ -28,15 +27,8 @@ function createOneBotClientState(): OneBotClientState {
   }
 }
 
-// portal + Vite @fs 可能让同一 bots.ts 产生多个模块实例；机器人状态必须跨路径共享。
-// 否则 entry data 写入的 selfId 不会到达消息菜单，权限判断会隐藏“贴表情”和“撤回”。
-const botState: OneBotClientState = (() => {
-  const scope = globalThis as typeof globalThis & {
-    [BOT_STATE_KEY]?: OneBotClientState
-  }
-  if (!scope[BOT_STATE_KEY]) scope[BOT_STATE_KEY] = createOneBotClientState()
-  return scope[BOT_STATE_KEY]
-})()
+// 症状：entry data 写入的 selfId 不会到达消息菜单，权限判断会隐藏“贴表情”和“撤回”。
+const botState = defineCrossInstanceState('__onebot_webqq_client_bots__', createOneBotClientState)
 
 export const availableBots = botState.availableBots
 export const selectedBotSelfId = botState.selectedBotSelfId

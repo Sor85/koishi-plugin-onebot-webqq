@@ -1,6 +1,7 @@
 import { useColorMode } from '@koishijs/client'
 import { computed, ref, type Ref } from 'vue'
 import { readConfigDefault, type ConfigValue, type MirroredConfigKey } from '../../src/config/spec'
+import { defineCrossInstanceState } from '../shared/cross-instance-state'
 import { resolveWebQQColorMode } from './utils/webqq-color-mode'
 
 // 取值类型由配置规格统一声明，前端只做转发，避免同一个联合类型在两侧各写一遍。
@@ -32,8 +33,6 @@ type WebQQClientSettingsState = {
   [K in typeof WEBQQ_SETTINGS_KEYS[number]]: Ref<ConfigValue<K>>
 }
 
-const SETTINGS_STATE_KEY = '__onebot_webqq_client_settings__'
-
 function createWebQQClientSettingsState(): WebQQClientSettingsState {
   // ref 初始值全部来自配置规格；前端不再自带一份默认值，也就不会和服务端兜底的那一份分叉。
   return Object.fromEntries(
@@ -41,15 +40,8 @@ function createWebQQClientSettingsState(): WebQQClientSettingsState {
   ) as WebQQClientSettingsState
 }
 
-// portal + Vite @fs 可能把同一源码解析成两个模块实例（node_modules 软链路径 vs 真实源码路径）。
-// 配置镜像必须挂在 globalThis 上，否则 entry apply 写 A 实例、组件读 B 实例，会出现“配置已开但发送栏不显示”。
-const settingsState: WebQQClientSettingsState = (() => {
-  const scope = globalThis as typeof globalThis & {
-    [SETTINGS_STATE_KEY]?: WebQQClientSettingsState
-  }
-  if (!scope[SETTINGS_STATE_KEY]) scope[SETTINGS_STATE_KEY] = createWebQQClientSettingsState()
-  return scope[SETTINGS_STATE_KEY]
-})()
+// 症状：entry apply 写 A 实例、组件读 B 实例，会出现“配置已开但发送栏不显示”。
+const settingsState = defineCrossInstanceState('__onebot_webqq_client_settings__', createWebQQClientSettingsState)
 
 export const enableWebQQFrostedGlass = settingsState.enableWebQQFrostedGlass
 export const enableWebQQSend = settingsState.enableWebQQSend
