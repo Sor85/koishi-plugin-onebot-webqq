@@ -290,7 +290,9 @@ describe('chat capsule styles', () => {
     expect(headerBody).toContain('-webkit-backdrop-filter: saturate(180%) blur(20px)')
     expect(headerBody).toContain('background: color-mix(in srgb, var(--webqq-surface) 92%, transparent)')
     expect(selectTriggerBody).toContain('min-height: 32px')
-    expect(hasRule('.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-select-menu', webqqInteractionsStyle)).toBe(true)
+    // 这条留在整文件 toContain：那个类名在样式源里只作为后代选择器的一节出现，没有自己的规则，
+    // 收紧成存在性就得给参数加上祖先前缀，而改断言参数在这一票的 Out of Scope 里。
+    expect(webqqInteractionsStyle).toContain('.onebot-webqq-webqq__profile-card-select-menu')
     // 资料卡内容相对 48px 顶栏再下沉，避免头像贴边。
     expect(hasRule('.onebot-webqq-webqq__secondary-page.onebot-webqq-webqq__portal-page.onebot-webqq-webqq__profile-card-page > .onebot-webqq-webqq__profile-card', webqqInteractionsStyle)).toBe(true)
     expect(webqqInteractionsStyle).toContain('padding-top: 72px')
@@ -1606,7 +1608,10 @@ describe('chat capsule styles', () => {
 
   it('aligns completed WebQQ thinking after outgoing bubbles instead of the avatar edge', () => {
     expect(ruleDeclarations('.onebot-webqq-webqq__message')).toContain('gap: 8px')
-    expect(ruleBlock('.onebot-webqq-webqq__message')).toContain('flex-direction: row-reverse')
+    // 行方向写在 &.is-outgoing 子规则里，用嵌套查询而不是整块：整块会让「写在任何子规则里都算通过」。
+    expect(
+      ruleDeclarations('&.is-outgoing', ruleBlock('.onebot-webqq-webqq__message')),
+    ).toContain('flex-direction: row-reverse')
     expect(ruleDeclarations('.onebot-webqq-webqq__message')).toContain('--onebot-webqq-webqq-message-avatar-size: 32px')
     expect(ruleDeclarations('.onebot-webqq-webqq__message-avatar')).toContain('width: var(--onebot-webqq-webqq-message-avatar-size)')
     expect(ruleDeclarations('.onebot-webqq-webqq__thinking-row')).toContain('position: relative')

@@ -35,12 +35,14 @@
 
 ### 迁移后的读数
 
-95 个测试全绿。断言的参数没动——只有票里点名要收紧的那些例外：14 条整文件 `toContain(选择器)` 收紧成 `hasRule(…)).toBe(true)`，三处「这条规则不该存在」收紧成 `hasRule(…)).toBe(false)`，另加四条最小正向断言。样式一行没改（`git diff client/ src/` 为空）。
+95 个测试全绿。断言的参数没动——只有票里点名要收紧的那些例外：13 条整文件 `toContain(选择器)` 收紧成 `hasRule(…)).toBe(true)`，三处「这条规则不该存在」的判据改用存在性表达，另加四条最小正向断言。样式一行没改（`git diff client/ src/` 为空）。
 
 ### 三处 live 缺陷各自的处理
 
 - **测空串的死断言**（撤回气泡不该有 `top: 50%`）：选择器 `.onebot-webqq-webqq__message.is-recalled .onebot-webqq-webqq__bubble` 在 `webqq-messages.scss` 里是逗号列表的首项，旧访问器只认「选择器 后跟空格花括号」，永远返回空串。改用会校验前导的访问器后它真的量到了那条规则（本级只有 `opacity: 0.62`），并补了一条最小正向断言。**没有改选择器，也没有改样式。**
 - **子串型冗余的一对**：`.onebot-webqq-webqq__notice-menu--desktop` 与 `…--desktop.is-color-dark` 两条整文件 `toContain`，前者是后者的子串。两条都收紧成 `hasRule`，现在各自独立。
+第 14 条整文件 `toContain(选择器)` 没有收紧：`.onebot-webqq-webqq__profile-card-select-menu` 在样式源里只作为后代选择器的一节出现（`.onebot-webqq-webqq__portal-page .onebot-webqq-webqq__profile-card-select-menu`），没有自己的规则。收紧成存在性就得给参数加上祖先前缀，而「改动任何一条断言的参数」在 Out of Scope 里，所以它留在整文件 `toContain`，理由写在断言旁边。想收紧就得连参数一起改，那是另一票。
+
 - **最大那个样式文件对规则查询不可见**：`webqq-interactions.scss`（1503 行）与 `webqq-box-model.scss`、`webqq-typography.scss` 一起补进默认来源，覆盖率 71% → 100%。四处 `${style}\n${webqqInteractionsStyle}` 之类的临时拼接随之消失。
 
 ### 迁移中发现的第四处 live 缺陷
@@ -104,3 +106,8 @@
 - 读组件单文件组件源码的 24 行断言与 HEAD 逐字一致。
 - 六个旧助手在文件里已经搜不到。
 - `git diff HEAD -- client/ src/` 与 `git diff HEAD -- CONTEXT.md` 均为空。
+
+### 两处越出票面的改动，记在这里备查
+
+- **剥注释的记忆化**。spec 的 Further Notes 写着「速度不是理由……这一票不为性能做任何事」，所以这一处是有意的偏离，理由是它消的不是既有开销而是这一票**自己引入**的回归：唯一性检查让每次查询都要扫一遍来源里的全部花括号，样式守卫从 14ms 涨到 318ms。按来源字符串记忆纯函数的结果之后回到 188ms，剩下的开销是唯一性检查本身，不再优化。要严格守 spec 那句话就该把这 8 行删掉，代价是守卫慢一倍。
+- **全树遍历 `collectClientSources` 进了 module**。票 03 只授权共享剥注释。它服务的是代码评审新加的那条清单完整性守卫（module 声明的样式源清单要与磁盘实况一致），同时消掉了「全部样式源」原有的两份定义。ADR 0011 的「接口要保持窄」约束的是**查询方法**，这个是来源装配不是查询，但确实超出票面。
