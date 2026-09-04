@@ -954,16 +954,9 @@ describe('webqq observer view', () => {
     expect(webqqScrollbarDirective).toContain('function stopEvent(event: Event)')
     expect(webqqScrollbarDirective).toContain('event.stopPropagation()')
     expect(webqqScrollbarDirective).toContain("addListener(thumb, 'click', stopEvent)")
-    expect(webqqScrollbarDirective).toContain(`const thumbEnter = () => {
-      state.hovering = true
-      showScrollbar(state)
-      overlay.classList.add('is-wide')
-    }`)
-    expect(webqqScrollbarDirective).toContain(`const thumbLeave = () => {
-      state.hovering = false
-      if (!state.dragging) overlay.classList.remove('is-wide')
-      scheduleHide(state)
-    }`)
+    // 滑块的进入与离开各自接到判定上；显隐后果由 webqq-scrollbar-visibility 的行为断言执行。
+    expect(webqqScrollbarDirective).toContain("const thumbEnter = () => cue(state, 'pointer-enter-thumb')")
+    expect(webqqScrollbarDirective).toContain("const thumbLeave = () => cue(state, 'pointer-leave-thumb')")
     expect(webqqView).toContain('import { vWebqqScrollbar }')
     expect(webqqView).toContain('ref="messagePane" v-webqq-scrollbar class="onebot-webqq-webqq__messages"')
     expect(webqqView).toContain(":class=\"{ 'is-selecting': selectionMode }\"")
