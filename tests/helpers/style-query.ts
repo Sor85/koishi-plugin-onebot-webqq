@@ -66,21 +66,16 @@ export async function collectClientSources(dir = clientDir): Promise<{ path: str
  * 注释里带花括号和选择器字面量是常态（盒模型基线的注释里就写着 `* { box-sizing }`），
  * 不剥注释的切片器会把注释当成规则前导，或者让断言命中注释里的字面量而不是真的声明。
  *
- * 按来源字符串记忆结果：样式守卫有数百个调用点，绝大多数查的都是同一份来源，
- * 每次都把 20 万字符重扫一遍纯属浪费。剥注释是纯函数，同一份输入必然得到同一份输出。
+ * 每个调用点都重新剥一遍。这里不做记忆化：整套守卫跑在两三百毫秒量级，缓存买不到任何人感觉得到
+ * 的东西，代价是给一层纯函数加上状态。真的慢到要处理时，主要开销是唯一性检查的全量扫描而不是
+ * 这里（见 ADR 0011 的后果）。
  */
-const strippedSources = new Map<string, string>()
-
 export function withoutComments(style: string) {
-  const cached = strippedSources.get(style)
-  if (cached !== undefined) return cached
-  const stripped = style
+  return style
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .filter((line) => !line.trim().startsWith('//'))
     .join('\n')
-  strippedSources.set(style, stripped)
-  return stripped
 }
 
 /** 按顶层逗号切前导选择器：括号里的逗号（`:is(a, b)`、`:not(a, b)`）不是选择器边界。 */
