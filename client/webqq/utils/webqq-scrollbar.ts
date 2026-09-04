@@ -1,4 +1,5 @@
 import type { Directive, DirectiveBinding } from 'vue'
+import { computeVisibleScrollbarRect } from './webqq-scrollbar-track-bounds'
 import {
   applyScrollbarCue,
   createScrollbarVisibility,
@@ -97,17 +98,8 @@ function readAccentColor(element: HTMLElement) {
 }
 
 function getVisibleScrollbarRect(element: HTMLElement) {
-  const rect = element.getBoundingClientRect()
-  const shell = element.closest<HTMLElement>('.onebot-webqq-webqq')?.getBoundingClientRect()
-  if (!shell) return rect
-  return {
-    top: Math.max(rect.top, shell.top),
-    right: Math.min(rect.right, shell.right),
-    bottom: Math.min(rect.bottom, shell.bottom),
-    left: Math.max(rect.left, shell.left),
-    width: Math.max(0, Math.min(rect.right, shell.right) - Math.max(rect.left, shell.left)),
-    height: Math.max(0, Math.min(rect.bottom, shell.bottom) - Math.max(rect.top, shell.top)),
-  }
+  const shellElement = element.closest<HTMLElement>('.onebot-webqq-webqq')
+  return computeVisibleScrollbarRect(element, shellElement ?? undefined)
 }
 
 function updateScrollbar(state: WebQQScrollbarState) {
