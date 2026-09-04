@@ -1,43 +1,15 @@
-import { readdir, readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
+import { collectClientSources, ruleDeclarations, styleSources, withoutComments } from './helpers/style-query'
 
-const clientDir = new URL('../client/', import.meta.url)
+/** 全树扫描的来源：字号野值可能出现在任何 .scss 或单文件组件里，所以不用样式查询的那份清单。 */
+const sweepSources = await collectClientSources()
 
-async function collectStyleSources(dir = clientDir): Promise<{ path: string, text: string }[]> {
-  const entries = await readdir(dir, { withFileTypes: true })
-  const files: { path: string, text: string }[] = []
-  for (const entry of entries) {
-    const child = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir)
-    if (entry.isDirectory()) files.push(...await collectStyleSources(child))
-    else if (entry.name.endsWith('.scss') || entry.name.endsWith('.vue')) {
-      files.push({ path: child.pathname.slice(child.pathname.indexOf('/client/') + 1), text: await readFile(child, 'utf8') })
-    }
-  }
-  return files
-}
+const typographyStyle = styleSources.typography
+const boxModelStyle = styleSources.boxModel
+const styleEntry = styleSources.entry
+const chatStyle = styleSources.chat
 
-const styleSources = await collectStyleSources()
-const source = (name: string) => {
-  const found = styleSources.find((file) => file.path.endsWith(name))
-  if (!found) throw new Error(`没有找到样式源 ${name}`)
-  return found.text
-}
-
-const typographyStyle = source('webqq/styles/webqq-typography.scss')
-const boxModelStyle = source('webqq/styles/webqq-box-model.scss')
-const styleEntry = source('client/style.scss')
-const chatStyle = source('webqq/styles/webqq-chat.scss')
-
-/** 去掉注释再解析：盒模型基线的注释里就带着 `* { box-sizing }` 这样的花括号。 */
-function withoutComments(style: string) {
-  return style
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => !line.trim().startsWith('//'))
-    .join('\n')
-}
-
-/** 取第 ruleIndex 条规则的前导选择器清单。 */
+/** 取第 ruleIndex 条规则的前导选择器清单。排版守卫特有的遍历方式，不进样式查询 module。 */
 function selectorList(style: string, ruleIndex: number) {
   const clean = withoutComments(style)
   const braceIndex = nthIndexOf(clean, '{', ruleIndex)
@@ -114,7 +86,7 @@ describe('WebQQ 字号标度', () => {
 
   it('样式源里的字号一律取自标度令牌，非排版用途必须就地写明理由', () => {
     const offScale: string[] = []
-    for (const { path, text } of styleSources) {
+    for (const { path, text } of sweepSources) {
       const lines = text.split('\n')
       lines.forEach((line, index) => {
         const match = /font-size: *([^;]+);/.exec(line)
@@ -138,9 +110,7 @@ describe('WebQQ 字号标度', () => {
     // 这两处写 font: inherit 是为了压掉 contenteditable 与表单控件自带的字体族；
     // 一旦它们自己声明字号，基准就失去意义，改基准也不会再反映到草稿上。
     for (const selector of ['.onebot-webqq-webqq__send-text', '.onebot-webqq-webqq__send-placeholder']) {
-      const start = chatStyle.indexOf(`${selector} {`)
-      expect(start, `没有找到 ${selector} 的规则`).toBeGreaterThan(-1)
-      const body = chatStyle.slice(start, chatStyle.indexOf('}', start))
+      const body = ruleDeclarations(selector, chatStyle)
       expect(body, `${selector} 需要 font: inherit`).toContain('font: inherit')
       expect(body, `${selector} 不应自己声明字号`).not.toContain('font-size')
     }
