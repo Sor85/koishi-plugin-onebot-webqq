@@ -1,4 +1,4 @@
-import { nextTick, ref, type Ref } from 'vue'
+import { computed, nextTick, ref, type Ref } from 'vue'
 import type { WebQQMessage, WebQQMessageQuery } from '../types'
 import type { WebQQChatSelection } from '../utils/webqq-contact-view'
 import { mergeMessages } from '../utils/webqq-message-view'
@@ -76,22 +76,28 @@ export function useWebQQMessageHistory(options: {
     await scrollLoadedMessagesToBottom()
   }
 
-  function shouldLoadOlderMessages() {
-    const currentChat = options.currentChat.value
-    const pane = options.messagePane.value
-    return !!currentChat &&
-      !!pane &&
-      pane.scrollTop <= 8 &&
-      options.messages.value.length > 0 &&
-      !historyLoading.value &&
-      !historyExhausted.value
-  }
+  /**
+   * 更早历史入口的显示判定。
+   *
+   * 判定里没有滚动位置：更早历史由用户点入口取回，不再由滚动到列表顶端自动发起。自动发起会在
+   * 用户往上翻阅的过程里一页接一页地追加，翻得越久等得越久，而且没有停下的办法。
+   *
+   * 界面上没有消息时不显示入口：那时没有可用的更早边界，`beforeSequence` 会是 undefined，
+   * 请求回来的是最新一页而不是更早一页。
+   */
+  const canLoadOlderMessages = computed(() => !!options.currentChat.value &&
+    options.messages.value.length > 0 &&
+    !historyExhausted.value)
 
   async function loadOlderMessages() {
     const currentChat = options.currentChat.value
     if (!currentChat || historyLoading.value || historyExhausted.value) return
     const pane = options.messagePane.value
+    // 补偿基线要连滚动位置一起记下。入口在列表顶端，但用户点它时 scrollTop 通常不是 0；
+    // 而且这一趟取空历史时入口本身会消失，高度变化量里含着入口那一行的高度。
+    // 只写高度差会把用户拽到列表顶端，把差值加回原位置才让他正在读的那一行留在原处。
     const previousScrollHeight = pane?.scrollHeight ?? 0
+    const previousScrollTop = pane?.scrollTop ?? 0
     historyLoading.value = true
     try {
       const olderMessages = await options.requestMessages({
@@ -102,13 +108,13 @@ export function useWebQQMessageHistory(options: {
       options.rememberMessageSenderMetadata(currentChat.type, currentChat.peerId, olderMessages)
       const previousLength = options.messages.value.length
       const nextMessages = mergeMessages(olderMessages, options.messages.value)
-      // 上滑分页是在扩展当前历史窗口；这里不能套最近消息上限，否则满 100 条后更早页会被立刻裁掉并反复请求同一页。
+      // 取回更早历史是在扩展当前历史窗口；这里不能套最近消息上限，否则满 100 条后更早页会被立刻裁掉并反复请求同一页。
       options.messages.value = nextMessages
       options.updateConversationSummary(currentChat.type, currentChat.peerId, options.messages.value[options.messages.value.length - 1])
       await options.saveCachedMessages(currentChat.type, currentChat.peerId, options.messages.value)
       historyExhausted.value = olderMessages.length === 0 || nextMessages.length === previousLength
       await nextTick()
-      if (pane) pane.scrollTop = pane.scrollHeight - previousScrollHeight
+      if (pane) pane.scrollTop = previousScrollTop + (pane.scrollHeight - previousScrollHeight)
     } catch (error) {
       options.errorText.value = readWebQQErrorMessage(error, '加载更早聊天历史失败')
     } finally {
@@ -120,7 +126,7 @@ export function useWebQQMessageHistory(options: {
     historyLoading,
     historyExhausted,
     loadMessages,
-    shouldLoadOlderMessages,
+    canLoadOlderMessages,
     loadOlderMessages,
   }
 }

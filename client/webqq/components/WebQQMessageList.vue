@@ -12,6 +12,16 @@
     <div class="onebot-webqq-webqq__placeholder">暂无消息</div>
   </template>
   <template v-else>
+    <div v-if="canLoadOlderMessages" class="onebot-webqq-webqq__history-more-row">
+      <button
+        type="button"
+        class="onebot-webqq-webqq__history-more"
+        :disabled="historyLoading"
+        @click="emit('load-older-messages')"
+      >
+        {{ historyLoading ? '加载中...' : '查看更多消息' }}
+      </button>
+    </div>
     <template v-for="(message, index) in visibleMessages" :key="message.id || message.sequence">
       <div v-if="message.event" class="onebot-webqq-webqq__message-event">
         {{ message.summary }}
@@ -497,6 +507,8 @@ const props = withDefaults(defineProps<{
   friendMenuStates?: Record<string, FriendMenuState>
   selectionMode?: boolean
   selectedMessageIds?: string[]
+  canLoadOlderMessages?: boolean
+  historyLoading?: boolean
 }>(), {
   chatType: '',
   currentOperatorId: '',
@@ -504,11 +516,14 @@ const props = withDefaults(defineProps<{
   friendMenuStates: () => ({}),
   selectionMode: false,
   selectedMessageIds: () => [],
+  canLoadOlderMessages: false,
+  historyLoading: false,
 })
 
 const emit = defineEmits<{
   'open-image': [url: string]
   'image-load': []
+  'load-older-messages': []
   'open-forward': [element: WebQQMessageElement]
   'toggle-thinking': [message: WebQQThinkingMessage]
   reply: [messageId: string]

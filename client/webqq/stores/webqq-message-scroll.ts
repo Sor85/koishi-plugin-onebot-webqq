@@ -2,8 +2,6 @@ import { nextTick, ref } from 'vue'
 
 export function useWebQQMessageScroll(options: {
   clearCurrentUnreadCount: () => void
-  shouldLoadOlderMessages: () => boolean
-  loadOlderMessages: () => void
 }) {
   const messagePane = ref<HTMLElement>()
   const trackingMessages = ref(true)
@@ -25,7 +23,6 @@ export function useWebQQMessageScroll(options: {
     }
     trackingMessages.value = atBottom
     if (trackingMessages.value) options.clearCurrentUnreadCount()
-    if (options.shouldLoadOlderMessages()) options.loadOlderMessages()
   }
 
   async function scrollMessagesToBottom(behavior: ScrollBehavior = 'auto') {

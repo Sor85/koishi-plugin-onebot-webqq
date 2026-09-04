@@ -62,6 +62,39 @@
   text-align: center;
 }
 
+/* 更早历史入口：消息列表顶端的居中胶囊按钮，向上滚动才露出来。
+
+   宿主控制台不给表单控件 reset，按钮的字号与字体族必须自己声明：漏掉字号时它会退回浏览器给
+   form control 的默认值（Chrome 是 13.33px 的 -webkit-small-control），和相邻的消息文字对不上。 */
+.onebot-webqq-webqq__history-more-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.onebot-webqq-webqq__history-more {
+  padding: 3px 12px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--k-text-normal, var(--fg2, rgba(40, 40, 44, 0.58)));
+  background: rgba(148, 163, 184, 0.14);
+  font-family: inherit;
+  font-size: var(--onebot-webqq-font-sm);
+  line-height: 18px;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.onebot-webqq-webqq__history-more:hover:not(:disabled),
+.onebot-webqq-webqq__history-more:focus-visible {
+  color: var(--webqq-text, #111827);
+  background: var(--onebot-webqq-webqq-accent-soft);
+  outline: none;
+}
+
+.onebot-webqq-webqq__history-more:disabled {
+  opacity: 0.7;
+}
+
 .onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__message:last-child,
 .onebot-webqq-webqq__chat-body.has-send-input .onebot-webqq-webqq__message-event:last-child {
   margin-bottom: 0;

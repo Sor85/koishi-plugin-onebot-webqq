@@ -2034,17 +2034,12 @@ describe('webqq observer view', () => {
     const events: string[] = []
     const scroll = useWebQQMessageScroll({
       clearCurrentUnreadCount: () => events.push('clear'),
-      shouldLoadOlderMessages: () => {
-        events.push('check')
-        return false
-      },
-      loadOlderMessages: () => events.push('load'),
     })
 
     scroll.trackingMessages.value = false
     scroll.updateMessageTracking()
     expect(scroll.trackingMessages.value).toBe(true)
-    expect(events).toEqual(['clear', 'check'])
+    expect(events).toEqual(['clear'])
 
     events.length = 0
     scroll.returnMessagesToBottom()
@@ -2162,7 +2157,7 @@ describe('webqq observer view', () => {
     const loadMessagesSource = sourceBetween(
       webqqMessageHistoryStore,
       'async function loadMessages()',
-      'function shouldLoadOlderMessages()',
+      'const canLoadOlderMessages = computed(',
     )
 
     expect(loadMessagesSource).not.toContain('options.loading.value = true')
@@ -2412,14 +2407,107 @@ describe('webqq observer view', () => {
     expect(store.forwardDialog.value).toBeUndefined()
   })
 
-  it('loads earlier WebQQ messages when scrolling to the top', () => {
-    expect(webqqView).toContain('useWebQQMessageHistory({')
-    expect(webqqView).toContain('shouldLoadOlderMessages: () => messageHistory.shouldLoadOlderMessages()')
-    expect(webqqMessageHistoryStore).toContain('const historyLoading = ref(false)')
-    expect(webqqMessageHistoryStore).toContain('const historyExhausted = ref(false)')
-    expect(webqqMessageHistoryStore).toContain('function shouldLoadOlderMessages()')
-    expect(webqqMessageHistoryStore).toContain('async function loadOlderMessages()')
-    expect(webqqMessageHistoryStore).toContain('beforeSequence: options.messages.value[0]?.sequence')
+  it('takes earlier WebQQ messages only from the history entry, never from scrolling to the top', () => {
+    // 判定里不能出现滚动位置：出现就说明自动分页回来了，用户往上翻阅时会被一页接一页地追加历史。
+    const canLoadSource = sourceBetween(
+      webqqMessageHistoryStore,
+      'const canLoadOlderMessages = computed(',
+      'async function loadOlderMessages()',
+    )
+    const missingRequirements = [
+      canLoadSource ? '' : '缺少 canLoadOlderMessages 判定',
+      canLoadSource.includes('scrollTop') ? '更早历史入口的判定又看回了滚动位置' : '',
+      webqqMessageScroll.includes('loadOlderMessages') ? '滚动追踪又接回了历史加载' : '',
+      webqqMessageHistoryStore.includes('beforeSequence: options.messages.value[0]?.sequence')
+        ? ''
+        : '更早历史请求没有以界面上最早那条消息为边界',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('shows the WebQQ history entry only while an opened conversation may still have earlier messages', () => {
+    const currentChat = ref<WebQQChatSelection | undefined>(undefined)
+    const messages = ref<WebQQMessage[]>([])
+    const history = useWebQQMessageHistory({
+      currentChat,
+      messages,
+      loading: ref(false),
+      errorText: ref(''),
+      trackingMessages: ref(false),
+      messagePane: ref<HTMLElement>(),
+      requestMessages: async () => [],
+      loadCachedMessages: async () => [],
+      saveCachedMessages: async () => {},
+      messageCacheLimit: ref(100),
+      rememberMessageSenderMetadata: () => {},
+      updateConversationSummary: () => {},
+      scrollMessagesToBottom: async () => {},
+    })
+
+    expect(history.canLoadOlderMessages.value).toBe(false)
+
+    currentChat.value = createGroupChatSelection()
+    // 界面上没有消息时没有可用的更早边界：那时请求回来的是最新一页，不是更早一页。
+    expect(history.canLoadOlderMessages.value).toBe(false)
+
+    messages.value = [createWebQQMessage({ id: 'oldest', sequence: 'oldest', time: 1, summary: 'oldest' })]
+    expect(history.canLoadOlderMessages.value).toBe(true)
+
+    history.historyExhausted.value = true
+    expect(history.canLoadOlderMessages.value).toBe(false)
+  })
+
+  it('keeps the WebQQ message being read in place after taking earlier messages from the entry', async () => {
+    const currentChat = ref<WebQQChatSelection | undefined>(createGroupChatSelection())
+    const messages = ref<WebQQMessage[]>([
+      createWebQQMessage({ id: 'newer', sequence: 'newer', time: 2, summary: 'newer' }),
+    ])
+    // 入口在列表顶端，但用户点它时 scrollTop 不是 0；补偿只写高度差会把他拽到列表顶端。
+    const pane = { scrollTop: 40, scrollHeight: 600 }
+    const history = useWebQQMessageHistory({
+      currentChat,
+      messages,
+      loading: ref(false),
+      errorText: ref(''),
+      trackingMessages: ref(false),
+      messagePane: ref(pane as unknown as HTMLElement),
+      requestMessages: async () => {
+        pane.scrollHeight = 900
+        return [createWebQQMessage({ id: 'older', sequence: 'older', time: 1, summary: 'older' })]
+      },
+      loadCachedMessages: async () => [],
+      saveCachedMessages: async () => {},
+      messageCacheLimit: ref(100),
+      rememberMessageSenderMetadata: () => {},
+      updateConversationSummary: () => {},
+      scrollMessagesToBottom: async () => {},
+    })
+
+    await history.loadOlderMessages()
+
+    expect(pane.scrollTop).toBe(340)
+  })
+
+  it('renders the WebQQ history entry at the top of the message list', () => {
+    const historyEntryRow = webqqMessageListView.match(/<div v-if="canLoadOlderMessages"[\s\S]*?<\/div>/)?.[0] ?? ''
+    const listStart = webqqMessageListView.indexOf('<template v-else>')
+    const missingRequirements = [
+      historyEntryRow ? '' : '缺少更早历史入口',
+      historyEntryRow.includes('onebot-webqq-webqq__history-more-row') ? '' : '更早历史入口没有用自己的命名空间',
+      historyEntryRow.includes('type="button"') ? '' : '更早历史入口不是明确的 button 控件',
+      historyEntryRow.includes(':disabled="historyLoading"') ? '' : '更早历史入口在加载期间没有禁用，会重复发起同一页请求',
+      historyEntryRow.includes("emit('load-older-messages')") ? '' : '更早历史入口没有对外发起加载',
+      historyEntryRow.includes('查看更多消息') ? '' : '更早历史入口缺少文案',
+      listStart >= 0 && webqqMessageListView.indexOf(historyEntryRow) > listStart &&
+        webqqMessageListView.indexOf(historyEntryRow) < webqqMessageListView.indexOf('v-for="(message, index) in visibleMessages"')
+        ? ''
+        : '更早历史入口没有排在消息之前',
+      webqqView.includes('@load-older-messages="loadOlderMessages"') ? '' : '观察窗没有把更早历史入口接到历史加载上',
+      webqqMessagesStyle.includes('.onebot-webqq-webqq__history-more {') ? '' : '更早历史入口缺少样式',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
   })
 
   it('keeps tabs at the top without the WebQQ profile block', () => {

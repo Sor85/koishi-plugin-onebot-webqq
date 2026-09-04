@@ -133,8 +133,11 @@
               :friend-menu-states="friendMenuStates"
               :selection-mode="selectionMode"
               :selected-message-ids="selectedMessageIds"
+              :can-load-older-messages="canLoadOlderMessages"
+              :history-loading="historyLoading"
               @open-image="openImagePreview"
               @image-load="handleMessageImageLoad"
+              @load-older-messages="loadOlderMessages"
               @open-forward="openForwardDialog"
               @toggle-thinking="toggleThinking"
               @reply="setReplyTarget"
@@ -672,7 +675,6 @@ function clearCurrentUnreadCount() {
   clearUnreadCount(currentChat.value.type, currentChat.value.peerId)
 }
 
-let messageHistory: ReturnType<typeof useWebQQMessageHistory>
 const {
   messagePane,
   trackingMessages,
@@ -682,8 +684,6 @@ const {
   returnMessagesToBottom,
 } = useWebQQMessageScroll({
   clearCurrentUnreadCount,
-  shouldLoadOlderMessages: () => messageHistory.shouldLoadOlderMessages(),
-  loadOlderMessages: () => { messageHistory.loadOlderMessages() },
 })
 
 watch(webQQSendSpace, () => {
@@ -1159,7 +1159,7 @@ watch(currentChat, () => {
   profileCardOpen.value = false
 })
 
-messageHistory = useWebQQMessageHistory({
+const messageHistory = useWebQQMessageHistory({
   currentChat,
   messages,
   loading,
@@ -1174,7 +1174,7 @@ messageHistory = useWebQQMessageHistory({
   updateConversationSummary,
   scrollMessagesToBottom,
 })
-const { loadMessages } = messageHistory
+const { loadMessages, historyLoading, canLoadOlderMessages, loadOlderMessages } = messageHistory
 
 // 打开结构化合并转发浮层，按 LLBot 的 modal 方式展示详情。
 function openForwardDialog(element: WebQQMessageElement) {
