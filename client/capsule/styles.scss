@@ -4,13 +4,20 @@
   initial-value: 45px;
 }
 
+// 入口锚点：拖动结果由组件写在 host 的内联自定义属性上，这里只声明默认锚点。
+// 胶囊摘要文字是另一个 position: fixed 节点，靠继承拿到同一份锚点，不各写一份数值。
 .onebot-webqq-host {
   position: fixed;
-  right: 24px;
-  bottom: 56px;
+  right: var(--onebot-webqq-capsule-right, 24px);
+  bottom: var(--onebot-webqq-capsule-bottom, 56px);
   z-index: 10000;
   height: 50px;
   line-height: 0;
+}
+
+// 拖动期间连观察窗一起禁用文本选择：拖到一半选中摘要文字会让后续 pointermove 变成拖选。
+.onebot-webqq-host.is-dragging {
+  user-select: none;
 }
 
 .onebot-webqq-layout-root {
@@ -399,8 +406,8 @@
 
 .onebot-webqq__body {
   position: fixed;
-  right: 24px;
-  bottom: 56px;
+  right: var(--onebot-webqq-capsule-right, 24px);
+  bottom: var(--onebot-webqq-capsule-bottom, 56px);
   z-index: 10001;
   width: 157px;
   height: 50px;

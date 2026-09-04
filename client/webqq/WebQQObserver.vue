@@ -299,7 +299,7 @@ import {
   setWebQQMessageReaction,
   updateWebQQSelfProfile,
 } from './api/webqq'
-import { webQQCapsule as capsule } from '../entry-state'
+import { capsuleAnchor, webQQCapsule as capsule } from '../entry-state'
 import { availableBots, selectedBotSelfId } from '../onebot/bots'
 import { allowWebQQResize, enableWebQQFrostedGlass, enableWebQQSend, hideWebQQGroupLevel, resolvedWebQQColorMode, showWebQQAffinity, showWebQQRelationship, showWebQQThinkingTiming, showWebQQThinkingTokens, webQQAccentColor, webQQChatStyle, webQQMessageCacheLimit, webQQStorageBackend, webQQTimBubbleTail } from './settings'
 import { webQQTotalUnread } from './runtime-state'
@@ -334,6 +334,7 @@ import {
 } from './utils/webqq-message-view'
 import { getGroupSubtitle, type WebQQRecentItem } from './utils/webqq-contact-view'
 import { getWebQQAccentStyle } from './utils/webqq-theme-view'
+import { resolveWebQQPanelAnchor } from './utils/webqq-panel-anchor'
 import { vWebqqScrollbar } from './utils/webqq-scrollbar'
 
 type RecentItem = WebQQRecentItem
@@ -361,6 +362,12 @@ const webQQRoot = ref<HTMLElement>()
 const messageSearchTrigger = ref<HTMLButtonElement>()
 const messageList = ref<{ scrollToMessage: (messageId: string) => boolean }>()
 const webQQShellSize = ref<WebQQShellSize>()
+// 跟随入口锚点要用的两组实测量：观察窗自己的渲染尺寸，以及视口尺寸。
+// 尺寸不能只看 webQQShellSize——它只有开了缩放并且拖过边框才有值，默认形态的宽高来自 CSS 的
+// min() 与 aspect-ratio，只有量出来才知道。v-show 隐藏期间量到 0，此时留空、不接管落位。
+const webQQPanelSize = ref<WebQQShellSize>()
+const webQQViewport = ref<WebQQShellSize>()
+let webQQPanelResizeObserver: ResizeObserver | undefined
 const webQQStorageScope = computed(() => availableBots.value.length > 1 ? selectedBotSelfId.value : '')
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
 const webQQSendAvatarStorageKey = 'onebot-webqq:webqq-send-avatars:v1'
@@ -640,16 +647,45 @@ function loadStoredWebQQShellSize() {
   webQQShellSize.value = clampWebQQShellSize(stored)
 }
 
+function measureWebQQPanelSize() {
+  const rect = webQQRoot.value?.getBoundingClientRect()
+  webQQPanelSize.value = rect?.width && rect.height ? { width: rect.width, height: rect.height } : undefined
+}
+
+function measureWebQQViewport() {
+  if (typeof window === 'undefined') return
+  webQQViewport.value = { width: window.innerWidth, height: window.innerHeight }
+}
+
+function observeWebQQPanelSize() {
+  if (typeof ResizeObserver === 'undefined' || !webQQRoot.value) return
+  webQQPanelResizeObserver = new ResizeObserver(measureWebQQPanelSize)
+  webQQPanelResizeObserver.observe(webQQRoot.value)
+}
+
+// 小胶囊被拖走后观察窗跟着走。没拖动过（锚点为空）时不接管落位：默认锚点与窄屏媒体查询都在
+// 样式表里，JS 再复述一份等价数值只会多一个真相来源。
+const webQQFollowAnchorStyle = computed(() => {
+  const entry = capsuleAnchor.value
+  const panel = webQQPanelSize.value
+  const viewport = webQQViewport.value
+  if (!entry || !panel || !viewport) return {}
+  const anchor = resolveWebQQPanelAnchor({ entry, panel, viewport })
+  return { right: `${anchor.right}px`, bottom: `${anchor.bottom}px` }
+})
+
 const webQQAccentStyle = computed(() => {
   const style = getWebQQAccentStyle(webQQAccentColor.value)
   // 多选模式下输入区整块不渲染，占位取固定值；其余时候用输入区自己观测出来的数字。
   const sendSpaceStyle = {
     '--onebot-webqq-webqq-send-space': `${selectionMode.value ? 64 : webQQSendSpace.value}px`,
   }
-  if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle }
+  const anchorStyle = webQQFollowAnchorStyle.value
+  if (!allowWebQQResize.value || !webQQShellSize.value) return { ...style, ...sendSpaceStyle, ...anchorStyle }
   return {
     ...style,
     ...sendSpaceStyle,
+    ...anchorStyle,
     width: `${webQQShellSize.value.width}px`,
     height: `${webQQShellSize.value.height}px`,
   }
@@ -1325,6 +1361,9 @@ onBeforeUnmount(() => {
   disposeWebQQLiveMessages()
   stopWebQQResize()
   window.removeEventListener('resize', clampCurrentWebQQShellSize)
+  window.removeEventListener('resize', measureWebQQViewport)
+  webQQPanelResizeObserver?.disconnect()
+  webQQPanelResizeObserver = undefined
 })
 
 watch(allowWebQQResize, (enabled) => {
@@ -1335,6 +1374,8 @@ watch(allowWebQQResize, (enabled) => {
 watch(() => props.visible, (visible) => {
   if (!visible) return
   clearCurrentUnreadCount()
+  // 隐藏期间量不到尺寸，显示的那一帧要立刻补量，否则跟随落位会晚一帧。
+  void nextTick(measureWebQQPanelSize)
   if (trackingMessages.value) scrollMessagesToBottom()
 })
 
@@ -1380,6 +1421,10 @@ watch(() => capsule.value?.bot, (bot) => {
 onMounted(async () => {
   window.addEventListener('keydown', handleSelectionKeydown)
   window.addEventListener('resize', clampCurrentWebQQShellSize)
+  window.addEventListener('resize', measureWebQQViewport)
+  measureWebQQViewport()
+  measureWebQQPanelSize()
+  observeWebQQPanelSize()
   await loadRemoteWebQQStoredState()
   await loadContacts()
 })

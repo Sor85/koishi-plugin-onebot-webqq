@@ -38,7 +38,7 @@ describe('chat capsule view', () => {
 
   it('hides the capsule on configured activity pages', () => {
     expect(capsuleView).toContain("import { Universal, activities, router, store, withProxy } from '@koishijs/client'")
-    expect(capsuleView).toContain("import { capsule, hiddenCapsuleActivityIds } from './state'")
+    expect(capsuleView).toContain("import { capsule, capsuleAnchor, hiddenCapsuleActivityIds } from './state'")
     expect(capsuleView).toContain("const currentActivityId = computed(() => router.currentRoute.value.meta?.activity?.id || '')")
     expect(capsuleView).toContain('const isHiddenActivity = computed(() => hiddenCapsuleActivityIds.value.includes(currentActivityId.value))')
     expect(capsuleView).toContain('const shouldShowCapsule = computed(() => isLoggedIn.value && !isHiddenActivity.value)')
@@ -151,6 +151,85 @@ describe('chat capsule view', () => {
         && !capsuleView.includes('if (hasMultipleBots.value) return')
         ? ''
         : '多机器人场景点击胶囊非头像区域时，应在当前 bot 头像上显示引导光圈',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('lets the whole capsule be dragged to a new anchor', () => {
+    const dragHandleCount = capsuleView.match(/@pointerdown="startCapsuleDrag"/g)?.length ?? 0
+    const missingRequirements = [
+      capsuleView.includes("import { clampCapsuleAnchor, normalizeCapsuleAnchorPosition, type CapsuleAnchor } from './capsule-anchor'")
+        ? ''
+        : '拖动没有复用入口锚点的判定模块',
+      capsuleView.includes('const CAPSULE_DRAG_THRESHOLD = 4')
+        && capsuleView.includes('if (Math.hypot(deltaX, deltaY) < CAPSULE_DRAG_THRESHOLD) return')
+        ? ''
+        : '拖动缺少位移阈值，阈值内的松手会被当成拖动，头像点不开观察窗',
+      // 把手挂在 layout root 与摘要文字上，而不是 host：观察窗是 host 的插槽子节点，
+      // 挂在 host 上会让观察窗内部的每一次 pointerdown 都变成拖胶囊。
+      dragHandleCount === 2
+        && capsuleView.includes('class="onebot-webqq-layout-root" @pointerdown="startCapsuleDrag"')
+        && capsuleView.includes('`is-color-${resolvedWebQQColorMode}`]" @pointerdown="startCapsuleDrag"')
+        && !capsuleView.includes('class="onebot-webqq-host" @pointerdown')
+        ? ''
+        : '拖动把手应只覆盖头像区与胶囊摘要文字，不能挂在容纳观察窗的 host 上',
+      capsuleView.includes('right: session.startAnchor.right - deltaX')
+        && capsuleView.includes('bottom: session.startAnchor.bottom - deltaY')
+        ? ''
+        : '拖动位移方向不对：right/bottom 量的是到视口右缘、下缘的距离',
+      capsuleView.includes('function measureCapsuleAnchor(): CapsuleAnchor | undefined')
+        && capsuleView.includes('right: window.innerWidth - rect.right')
+        && capsuleView.includes('bottom: window.innerHeight - rect.bottom')
+        ? ''
+        : '拖动起点没有实测当前锚点，窄屏默认值或展开态宽度会被算错',
+      capsuleView.includes("window.addEventListener('pointermove', handleCapsuleDragMove)")
+        && capsuleView.includes("window.addEventListener('pointerup', stopCapsuleDrag)")
+        && capsuleView.includes("window.addEventListener('pointercancel', stopCapsuleDrag)")
+        && capsuleView.includes("window.removeEventListener('pointermove', handleCapsuleDragMove)")
+        && capsuleView.includes("window.removeEventListener('pointerup', stopCapsuleDrag)")
+        && capsuleView.includes("window.removeEventListener('pointercancel', stopCapsuleDrag)")
+        ? ''
+        : '拖动会话没有在 window 上收发指针事件或没有摘除监听',
+      capsuleView.includes("capsuleHost.value?.addEventListener('click', blockCapsuleClick, true)")
+        && capsuleView.includes("capsuleHost.value?.removeEventListener('click', blockCapsuleClick, true)")
+        && capsuleView.includes('releaseCapsuleClickSuppression()')
+        ? ''
+        : '拖完那一下的 click 没有在 host 捕获阶段被吃掉，松手会顺带开观察窗或切机器人',
+      capsuleView.includes('if (!session.dragging) return\n  suppressCapsuleClickAfterDrag()')
+        ? ''
+        : '没拖动过的松手不应该拦截点击',
+      capsuleView.includes("const capsuleAnchorStorageKey = 'onebot-webqq:capsule-anchor:v1'")
+        && capsuleView.includes('JSON.stringify({ right: anchor.right, bottom: anchor.bottom })')
+        && capsuleView.includes('normalizeCapsuleAnchorPosition(JSON.parse(localStorage.getItem(capsuleAnchorStorageKey)')
+        ? ''
+        : '入口位置没有按浏览器记住，或把宽高一起存了进去',
+      capsuleView.includes('capsuleAnchor.value = clampCapsuleAnchor({ ...measured, ...stored }, getCapsuleViewport())')
+        && capsuleView.includes('if (capsuleAnchor.value) return')
+        && capsuleView.includes('void nextTick(restoreCapsuleAnchor)')
+        ? ''
+        : '恢复存下来的位置时没有夹回当前视口，或隐藏后重新出现时没有补一次恢复',
+      capsuleView.includes("window.addEventListener('resize', clampCapsuleAnchorToViewport)")
+        && capsuleView.includes("window.removeEventListener('resize', clampCapsuleAnchorToViewport)")
+        ? ''
+        : '视口变化时没有把已经贴边的入口夹回屏幕内',
+      capsuleView.includes("'is-dragging': capsuleDragging")
+        ? ''
+        : '拖动期间没有输出状态类名，摘要文字会被拖选',
+      capsuleView.includes("'--onebot-webqq-capsule-right': `${anchor.right}px`")
+        && capsuleView.includes("'--onebot-webqq-capsule-bottom': `${anchor.bottom}px`")
+        && capsuleStyle.includes('right: var(--onebot-webqq-capsule-right, 24px)')
+        && capsuleStyle.includes('bottom: var(--onebot-webqq-capsule-bottom, 56px)')
+        ? ''
+        : '拖动结果没有经 host 上的自定义属性下发给胶囊摘要文字',
+      capsuleState.includes('capsuleAnchor: Ref<CapsuleAnchor | undefined>')
+        && capsuleState.includes('export const capsuleAnchor = capsuleState.capsuleAnchor')
+        ? ''
+        : '入口锚点没有进小胶囊领域的跨实例状态，观察窗读不到',
+      capsuleView.includes('event.preventDefault()\n  // right/bottom 量的是到视口右缘、下缘的距离')
+        && !capsuleView.includes('function startCapsuleDrag(event: PointerEvent) {\n  event.preventDefault()')
+        ? ''
+        : 'pointerdown 不能拦默认行为：头像栈的折叠状态机依赖这次聚焦；阈值之后才拦',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -284,7 +363,7 @@ describe('chat capsule view', () => {
         && capsuleStyle.includes('width: var(--onebot-webqq-stack-expanded-width')
         && capsuleStyle.includes('.onebot-webqq__body')
         && capsuleStyle.includes('position: fixed')
-        && capsuleStyle.includes('right: 24px')
+        && capsuleStyle.includes('right: var(--onebot-webqq-capsule-right, 24px)')
         && capsuleStyle.includes('width: 157px')
         ? ''
         : '头像展开时胶囊和头像组没有同步向左扩张，或正文没有固定右锚点',

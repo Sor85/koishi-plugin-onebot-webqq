@@ -413,7 +413,7 @@ describe('chat capsule styles', () => {
     const transition = ruleDeclarations('.onebot-webqq-tooltip-enter-active')
 
     expect(body).toContain('position: fixed')
-    expect(body).toContain('right: 24px')
+    expect(body).toContain('right: var(--onebot-webqq-capsule-right, 24px)')
     expect(conversationActivity).toContain('display: flex')
     expect(conversationActivity).toContain('align-items: center')
     expect(activityAffix).toContain('flex-shrink: 0')
@@ -448,8 +448,8 @@ describe('chat capsule styles', () => {
     const title = ruleDeclarations('.onebot-webqq__title', titleRule)
 
     expect(body).toContain('position: fixed')
-    expect(body).toContain('right: 24px')
-    expect(body).toContain('bottom: 56px')
+    expect(body).toContain('right: var(--onebot-webqq-capsule-right, 24px)')
+    expect(body).toContain('bottom: var(--onebot-webqq-capsule-bottom, 56px)')
     expect(body).toContain('width: 157px')
     expect(body).toContain('height: 50px')
     expect(body).toContain('padding: 7px 12px')
@@ -488,8 +488,8 @@ describe('chat capsule styles', () => {
     const botSwitch = ruleBlock('.onebot-webqq__bot-switch', botSwitchRule)
 
     expect(host).toContain('position: fixed')
-    expect(host).toContain('right: 24px')
-    expect(host).toContain('bottom: 56px')
+    expect(host).toContain('right: var(--onebot-webqq-capsule-right, 24px)')
+    expect(host).toContain('bottom: var(--onebot-webqq-capsule-bottom, 56px)')
     expect(host).toContain('height: 50px')
     expect(host).toContain('line-height: 0')
     expect(ruleDeclarations('.onebot-webqq-layout-root')).toContain('position: relative')
@@ -553,8 +553,29 @@ describe('chat capsule styles', () => {
     expect(ruleBlock('@media (prefers-reduced-motion: reduce)')).toContain('.onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow-label')
     expect(narrowBody).not.toContain('.onebot-webqq {\n    right: 16px;\n    bottom: 52px;')
     expect(narrowBody).toContain('.onebot-webqq-host,\n  .onebot-webqq__body')
-    expect(narrowBody).toContain('right: 16px')
-    expect(narrowBody).toContain('bottom: 52px')
+    expect(narrowBody).toContain('right: var(--onebot-webqq-capsule-right, 16px)')
+    expect(narrowBody).toContain('bottom: var(--onebot-webqq-capsule-bottom, 52px)')
+  })
+
+  it('drives both capsule nodes from one draggable anchor', () => {
+    const host = ruleDeclarations('.onebot-webqq-host', capsuleStyle)
+    const body = ruleDeclarations('.onebot-webqq__body', capsuleStyle)
+    const dragging = ruleDeclarations('.onebot-webqq-host.is-dragging', capsuleStyle)
+    const narrowBody = ruleBlock('@media screen and (max-width: 768px)')
+
+    // 两个节点各自 position: fixed，但必须读同一对自定义属性、给同一组默认值，
+    // 否则拖动时头像和摘要文字会分家。
+    for (const declarations of [host, body]) {
+      expect(declarations).toContain('right: var(--onebot-webqq-capsule-right, 24px)')
+      expect(declarations).toContain('bottom: var(--onebot-webqq-capsule-bottom, 56px)')
+    }
+    expect(narrowBody).toContain('.onebot-webqq-host,\n  .onebot-webqq__body')
+    expect(narrowBody).toContain('right: var(--onebot-webqq-capsule-right, 16px)')
+    expect(dragging).toContain('user-select: none')
+    // 拖动位置只走自定义属性：外壳与观察窗都不该再写死默认锚点。
+    expect(ruleDeclarations('.onebot-webqq')).not.toContain('right:')
+    expect(capsuleStyle).not.toContain('transition: right')
+    expect(capsuleStyle).not.toContain('transition: bottom')
   })
 
   it('keeps the main capsule compact without usage rows', () => {

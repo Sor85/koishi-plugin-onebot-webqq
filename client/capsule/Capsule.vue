@@ -1,6 +1,6 @@
 <template>
-  <div v-if="shouldShowCapsule" ref="capsuleHost" class="onebot-webqq-host" :style="capsuleHostStyle">
-    <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root">
+  <div v-if="shouldShowCapsule" ref="capsuleHost" :class="['onebot-webqq-host', { 'is-dragging': capsuleDragging }]" :style="capsuleHostStyle">
+    <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root" @pointerdown="startCapsuleDrag">
       <div
         :class="['onebot-webqq', enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain', `is-color-${resolvedWebQQColorMode}`, {
           'is-bot-stack-expanded': botStackVisualExpanded,
@@ -101,7 +101,7 @@
         </div>
       </div>
     </div>
-    <div :class="['onebot-webqq__body', `is-color-${resolvedWebQQColorMode}`]" @click="showWebQQAvatarGuide()">
+    <div :class="['onebot-webqq__body', `is-color-${resolvedWebQQColorMode}`]" @pointerdown="startCapsuleDrag" @click="showWebQQAvatarGuide()">
       <div class="onebot-webqq__title-line">
         <div
           ref="titleRef"
@@ -152,13 +152,18 @@ import { animate, createLayout, type AutoLayout } from 'animejs'
 import { debug, enableCapsuleFrostedGlass, resolvedWebQQColorMode, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
 import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
-import { capsule, hiddenCapsuleActivityIds } from './state'
+import { clampCapsuleAnchor, normalizeCapsuleAnchorPosition, type CapsuleAnchor } from './capsule-anchor'
+import { capsule, capsuleAnchor, hiddenCapsuleActivityIds } from './state'
 
 const BOT_STACK_ANIMATION_DURATION = 260
 const BOT_AVATAR_OVERLAP_COLLAPSED_CENTER = 45
 const BOT_AVATAR_OVERLAP_EXPANDED_CENTER = 52
+// 位移阈值：整枚小胶囊都是拖动把手，头像同时还要能点开观察窗、切换机器人，
+// 因此指针必须先明确移动够远才算拖动，阈值以内松手仍然走原来的点击路径。
+const CAPSULE_DRAG_THRESHOLD = 4
 
 const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
+const capsuleAnchorStorageKey = 'onebot-webqq:capsule-anchor:v1'
 const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
 const webQQAvatarGuideVisible = ref(false)
 const capsuleHost = ref<HTMLElement>()
@@ -181,6 +186,15 @@ const titleOverflow = ref(false)
 const activityOverflow = ref(false)
 const capsuleTooltipTarget = ref<'title' | 'activity'>()
 const tooltipLeft = ref(0)
+interface CapsuleDragSession {
+  readonly pointerId: number
+  readonly startX: number
+  readonly startY: number
+  readonly startAnchor: CapsuleAnchor
+  dragging: boolean
+}
+let capsuleDragSession: CapsuleDragSession | undefined
+const capsuleDragging = ref(false)
 let webQQAvatarGuideTimer: ReturnType<typeof setTimeout> | undefined
 let botStackLayout: AutoLayout | undefined
 let botStackOverflowMotionTimer: ReturnType<typeof setTimeout> | undefined
@@ -210,7 +224,18 @@ const collapsedBotStackWidth = computed(() => 42 + Math.max(0, collapsedBotVisib
 const expandedBotStackWidth = computed(() => 42 + Math.max(0, botStackBots.value.length - 1) * 31)
 const displayBotName = computed(() => displayBotProfile.value?.name || cachedBotProfile.value.name || '空闲')
 const displayBotAvatar = computed(() => displayBotProfile.value?.avatar || cachedBotProfile.value.avatar || '')
-const capsuleHostStyle = computed(() => getWebQQAccentStyle(webQQAccentColor.value))
+const capsuleHostStyle = computed(() => {
+  const accentStyle = getWebQQAccentStyle(webQQAccentColor.value)
+  const anchor = capsuleAnchor.value
+  if (!anchor) return accentStyle
+  // 胶囊摘要文字是另一个 position: fixed 节点，但它在 host 的继承树里，因此拖动结果用自定义属性下发，
+  // 一处写入两处生效。没拖动过时属性不存在，样式表里的默认锚点和窄屏媒体查询照旧生效。
+  return {
+    ...accentStyle,
+    '--onebot-webqq-capsule-right': `${anchor.right}px`,
+    '--onebot-webqq-capsule-bottom': `${anchor.bottom}px`,
+  }
+})
 const capsuleStyle = computed(() => {
   if (!hasMultipleBots.value) return {}
   return {
@@ -461,6 +486,135 @@ function observeCapsuleTextOverflow() {
   if (activityUserRef.value) capsuleTextResizeObserver.observe(activityUserRef.value)
 }
 
+function getCapsuleViewport() {
+  return { width: window.innerWidth, height: window.innerHeight }
+}
+
+// 锚点的当前值只能量出来，不能假定 24/56：窄屏媒体查询给的是另一组默认值，
+// 而且头像栈展开时 host 会变宽，夹取边界要用当前实际宽高。
+function measureCapsuleAnchor(): CapsuleAnchor | undefined {
+  const host = capsuleHost.value
+  if (!host || typeof window === 'undefined') return
+  const rect = host.getBoundingClientRect()
+  return {
+    right: window.innerWidth - rect.right,
+    bottom: window.innerHeight - rect.bottom,
+    width: rect.width,
+    height: rect.height,
+  }
+}
+
+function readStoredCapsuleAnchorPosition() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    return normalizeCapsuleAnchorPosition(JSON.parse(localStorage.getItem(capsuleAnchorStorageKey) || 'null'))
+  } catch {
+    return
+  }
+}
+
+function persistCapsuleAnchor(anchor: CapsuleAnchor) {
+  if (typeof localStorage === 'undefined') return
+  try {
+    // 只存位置：宽高每次重新量，存下来会在机器人数量变化后按过期尺寸算夹取边界。
+    localStorage.setItem(capsuleAnchorStorageKey, JSON.stringify({ right: anchor.right, bottom: anchor.bottom }))
+  } catch {}
+}
+
+function restoreCapsuleAnchor() {
+  // 已经有锚点就不再读存储：此时运行时值可能刚被视口夹取过，回填旧值会把胶囊弹回屏幕外。
+  if (capsuleAnchor.value) return
+  const stored = readStoredCapsuleAnchorPosition()
+  const measured = measureCapsuleAnchor()
+  if (!stored || !measured) return
+  capsuleAnchor.value = clampCapsuleAnchor({ ...measured, ...stored }, getCapsuleViewport())
+}
+
+// 视口变小会把已经贴边的入口挤出屏幕。这里只夹取运行时锚点、不写回存储：窗口拉回来后重载，
+// 用户原来选的位置还在。
+function clampCapsuleAnchorToViewport() {
+  const anchor = capsuleAnchor.value
+  if (!anchor) return
+  const measured = measureCapsuleAnchor()
+  capsuleAnchor.value = clampCapsuleAnchor({
+    ...anchor,
+    width: measured?.width ?? anchor.width,
+    height: measured?.height ?? anchor.height,
+  }, getCapsuleViewport())
+}
+
+// 拖完那一下必然还会派发一次 click（pointerdown 与 pointerup 都落在胶囊内），必须吃掉，
+// 否则松手瞬间会顺带打开观察窗或切换机器人。挂在 host 的捕获阶段，而不是在三个 click handler 里
+// 各加一个判断：头像按钮、头像栈按钮和摘要文字共用 host 这个祖先，捕获阶段先于它们触发；
+// 而同一元素上的捕获与冒泡监听只按注册顺序触发，写在模板里靠不住。
+function blockCapsuleClick(event: MouseEvent) {
+  event.stopPropagation()
+  event.preventDefault()
+  releaseCapsuleClickSuppression()
+}
+
+function suppressCapsuleClickAfterDrag() {
+  capsuleHost.value?.addEventListener('click', blockCapsuleClick, true)
+}
+
+function releaseCapsuleClickSuppression() {
+  capsuleHost.value?.removeEventListener('click', blockCapsuleClick, true)
+}
+
+function startCapsuleDrag(event: PointerEvent) {
+  if (event.button !== 0 || capsuleDragSession) return
+  const startAnchor = measureCapsuleAnchor()
+  if (!startAnchor) return
+  // 上一次拖动的点击拦截若没被消费（松手落在胶囊外时不会派发 click），先撤掉，
+  // 否则它会吃掉这一次真正的点击。
+  releaseCapsuleClickSuppression()
+  // 这里不调用 preventDefault：pointerdown 的默认行为里包含把 <button> 聚焦，
+  // 头像栈的折叠状态机依赖这次聚焦（见 syncBotStackExpanded 的注释）。
+  // 文本选择由 .is-dragging 的 user-select: none 和越过阈值后的 preventDefault 处理。
+  capsuleDragSession = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    startAnchor,
+    dragging: false,
+  }
+  window.addEventListener('pointermove', handleCapsuleDragMove)
+  window.addEventListener('pointerup', stopCapsuleDrag)
+  window.addEventListener('pointercancel', stopCapsuleDrag)
+}
+
+function handleCapsuleDragMove(event: PointerEvent) {
+  const session = capsuleDragSession
+  if (!session || event.pointerId !== session.pointerId) return
+  const deltaX = event.clientX - session.startX
+  const deltaY = event.clientY - session.startY
+  if (!session.dragging) {
+    if (Math.hypot(deltaX, deltaY) < CAPSULE_DRAG_THRESHOLD) return
+    session.dragging = true
+    capsuleDragging.value = true
+  }
+  event.preventDefault()
+  // right/bottom 量的是到视口右缘、下缘的距离，指针往右下走时它们变小。
+  capsuleAnchor.value = clampCapsuleAnchor({
+    ...session.startAnchor,
+    right: session.startAnchor.right - deltaX,
+    bottom: session.startAnchor.bottom - deltaY,
+  }, getCapsuleViewport())
+}
+
+function stopCapsuleDrag() {
+  const session = capsuleDragSession
+  if (!session) return
+  window.removeEventListener('pointermove', handleCapsuleDragMove)
+  window.removeEventListener('pointerup', stopCapsuleDrag)
+  window.removeEventListener('pointercancel', stopCapsuleDrag)
+  capsuleDragSession = undefined
+  capsuleDragging.value = false
+  if (!session.dragging) return
+  suppressCapsuleClickAfterDrag()
+  if (capsuleAnchor.value) persistCapsuleAnchor(capsuleAnchor.value)
+}
+
 function loadCachedBotProfile() {
   if (typeof localStorage === 'undefined') return {}
   try {
@@ -578,14 +732,19 @@ async function selectBot(selfId: string) {
 onMounted(() => {
   document.addEventListener('pointerdown', closeWebQQOnOutsideClick)
   window.addEventListener('resize', updateCapsuleTooltipPosition)
+  window.addEventListener('resize', clampCapsuleAnchorToViewport)
   if (!hasSeenWebQQAvatarGuide()) showWebQQAvatarGuide(true)
   observeCapsuleTextOverflow()
+  restoreCapsuleAnchor()
   void nextTick(refreshCapsuleTextOverflow)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeWebQQOnOutsideClick)
   window.removeEventListener('resize', updateCapsuleTooltipPosition)
+  window.removeEventListener('resize', clampCapsuleAnchorToViewport)
+  stopCapsuleDrag()
+  releaseCapsuleClickSuppression()
   botStackLayout?.revert()
   botStackLayout = undefined
   if (botStackOverflowMotionTimer) clearTimeout(botStackOverflowMotionTimer)
@@ -619,6 +778,13 @@ watch([displayBotProfile, availableBots, statusClass, selectedBotSelfId], () => 
 
 watch([displayBotName, displayActivityText, conversationUserName, botStackExpanded], () => {
   void nextTick(refreshCapsuleTextOverflow)
+}, { immediate: true })
+
+// 未登录和隐藏页期间 v-if 没有渲染 host，量不到锚点。胶囊每次重新出现都补一次恢复，
+// 否则「先停在日志页、再切走」这条路径会一直用默认锚点。
+watch(shouldShowCapsule, (visible) => {
+  if (!visible) return
+  void nextTick(restoreCapsuleAnchor)
 }, { immediate: true })
 
 </script>

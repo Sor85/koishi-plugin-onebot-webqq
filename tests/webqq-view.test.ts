@@ -220,6 +220,44 @@ describe('webqq observer view', () => {
     expect(webqqThemeView).toContain("'--onebot-webqq-webqq-accent-soft': hexToRgba(accentColor, 0.14)")
   })
 
+  it('follows the dragged capsule anchor and keeps the panel inside the viewport', () => {
+    const missingRequirements = [
+      // ADR 0001：观察窗不反向 import 小胶囊领域，锚点只能经组合根这条边拿。
+      webqqView.includes("import { capsuleAnchor, webQQCapsule as capsule } from '../entry-state'")
+        && entryState.includes('export { capsuleAnchor }')
+        && !webqqView.includes("from '../capsule/capsule-anchor'")
+        ? ''
+        : '观察窗没有经组合根读入口锚点',
+      webqqView.includes("import { resolveWebQQPanelAnchor } from './utils/webqq-panel-anchor'")
+        && webqqView.includes('resolveWebQQPanelAnchor({ entry, panel, viewport })')
+        ? ''
+        : '观察窗落位没有交给跟随判定模块',
+      webqqView.includes('const webQQFollowAnchorStyle = computed')
+        && webqqView.includes('if (!entry || !panel || !viewport) return {}')
+        ? ''
+        : '没拖动过时观察窗不应接管落位，默认锚点与窄屏媒体查询都在样式表里',
+      webqqView.includes('...anchorStyle')
+        && webqqView.includes("return { right: `${anchor.right}px`, bottom: `${anchor.bottom}px` }")
+        ? ''
+        : '跟随结果没有写进观察窗根节点的行内样式',
+      webqqView.includes('function measureWebQQPanelSize()')
+        && webqqView.includes('webQQPanelSize.value = rect?.width && rect.height ? { width: rect.width, height: rect.height } : undefined')
+        && webqqView.includes('new ResizeObserver(measureWebQQPanelSize)')
+        ? ''
+        : '观察窗尺寸没有实测：默认形态的宽高来自 CSS 的 min() 与 aspect-ratio',
+      webqqView.includes('void nextTick(measureWebQQPanelSize)')
+        ? ''
+        : 'v-show 隐藏期间量不到尺寸，显示那一帧没有补量',
+      webqqView.includes("window.addEventListener('resize', measureWebQQViewport)")
+        && webqqView.includes("window.removeEventListener('resize', measureWebQQViewport)")
+        && webqqView.includes('webQQPanelResizeObserver?.disconnect()')
+        ? ''
+        : '视口尺寸没有跟着窗口变化更新，或 ResizeObserver 没有摘除',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
   it('allows optional browser-local WebQQ shell resizing from invisible top and left edges', () => {
     expect(webqqSettings).toContain('export const allowWebQQResize = settingsState.allowWebQQResize')
     expect(clientIndex).toContain('allowWebQQResize')
@@ -354,7 +392,7 @@ describe('webqq observer view', () => {
     ].join('\n')
     expect(webqqSources).not.toContain("from '../capsule")
     expect(webqqSources).not.toContain("from '../../capsule")
-    expect(webqqView).toContain("import { webQQCapsule as capsule } from '../entry-state'")
+    expect(webqqView).toContain("import { capsuleAnchor, webQQCapsule as capsule } from '../entry-state'")
     expect(entryState).toContain('export const webQQCapsule = capsule')
     expect(entryState).toContain("export type { CapsuleSnapshot } from './capsule/state'")
     expect(webqqMessageListStore).toContain('const botThinkingMessages = ref<Record<string, WebQQMessage>>({})')
