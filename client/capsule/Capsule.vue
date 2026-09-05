@@ -1,6 +1,6 @@
 <template>
   <div v-if="shouldShowCapsule" ref="capsuleHost" :class="['onebot-webqq-host', { 'is-dragging': capsuleDragging }]" :style="capsuleHostStyle">
-    <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root" @pointerdown="startCapsuleDrag">
+    <div ref="capsuleLayoutRef" class="onebot-webqq-layout-root" @pointerdown="startCapsuleDrag" @dragstart="blockCapsuleNativeDrag">
       <div
         :class="['onebot-webqq', enableCapsuleFrostedGlass ? 'is-frosted' : 'is-plain', `is-color-${resolvedWebQQColorMode}`, {
           'is-bot-stack-expanded': botStackVisualExpanded,
@@ -101,7 +101,7 @@
         </div>
       </div>
     </div>
-    <div :class="['onebot-webqq__body', `is-color-${resolvedWebQQColorMode}`]" @pointerdown="startCapsuleDrag" @click="showWebQQAvatarGuide()">
+    <div :class="['onebot-webqq__body', `is-color-${resolvedWebQQColorMode}`]" @pointerdown="startCapsuleDrag" @dragstart="blockCapsuleNativeDrag" @click="showWebQQAvatarGuide()">
       <div class="onebot-webqq__title-line">
         <div
           ref="titleRef"
@@ -559,6 +559,17 @@ function suppressCapsuleClickAfterDrag() {
 
 function releaseCapsuleClickSuppression() {
   capsuleHost.value?.removeEventListener('click', blockCapsuleClick, true)
+}
+
+// 机器人头像是 <img>，浏览器给图片的默认行为是原生拖放。指针一越过 4px 阈值，dragstart 就先
+// 于我们的位移成立，浏览器随即派发 pointercancel 收走整个指针序列：胶囊只挪了阈值那几像素就停住，
+// 看起来完全是「拖不动」。这里必须在 dragstart 这一层取消——pointermove 里的 preventDefault 拦不住它，
+// 原生拖放是从 mousemove 那条链起的。
+// 这个坑只在有真实头像时出现：没有可用机器人时头像退化成 SVG 图标，图标不参与原生拖放，
+// 所以停用 OneBot 适配器的环境永远复现不出来。
+// 整枚胶囊都是拖动把手，其中没有任何需要保留原生拖放的内容，因此无条件取消。
+function blockCapsuleNativeDrag(event: DragEvent) {
+  event.preventDefault()
 }
 
 function startCapsuleDrag(event: PointerEvent) {

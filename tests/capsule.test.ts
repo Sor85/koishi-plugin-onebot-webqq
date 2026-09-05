@@ -174,6 +174,12 @@ describe('chat capsule view', () => {
         && !capsuleView.includes('class="onebot-webqq-host" @pointerdown')
         ? ''
         : '拖动把手应只覆盖头像区与胶囊摘要文字，不能挂在容纳观察窗的 host 上',
+      // 头像是 <img>，原生拖放会在阈值处抢走整个指针序列（dragstart → pointercancel），胶囊只挪
+      // 几像素就停住。停用 OneBot 适配器的环境里头像退化成 SVG 图标，这一条永远复现不出来。
+      (capsuleView.match(/@dragstart="blockCapsuleNativeDrag"/g)?.length ?? 0) === dragHandleCount
+        && capsuleView.includes('function blockCapsuleNativeDrag(event: DragEvent) {\n  event.preventDefault()\n}')
+        ? ''
+        : '拖动把手没有取消原生拖放，头像上的 dragstart 会让浏览器 pointercancel 掉这次拖动',
       capsuleView.includes('right: session.startAnchor.right - deltaX')
         && capsuleView.includes('bottom: session.startAnchor.bottom - deltaY')
         ? ''
