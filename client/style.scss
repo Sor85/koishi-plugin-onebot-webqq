@@ -24,36 +24,6 @@
   }
 }
 
-@keyframes onebot-webqq-avatar-guide-ring {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: scale(0.98);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-}
-
-@keyframes onebot-webqq-avatar-guide-halo {
-  0% {
-    opacity: 0.38;
-    transform: scale(0.92);
-  }
-
-  72% {
-    opacity: 0;
-    transform: scale(1.22);
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(1.26);
-  }
-}
-
 @keyframes onebot-webqq-bot-overflow-avatar-erase {
   0% {
     opacity: 1;
@@ -82,14 +52,10 @@
     background-position: 50% 0;
   }
 
-  .onebot-webqq__avatar-guide-ring,
-  .onebot-webqq__avatar-guide-ring::after {
-    animation: none;
-  }
-
-  .onebot-webqq-avatar-guide-enter-active,
-  .onebot-webqq-avatar-guide-leave-active {
-    transition: none;
+  // 头像强调动效由 Anime.js 驱动，avatar-guide.ts 已经在 matchMedia 里跳过波纹；
+  // 这里再兜一层，保证即使 JS 那侧的判定失效也不会有扩散动画。常驻圈本身静止，可以留下。
+  .onebot-webqq__avatar-guide-pulse {
+    display: none;
   }
 
   .onebot-webqq__bot-stack.is-overflow-collapsing .onebot-webqq__bot-overflow-avatar,

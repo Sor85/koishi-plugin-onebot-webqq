@@ -337,10 +337,10 @@ describe('chat capsule styles', () => {
     expect(unreadBody).toContain('background: #ef4444')
   })
 
-  it('styles the WebQQ avatar guide as an elegant theme-colored halo', () => {
+  it('styles the WebQQ avatar guide as a static theme-colored ring with expanding pulses', () => {
     const guideBody = ruleDeclarations('.onebot-webqq__avatar-guide')
     const ringBody = ruleDeclarations('.onebot-webqq__avatar-guide-ring', capsuleStyle)
-    const transitionBody = ruleDeclarations('.onebot-webqq-avatar-guide-enter-active', capsuleStyle)
+    const pulseBody = ruleDeclarations('.onebot-webqq__avatar-guide-pulse', capsuleStyle)
     const reducedMotionBody = ruleBlock('@media (prefers-reduced-motion: reduce)')
     const missingRequirements = [
       ruleDeclarations('.onebot-webqq__body', capsuleStyle).includes('pointer-events: auto')
@@ -370,28 +370,38 @@ describe('chat capsule styles', () => {
         ? ''
         : '头像光圈阴影没有使用 WebQQ 主题色阴影变量',
       ringBody.includes('border-radius: 50%') ? '' : '头像图形引导缺少圆形光圈',
-      ringBody.includes('animation: onebot-webqq-avatar-guide-ring 2.4s cubic-bezier')
+      // 常驻圈慢速缩放 3px 时每帧只走 0.07px，落在看不出在动的区间里，观感就是掉帧。
+      // 运动必须交给波纹，常驻圈几何保持静止。
+      ringBody.includes('animation') || ringBody.includes('transform')
+        ? '头像光圈不应再有几何动画，慢速微幅缩放会被看成掉帧'
+        : '',
+      pulseBody.includes('left: 1px')
+        && pulseBody.includes('top: 1px')
+        && pulseBody.includes('width: 44px')
+        && pulseBody.includes('height: 44px')
+        && pulseBody.includes('border-radius: 50%')
         ? ''
-        : '头像光圈动画不够柔和',
-      style.includes('.onebot-webqq__avatar-guide-ring::after')
-        && style.includes('@keyframes onebot-webqq-avatar-guide-halo')
+        : '扩散波纹没有和常驻光圈同心同尺寸起步',
+      pulseBody.includes('var(--onebot-webqq-webqq-accent, #2563eb)')
         ? ''
-        : '头像光圈缺少柔和外扩 halo',
-      style.includes('.onebot-webqq__avatar-guide-ring::after')
-        && ruleDeclarations('.onebot-webqq__avatar-guide-ring::after', capsuleStyle).includes('inset: -5px')
+        : '扩散波纹没有使用 WebQQ 主题色变量',
+      pulseBody.includes('opacity: 0')
         ? ''
-        : '头像光圈外扩 halo 没有按当前头像尺寸收窄',
-      transitionBody.includes('transition: opacity')
-        && transitionBody.includes('transform')
+        : '扩散波纹初始应不可见，等 Anime.js 接管',
+      // CSS 与 JS 两套时间轴同时写 transform/opacity 会互相顶掉。
+      pulseBody.includes('animation')
+        ? '扩散波纹不应由 CSS 关键帧驱动'
+        : '',
+      style.includes('@keyframes onebot-webqq-avatar-guide')
+        ? '头像强调动效不应再保留 CSS 关键帧'
+        : '',
+      style.includes('onebot-webqq-avatar-guide-enter-active')
+        ? '头像图形引导进出场已交给 Anime.js，不应再留 CSS 过渡类'
+        : '',
+      reducedMotionBody.includes('.onebot-webqq__avatar-guide-pulse')
+        && reducedMotionBody.includes('display: none')
         ? ''
-        : '头像图形引导缺少出现/消失过渡',
-      style.includes('@keyframes onebot-webqq-avatar-guide-ring')
-        ? ''
-        : '头像图形引导缺少关键帧动画',
-      reducedMotionBody.includes('.onebot-webqq__avatar-guide-ring')
-        && reducedMotionBody.includes('animation: none')
-        ? ''
-        : '头像图形引导没有在 prefers-reduced-motion 下关闭动画',
+        : '头像图形引导没有在 prefers-reduced-motion 下关闭扩散波纹',
       style.includes('onebot-webqq__avatar-guide-arrow')
         ? '头像图形引导不应包含箭头样式'
         : '',

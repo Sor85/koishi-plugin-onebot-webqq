@@ -5,6 +5,7 @@ const capsuleView = await readFile(new URL('../client/capsule/Capsule.vue', impo
 const capsuleActivitySelect = await readFile(new URL('../client/capsule/CapsuleActivitySelect.vue', import.meta.url), 'utf8')
 const capsuleState = await readFile(new URL('../client/capsule/state.ts', import.meta.url), 'utf8')
 const capsuleStyle = await readFile(new URL('../client/capsule/styles.scss', import.meta.url), 'utf8')
+const avatarGuideMotion = await readFile(new URL('../client/capsule/avatar-guide.ts', import.meta.url), 'utf8')
 const clientEntry = await readFile(new URL('../client/index.ts', import.meta.url), 'utf8')
 
 function sourceBetween(source: string, start: string, end: string) {
@@ -63,7 +64,7 @@ describe('chat capsule view', () => {
   })
 
   it('renders a graphical WebQQ avatar guide without visible instruction text', () => {
-    const guideSource = capsuleView.match(/<Transition\s+name="onebot-webqq-avatar-guide">[\s\S]*?<\/Transition>/)?.[0] ?? ''
+    const guideSource = capsuleView.match(/<Transition :css="false" @enter="enterAvatarGuide"[\s\S]*?<\/Transition>/)?.[0] ?? ''
     const missingRequirements = [
       guideSource ? '' : '缺少头像图形引导过渡容器',
       guideSource.includes('webQQAvatarGuideVisible && !webQQOpen')
@@ -79,10 +80,66 @@ describe('chat capsule view', () => {
       guideSource.includes('class="onebot-webqq__avatar-guide-ring"')
         ? ''
         : '图形引导缺少头像光圈',
+      // 运动全部由波纹承担，常驻圈几何静止。少了波纹节点就退回「慢速缩放常驻圈」那套观感缺陷。
+      guideSource.includes('v-for="index in avatarGuidePulseCount"')
+        && guideSource.includes('class="onebot-webqq__avatar-guide-pulse"')
+        ? ''
+        : '图形引导缺少扩散波纹节点',
+      guideSource.includes('@leave="leaveAvatarGuide"')
+        ? ''
+        : '头像图形引导的进出场没有交给 Anime.js 钩子',
       guideSource.includes('onebot-webqq__avatar-guide-arrow')
         ? '图形引导不应再显示箭头'
         : '',
       guideSource.includes('点击头像') ? '图形引导不应显示文字说明' : '',
+    ].filter(Boolean)
+
+    expect(missingRequirements).toEqual([])
+  })
+
+  it('drives the avatar guide motion with Anime.js instead of CSS keyframes', () => {
+    const missingRequirements = [
+      avatarGuideMotion.includes("import { animate, utils, type JSAnimation } from 'animejs'")
+        ? ''
+        : '头像强调动效没有复用项目已有的 anime.js 依赖',
+      // 单节点周期 = 节点数 × 出发间隔，loopDelay 必须由此反推，否则调节点数会出现空档或撞车。
+      avatarGuideMotion.includes('const PULSE_LOOP_DELAY = AVATAR_GUIDE_PULSE_COUNT * PULSE_INTERVAL - PULSE_DURATION')
+        ? ''
+        : '波纹的 loopDelay 没有按节点数反推，扩散节奏会不均匀',
+      avatarGuideMotion.includes('loop: true') ? '' : '波纹没有持续循环',
+      // 两条都踩过：多目标 delay 只在单轮内错开（循环边界同时重置，出现空拍）；
+      // 单目标各带 delay 又会让 Anime.js 在创建时就写入 from 值，未出场的节点静静停在常驻圈上。
+      avatarGuideMotion.includes('pulseTimers.push(setTimeout(() => spawnPulse(target), index * PULSE_INTERVAL))')
+        && !/animate\(target, \{[\s\S]*?delay:/.test(avatarGuideMotion)
+        ? ''
+        : '波纹错拍必须靠延后创建，不能用 Anime.js 的 delay',
+      avatarGuideMotion.includes('for (const timer of pulseTimers) clearTimeout(timer)')
+        ? ''
+        : '停止波纹时没有清掉还没出场的待命定时器',
+      avatarGuideMotion.includes('scale: [1, PULSE_SCALE_TO]')
+        && avatarGuideMotion.includes("opacity: { from: PULSE_OPACITY_FROM, to: 0, ease: 'out(2)' }")
+        ? ''
+        : '波纹缺少扩散与淡出，或淡出没有比位移更慢收敛（会留下「看得见却几乎不动」的尾巴）',
+      // 容器靠 transform: translate(-50%, -50%) 居中，动它的 scale 会把居中的 translate 顶掉。
+      /enter\(root, done\) \{[\s\S]*?opacity: \[0, 1\]/.test(avatarGuideMotion)
+        && !/animate\(root, \{[\s\S]*?scale:/.test(avatarGuideMotion)
+        ? ''
+        : '引导容器只能动 opacity，动 scale 会破坏居中',
+      avatarGuideMotion.includes("window.matchMedia('(prefers-reduced-motion: reduce)').matches")
+        ? ''
+        : '头像强调动效没有在 prefers-reduced-motion 下跳过波纹',
+      avatarGuideMotion.includes('for (const pulse of pulses) pulse.revert()')
+        ? ''
+        : '波纹停止时没有抹掉内联样式，下次进场会留半透明残影',
+      capsuleView.includes('if (webQQAvatarGuideVisible.value) avatarGuideMotion.restart()')
+        ? ''
+        : '引导已显示时再次点击没有重跑波纹，点击会像没反应',
+      capsuleView.includes('avatarGuideMotion.destroy()')
+        ? ''
+        : '组件卸载时没有停掉头像强调动效',
+      capsuleStyle.includes('animation: onebot-webqq-avatar-guide')
+        ? '头像强调动效不应再由 CSS 关键帧驱动'
+        : '',
     ].filter(Boolean)
 
     expect(missingRequirements).toEqual([])
@@ -420,7 +477,7 @@ describe('chat capsule view', () => {
         && !capsuleStyle.includes('&.is-active .onebot-webqq__avatar')
         ? ''
         : '多机器人状态点应只显示在当前 bot 头像上，且 active 头像不应有额外强调样式',
-      multiBotTemplate.includes('onebot-webqq-avatar-guide')
+      multiBotTemplate.includes('onebot-webqq__avatar-guide')
         && multiBotTemplate.includes('bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webQQOpen')
         && !capsuleView.includes('if (hasMultipleBots.value) return')
         ? ''

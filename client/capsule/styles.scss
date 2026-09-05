@@ -352,6 +352,10 @@
   transform: translate(-50%, -50%);
 }
 
+// 常驻圈：几何全程静止，一个 transform 动画都不给。
+// 旧实现让它自己在 0.98~1.05 之间来回缩放，3px 行程摊到 1.2s 上每帧只走 0.07px，
+// 落在「看不出在动」的区间里，眼睛读到的是光栅化噪声而不是运动——三个引擎都满 60fps 却依然像卡。
+// 现在所有运动都由 .onebot-webqq__avatar-guide-pulse 承担，见 client/capsule/avatar-guide.ts。
 .onebot-webqq__avatar-guide-ring {
   position: absolute;
   left: 1px;
@@ -361,27 +365,20 @@
   border: 2px solid var(--onebot-webqq-webqq-accent, #2563eb);
   border-radius: 50%;
   box-shadow: 0 0 12px var(--onebot-webqq-webqq-accent-shadow, rgba(37, 99, 235, 0.24));
-  animation: onebot-webqq-avatar-guide-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
-.onebot-webqq__avatar-guide-ring::after {
-  content: '';
+// 波纹：初始不可见，出场时机与幅度全由 Anime.js 控制。
+// 这里只声明静态外观，不写 animation——CSS 与 JS 两套时间轴同时写 transform/opacity 会互相顶掉。
+.onebot-webqq__avatar-guide-pulse {
   position: absolute;
-  inset: -5px;
-  border: 1px solid color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 36%, transparent);
-  border-radius: inherit;
-  animation: onebot-webqq-avatar-guide-halo 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-.onebot-webqq-avatar-guide-enter-active,
-.onebot-webqq-avatar-guide-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.onebot-webqq-avatar-guide-enter-from,
-.onebot-webqq-avatar-guide-leave-to {
+  left: 1px;
+  top: 1px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--onebot-webqq-webqq-accent, #2563eb) 42%, transparent);
+  border-radius: 50%;
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.92);
+  will-change: transform, opacity;
 }
 
 .onebot-webqq__status {

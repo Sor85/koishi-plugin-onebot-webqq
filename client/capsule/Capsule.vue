@@ -47,13 +47,14 @@
                 <k-icon v-else name="robot" />
                 <span v-if="bot.selfId === activeBotSelfId" :class="['onebot-webqq__status', getBotStatusClass(bot)]"></span>
                 <span v-if="showWebQQCapsuleUnread && webQQTotalUnread && bot.selfId === activeBotSelfId" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
-                <Transition name="onebot-webqq-avatar-guide">
+                <Transition :css="false" @enter="enterAvatarGuide" @leave="leaveAvatarGuide">
                   <span
                     v-if="bot.selfId === activeBotSelfId && webQQAvatarGuideVisible && !webQQOpen"
                     class="onebot-webqq__avatar-guide"
                     aria-hidden="true"
                   >
                     <span class="onebot-webqq__avatar-guide-ring"></span>
+                    <span v-for="index in avatarGuidePulseCount" :key="index" class="onebot-webqq__avatar-guide-pulse"></span>
                   </span>
                 </Transition>
               </span>
@@ -87,13 +88,14 @@
               <k-icon v-else name="robot" />
               <span :class="['onebot-webqq__status', statusClass]"></span>
               <span v-if="showWebQQCapsuleUnread && webQQTotalUnread" class="onebot-webqq__avatar-unread">{{ capsuleUnreadText }}</span>
-              <Transition name="onebot-webqq-avatar-guide">
+              <Transition :css="false" @enter="enterAvatarGuide" @leave="leaveAvatarGuide">
                 <span
                   v-if="webQQAvatarGuideVisible && !webQQOpen"
                   class="onebot-webqq__avatar-guide"
                   aria-hidden="true"
                 >
                   <span class="onebot-webqq__avatar-guide-ring"></span>
+                  <span v-for="index in avatarGuidePulseCount" :key="index" class="onebot-webqq__avatar-guide-pulse"></span>
                 </span>
               </Transition>
             </span>
@@ -152,6 +154,7 @@ import { animate, createLayout, type AutoLayout } from 'animejs'
 import { debug, enableCapsuleFrostedGlass, resolvedWebQQColorMode, showWebQQCapsuleUnread, useCompactCapsuleShadow, webQQAccentColor, webQQOpen, webQQTotalUnread } from '../entry-state'
 import { availableBots as runtimeBots, selectedBotSelfId, selectWebQQBot, type OneBotRobotProfile } from '../onebot/bots'
 import { getWebQQAccentStyle } from '../webqq/utils/webqq-theme-view'
+import { AVATAR_GUIDE_PULSE_COUNT, createAvatarGuideMotion } from './avatar-guide'
 import { clampCapsuleAnchor, normalizeCapsuleAnchorPosition, type CapsuleAnchor } from './capsule-anchor'
 import { capsule, capsuleAnchor, hiddenCapsuleActivityIds } from './state'
 
@@ -166,6 +169,8 @@ const capsuleProfileStorageKey = 'onebot-webqq:bot-profile:v1'
 const capsuleAnchorStorageKey = 'onebot-webqq:capsule-anchor:v1'
 const webQQAvatarGuideStorageKey = 'onebot-webqq:webqq-avatar-guide:v1'
 const webQQAvatarGuideVisible = ref(false)
+const avatarGuidePulseCount = AVATAR_GUIDE_PULSE_COUNT
+const avatarGuideMotion = createAvatarGuideMotion()
 const capsuleHost = ref<HTMLElement>()
 const capsuleLayoutRef = ref<HTMLElement>()
 const titleRef = ref<HTMLElement>()
@@ -675,12 +680,23 @@ function hideWebQQAvatarGuide() {
 function showWebQQAvatarGuide(remember = false) {
   if (webQQOpen.value) return
   if (remember) rememberWebQQAvatarGuide()
+  // 已经在显示时再点：Transition 不会重新挂载节点，@enter 也就不会再触发，
+  // 波纹时间轴必须手动从头跑。否则这一次点击可能正好落在两圈波纹之间，看起来「点了没反应」。
+  if (webQQAvatarGuideVisible.value) avatarGuideMotion.restart()
   webQQAvatarGuideVisible.value = true
   if (webQQAvatarGuideTimer) clearTimeout(webQQAvatarGuideTimer)
   webQQAvatarGuideTimer = setTimeout(() => {
     webQQAvatarGuideVisible.value = false
     webQQAvatarGuideTimer = undefined
   }, 3600)
+}
+
+function enterAvatarGuide(el: Element, done: () => void) {
+  avatarGuideMotion.enter(el as HTMLElement, done)
+}
+
+function leaveAvatarGuide(el: Element, done: () => void) {
+  avatarGuideMotion.leave(el as HTMLElement, done)
 }
 
 function closeWebQQOnOutsideClick(event: PointerEvent) {
@@ -763,6 +779,7 @@ onBeforeUnmount(() => {
   capsuleTextResizeObserver = undefined
   if (suppressStackCollapseTimer) clearTimeout(suppressStackCollapseTimer)
   hideWebQQAvatarGuide()
+  avatarGuideMotion.destroy()
 })
 
 watch(displayBotProfile, (bot) => {
