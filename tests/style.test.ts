@@ -867,6 +867,13 @@ describe('chat capsule styles', () => {
     expect(ruleDeclarations('.onebot-webqq-webqq__image-preview img')).toContain('max-width: min(1120px, calc(100vw - 64px))')
     expect(ruleDeclarations('.onebot-webqq-webqq__image-preview img')).toContain('max-height: calc(100vh - 64px)')
     expect(ruleDeclarations('.onebot-webqq-webqq__image-preview-close')).toContain('position: fixed')
+    expect(ruleDeclarations('.onebot-webqq-webqq__message-image')).toContain('min-width: 0')
+    expect(ruleDeclarations('.onebot-webqq-webqq__message-image:focus-visible')).toContain('outline: 2px solid var(--webqq-accent)')
+    expect(ruleDeclarations('.onebot-webqq-webqq__image-preview')).toContain('overflow: hidden')
+    expect(ruleDeclarations('.onebot-webqq-webqq__image-preview img')).toContain('transform-origin: center')
+    expect(ruleDeclarations('.onebot-webqq-webqq__image-preview.is-zoomed img')).toContain('will-change: transform')
+    expect(ruleDeclarations('.onebot-webqq-webqq__image-preview-close')).toContain('z-index: 1')
+    expect(ruleDeclarations('.onebot-webqq-webqq__image-preview-scale')).toContain('z-index: 1')
   })
 
   it('does not keep the removed WebQQ readonly bar styles', () => {

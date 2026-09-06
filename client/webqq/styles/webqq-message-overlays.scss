@@ -79,6 +79,8 @@
 }
 
 .onebot-webqq-webqq__image-preview {
+  // 缩放用 transform 平移而非滚动；裁掉溢出，避免撑出页面滚动条。
+  overflow: hidden;
   position: fixed;
   inset: 0;
   z-index: 10002;
@@ -97,9 +99,13 @@
   border-radius: 8px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
   object-fit: contain;
+  transform-origin: center;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .onebot-webqq-webqq__image-preview-close {
+  z-index: 1;
   position: fixed;
   top: 22px;
   right: 22px;
@@ -113,4 +119,24 @@
   background: rgba(15, 23, 42, 0.58);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 8px;
+}
+
+.onebot-webqq-webqq__image-preview.is-zoomed img {
+  // 仅在放大态提升合成层，不添加会使滚轮缩放滞后的 transition。
+  will-change: transform;
+}
+
+.onebot-webqq-webqq__image-preview-scale {
+  position: absolute;
+  z-index: 1;
+  bottom: 22px;
+  left: 50%;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.62);
+  font-size: var(--onebot-webqq-font-sm);
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
 }
